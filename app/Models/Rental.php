@@ -10,6 +10,8 @@ class Rental extends Model
     use HasFactory;
 
     protected $primaryKey = 'rental_id';
+    public $incrementing = true;        // Add this line
+    protected $keyType = 'int';         // Add this line
 
     protected $fillable = [
     'user_id',

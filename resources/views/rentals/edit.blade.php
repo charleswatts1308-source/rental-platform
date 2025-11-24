@@ -1,8 +1,305 @@
 @extends('layouts.app')
 
-@section('title', 'Edit Rental Profile')
+@section('title', 'Edit Rental')
 
 @section('content')
+<div class="container py-4">
+    <h1>Edit Rental</h1>
+
+    <!-- Validation Errors -->
+    @if ($errors->any())
+        <div class="alert alert-danger">
+            <h6>Please correct the following errors:</h6>
+            <ul class="mb-0">
+                @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
+    <form method="POST" action="{{ route('rentals.update', $rental->rental_id) }}" enctype="multipart/form-data">
+        @csrf
+        @method('PUT')
+
+        <div class="rental-card">
+            <!-- Rental Header -->
+            <div class="rental-header">
+                <div>
+                    <h2 class="rental-name">
+                        @php
+                            $addressParts = array_filter([
+                                $rental->rental_line1 ?? '',
+                                $rental->rental_post_code ?? ''
+                            ]);
+                            $displayAddress = !empty($addressParts) ? implode(', ', $addressParts) : 'Rental Property';
+                        @endphp
+                        {{ $displayAddress }}
+                    </h2>
+                    <div class="rental-id">
+                        ID: {{ $rental->rental_id }} | Created: {{ $rental->created_at->format('d M Y') }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Rental Details Form -->
+            <div class="rental-details">
+                <!-- Property Address -->
+                <div class="detail-group">
+                    <div class="detail-label">Property Address</div>
+                    <div class="detail-value">
+                        <div class="mb-2">
+                            <div class="floating-label">
+                                <input type="text" class="form-control form-control-sm" id="rental_line1" name="rental_line1"
+                                       value="{{ old('rental_line1', $rental->rental_line1) }}" required>
+                                <label for="rental_line1">Address Line 1</label>
+                            </div>
+                        </div>
+                        <div class="mb-2">
+                            <div class="floating-label">
+                                <input type="text" class="form-control form-control-sm" id="rental_line2" name="rental_line2"
+                                       value="{{ old('rental_line2', $rental->rental_line2) }}">
+                                <label for="rental_line2">Address Line 2 (optional)</label>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-6 mb-2">
+                                <div class="floating-label">
+                                    <input type="text" class="form-control form-control-sm" id="rental_city" name="rental_city"
+                                           value="{{ old('rental_city', $rental->rental_city) }}" required>
+                                    <label for="rental_city">City</label>
+                                </div>
+                            </div>
+                            <div class="col-6 mb-2">
+                                <div class="floating-label">
+                                    <input type="text" class="form-control form-control-sm" id="rental_post_code" name="rental_post_code"
+                                           value="{{ old('rental_post_code', $rental->rental_post_code) }}" required>
+                                    <label for="rental_post_code">Postcode</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Agent Information -->
+                <div class="detail-group">
+                    <div class="detail-label">Agent</div>
+                    <div class="detail-value">
+                        <div class="mb-2">
+                            <div class="floating-label">
+                                <input type="text" class="form-control form-control-sm" id="agent_contact_name" name="agent_contact_name"
+                                       value="{{ old('agent_contact_name', $rental->agent_contact_name) }}">
+                                <label for="agent_contact_name">Contact Name</label>
+                            </div>
+                        </div>
+                        <div class="mb-2">
+                            <div class="floating-label">
+                                <input type="text" class="form-control form-control-sm" id="agent_company_name" name="agent_company_name"
+                                       value="{{ old('agent_company_name', $rental->agent_company_name) }}">
+                                <label for="agent_company_name">Company Name</label>
+                            </div>
+                        </div>
+                        <div class="mb-2">
+                            <div class="floating-label">
+                                <input type="email" class="form-control form-control-sm" id="agent_contact_email" name="agent_contact_email"
+                                       value="{{ old('agent_contact_email', $rental->agent_contact_email) }}">
+                                <label for="agent_contact_email">Email</label>
+                            </div>
+                        </div>
+                        <div class="mb-2">
+                            <div class="floating-label">
+                                <input type="text" class="form-control form-control-sm" id="agent_line1" name="agent_line1"
+                                       value="{{ old('agent_line1', $rental->agent_line1) }}">
+                                <label for="agent_line1">Address Line 1</label>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-6 mb-2">
+                                <div class="floating-label">
+                                    <input type="text" class="form-control form-control-sm" id="agent_city" name="agent_city"
+                                           value="{{ old('agent_city', $rental->agent_city) }}">
+                                    <label for="agent_city">City</label>
+                                </div>
+                            </div>
+                            <div class="col-6 mb-2">
+                                <div class="floating-label">
+                                    <input type="text" class="form-control form-control-sm" id="agent_post_code" name="agent_post_code"
+                                           value="{{ old('agent_post_code', $rental->agent_post_code) }}">
+                                    <label for="agent_post_code">Postcode</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Landlord Information -->
+                <div class="detail-group">
+                    <div class="detail-label">Landlord</div>
+                    <div class="detail-value">
+                        <div class="mb-2">
+                            <div class="floating-label">
+                                <input type="text" class="form-control form-control-sm" id="landlord_contact_name" name="landlord_contact_name"
+                                       value="{{ old('landlord_contact_name', $rental->landlord_contact_name) }}">
+                                <label for="landlord_contact_name">Contact Name</label>
+                            </div>
+                        </div>
+                        <div class="mb-2">
+                            <div class="floating-label">
+                                <input type="text" class="form-control form-control-sm" id="landlord_company_name" name="landlord_company_name"
+                                       value="{{ old('landlord_company_name', $rental->landlord_company_name) }}">
+                                <label for="landlord_company_name">Company Name</label>
+                            </div>
+                        </div>
+                        <div class="mb-2">
+                            <div class="floating-label">
+                                <input type="email" class="form-control form-control-sm" id="landlord_contact_email" name="landlord_contact_email"
+                                       value="{{ old('landlord_contact_email', $rental->landlord_contact_email) }}">
+                                <label for="landlord_contact_email">Email</label>
+                            </div>
+                        </div>
+                        <div class="mb-2">
+                            <div class="floating-label">
+                                <input type="text" class="form-control form-control-sm" id="landlord_line1" name="landlord_line1"
+                                       value="{{ old('landlord_line1', $rental->landlord_line1) }}">
+                                <label for="landlord_line1">Address Line 1</label>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-6 mb-2">
+                                <div class="floating-label">
+                                    <input type="text" class="form-control form-control-sm" id="landlord_city" name="landlord_city"
+                                           value="{{ old('landlord_city', $rental->landlord_city) }}">
+                                    <label for="landlord_city">City</label>
+                                </div>
+                            </div>
+                            <div class="col-6 mb-2">
+                                <div class="floating-label">
+                                    <input type="text" class="form-control form-control-sm" id="landlord_post_code" name="landlord_post_code"
+                                           value="{{ old('landlord_post_code', $rental->landlord_post_code) }}">
+                                    <label for="landlord_post_code">Postcode</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Lease Details -->
+                <div class="detail-group">
+                    <div class="detail-label">Lease Details</div>
+                    <div class="detail-value">
+                        <div class="mb-2">
+                            <select class="form-control form-control-sm" id="lease_type" name="lease_type">
+                                <option value="">Select lease type...</option>
+                                <option value="Assured Shorthold Tenancy" {{ old('lease_type', $rental->lease_type) == 'Assured Shorthold Tenancy' ? 'selected' : '' }}>Assured Shorthold Tenancy</option>
+                                <option value="Assured Tenancy" {{ old('lease_type', $rental->lease_type) == 'Assured Tenancy' ? 'selected' : '' }}>Assured Tenancy</option>
+                                <option value="Regulated Tenancy" {{ old('lease_type', $rental->lease_type) == 'Regulated Tenancy' ? 'selected' : '' }}>Regulated Tenancy</option>
+                                <option value="Licence Agreement" {{ old('lease_type', $rental->lease_type) == 'Licence Agreement' ? 'selected' : '' }}>Licence Agreement</option>
+                            </select>
+                        </div>
+                        <div class="mb-2">
+                            <div class="floating-label">
+                                <input type="date" class="form-control form-control-sm" id="lease_expiry_date" name="lease_expiry_date"
+                                       value="{{ old('lease_expiry_date', $rental->lease_expiry_date) }}">
+                                <label for="lease_expiry_date">Lease expiry date</label>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-6 mb-2">
+                                <div class="floating-label">
+                                    <input type="text" class="form-control form-control-sm" id="no_of_tenants" name="no_of_tenants"
+                                           value="{{ old('no_of_tenants', $rental->no_of_tenants) }}">
+                                    <label for="no_of_tenants">Number of tenants</label>
+                                </div>
+                            </div>
+                            <div class="col-6 mb-2">
+                                <select class="form-control form-control-sm" id="rental_type" name="rental_type">
+                                    <option value="">Select property type...</option>
+                                    <option value="House" {{ old('rental_type', $rental->rental_type) == 'House' ? 'selected' : '' }}>House</option>
+                                    <option value="Flat" {{ old('rental_type', $rental->rental_type) == 'Flat' ? 'selected' : '' }}>Flat</option>
+                                    <option value="Studio" {{ old('rental_type', $rental->rental_type) == 'Studio' ? 'selected' : '' }}>Studio</option>
+                                    <option value="Room" {{ old('rental_type', $rental->rental_type) == 'Room' ? 'selected' : '' }}>Room</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Service Requests -->
+                <div class="detail-group">
+                    <div class="detail-label">Service Requests</div>
+                    <div class="detail-value">
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" id="serv_req1_ll_status" name="serv_req1_ll_status"
+                                   value="1" {{ old('serv_req1_ll_status', $rental->serv_req1_ll_status) ? 'checked' : '' }}>
+                            <label class="form-check-label" for="serv_req1_ll_status">
+                                LL Status
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="serv_req2_ll_pu" name="serv_req2_ll_pu"
+                                   value="1" {{ old('serv_req2_ll_pu', $rental->serv_req2_ll_pu) ? 'checked' : '' }}>
+                            <label class="form-check-label" for="serv_req2_ll_pu">
+                                LL PU
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- File Upload Section -->
+                <div class="detail-group">
+                    <div class="detail-label">Documents</div>
+                    <div class="detail-value">
+                        <!-- Existing Files -->
+                        @if($rental->uploadedFiles && $rental->uploadedFiles->count() > 0)
+                            <div class="mb-3">
+                                <h6 class="small">Current Documents:</h6>
+                                @foreach($rental->uploadedFiles as $file)
+                                    <div class="d-flex justify-content-between align-items-center mb-2 p-2 bg-light rounded">
+                                        <div>
+                                            <i class="fas fa-file-pdf text-danger me-1"></i>
+                                            {{ $file->original_name }}
+                                            <small class="text-muted">({{ $file->humanSize }})</small>
+                                        </div>
+                                        <div>
+                                            <a href="{{ route('files.download', $file->rental_id) }}" class="btn btn-outline-primary btn-sm me-1">
+                                                <i class="fas fa-download"></i>
+                                            </a>
+                                            <button type="button" class="btn btn-outline-danger btn-sm" onclick="confirmFileDelete({{ $file->id }})">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @endif
+
+                        <!-- Upload New File -->
+                        <div>
+                            <label for="rental_agreement" class="form-label-small">Upload New Document (PDF, Images)</label>
+                            <input type="file" class="form-control form-control-sm" id="rental_agreement" name="rental_agreement"
+                                   accept=".pdf,.jpg,.jpeg,.png">
+                            <small class="text-muted">Maximum file size: 10MB</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="rental-actions">
+                <button type="submit" class="btn-action btn-edit">
+                    <i class="fas fa-save"></i> Save Changes
+                </button>
+                <a href="{{ route('rentals.show', $rental->rental_id) }}" class="btn-action btn-details">
+                    <i class="fas fa-eye"></i> View Details
+                </a>
+                <a href="{{ route('rentals.index') }}" class="btn-action btn-back">
+                    <i class="fas fa-arrow-left"></i> Back to List
+                </a>
+            </div>
+        </div>
+    </form>
+</div>
+
 <style>
     .rental-card {
         border: 1px solid #ddd;
@@ -11,11 +308,13 @@
         margin-bottom: 20px;
         background: #fff;
         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        max-width: 1200px;
     }
 
     .rental-header {
-        margin-bottom: 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
         padding-bottom: 15px;
         border-bottom: 2px solid #007bff;
     }
@@ -24,506 +323,197 @@
         font-size: 1.5rem;
         font-weight: 600;
         color: #007bff;
-        margin: 0 0 10px 0;
+        margin: 0;
     }
 
-    .form-section {
-        margin-bottom: 30px;
+    .rental-id {
+        color: #6c757d;
+        font-size: 0.9rem;
     }
 
-    .section-header {
-        font-size: 1.1rem;
-        font-weight: 600;
-        color: #495057;
-        text-transform: uppercase;
+    .rental-details {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 15px;
         margin-bottom: 15px;
-        padding-bottom: 8px;
-        border-bottom: 1px solid #dee2e6;
     }
 
     .detail-group {
         padding: 15px;
         background: #f8f9fa;
         border-radius: 4px;
-        margin-bottom: 15px;
     }
 
-    .form-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-        gap: 15px;
-    }
-
-    .form-group {
-        margin-bottom: 15px;
-    }
-
-    .form-group label {
+    .detail-label {
         font-weight: 600;
         color: #495057;
-        font-size: 0.9rem;
-        margin-bottom: 5px;
-        display: block;
-    }
-
-    .required-indicator {
-        color: #dc3545;
-        margin-right: 4px;
-    }
-
-    .form-control {
-        border-radius: 4px;
-        border: 1px solid #ced4da;
-        width: 100%;
-        padding: 8px 12px;
-        font-size: 0.9rem;
-    }
-
-    .form-control:focus {
-        border-color: #007bff;
-        box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
-        outline: none;
-    }
-
-    .form-check {
-        padding-left: 1.5rem;
+        font-size: 0.85rem;
+        text-transform: uppercase;
         margin-bottom: 10px;
     }
 
-    .form-check-input {
-        margin-top: 0.3rem;
+    .detail-value {
+        color: #212529;
     }
 
-    .form-check-label {
-        font-weight: 500;
+    .form-label-small {
+        font-size: 0.8rem;
         color: #495057;
+        font-weight: 500;
+        margin-bottom: 2px;
+    }
+
+    .form-control-sm {
+        font-size: 0.875rem;
+    }
+
+    /* Floating Label Styles */
+    .floating-label {
+        position: relative;
+        margin-bottom: 10px;
+    }
+
+    .floating-label input {
+        width: 100%;
+        padding: 1.2rem 0.75rem 0.3rem 0.75rem;
+        border: 2px solid #ced4da;
+        border-radius: 6px;
+        font-size: 0.875rem;
+        background: white;
+        color: #495057;
+        transition: all 0.2s ease-in-out;
+        outline: none;
+    }
+
+    .floating-label input::placeholder {
+        opacity: 0;
+    }
+
+    .floating-label input:focus {
+        border-color: #007bff;
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.15);
+    }
+
+    .floating-label label {
+        position: absolute;
+        top: 1rem;
+        left: 0.75rem;
+        font-size: 0.875rem;
+        color: #6c757d;
+        pointer-events: none;
+        transition: all 0.2s ease-in-out;
+        background: white;
+        padding: 0 6px;
+        z-index: 2;
+        transform-origin: left top;
+    }
+
+    .floating-label input:focus + label,
+    .floating-label input.has-value + label {
+        top: -0.5rem;
+        left: 0.5rem;
+        font-size: 0.75rem;
+        color: #007bff;
+        font-weight: 500;
     }
 
     .rental-actions {
         display: flex;
         gap: 10px;
         flex-wrap: wrap;
-        padding-top: 20px;
+        padding-top: 15px;
         border-top: 1px solid #dee2e6;
-        margin-top: 20px;
     }
 
     .btn-action {
-        padding: 10px 20px;
+        padding: 8px 16px;
         border-radius: 4px;
         text-decoration: none;
         font-weight: 500;
         transition: all 0.2s;
         border: none;
         cursor: pointer;
-        display: inline-block;
+        font-size: 0.9rem;
     }
 
-    .btn-save {
-        background: #28a745;
+    .btn-edit {
+        background: #007bff;
         color: white;
     }
 
-    .btn-save:hover {
-        background: #218838;
-        color: white;
-    }
-
-    .btn-cancel {
-        background: #6c757d;
-        color: white;
-    }
-
-    .btn-cancel:hover {
-        background: #5a6268;
+    .btn-edit:hover {
+        background: #0056b3;
         color: white;
         text-decoration: none;
     }
 
-    .btn-delete {
-        background: #dc3545;
+    .btn-details {
+        background: #28a745;
         color: white;
     }
 
-    .btn-delete:hover {
-        background: #c82333;
+    .btn-details:hover {
+        background: #1e7e34;
+        color: white;
+        text-decoration: none;
+    }
+
+    .btn-back {
+        background: #6c757d;
         color: white;
     }
 
-    .text-danger {
-        font-size: 0.85rem;
-        margin-top: 5px;
-        display: block;
-        color: #dc3545;
-    }
-
-    .validation-errors {
-        background: #f8d7da;
-        border: 1px solid #f5c6cb;
-        color: #721c24;
-        padding: 15px;
-        border-radius: 4px;
-        margin-bottom: 20px;
-    }
-
-    .validation-errors ul {
-        margin-bottom: 0;
-        padding-left: 20px;
-    }
-
-    .alert-success {
-        background: #d4edda;
-        border: 1px solid #c3e6cb;
-        color: #155724;
-        padding: 15px;
-        border-radius: 4px;
-        margin-bottom: 20px;
+    .btn-back:hover {
+        background: #545b62;
+        color: white;
+        text-decoration: none;
     }
 </style>
 
-<h1>Edit Rental Profile</h1>
-
-<div class="rental-card">
-    @if(session('success'))
-        <div class="alert-success">
-            {{ session('success') }}
-        </div>
-    @endif
-
-    <form method="POST" action="{{ route('rentals.update', $rental) }}">
-        @csrf
-        @method('PUT')
-
-        @if ($errors->any())
-            <div class="validation-errors">
-                <ul>
-                    @foreach ($errors->all() as $error)
-                        <li>{{ $error }}</li>
-                    @endforeach
-                </ul>
-            </div>
-        @endif
-
-        <!-- Hidden Fields -->
-        <input type="hidden" name="user_id" value="{{ $rental->user_id }}">
-        <input type="hidden" name="rental_id" value="{{ $rental->rental_id }}">
-        <input type="hidden" name="date_created" value="{{ $rental->date_created }}">
-
-        <!-- Header Section -->
-        <div class="rental-header">
-            <h2 class="rental-name">
-                @php
-                    $addressParts = collect([$rental->rental_line1, $rental->rental_post_code])
-                        ->filter()
-                        ->toArray();
-                    $displayAddress = count($addressParts) > 0 ? implode(', ', $addressParts) : 'Rental Property';
-                @endphp
-                {{ $displayAddress }}
-            </h2>
-            <div class="rental-id" style="color: #6c757d; font-size: 0.9rem;">
-                ID: {{ $rental->rental_id }} | Created: {{ $rental->date_created ? $rental->date_created->format('d M Y') : 'N/A' }}
-            </div>
-        </div>
-
-        <!-- Service Requests Section -->
-        <div class="form-section">
-            <h5 class="section-header">Service Requests</h5>
-            <div class="detail-group">
-                <div class="form-grid">
-                    <div class="form-check">
-                        <input type="checkbox" class="form-check-input" name="serv_req1_ll_status" id="serv_req1_ll_status" value="1" {{ $rental->serv_req1_ll_status ? 'checked' : '' }}>
-                        <label for="serv_req1_ll_status" class="form-check-label">LL Status</label>
-                        @error('serv_req1_ll_status')<span class="text-danger">{{ $message }}</span>@enderror
-                    </div>
-
-                    <div class="form-check">
-                        <input type="checkbox" class="form-check-input" name="serv_req2_ll_pu" id="serv_req2_ll_pu" value="1" {{ $rental->serv_req2_ll_pu ? 'checked' : '' }}>
-                        <label for="serv_req2_ll_pu" class="form-check-label">LL PU</label>
-                        @error('serv_req2_ll_pu')<span class="text-danger">{{ $message }}</span>@enderror
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Property Address Section -->
-        <div class="form-section">
-            <h5 class="section-header">Property Address</h5>
-            <div class="detail-group">
-                <div class="form-group">
-                    <label for="rental_line1" class="control-label">
-                        <span class="required-indicator">*</span>Address Line 1
-                    </label>
-                    <input type="text" name="rental_line1" id="rental_line1" class="form-control" value="{{ old('rental_line1', $rental->rental_line1) }}" required>
-                    @error('rental_line1')<span class="text-danger">{{ $message }}</span>@enderror
-                </div>
-
-                <div class="form-group">
-                    <label for="rental_line2" class="control-label">Address Line 2</label>
-                    <input type="text" name="rental_line2" id="rental_line2" class="form-control" value="{{ old('rental_line2', $rental->rental_line2) }}">
-                    @error('rental_line2')<span class="text-danger">{{ $message }}</span>@enderror
-                </div>
-
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label for="rental_city" class="control-label">
-                            <span class="required-indicator">*</span>City
-                        </label>
-                        <input type="text" name="rental_city" id="rental_city" class="form-control" value="{{ old('rental_city', $rental->rental_city) }}" required>
-                        @error('rental_city')<span class="text-danger">{{ $message }}</span>@enderror
-                    </div>
-
-                    <div class="form-group">
-                        <label for="rental_post_code" class="control-label">
-                            <span class="required-indicator">*</span>Post Code
-                        </label>
-                        <div class="input-group" style="display: flex;">
-                            <input type="text" name="rental_post_code" id="rental_post_code" class="form-control" value="{{ old('rental_post_code', $rental->rental_post_code) }}" required style="margin-right: 5px;">
-                            <button type="button" class="btn btn-primary" onclick="lookupPostcode('rental', event)" style="background: #007bff; color: white; border: 1px solid #007bff; padding: 8px 12px; border-radius: 4px;">Find</button>
-                        </div>
-                        <span id="rental-status" class="lookup-status"></span>
-                        @error('rental_post_code')<span class="text-danger">{{ $message }}</span>@enderror
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Agent Section -->
-        <div class="form-section">
-            <h5 class="section-header">Agent</h5>
-            <div class="detail-group">
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label for="agent_contact_name" class="control-label">Contact Name</label>
-                        <input type="text" name="agent_contact_name" id="agent_contact_name" class="form-control" value="{{ old('agent_contact_name', $rental->agent_contact_name) }}">
-                        @error('agent_contact_name')<span class="text-danger">{{ $message }}</span>@enderror
-                    </div>
-
-                    <div class="form-group">
-                        <label for="agent_contact_email" class="control-label">Contact Email</label>
-                        <input type="email" name="agent_contact_email" id="agent_contact_email" class="form-control" value="{{ old('agent_contact_email', $rental->agent_contact_email) }}">
-                        @error('agent_contact_email')<span class="text-danger">{{ $message }}</span>@enderror
-                    </div>
-
-                    <div class="form-group">
-                        <label for="agent_company_name" class="control-label">Company Name</label>
-                        <input type="text" name="agent_company_name" id="agent_company_name" class="form-control" value="{{ old('agent_company_name', $rental->agent_company_name) }}">
-                        @error('agent_company_name')<span class="text-danger">{{ $message }}</span>@enderror
-                    </div>
-
-                    <div class="form-group">
-                        <label for="agent_company_email" class="control-label">Company Email</label>
-                        <input type="email" name="agent_company_email" id="agent_company_email" class="form-control" value="{{ old('agent_company_email', $rental->agent_company_email) }}">
-                        @error('agent_company_email')<span class="text-danger">{{ $message }}</span>@enderror
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label for="agent_line1" class="control-label">Address Line 1</label>
-                    <input type="text" name="agent_line1" id="agent_line1" class="form-control" value="{{ old('agent_line1', $rental->agent_line1) }}">
-                    @error('agent_line1')<span class="text-danger">{{ $message }}</span>@enderror
-                </div>
-
-                <div class="form-group">
-                    <label for="agent_line2" class="control-label">Address Line 2</label>
-                    <input type="text" name="agent_line2" id="agent_line2" class="form-control" value="{{ old('agent_line2', $rental->agent_line2) }}">
-                    @error('agent_line2')<span class="text-danger">{{ $message }}</span>@enderror
-                </div>
-
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label for="agent_city" class="control-label">City</label>
-                        <input type="text" name="agent_city" id="agent_city" class="form-control" value="{{ old('agent_city', $rental->agent_city) }}">
-                        @error('agent_city')<span class="text-danger">{{ $message }}</span>@enderror
-                    </div>
-
-                    <div class="form-group">
-                        <label for="agent_post_code" class="control-label">Post Code</label>
-                        <input type="text" name="agent_post_code" id="agent_post_code" class="form-control" value="{{ old('agent_post_code', $rental->agent_post_code) }}">
-                        @error('agent_post_code')<span class="text-danger">{{ $message }}</span>@enderror
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Landlord Section -->
-        <div class="form-section">
-            <h5 class="section-header">Landlord</h5>
-            <div class="detail-group">
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label for="landlord_contact_name" class="control-label">Contact Name</label>
-                        <input type="text" name="landlord_contact_name" id="landlord_contact_name" class="form-control" value="{{ old('landlord_contact_name', $rental->landlord_contact_name) }}">
-                        @error('landlord_contact_name')<span class="text-danger">{{ $message }}</span>@enderror
-                    </div>
-
-                    <div class="form-group">
-                        <label for="landlord_contact_email" class="control-label">Contact Email</label>
-                        <input type="email" name="landlord_contact_email" id="landlord_contact_email" class="form-control" value="{{ old('landlord_contact_email', $rental->landlord_contact_email) }}">
-                        @error('landlord_contact_email')<span class="text-danger">{{ $message }}</span>@enderror
-                    </div>
-
-                    <div class="form-group">
-                        <label for="landlord_company_name" class="control-label">Company Name</label>
-                        <input type="text" name="landlord_company_name" id="landlord_company_name" class="form-control" value="{{ old('landlord_company_name', $rental->landlord_company_name) }}">
-                        @error('landlord_company_name')<span class="text-danger">{{ $message }}</span>@enderror
-                    </div>
-
-                    <div class="form-group">
-                        <label for="landlord_company_email" class="control-label">Company Email</label>
-                        <input type="email" name="landlord_company_email" id="landlord_company_email" class="form-control" value="{{ old('landlord_company_email', $rental->landlord_company_email) }}">
-                        @error('landlord_company_email')<span class="text-danger">{{ $message }}</span>@enderror
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label for="landlord_line1" class="control-label">Address Line 1</label>
-                    <input type="text" name="landlord_line1" id="landlord_line1" class="form-control" value="{{ old('landlord_line1', $rental->landlord_line1) }}">
-                    @error('landlord_line1')<span class="text-danger">{{ $message }}</span>@enderror
-                </div>
-
-                <div class="form-group">
-                    <label for="landlord_line2" class="control-label">Address Line 2</label>
-                    <input type="text" name="landlord_line2" id="landlord_line2" class="form-control" value="{{ old('landlord_line2', $rental->landlord_line2) }}">
-                    @error('landlord_line2')<span class="text-danger">{{ $message }}</span>@enderror
-                </div>
-
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label for="landlord_city" class="control-label">City</label>
-                        <input type="text" name="landlord_city" id="landlord_city" class="form-control" value="{{ old('landlord_city', $rental->landlord_city) }}">
-                        @error('landlord_city')<span class="text-danger">{{ $message }}</span>@enderror
-                    </div>
-
-                    <div class="form-group">
-                        <label for="landlord_post_code" class="control-label">Post Code</label>
-                        <input type="text" name="landlord_post_code" id="landlord_post_code" class="form-control" value="{{ old('landlord_post_code', $rental->landlord_post_code) }}">
-                        @error('landlord_post_code')<span class="text-danger">{{ $message }}</span>@enderror
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Lease Details Section -->
-        <div class="form-section">
-            <h5 class="section-header">Lease Details</h5>
-            <div class="detail-group">
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label for="lease_type" class="control-label">Lease Type</label>
-                        <input type="text" name="lease_type" id="lease_type" class="form-control" value="{{ old('lease_type', $rental->lease_type) }}">
-                        @error('lease_type')<span class="text-danger">{{ $message }}</span>@enderror
-                    </div>
-
-                    <div class="form-group">
-                        <label for="lease_expiry_date" class="control-label">Lease Expiry Date</label>
-                        <input type="date" name="lease_expiry_date" id="lease_expiry_date" class="form-control" value="{{ old('lease_expiry_date', $rental->lease_expiry_date) }}">
-                        @error('lease_expiry_date')<span class="text-danger">{{ $message }}</span>@enderror
-                    </div>
-
-                    <div class="form-group">
-                        <label for="no_of_tenants" class="control-label">Number of Tenants</label>
-                        <input type="text" name="no_of_tenants" id="no_of_tenants" class="form-control" value="{{ old('no_of_tenants', $rental->no_of_tenants) }}">
-                        @error('no_of_tenants')<span class="text-danger">{{ $message }}</span>@enderror
-                    </div>
-
-                    <div class="form-group">
-                        <label for="rental_type" class="control-label">Rental Type</label>
-                        <input type="text" name="rental_type" id="rental_type" class="form-control" value="{{ old('rental_type', $rental->rental_type) }}">
-                        @error('rental_type')<span class="text-danger">{{ $message }}</span>@enderror
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Action Buttons -->
-        <div class="rental-actions">
-            <button type="submit" class="btn-action btn-save">Update Profile</button>
-            <a href="{{ route('rentals.show', $rental) }}" class="btn-action btn-cancel">Cancel</a>
-        </div>
-    </form>
-
-    <!-- Delete form outside the edit form -->
-    <div style="margin-top: 10px;">
-        <form method="POST" action="{{ route('rentals.destroy', $rental) }}" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this rental?')">
-            @csrf
-            @method('DELETE')
-            <button type="submit" class="btn-action btn-delete">Delete</button>
-        </form>
-    </div>
-</div>
-
 <script>
-function lookupPostcode(type, event) {
-    const postcodeField = document.getElementById(type === 'rental' ? 'rental_post_code' :
-                                                type === 'agent' ? 'agent_post_code' : 'landlord_post_code');
-    const cityField = document.getElementById(type === 'rental' ? 'rental_city' :
-                                             type === 'agent' ? 'agent_city' : 'landlord_city');
-    const statusSpan = document.getElementById(type + '-status');
-    const button = event.target;
-    const postcode = postcodeField.value.trim().toUpperCase();
+    document.addEventListener('DOMContentLoaded', function() {
+        // Handle floating labels for inputs with existing values
+        const floatingInputs = document.querySelectorAll('.floating-label input');
 
-    if (!postcode) {
-        showStatus(statusSpan, 'Please enter a postcode', 'error');
-        return;
-    }
-
-    // Basic UK postcode validation
-    const postcodeRegex = /^[A-Z]{1,2}[0-9R][0-9A-Z]?\s?[0-9][A-Z]{2}$/;
-    if (!postcodeRegex.test(postcode)) {
-        showStatus(statusSpan, 'Invalid UK postcode format', 'error');
-        return;
-    }
-
-    // Set loading state
-    button.disabled = true;
-    button.textContent = 'Finding...';
-    clearStatus(statusSpan);
-
-    // Call Postcodes.io API
-    fetch(`https://api.postcodes.io/postcodes/${encodeURIComponent(postcode)}`)
-        .then(response => {
-            if (!response.ok) {
-                if (response.status === 404) {
-                    throw new Error('Postcode not found');
-                }
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            return response.json();
-        })
-        .then(data => {
-            if (data.status === 200 && data.result) {
-                // Update the fields
-                postcodeField.value = data.result.postcode; // Formatted postcode
-                cityField.value = data.result.admin_district || data.result.admin_ward || '';
-                showStatus(statusSpan, '✓ Address found', 'success');
+        // Function to update label state
+        function updateLabelState(input) {
+            const hasValue = input.value && input.value.trim() !== '';
+            if (hasValue) {
+                input.classList.add('has-value');
             } else {
-                throw new Error('Invalid response from postcode service');
+                input.classList.remove('has-value');
             }
-        })
-        .catch(error => {
-            console.error('Postcode lookup error:', error);
-            showStatus(statusSpan, error.message || 'Unable to find postcode', 'error');
-        })
-        .finally(() => {
-            // Reset button state
-            button.disabled = false;
-            button.textContent = 'Find';
+        }
+
+        floatingInputs.forEach(function(input) {
+            // Force initial state check after a short delay to ensure DOM is ready
+            setTimeout(function() {
+                updateLabelState(input);
+            }, 10);
+
+            // Focus event
+            input.addEventListener('focus', function() {
+                this.classList.add('focused');
+            });
+
+            // Blur event
+            input.addEventListener('blur', function() {
+                this.classList.remove('focused');
+                updateLabelState(this);
+            });
+
+            // Input event (as user types)
+            input.addEventListener('input', function() {
+                updateLabelState(this);
+            });
         });
-}
 
-function showStatus(element, message, type) {
-    element.textContent = message;
-    element.className = 'lookup-status ' + type;
-    if (type === 'success') {
-        element.style.color = '#28a745';
-    } else if (type === 'error') {
-        element.style.color = '#dc3545';
-    }
-}
-
-function clearStatus(element) {
-    element.textContent = '';
-    element.className = 'lookup-status';
-}
+        // Also check after window load to catch any late-loading values
+        window.addEventListener('load', function() {
+            floatingInputs.forEach(function(input) {
+                updateLabelState(input);
+            });
+        });
+    });
 </script>
 @endsection

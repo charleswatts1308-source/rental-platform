@@ -178,6 +178,7 @@
                         <li><a href="/about" class="text-light text-decoration-none">About Us</a></li>
                         <li><a href="/privacy" class="text-light text-decoration-none">Privacy Policy</a></li>
                         <li><a href="/about" class="text-light text-decoration-none">Company</a></li>
+                        <li><a href="/about" class="text-light text-decoration-none">Cookies</a></li>
                     </ul>
                 </div>
 
