@@ -9,7 +9,7 @@
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Tailwind CSS (for existing forms) -->
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    {{-- @vite(['resources/css/app.css', 'resources/js/app.js']) --}}
 
     <style>
         /* Fix footer to not overlap content */
@@ -164,6 +164,7 @@
     <div class="container">
         <main role="main" class="pb-3">
             @yield('content')
+            {{ $slot ?? '' }}
         </main>
     </div>
 
