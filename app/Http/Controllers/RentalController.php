@@ -3,14 +3,20 @@
 namespace App\Http\Controllers;
 
 use App\Models\Rental;
+use App\Models\FileAttachment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 
 class RentalController extends Controller
 {
     public function index()
     {
-        $rentals = Rental::where('user_id', Auth::id())->get();
+        $rentals = Rental::where('user_id', Auth::id())
+            ->orderBy('rental_id', 'desc')
+            ->with('uploadedFiles')
+            ->get();
         return view('rentals.index', compact('rentals'));
     }
 
@@ -46,6 +52,11 @@ class RentalController extends Controller
             'lease_expiry_date' => 'nullable|date',
             'no_of_tenants' => 'nullable|string|max:100',
             'rental_type' => 'nullable|string|max:100',
+            'rental_agreement' => 'nullable|file|mimes:pdf,jpg,jpeg,png,doc,docx,xlsx,xls|max:2048',
+        ], [
+            'rental_agreement.file' => 'The uploaded rental agreement must be a valid file.',
+            'rental_agreement.mimes' => 'The rental agreement must be a PDF, image (JPG, PNG), or document (DOC, DOCX, XLS, XLSX) file.',
+            'rental_agreement.max' => 'The rental agreement file size must not exceed 2MB (PHP upload limit).',
         ]);
 
         $rental = Rental::create([
@@ -89,6 +100,16 @@ class RentalController extends Controller
             'rental_type' => $request->rental_type,
         ]);
 
+        // Handle file upload
+        if ($request->hasFile('rental_agreement')) {
+            try {
+                $this->handleFileUpload($request->file('rental_agreement'), $rental);
+            } catch (\Exception $e) {
+                return redirect()->route('rentals.show', $rental)
+                    ->with('error', $e->getMessage());
+            }
+        }
+
         return redirect()->route('rentals.show', $rental)->with('success', 'Rental created successfully!');
     }
 
@@ -99,6 +120,9 @@ class RentalController extends Controller
             abort(403);
         }
 
+        // Eager load file attachments
+        $rental->load('uploadedFiles');
+
         return view('rentals.show', compact('rental'));
     }
 
@@ -108,6 +132,9 @@ class RentalController extends Controller
         if ($rental->user_id != Auth::id()) {
             abort(403);
         }
+
+        // Eager load file attachments
+        $rental->load('uploadedFiles');
 
         return view('rentals.edit', compact('rental'));
     }
@@ -144,6 +171,11 @@ class RentalController extends Controller
             'lease_expiry_date' => 'nullable|date',
             'no_of_tenants' => 'nullable|string|max:100',
             'rental_type' => 'nullable|string|max:100',
+            'rental_agreement' => 'nullable|file|mimes:pdf,jpg,jpeg,png,doc,docx,xlsx,xls|max:2048',
+        ], [
+            'rental_agreement.file' => 'The uploaded rental agreement must be a valid file.',
+            'rental_agreement.mimes' => 'The rental agreement must be a PDF, image (JPG, PNG), or document (DOC, DOCX, XLS, XLSX) file.',
+            'rental_agreement.max' => 'The rental agreement file size must not exceed 2MB (PHP upload limit).',
         ]);
 
         $rental->update([
@@ -186,18 +218,60 @@ class RentalController extends Controller
             'rental_type' => $request->rental_type,
         ]);
 
+        // Handle file upload
+        if ($request->hasFile('rental_agreement')) {
+            try {
+                $this->handleFileUpload($request->file('rental_agreement'), $rental);
+            } catch (\Exception $e) {
+                return redirect()->route('rentals.show', $rental)
+                    ->with('error', $e->getMessage());
+            }
+        }
+
         return redirect()->route('rentals.show', $rental)->with('success', 'Rental updated successfully!');
     }
 
-    public function destroy(Rental $rental)
+    /**
+     * Handle file upload for a rental.
+     */
+    private function handleFileUpload($file, Rental $rental)
     {
-        // Ensure user can only delete their own rentals
-        if ($rental->user_id != Auth::id()) {
-            abort(403);
+        try {
+            // Validate file exists and is valid
+            if (!$file->isValid()) {
+                throw new \Exception('The uploaded file is invalid or corrupt.');
+            }
+
+            // Generate unique filename
+            $fileName = $file->getClientOriginalName();
+            $uniqueFileName = time() . '_' . $fileName;
+
+            // Store file in storage/app/rentals directory
+            $filePath = $file->storeAs('rentals', $uniqueFileName);
+
+            if (!$filePath) {
+                throw new \Exception('Failed to save the file to storage. Please check storage permissions.');
+            }
+
+            // Create file attachment record
+            FileAttachment::create([
+                'rental_id' => $rental->rental_id,
+                'file_name' => $fileName,
+                'blob_url' => $filePath,
+                'content_type' => $file->getMimeType(),
+                'file_size' => $file->getSize(),
+                'uploaded_date' => now(),
+            ]);
+
+        } catch (\Exception $e) {
+            // Log the error for debugging
+            Log::error('File upload failed: ' . $e->getMessage(), [
+                'rental_id' => $rental->rental_id,
+                'original_filename' => $file->getClientOriginalName(),
+            ]);
+
+            // Re-throw with user-friendly message
+            throw new \Exception('The rental agreement failed to upload. ' . $e->getMessage());
         }
-
-        $rental->delete();
-
-        return redirect()->route('rentals.index')->with('success', 'Rental deleted successfully!');
     }
 }

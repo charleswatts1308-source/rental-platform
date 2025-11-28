@@ -240,10 +240,14 @@
                     <div class="detail-label">Documents</div>
                     <div class="detail-value">
                         <div>
-                            <label for="rental_agreement" class="form-label-small">Upload Document (PDF, Images)</label>
-                            <input type="file" class="form-control form-control-sm" id="rental_agreement" name="rental_agreement"
-                                   accept=".pdf,.jpg,.jpeg,.png">
-                            <small class="text-muted">Maximum file size: 10MB</small>
+                            <label for="rental_agreement" class="form-label-small">Upload Document (PDF, Images, Word, Excel)</label>
+                            <div class="d-flex gap-2 align-items-end">
+                                <div class="flex-grow-1">
+                                    <input type="file" class="form-control form-control-sm" id="rental_agreement" name="rental_agreement"
+                                           accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx">
+                                </div>
+                            </div>
+                            <small class="text-muted">Maximum file size: 2MB. File will be uploaded when you create the rental.</small>
                         </div>
                     </div>
                 </div>

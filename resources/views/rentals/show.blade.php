@@ -6,6 +6,22 @@
 <div class="container py-4">
     <h1>Rental Details</h1>
 
+    <!-- Success Message -->
+    @if (session('success'))
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            {{ session('success') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    @endif
+
+    <!-- Error Message -->
+    @if (session('error'))
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            {{ session('error') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    @endif
+
     <div class="rental-card">
         <!-- Rental Header -->
         <div class="rental-header">
@@ -155,7 +171,7 @@
                                     {{ $file->original_name }}
                                     <small class="text-muted">({{ $file->humanSize }})</small>
                                 </div>
-                                <a href="{{ route('files.download', $file->rental_id) }}" class="btn-action" style="font-size: 0.75rem; padding: 4px 8px;">
+                                <a href="{{ route('files.download', $file->id) }}" class="btn-action" style="font-size: 0.75rem; padding: 4px 8px;">
                                     Download
                                 </a>
                             </div>
@@ -168,16 +184,6 @@
         <!-- Action Buttons -->
         <div class="rental-actions">
             <a href="{{ route('rentals.edit', $rental->rental_id) }}" class="btn-action btn-edit">Edit</a>
-            @if($rental->uploadedFiles && $rental->uploadedFiles->count() > 0)
-                <a href="#" class="btn-action btn-files">Manage Files</a>
-            @else
-                <a href="{{ route('rentals.edit', $rental->rental_id) }}#files" class="btn-action btn-files">Upload Documents</a>
-            @endif
-            <form method="POST" action="{{ route('rentals.destroy', $rental->rental_id) }}" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this rental?')">
-                @csrf
-                @method('DELETE')
-                <button type="submit" class="btn-action btn-delete">Delete</button>
-            </form>
             <a href="{{ route('rentals.index') }}" class="btn-action btn-back">Back to List</a>
         </div>
     </div>

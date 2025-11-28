@@ -51,8 +51,14 @@ class Rental extends Model
     ];
 
     // Relationship to file attachments
-    // public function fileAttachments()
-    // {
-    //     return $this->hasMany(FileAttachment::class, 'rental_id', 'rental_id');
-    // }
+    public function fileAttachments()
+    {
+        return $this->hasMany(FileAttachment::class, 'rental_id', 'rental_id');
+    }
+
+    // Alias for view compatibility
+    public function uploadedFiles()
+    {
+        return $this->fileAttachments();
+    }
 }

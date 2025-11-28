@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RentalController;
+use App\Http\Controllers\FileAttachmentController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/about', function () {
@@ -22,14 +23,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    // Complete rental CRUD routes
+    // Rental routes (delete functionality removed for GDPR compliance)
     Route::get('/rentals', [RentalController::class, 'index'])->name('rentals.index');
     Route::get('/rentals/create', [RentalController::class, 'create'])->name('rentals.create');
     Route::post('/rentals', [RentalController::class, 'store'])->name('rentals.store');
     Route::get('/rentals/{rental}', [RentalController::class, 'show'])->name('rentals.show');
     Route::get('/rentals/{rental}/edit', [RentalController::class, 'edit'])->name('rentals.edit');
     Route::put('/rentals/{rental}', [RentalController::class, 'update'])->name('rentals.update');
-    Route::delete('/rentals/{rental}', [RentalController::class, 'destroy'])->name('rentals.destroy');
+
+    // File attachment routes
+    Route::get('/files/{id}/download', [FileAttachmentController::class, 'download'])->name('files.download');
+    Route::delete('/files/{id}', [FileAttachmentController::class, 'destroy'])->name('files.destroy');
 });
 
 require __DIR__.'/auth.php';

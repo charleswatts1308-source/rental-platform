@@ -261,12 +261,9 @@
                                             <small class="text-muted">({{ $file->humanSize }})</small>
                                         </div>
                                         <div>
-                                            <a href="{{ route('files.download', $file->rental_id) }}" class="btn btn-outline-primary btn-sm me-1">
-                                                <i class="fas fa-download"></i>
+                                            <a href="{{ route('files.download', $file->id) }}" class="btn btn-outline-primary btn-sm">
+                                                Download
                                             </a>
-                                            <button type="button" class="btn btn-outline-danger btn-sm" onclick="confirmFileDelete({{ $file->id }})">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
                                         </div>
                                     </div>
                                 @endforeach
@@ -275,10 +272,14 @@
 
                         <!-- Upload New File -->
                         <div>
-                            <label for="rental_agreement" class="form-label-small">Upload New Document (PDF, Images)</label>
-                            <input type="file" class="form-control form-control-sm" id="rental_agreement" name="rental_agreement"
-                                   accept=".pdf,.jpg,.jpeg,.png">
-                            <small class="text-muted">Maximum file size: 10MB</small>
+                            <label for="rental_agreement" class="form-label-small">Upload New Document (PDF, Images, Word, Excel)</label>
+                            <div class="d-flex gap-2 align-items-end">
+                                <div class="flex-grow-1">
+                                    <input type="file" class="form-control form-control-sm" id="rental_agreement" name="rental_agreement"
+                                           accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx">
+                                </div>
+                            </div>
+                            <small class="text-muted">Maximum file size: 2MB. File will be uploaded when you save changes.</small>
                         </div>
                     </div>
                 </div>
