@@ -50,13 +50,38 @@
             </div>
         </div>
 
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
+        <nav class="navbar navbar-expand-xl navbar-light bg-white border-bottom box-shadow mb-3">
             <div class="container">
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent"
                         aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
                 </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between" id="navbarSupportedContent">
+
+                <!-- Authentication Links - Always Visible -->
+                <div class="ms-auto ps-3 border-start d-flex align-items-center order-xl-2">
+                    @guest
+                        <a href="{{ route('login') }}" class="btn btn-outline-primary me-2">Login</a>
+                        <a href="{{ route('register') }}" class="btn btn-primary">Register</a>
+                    @else
+                        <div class="dropdown">
+                            <a class="btn btn-outline-secondary dropdown-toggle small" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <small>{{ Auth::user()->email }}</small>
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item" href="{{ route('profile.edit') }}">Profile</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <form method="POST" action="{{ route('logout') }}" style="display: inline;">
+                                        @csrf
+                                        <button type="submit" class="dropdown-item">Logout</button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </div>
+                    @endguest
+                </div>
+
+                <div class="navbar-collapse collapse order-xl-1" id="navbarSupportedContent">
                     <ul class="navbar-nav flex-grow-1">
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle text-dark" href="javascript:void(0);" id="companyDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -100,6 +125,7 @@
                             <ul class="dropdown-menu" aria-labelledby="RenterResourcesDropdown">
                                 <li><a class="dropdown-item" href="/renter-database">Renter Database</a></li>
                                 <li><a class="dropdown-item" href="/renter-support">Renter Support Services</a></li>
+                                <li><a class="dropdown-item" href="{{ route('old-home-page') }}">Old Home Page</a></li>
                             </ul>
                         </li>
 
@@ -113,30 +139,6 @@
                             </ul>
                         </li>
                     </ul>
-
-                    <!-- Authentication Links -->
-                    <div class="ms-auto ps-3 border-start">
-                        @guest
-                            <a href="{{ route('login') }}" class="btn btn-outline-primary me-2">Login</a>
-                            <a href="{{ route('register') }}" class="btn btn-primary">Register</a>
-                        @else
-                            <div class="dropdown">
-                                <a class="btn btn-outline-secondary dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                    {{ Auth::user()->name }}
-                                </a>
-                                <ul class="dropdown-menu dropdown-menu-end">
-                                    <li><a class="dropdown-item" href="{{ route('profile.edit') }}">Profile</a></li>
-                                    <li><hr class="dropdown-divider"></li>
-                                    <li>
-                                        <form method="POST" action="{{ route('logout') }}" style="display: inline;">
-                                            @csrf
-                                            <button type="submit" class="dropdown-item">Logout</button>
-                                        </form>
-                                    </li>
-                                </ul>
-                            </div>
-                        @endguest
-                    </div>
                 </div>
             </div>
         </nav>

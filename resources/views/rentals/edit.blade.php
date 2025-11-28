@@ -50,6 +50,14 @@
                     <div class="detail-value">
                         <div class="mb-2">
                             <div class="floating-label">
+                                <input type="text" class="form-control form-control-sm" id="rental_post_code" name="rental_post_code"
+                                       value="{{ old('rental_post_code', $rental->rental_post_code) }}" required>
+                                <label for="rental_post_code">Postcode</label>
+                                <small id="rental_post_code_feedback" class="postcode-feedback"></small>
+                            </div>
+                        </div>
+                        <div class="mb-2">
+                            <div class="floating-label">
                                 <input type="text" class="form-control form-control-sm" id="rental_line1" name="rental_line1"
                                        value="{{ old('rental_line1', $rental->rental_line1) }}" required>
                                 <label for="rental_line1">Address Line 1</label>
@@ -72,9 +80,9 @@
                             </div>
                             <div class="col-6 mb-2">
                                 <div class="floating-label">
-                                    <input type="text" class="form-control form-control-sm" id="rental_post_code" name="rental_post_code"
-                                           value="{{ old('rental_post_code', $rental->rental_post_code) }}" required>
-                                    <label for="rental_post_code">Postcode</label>
+                                    <input type="text" class="form-control form-control-sm" id="rental_county" name="rental_county"
+                                           value="{{ old('rental_county', $rental->rental_county) }}">
+                                    <label for="rental_county">County (optional)</label>
                                 </div>
                             </div>
                         </div>
@@ -87,23 +95,10 @@
                     <div class="detail-value">
                         <div class="mb-2">
                             <div class="floating-label">
-                                <input type="text" class="form-control form-control-sm" id="agent_contact_name" name="agent_contact_name"
-                                       value="{{ old('agent_contact_name', $rental->agent_contact_name) }}">
-                                <label for="agent_contact_name">Contact Name</label>
-                            </div>
-                        </div>
-                        <div class="mb-2">
-                            <div class="floating-label">
-                                <input type="text" class="form-control form-control-sm" id="agent_company_name" name="agent_company_name"
-                                       value="{{ old('agent_company_name', $rental->agent_company_name) }}">
-                                <label for="agent_company_name">Company Name</label>
-                            </div>
-                        </div>
-                        <div class="mb-2">
-                            <div class="floating-label">
-                                <input type="email" class="form-control form-control-sm" id="agent_contact_email" name="agent_contact_email"
-                                       value="{{ old('agent_contact_email', $rental->agent_contact_email) }}">
-                                <label for="agent_contact_email">Email</label>
+                                <input type="text" class="form-control form-control-sm" id="agent_post_code" name="agent_post_code"
+                                       value="{{ old('agent_post_code', $rental->agent_post_code) }}">
+                                <label for="agent_post_code">Postcode</label>
+                                <small id="agent_post_code_feedback" class="postcode-feedback"></small>
                             </div>
                         </div>
                         <div class="mb-2">
@@ -111,6 +106,13 @@
                                 <input type="text" class="form-control form-control-sm" id="agent_line1" name="agent_line1"
                                        value="{{ old('agent_line1', $rental->agent_line1) }}">
                                 <label for="agent_line1">Address Line 1</label>
+                            </div>
+                        </div>
+                        <div class="mb-2">
+                            <div class="floating-label">
+                                <input type="text" class="form-control form-control-sm" id="agent_line2" name="agent_line2"
+                                       value="{{ old('agent_line2', $rental->agent_line2) }}">
+                                <label for="agent_line2">Address Line 2 (optional)</label>
                             </div>
                         </div>
                         <div class="row">
@@ -123,10 +125,31 @@
                             </div>
                             <div class="col-6 mb-2">
                                 <div class="floating-label">
-                                    <input type="text" class="form-control form-control-sm" id="agent_post_code" name="agent_post_code"
-                                           value="{{ old('agent_post_code', $rental->agent_post_code) }}">
-                                    <label for="agent_post_code">Postcode</label>
+                                    <input type="text" class="form-control form-control-sm" id="agent_county" name="agent_county"
+                                           value="{{ old('agent_county', $rental->agent_county) }}">
+                                    <label for="agent_county">County (optional)</label>
                                 </div>
+                            </div>
+                        </div>
+                        <div class="mb-2">
+                            <div class="floating-label">
+                                <input type="text" class="form-control form-control-sm" id="agent_contact_name" name="agent_contact_name"
+                                       value="{{ old('agent_contact_name', $rental->agent_contact_name) }}">
+                                <label for="agent_contact_name">Contact Name</label>
+                            </div>
+                        </div>
+                        <div class="mb-2">
+                            <div class="floating-label">
+                                <input type="email" class="form-control form-control-sm" id="agent_contact_email" name="agent_contact_email"
+                                       value="{{ old('agent_contact_email', $rental->agent_contact_email) }}">
+                                <label for="agent_contact_email">Email</label>
+                            </div>
+                        </div>
+                        <div class="mb-2">
+                            <div class="floating-label">
+                                <input type="text" class="form-control form-control-sm" id="agent_company_name" name="agent_company_name"
+                                       value="{{ old('agent_company_name', $rental->agent_company_name) }}">
+                                <label for="agent_company_name">Company Name</label>
                             </div>
                         </div>
                     </div>
@@ -138,23 +161,10 @@
                     <div class="detail-value">
                         <div class="mb-2">
                             <div class="floating-label">
-                                <input type="text" class="form-control form-control-sm" id="landlord_contact_name" name="landlord_contact_name"
-                                       value="{{ old('landlord_contact_name', $rental->landlord_contact_name) }}">
-                                <label for="landlord_contact_name">Contact Name</label>
-                            </div>
-                        </div>
-                        <div class="mb-2">
-                            <div class="floating-label">
-                                <input type="text" class="form-control form-control-sm" id="landlord_company_name" name="landlord_company_name"
-                                       value="{{ old('landlord_company_name', $rental->landlord_company_name) }}">
-                                <label for="landlord_company_name">Company Name</label>
-                            </div>
-                        </div>
-                        <div class="mb-2">
-                            <div class="floating-label">
-                                <input type="email" class="form-control form-control-sm" id="landlord_contact_email" name="landlord_contact_email"
-                                       value="{{ old('landlord_contact_email', $rental->landlord_contact_email) }}">
-                                <label for="landlord_contact_email">Email</label>
+                                <input type="text" class="form-control form-control-sm" id="landlord_post_code" name="landlord_post_code"
+                                       value="{{ old('landlord_post_code', $rental->landlord_post_code) }}">
+                                <label for="landlord_post_code">Postcode</label>
+                                <small id="landlord_post_code_feedback" class="postcode-feedback"></small>
                             </div>
                         </div>
                         <div class="mb-2">
@@ -162,6 +172,13 @@
                                 <input type="text" class="form-control form-control-sm" id="landlord_line1" name="landlord_line1"
                                        value="{{ old('landlord_line1', $rental->landlord_line1) }}">
                                 <label for="landlord_line1">Address Line 1</label>
+                            </div>
+                        </div>
+                        <div class="mb-2">
+                            <div class="floating-label">
+                                <input type="text" class="form-control form-control-sm" id="landlord_line2" name="landlord_line2"
+                                       value="{{ old('landlord_line2', $rental->landlord_line2) }}">
+                                <label for="landlord_line2">Address Line 2 (optional)</label>
                             </div>
                         </div>
                         <div class="row">
@@ -174,10 +191,31 @@
                             </div>
                             <div class="col-6 mb-2">
                                 <div class="floating-label">
-                                    <input type="text" class="form-control form-control-sm" id="landlord_post_code" name="landlord_post_code"
-                                           value="{{ old('landlord_post_code', $rental->landlord_post_code) }}">
-                                    <label for="landlord_post_code">Postcode</label>
+                                    <input type="text" class="form-control form-control-sm" id="landlord_county" name="landlord_county"
+                                           value="{{ old('landlord_county', $rental->landlord_county) }}">
+                                    <label for="landlord_county">County (optional)</label>
                                 </div>
+                            </div>
+                        </div>
+                        <div class="mb-2">
+                            <div class="floating-label">
+                                <input type="text" class="form-control form-control-sm" id="landlord_contact_name" name="landlord_contact_name"
+                                       value="{{ old('landlord_contact_name', $rental->landlord_contact_name) }}">
+                                <label for="landlord_contact_name">Contact Name</label>
+                            </div>
+                        </div>
+                        <div class="mb-2">
+                            <div class="floating-label">
+                                <input type="email" class="form-control form-control-sm" id="landlord_contact_email" name="landlord_contact_email"
+                                       value="{{ old('landlord_contact_email', $rental->landlord_contact_email) }}">
+                                <label for="landlord_contact_email">Email</label>
+                            </div>
+                        </div>
+                        <div class="mb-2">
+                            <div class="floating-label">
+                                <input type="text" class="form-control form-control-sm" id="landlord_company_name" name="landlord_company_name"
+                                       value="{{ old('landlord_company_name', $rental->landlord_company_name) }}">
+                                <label for="landlord_company_name">Company Name</label>
                             </div>
                         </div>
                     </div>
@@ -404,9 +442,10 @@
         pointer-events: none;
         transition: all 0.2s ease-in-out;
         background: white;
-        padding: 0 6px;
-        z-index: 2;
+        padding: 0 0.25rem;
+        z-index: 10;
         transform-origin: left top;
+        line-height: 1;
     }
 
     .floating-label input:focus + label,
@@ -416,6 +455,21 @@
         font-size: 0.75rem;
         color: #007bff;
         font-weight: 500;
+        padding: 0 0.25rem;
+    }
+
+    .postcode-feedback {
+        display: block;
+        margin-top: 0.25rem;
+        font-size: 0.75rem;
+    }
+
+    .postcode-feedback.success {
+        color: #28a745;
+    }
+
+    .postcode-feedback.error {
+        color: #dc3545;
     }
 
     .rental-actions {
@@ -478,7 +532,8 @@
 
         // Function to update label state
         function updateLabelState(input) {
-            const hasValue = input.value && input.value.trim() !== '';
+            const value = input.value || '';
+            const hasValue = value.trim().length > 0;
             if (hasValue) {
                 input.classList.add('has-value');
             } else {
@@ -514,6 +569,123 @@
             floatingInputs.forEach(function(input) {
                 updateLabelState(input);
             });
+        });
+
+        // Format UK postcode to conventional format (uppercase with space before last 3 chars)
+        function formatPostcode(postcode) {
+            // Remove all spaces and convert to uppercase
+            const cleanPostcode = postcode.replace(/\s/g, '').toUpperCase();
+
+            // Basic UK postcode validation
+            const postcodeRegex = /^[A-Z]{1,2}\d{1,2}[A-Z]?\d[A-Z]{2}$/;
+            if (!postcodeRegex.test(cleanPostcode)) {
+                return postcode; // Return original if invalid format
+            }
+
+            // Insert space before last 3 characters
+            return cleanPostcode.slice(0, -3) + ' ' + cleanPostcode.slice(-3);
+        }
+
+        // Postcode lookup functionality
+        async function lookupPostcode(postcode, postcodeInputId, cityInputId, countyInputId) {
+            const feedbackElement = document.getElementById(postcodeInputId + '_feedback');
+
+            // Clear previous feedback
+            if (feedbackElement) {
+                feedbackElement.textContent = '';
+                feedbackElement.className = 'postcode-feedback';
+            }
+
+            // Remove spaces and convert to uppercase for validation
+            const cleanPostcode = postcode.replace(/\s/g, '').toUpperCase();
+
+            // Basic UK postcode validation
+            const postcodeRegex = /^[A-Z]{1,2}\d{1,2}[A-Z]?\d[A-Z]{2}$/;
+            if (!postcodeRegex.test(cleanPostcode)) {
+                if (feedbackElement) {
+                    feedbackElement.textContent = 'Invalid UK postcode format';
+                    feedbackElement.className = 'postcode-feedback error';
+                }
+                return;
+            }
+
+            // Format the postcode in the input field
+            const postcodeInput = document.getElementById(postcodeInputId);
+            if (postcodeInput) {
+                const formattedPostcode = formatPostcode(cleanPostcode);
+                postcodeInput.value = formattedPostcode;
+                updateLabelState(postcodeInput);
+            }
+
+            // Show loading message
+            if (feedbackElement) {
+                feedbackElement.textContent = 'Looking up postcode...';
+                feedbackElement.className = 'postcode-feedback';
+            }
+
+            try {
+                const response = await fetch(`https://api.postcodes.io/postcodes/${encodeURIComponent(cleanPostcode)}`);
+                const data = await response.json();
+
+                if (data.status === 200 && data.result) {
+                    const cityInput = document.getElementById(cityInputId);
+                    const countyInput = document.getElementById(countyInputId);
+
+                    // Populate city (admin_district is typically the city/town)
+                    if (cityInput && data.result.admin_district) {
+                        cityInput.value = data.result.admin_district;
+                        updateLabelState(cityInput);
+                    }
+
+                    // Populate county (admin_county)
+                    if (countyInput && data.result.admin_county) {
+                        countyInput.value = data.result.admin_county;
+                        updateLabelState(countyInput);
+                    }
+
+                    // Show success message
+                    if (feedbackElement) {
+                        feedbackElement.textContent = '✓ Postcode found';
+                        feedbackElement.className = 'postcode-feedback success';
+                        // Clear success message after 3 seconds
+                        setTimeout(() => {
+                            feedbackElement.textContent = '';
+                        }, 3000);
+                    }
+                } else {
+                    // Postcode not found
+                    if (feedbackElement) {
+                        feedbackElement.textContent = 'Postcode not found - please enter city/county manually';
+                        feedbackElement.className = 'postcode-feedback error';
+                    }
+                }
+            } catch (error) {
+                // Network or API error
+                if (feedbackElement) {
+                    feedbackElement.textContent = 'Unable to lookup postcode - please enter city/county manually';
+                    feedbackElement.className = 'postcode-feedback error';
+                }
+                console.log('Postcode lookup failed:', error);
+            }
+        }
+
+        // Add postcode lookup to all three postcode fields
+        const postcodeFields = [
+            { postcode: 'rental_post_code', city: 'rental_city', county: 'rental_county' },
+            { postcode: 'agent_post_code', city: 'agent_city', county: 'agent_county' },
+            { postcode: 'landlord_post_code', city: 'landlord_city', county: 'landlord_county' }
+        ];
+
+        postcodeFields.forEach(function(fields) {
+            const postcodeInput = document.getElementById(fields.postcode);
+            if (postcodeInput) {
+                postcodeInput.addEventListener('blur', function() {
+                    const postcode = this.value.trim();
+                    if (postcode) {
+                        lookupPostcode(postcode, fields.postcode, fields.city, fields.county);
+                    }
+                });
+            }
         });
     });
 </script>
