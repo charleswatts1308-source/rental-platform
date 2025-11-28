@@ -3,6 +3,7 @@
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RentalController;
 use App\Http\Controllers\FileAttachmentController;
+use App\Http\Controllers\PageViewController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/about', function () {
@@ -34,6 +35,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // File attachment routes
     Route::get('/files/{id}/download', [FileAttachmentController::class, 'download'])->name('files.download');
     Route::delete('/files/{id}', [FileAttachmentController::class, 'destroy'])->name('files.destroy');
+
+    // Page view stats (TODO: Add admin authorization later)
+    Route::get('/stats/page-views', [PageViewController::class, 'index'])->name('stats.page-views');
 });
 
 require __DIR__.'/auth.php';

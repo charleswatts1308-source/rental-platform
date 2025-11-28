@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Crypt;
 
 class RentalController extends Controller
 {
@@ -246,10 +247,15 @@ class RentalController extends Controller
             $fileName = $file->getClientOriginalName();
             $uniqueFileName = time() . '_' . $fileName;
 
-            // Store file in storage/app/rentals directory
-            $filePath = $file->storeAs('rentals', $uniqueFileName);
+            // Read and encrypt file contents
+            $fileContents = file_get_contents($file->getRealPath());
+            $encryptedContents = Crypt::encryptString($fileContents);
 
-            if (!$filePath) {
+            // Store encrypted file
+            $filePath = 'rentals/' . $uniqueFileName;
+            Storage::put($filePath, $encryptedContents);
+
+            if (!Storage::exists($filePath)) {
                 throw new \Exception('Failed to save the file to storage. Please check storage permissions.');
             }
 

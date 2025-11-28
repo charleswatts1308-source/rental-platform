@@ -78,6 +78,12 @@
                             </ul>
                         </li>
 
+                        @auth
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" href="{{ route('stats.page-views') }}">Stats</a>
+                        </li>
+                        @endauth
+
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle text-dark" href="#" id="RentersRightsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                                 Renters' Rights

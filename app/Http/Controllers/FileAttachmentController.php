@@ -6,6 +6,7 @@ use App\Models\FileAttachment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Crypt;
 
 class FileAttachmentController extends Controller
 {
@@ -26,7 +27,15 @@ class FileAttachmentController extends Controller
             abort(404, 'File not found');
         }
 
-        return Storage::download($file->blob_url, $file->file_name);
+        // Read and decrypt file contents
+        $encryptedContents = Storage::get($file->blob_url);
+        $decryptedContents = Crypt::decryptString($encryptedContents);
+
+        // Return decrypted file as download
+        return response($decryptedContents)
+            ->header('Content-Type', $file->content_type)
+            ->header('Content-Disposition', 'attachment; filename="' . $file->file_name . '"')
+            ->header('Content-Length', strlen($decryptedContents));
     }
 
     /**

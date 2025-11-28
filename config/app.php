@@ -69,6 +69,18 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Page View Tracking
+    |--------------------------------------------------------------------------
+    |
+    | Enable or disable page view tracking. When enabled, all GET requests
+    | will be logged to the page_views table. Set to false to disable.
+    |
+    */
+
+    'track_page_views' => env('TRACK_PAGE_VIEWS', false),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Locale Configuration
     |--------------------------------------------------------------------------
     |
