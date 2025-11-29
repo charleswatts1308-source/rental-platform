@@ -12,15 +12,9 @@
                 </div>
             </div>
 
-            <div class="card mb-4">
-                <div class="card-body">
-                    @include('profile.partials.update-password-form')
-                </div>
-            </div>
-
             <div class="card">
                 <div class="card-body">
-                    @include('profile.partials.delete-user-form')
+                    @include('profile.partials.update-password-form')
                 </div>
             </div>
         </div>

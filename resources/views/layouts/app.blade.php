@@ -6,8 +6,8 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Renters') - {{ config('app.name', 'Laravel') }}</title>
 
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap CSS - Bootswatch Spacelab Theme -->
+    <link href="https://cdn.jsdelivr.net/npm/bootswatch@5.3.0/dist/spacelab/bootstrap.min.css" rel="stylesheet">
     <!-- Tailwind CSS (for existing forms) -->
     {{-- @vite(['resources/css/app.css', 'resources/js/app.js']) --}}
 
@@ -42,7 +42,7 @@
             <div class="container d-flex justify-content-between align-items-center">
                 <a href="{{ route('dashboard') }}" class="d-flex align-items-center text-decoration-none text-dark">
                     {{-- <img src="{{ asset('images/testlogo.jpg') }}" alt="Logo" height="80" class="me-3"> --}}
-                    <div class="bg-primary text-white p-2 rounded me-3" style="width: 80px; height: 80px; display: flex; align-items: center; justify-content: center;">
+                    <div class="text-white p-2 rounded me-3" style="width: 80px; height: 80px; display: flex; align-items: center; justify-content: center; background-color: #5a7a5a;">
                         <strong>R</strong>
                     </div>
                     <h1 class="h1 mb-0">Renters</h1>
@@ -64,8 +64,8 @@
                         <a href="{{ route('register') }}" class="btn btn-primary">Register</a>
                     @else
                         <div class="dropdown">
-                            <a class="btn btn-outline-secondary dropdown-toggle small" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                <small>{{ Auth::user()->email }}</small>
+                            <a class="btn btn-outline-secondary dropdown-toggle small text-lowercase fw-normal" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                {{ Auth::user()->email }}
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end">
                                 <li><a class="dropdown-item" href="{{ route('profile.edit') }}">Profile</a></li>
