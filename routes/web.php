@@ -56,6 +56,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/renter-support-services', fn() => view('members.renter-support-services'))->name('renter-support-services');
         Route::get('/landlord-support-services', fn() => view('members.landlord-support-services'))->name('landlord-support-services');
         Route::get('/property-data-services', fn() => view('members.property-data-services'))->name('property-data-services');
+        Route::get('/tenantandlandlord', fn() => view('members.tenantandlandlord'))->name('tenantandlandlord');
     });
 });
 

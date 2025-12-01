@@ -6,40 +6,44 @@
 <h1 class="mb-4">Renter Database</h1>
 
 <div class="alert alert-info mb-4">
-        <h4 class="alert-heading">Strength in Numbers</h4>
-        <p class="mb-0">Connect with other renters who share the same landlord. Share knowledge, experiences, and work together for better rental conditions.</p>
-    </div>
+    <h4 class="alert-heading">Strength in Numbers</h4>
+    <p class="mb-0">The private rented sector: 4.6 million households, £50+ billion per year, 3% of UK GDP. Group around your landlord and see what leverage you can develop.</p>
+</div>
 
-    <!-- Main Concept -->
-    <section class="mb-5">
-        <div class="card border-0 shadow-sm">
-            <div class="card-body p-4">
-                <h2 class="h4 mb-4">How the Renters Database Works</h2>
-                <p class="lead text-muted mb-4">We help renters form groups around shared landlords to create collective strength and improve rental experiences.</p>
+<!-- Two Databases -->
+<section class="mb-5">
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-4">
+            <h2 class="h4 mb-4">Two Databases, Two Approaches</h2>
 
-                <div class="row">
-                    <div class="col-lg-8">
-                        <p class="mb-3">When you join our Renters Database, you'll be connected with other tenants who rent from the same landlord. This creates opportunities for:</p>
+            <p class="mb-3">Renters.rent is a voluntary platform for tenants. No mandate, no enforcement, no massive budget. Just a simple idea: let renters build their own rental history and connect with others who share the same landlord.</p>
 
-                        <ul class="list-unstyled">
-                            <li class="mb-2"><strong>Shared Knowledge:</strong> Learn about other properties and service levels</li>
-                            <li class="mb-2"><strong>Experience Sharing:</strong> Compare your rental experience with others</li>
-                            <li class="mb-2"><strong>Collective Action:</strong> Work together to encourage landlord improvements</li>
-                            <li class="mb-0"><strong>Group Communication:</strong> Access to private group chat with fellow renters</li>
-                        </ul>
-                    </div>
-                    <div class="col-lg-4">
-                        <div class="text-center">
-                            <div class="bg-light rounded p-3">
-                                <h5 class="h6 mb-0">Group Chat Access</h5>
-                                <small class="text-muted">Connect with other tenants</small>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <p class="mb-3"><strong>The government took a different route.</strong></p>
+
+            <p class="mb-3">They're building a national Private Rented Sector Database. Every landlord in England will be required to register themselves and their properties. Let's see who gets there first.</p>
         </div>
-    </section>
+    </div>
+</section>
+
+<!-- How It Works -->
+<section class="mb-5">
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-4">
+            <h2 class="h4 mb-4">How the Renters Database Works</h2>
+
+            <p class="mb-3">Register for an account and log in. Then add your rental profile - your property address, agent and landlord details.</p>
+
+            <p class="mb-3">Once connected, this creates opportunities for:</p>
+
+            <ul class="list-unstyled">
+                <li class="mb-2"><strong>Shared Knowledge:</strong> Learn about other properties and service levels</li>
+                <li class="mb-2"><strong>Experience Sharing:</strong> Compare your rental experience with others</li>
+                <li class="mb-2"><strong>Collective Action:</strong> Work together to encourage landlord improvements</li>
+                <li class="mb-0"><strong>Group Communication:</strong> Access to private group chat with fellow renters</li>
+            </ul>
+        </div>
+    </div>
+</section>
 
     <!-- Your Leverage -->
     <section class="mb-5">

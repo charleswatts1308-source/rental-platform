@@ -7,32 +7,53 @@
 
 <div class="alert alert-info mb-4">
     <h4 class="alert-heading">Understanding Your Landlord</h4>
-    <p class="mb-0">Under new rules, you can apply the same scrutiny to your landlord as they apply to you - without fear of retaliatory eviction.</p>
+    <p class="mb-0">Section 21 is abolished as of 1 May 2026. Section 21 gave landlords the power to always have the upper hand - they could remove you at any time. Few ever did, but it wasn't a risk anyone was willing to take. Now that's changed. You have a significant share of that power. What will you do with it?</p>
 </div>
 
-<div class="card">
+<div class="text-center mb-4">
+    <button type="button" class="btn btn-secondary btn-lg">Join Us</button>
+</div>
+
+<div class="card mb-4">
     <div class="card-body">
-        <h2 class="h5 mb-3">Why do we say this?</h2>
+        <h2 class="h5 mb-3">Why Know Your Landlord?</h2>
 
-            <p>Under the new rules, your landlord will have new legal obligations regarding repairs, maintenance, and energy efficiency upgrades. Without doubt many landlords will need a nudge to start spending your rent money. It may well take many nudges to get some action. Under the new rules you can't be kicked out for asking, but it may take some time to get a response. And in the meantime you can see for yourself what can be discovered about your landlord's state of affairs. Is he/she making a business of it with 20 properties or a lone pensioner living entirely on a pension and your rent money.</p>
+        <p>Under the Renters' Rights Act 2025, landlords have legal obligations regarding repairs, maintenance, and energy efficiency. Tenants can now raise concerns more freely and make enquiries without fear of retaliation.</p>
 
-            <p>It will take time and repetition to get results and we are offering a Landlord Contact Service that discovers what can found in the public realm, and endeavours to make contact and introduce you so you can start a dialogue.</p>
+        <p>We offer a Landlord Contact Service that discovers what information is available in the public realm and helps establish communication between tenants and landlords.</p>
 
-            <p>We start from the premise that that it's reasonable to apply the same degree of scrutiny to a landlord as he applies to you the renter. A landlord typically requires bank statements, previous landlord references, and CCJ checks, and there are numerous professional services that run these checks. Whether all these checks are truly necessary is another debate, but the landlord industry clearly thinks so.</p>
-
-            <p>What is clear is that under the new rules, you will be able to run similar checks against your landlord, and he will no longer be able to threaten retaliation with an eviction notice.</p>
-
-            <p>There is very little public knowledge regarding a landlord's suitability in financial and character terms. There is much talk of rogue and absentee landlords who provide a poor and neglectful service via dodgy letting Agents. But no data exists to provide a rating. The new legislation calls for a Landlord Register database with fines for non-compliance. Government has a poor record of success with database work.</p>
-
-            <h3 class="h5 mt-4 mb-3">So where do you start?</h3>
-
-            <p>First look at your rental Contract. This will tell you whether the property was let in the name of the Agent or the Landlord. The Contract should show the names of the renters and the name of the Landlord or his Letting Agent or both. Addresses seem to be optional.</p>
-
-            <p>You are sure to know the name and address of the person or business from whom you rented the property in the first place. If this is only the Agent, then the Landlord's address can be obtained by sending a request to the Agent.</p>
-
-            <p>If that fails then the name and address of the property can be obtained from the Land Registry for a small fee.</p>
-
-            <p>Once you have the landlords name and address you can then run credit and other checks, or alternatively you can make contact in writing to ask for some evidence as to his or her suitability to be your landlord. Many rental properties are owned by a single-owner and this may bring them to the table negotiate a sale against backdrop of a mass sell-off.</p>
+        <div class="mb-4">
+            <button type="button" class="btn btn-outline-secondary">Yes Please</button>
         </div>
+
+        <p>Landlords routinely conduct checks on prospective tenants - bank statements, previous landlord references, and CCJ checks are standard practice. The principle of mutual transparency suggests that tenants should have access to similar information about their landlords.</p>
+
+        <div class="mb-4">
+            <button type="button" class="btn btn-outline-secondary">Yes Please</button>
+        </div>
+
+        <p>Under the new rules, tenants can conduct their own research into landlord circumstances. The legislation also introduces a Landlord Register database to improve transparency across the sector.</p>
+
+        <h3 class="h5 mt-4 mb-3">So Where Do You Start?</h3>
+
+        <p>Start with your documentation - most tenants will have some form of paperwork, though accuracy may vary depending on the length of your tenancy.</p>
+
+        <h4 class="h6 mt-3 mb-2">Follow the Documentation Trail</h4>
+        <ul>
+            <li><strong>Your tenancy agreement</strong> - Check whether the property was let in the name of an agent or landlord directly. The contract should ideally show the names of all parties involved.</li>
+            <li><strong>Ask your agent</strong> - If you rent through an agent, you can request the landlord's name and address.</li>
+            <li><strong>Land Registry</strong> - The registered owner of any property can be obtained from the Land Registry for a smallish fee.</li>
+        </ul>
+
+        <h4 class="h6 mt-3 mb-2">Follow the Money (Your Rent Money)</h4>
+        <p>If documentation doesn't give you enough of a picture, you have no other option but to try tracing where your rent payments go through the banks. This is not easy and would need specialist lines of enquiry:</p>
+        <ul>
+            <li><strong>Bank statements</strong> - Check who receives your rent payments and research that name or company.</li>
+            <li><strong>Companies House</strong> - If the landlord is a company, you can access their accounts, directors, and filing history for free.</li>
+            <li><strong>Title register</strong> - Shows the registered owner and any charges (mortgages) on the property.</li>
+        </ul>
+
+        <p class="mt-3">Once you have this information, you can make informed decisions about your tenancy and communicate with your landlord from a position of knowledge.</p>
     </div>
+</div>
 @endsection

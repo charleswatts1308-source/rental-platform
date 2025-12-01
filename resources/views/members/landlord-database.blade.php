@@ -7,99 +7,141 @@
 
 <div class="alert alert-info mb-4">
     <h4 class="alert-heading">New Legal Requirement</h4>
-    <p class="mb-0">The Renters' Rights Act 2025 introduces a mandatory Private Rented Sector Database that all landlords must join.</p>
+    <p class="mb-0">The Renters' Rights Act 2025 introduces a mandatory Private Rented Sector Database. All landlords must register.</p>
 </div>
 
-<h2 class="h4 mb-3">What is the PRS Database?</h2>
-
-<p>The Renters' Rights Act 2025 introduces a new <strong>Private Rented Sector Database</strong> that all landlords of assured and regulated tenancies will be legally required to join. This creates a 'one stop shop' for landlords to access relevant guidance and helps them understand their obligations and demonstrate compliance.</p>
-
-    <div class="row mt-4">
-        <div class="col-md-4 mb-3">
-            <div class="card h-100">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">For Landlords</h5>
-                </div>
-                <div class="card-body">
-                    <ul class="list-unstyled">
-                        <li class="mb-2">Single platform for all guidance</li>
-                        <li class="mb-2">Clear legal obligations</li>
-                        <li class="mb-2">Demonstrate compliance easily</li>
-                        <li class="mb-0">Stay informed of changes</li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-4 mb-3">
-            <div class="card h-100">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">For Tenants</h5>
-                </div>
-                <div class="card-body">
-                    <ul class="list-unstyled">
-                        <li class="mb-2">Increased transparency</li>
-                        <li class="mb-2">Better property information</li>
-                        <li class="mb-2">Know escalation routes</li>
-                        <li class="mb-0">Support throughout tenancy</li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-4 mb-3">
-            <div class="card h-100">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">For Local Councils</h5>
-                </div>
-                <div class="card-body">
-                    <ul class="list-unstyled">
-                        <li class="mb-2">Identify problem properties</li>
-                        <li class="mb-2">Trusted intelligence source</li>
-                        <li class="mb-2">Reduce administration</li>
-                        <li class="mb-0">Focus on enforcement</li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <h2 class="h4 mb-3 mt-4">Enforcement and Penalties</h2>
-
-    <div class="card mb-4">
+<!-- Planned Features -->
+<section class="mb-5">
+    <div class="card">
         <div class="card-header">
-            <h5 class="mb-0">Non-Compliance Penalties</h5>
+            <h2 class="h5 mb-0">Planned Features</h2>
         </div>
         <div class="card-body">
             <div class="row">
                 <div class="col-md-6">
-                    <strong>Initial Breaches:</strong><br>
-                    Civil penalties up to <strong>£7,000</strong>
+                    <ul class="small mb-md-0">
+                        <li>Compulsory registration of all landlords</li>
+                        <li>Property-level records for every rental</li>
+                        <li>Compliance status visible to tenants</li>
+                    </ul>
                 </div>
                 <div class="col-md-6">
-                    <strong>Repeated Breaches:</strong><br>
-                    Civil penalties up to <strong>£40,000</strong> or criminal prosecution
+                    <ul class="small mb-0">
+                        <li>Local authority enforcement tools</li>
+                        <li>Public search functionality</li>
+                    </ul>
                 </div>
             </div>
-            <hr>
-            <p class="mb-0"><strong>Additional Consequence:</strong> Landlords who fail to register cannot obtain possession orders (except for serious tenant anti-social behaviour).</p>
         </div>
     </div>
+</section>
 
-    <h2 class="h4 mb-3 mt-4">Current Status</h2>
-
-<div class="card mb-4">
-    <div class="card-header">
-        <h5 class="mb-0">Implementation Timeline</h5>
+<!-- Timeline -->
+<section class="mb-5">
+    <div class="card">
+        <div class="card-header">
+            <h2 class="h5 mb-0">Implementation Timeline</h2>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <ul class="small mb-0">
+                        <li><strong>Royal Assent:</strong> 27 October 2025</li>
+                        <li><strong>Phase 1 (May 2026):</strong> Main provisions</li>
+                        <li><strong>Phase 2 (Late 2026):</strong> Database rollout begins</li>
+                        <li><strong>Full launch (2028):</strong> Nationwide coverage expected</li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <div class="alert alert-warning mb-0">
+                        <p class="small mb-0"><strong>Note:</strong> Rollout is area-by-area. Public access follows registration in each region. Government IT timelines may slip.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-    <div class="card-body">
-        <p><strong>Royal Assent:</strong> 27 October 2025 - Act is now law</p>
-        <p><strong>Phase 1:</strong> 1 May 2026 - Main provisions take effect</p>
-        <p class="mb-0"><strong>Database:</strong> Expected to be operational in phases from 2026</p>
+</section>
+
+<!-- Why It's Needed -->
+<section class="mb-5">
+    <div class="card">
+        <div class="card-header">
+            <h2 class="h5 mb-0">Why It's Needed</h2>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <ul class="small mb-md-0">
+                        <li>No central record of who lets properties</li>
+                        <li>Rogue landlords operate undetected</li>
+                        <li>Tenants can't verify landlord legitimacy</li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <ul class="small mb-0">
+                        <li>Local authorities lack PRS visibility</li>
+                        <li>Compliance can't be monitored</li>
+                        <li>Enforcement is reactive, not preventive</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
     </div>
-</div>
+</section>
 
-    <h2 class="h4 mb-3">Why This Matters</h2>
+<!-- Who Benefits -->
+<section class="mb-5">
+    <h2 class="h4 mb-3">Who Benefits</h2>
+    <div class="row">
+        <div class="col-md-4 mb-3">
+            <div class="card h-100">
+                <div class="card-header"><h5 class="card-title mb-0">Landlords</h5></div>
+                <div class="card-body">
+                    <p class="small mb-0">Single platform for guidance and demonstrating compliance</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="card h-100">
+                <div class="card-header"><h5 class="card-title mb-0">Tenants</h5></div>
+                <div class="card-body">
+                    <p class="small mb-0">Check landlord registration and verify property is legally let</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="card h-100">
+                <div class="card-header"><h5 class="card-title mb-0">Councils</h5></div>
+                <div class="card-body">
+                    <p class="small mb-0">Identify problem properties and target enforcement</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
 
-<p>The database represents a <strong>significant step toward transparency and accountability</strong> in England's private rental sector, supporting both good landlords and protecting tenants' rights. It removes barriers that have historically made enforcement difficult while providing clear guidance for compliance.</p>
+<!-- Penalties -->
+<section class="mb-5">
+    <div class="card">
+        <div class="card-header">
+            <h2 class="h5 mb-0">Non-Compliance Penalties</h2>
+        </div>
+        <div class="card-body">
+            <div class="row text-center">
+                <div class="col-md-4 mb-3 mb-md-0">
+                    <div class="h4 mb-1">£7,000</div>
+                    <small class="text-muted">Initial breach</small>
+                </div>
+                <div class="col-md-4 mb-3 mb-md-0">
+                    <div class="h4 mb-1">£40,000</div>
+                    <small class="text-muted">Repeated breaches</small>
+                </div>
+                <div class="col-md-4">
+                    <div class="h4 mb-1">No evictions</div>
+                    <small class="text-muted">Until registered</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
 @endsection

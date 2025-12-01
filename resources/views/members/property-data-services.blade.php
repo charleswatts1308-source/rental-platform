@@ -11,6 +11,78 @@
         <p class="mb-0">Essential data sources for private rental sector (PRS) analysis, investment decisions, and market insights.</p>
     </div>
 
+    <!-- Future Development Section -->
+    <section class="mb-5">
+        <h2 class="h3 mb-4">Future Government Database</h2>
+
+        <div class="card">
+            <div class="card-header">
+                <h3 class="h6 mb-0">National PRS Database (Planned)</h3>
+            </div>
+            <div class="card-body">
+                <p class="mb-3"><strong>Mandatory landlord registration under the Renters' Rights Act 2025</strong></p>
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5 class="h6 mb-2">Planned Features:</h5>
+                        <ul class="small">
+                            <li>Compulsory registration of all landlords</li>
+                            <li>Property-level records for every rental</li>
+                            <li>Compliance status visible to tenants</li>
+                            <li>Local authority enforcement tools</li>
+                            <li>Public search functionality</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h5 class="h6 mb-2">Implementation Timeline:</h5>
+                        <ul class="small">
+                            <li><strong>Phase 2 (Late 2026):</strong> Database begins rolling out area-by-area</li>
+                            <li><strong>Registration stage:</strong> Landlords required to register by region</li>
+                            <li><strong>Full launch (2028):</strong> Expected mandatory membership nationwide</li>
+                            <li><strong>Public access:</strong> Available after registration completes in each area</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="alert alert-warning mt-3 mb-0">
+                    <p class="small mb-0"><strong>Reality check:</strong> Government IT projects frequently overrun. The database depends on building new infrastructure, coordinating with local authorities, and registering an estimated 2+ million landlords. While late 2026 is the target start date, full nationwide coverage and public access may take several years to achieve.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Key Insights Section -->
+    <section class="mb-5">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="h5 mb-0">Why Government Sees the Need for a PRS Database</h2>
+            </div>
+            <div class="card-body">
+                <p class="mb-3">The government's decision to create a national PRS database stems from fundamental gaps in rental sector oversight:</p>
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5 class="h6 mb-2">Tenant Protection:</h5>
+                        <ul class="small">
+                            <li><strong>No central record</strong> of who is letting properties</li>
+                            <li><strong>Rogue landlords</strong> can operate undetected across areas</li>
+                            <li><strong>Tenants cannot verify</strong> landlord legitimacy before signing</li>
+                            <li><strong>Enforcement is reactive</strong> rather than preventive</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h5 class="h6 mb-2">Regulatory Oversight:</h5>
+                        <ul class="small">
+                            <li><strong>Local authorities lack visibility</strong> of PRS in their area</li>
+                            <li><strong>Compliance cannot be monitored</strong> without knowing who landlords are</li>
+                            <li><strong>Housing standards enforcement</strong> requires property identification</li>
+                            <li><strong>Policy decisions</strong> need accurate sector data</li>
+                        </ul>
+                    </div>
+                </div>
+                <p class="small mt-3 mb-0"><strong>The Reality:</strong> Until now, millions of tenants have rented from landlords with no public accountability. The PRS database changes this - creating transparency that protects tenants and enables proper regulatory oversight of the rental sector.</p>
+            </div>
+        </div>
+    </section>
+
     <!-- Government Sources Section -->
     <section class="mb-5">
         <h2 class="h3 mb-4">Government Sources</h2>
@@ -171,63 +243,6 @@
                         <div class="badge bg-secondary">Payment analytics</div>
                     </div>
                 </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Future Development Section -->
-    <section class="mb-5">
-        <h2 class="h3 mb-4">Future Government Database</h2>
-
-        <div class="card">
-            <div class="card-header">
-                <h3 class="h6 mb-0">PRS Database (Planned)</h3>
-            </div>
-            <div class="card-body">
-                <p class="mb-3"><strong>Transparency portal under the Renters' Rights Act 2025</strong></p>
-                <div class="row">
-                    <div class="col-md-6">
-                        <h5 class="h6 mb-2">Planned Features:</h5>
-                        <ul class="small">
-                            <li>Landlord compliance tracking</li>
-                            <li>Property history records</li>
-                            <li>Regulatory oversight</li>
-                            <li>Public transparency</li>
-                        </ul>
-                    </div>
-                    <div class="col-md-6">
-                        <p class="small mb-0"><strong>Status:</strong> In development as part of the Renters' Rights Act 2025 implementation</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Key Insights Section -->
-    <section class="mb-5">
-        <div class="card">
-            <div class="card-header">
-                <h2 class="h5 mb-0">Why PRS-Specific Data Matters</h2>
-            </div>
-            <div class="card-body">
-                <p class="mb-3">PRS-specific data provides crucial insights that general property data cannot offer:</p>
-                <div class="row">
-                    <div class="col-md-6">
-                        <ul class="small">
-                            <li><strong>Actual rental achievements</strong> rather than asking prices</li>
-                            <li><strong>Tenant behavior patterns</strong> and payment history</li>
-                            <li><strong>Regulatory compliance tracking</strong></li>
-                        </ul>
-                    </div>
-                    <div class="col-md-6">
-                        <ul class="small">
-                            <li><strong>Yield calculations</strong> specific to rental properties</li>
-                            <li><strong>Investment decision support</strong></li>
-                            <li><strong>Management decision insights</strong></li>
-                        </ul>
-                    </div>
-                </div>
-                <p class="small mt-3 mb-0"><strong>Bottom Line:</strong> These data sources are critical for landlords making informed investment and management decisions in the private rental sector.</p>
             </div>
         </div>
     </section>

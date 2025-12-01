@@ -40,7 +40,7 @@
     <header>
         <div class="container-fluid bg-white border-bottom py-3">
             <div class="container d-flex justify-content-between align-items-center">
-                <a href="{{ route('dashboard') }}" class="d-flex align-items-center text-decoration-none text-dark">
+                <a href="/" class="d-flex align-items-center text-decoration-none text-dark">
                     <img src="{{ asset('images/testlogo.jpg') }}" alt="Renters Logo" height="80" class="me-3">
                     <h1 class="h1 mb-0">Renters</h1>
                 </a>
@@ -65,6 +65,7 @@
                                 {{ Auth::user()->email }}
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item" href="{{ route('dashboard') }}">Dashboard</a></li>
                                 <li><a class="dropdown-item" href="{{ route('profile.edit') }}">Profile</a></li>
                                 <li><hr class="dropdown-divider"></li>
                                 <li>
@@ -107,31 +108,32 @@
                         @endauth
 
                         <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle text-dark" href="#" id="RentersRightsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                Renters' Rights
+                            <a class="nav-link dropdown-toggle text-dark" href="#" id="theLawDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                The Law
                             </a>
-                            <ul class="dropdown-menu" aria-labelledby="RentersRightsDropdown">
+                            <ul class="dropdown-menu" aria-labelledby="theLawDropdown">
                                 <li><a class="dropdown-item" href="{{ route('members.renters-rights-bill') }}">Renters' Rights Act 2025</a></li>
-                                <li><a class="dropdown-item" href="{{ route('members.know-your-landlord') }}">Know Your Landlord</a></li>
+                                <li><a class="dropdown-item" href="{{ route('members.tenantandlandlord') }}">Tenant and Landlord</a></li>
                                 <li><a class="dropdown-item" href="{{ route('members.landlord-database') }}">Landlord Database</a></li>
                             </ul>
                         </li>
 
                         <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle text-dark" href="#" id="RenterResourcesDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                Renter Resources
+                            <a class="nav-link dropdown-toggle text-dark" href="#" id="forRentersDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                For Renters
                             </a>
-                            <ul class="dropdown-menu" aria-labelledby="RenterResourcesDropdown">
+                            <ul class="dropdown-menu" aria-labelledby="forRentersDropdown">
                                 <li><a class="dropdown-item" href="{{ route('members.renter-database') }}">Renter Database</a></li>
+                                <li><a class="dropdown-item" href="{{ route('members.know-your-landlord') }}">Know Your Landlord</a></li>
                                 <li><a class="dropdown-item" href="{{ route('members.renter-support-services') }}">Renter Support Services</a></li>
                             </ul>
                         </li>
 
                         <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle text-dark" href="#" id="landlordDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                Landlord Resources
+                            <a class="nav-link dropdown-toggle text-dark" href="#" id="forLandlordsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                For Landlords
                             </a>
-                            <ul class="dropdown-menu" aria-labelledby="landlordDropdown">
+                            <ul class="dropdown-menu" aria-labelledby="forLandlordsDropdown">
                                 <li><a class="dropdown-item" href="{{ route('members.landlord-support-services') }}">Landlord Support Services</a></li>
                                 <li><a class="dropdown-item" href="{{ route('members.property-data-services') }}">Property Data Services</a></li>
                             </ul>
