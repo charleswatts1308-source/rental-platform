@@ -10,6 +10,10 @@ Route::get('/about', function () {
     return view('about');
 });
 
+Route::get('/privacy', function () {
+    return view('privacy');
+});
+
 Route::get('/old-home-page', function () {
     return view('old-home-page');
 })->name('old-home-page');
@@ -42,6 +46,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Page view stats (TODO: Add admin authorization later)
     Route::get('/stats/page-views', [PageViewController::class, 'index'])->name('stats.page-views');
+
+    // Member information pages
+    Route::prefix('members')->name('members.')->group(function () {
+        Route::get('/renters-rights-bill', fn() => view('members.renters-rights-bill'))->name('renters-rights-bill');
+        Route::get('/know-your-landlord', fn() => view('members.know-your-landlord'))->name('know-your-landlord');
+        Route::get('/renter-database', fn() => view('members.renter-database'))->name('renter-database');
+        Route::get('/landlord-database', fn() => view('members.landlord-database'))->name('landlord-database');
+        Route::get('/renter-support-services', fn() => view('members.renter-support-services'))->name('renter-support-services');
+        Route::get('/landlord-support-services', fn() => view('members.landlord-support-services'))->name('landlord-support-services');
+        Route::get('/property-data-services', fn() => view('members.property-data-services'))->name('property-data-services');
+    });
 });
 
 require __DIR__.'/auth.php';

@@ -41,10 +41,7 @@
         <div class="container-fluid bg-white border-bottom py-3">
             <div class="container d-flex justify-content-between align-items-center">
                 <a href="{{ route('dashboard') }}" class="d-flex align-items-center text-decoration-none text-dark">
-                    {{-- <img src="{{ asset('images/testlogo.jpg') }}" alt="Logo" height="80" class="me-3"> --}}
-                    <div class="text-white p-2 rounded me-3" style="width: 80px; height: 80px; display: flex; align-items: center; justify-content: center; background-color: #5a7a5a;">
-                        <strong>R</strong>
-                    </div>
+                    <img src="{{ asset('images/testlogo.jpg') }}" alt="Renters Logo" height="80" class="me-3">
                     <h1 class="h1 mb-0">Renters</h1>
                 </a>
             </div>
@@ -114,7 +111,9 @@
                                 Renters' Rights
                             </a>
                             <ul class="dropdown-menu" aria-labelledby="RentersRightsDropdown">
-                                <li><a class="dropdown-item" href="/renters-rights">Renters Rights Bill</a></li>
+                                <li><a class="dropdown-item" href="{{ route('members.renters-rights-bill') }}">Renters' Rights Act 2025</a></li>
+                                <li><a class="dropdown-item" href="{{ route('members.know-your-landlord') }}">Know Your Landlord</a></li>
+                                <li><a class="dropdown-item" href="{{ route('members.landlord-database') }}">Landlord Database</a></li>
                             </ul>
                         </li>
 
@@ -123,9 +122,8 @@
                                 Renter Resources
                             </a>
                             <ul class="dropdown-menu" aria-labelledby="RenterResourcesDropdown">
-                                <li><a class="dropdown-item" href="/renter-database">Renter Database</a></li>
-                                <li><a class="dropdown-item" href="/renter-support">Renter Support Services</a></li>
-                                <li><a class="dropdown-item" href="{{ route('old-home-page') }}">Old Home Page</a></li>
+                                <li><a class="dropdown-item" href="{{ route('members.renter-database') }}">Renter Database</a></li>
+                                <li><a class="dropdown-item" href="{{ route('members.renter-support-services') }}">Renter Support Services</a></li>
                             </ul>
                         </li>
 
@@ -134,8 +132,8 @@
                                 Landlord Resources
                             </a>
                             <ul class="dropdown-menu" aria-labelledby="landlordDropdown">
-                                <li><a class="dropdown-item" href="/landlord-support">Landlord Support Services</a></li>
-                                <li><a class="dropdown-item" href="/property-data">Property Data Services</a></li>
+                                <li><a class="dropdown-item" href="{{ route('members.landlord-support-services') }}">Landlord Support Services</a></li>
+                                <li><a class="dropdown-item" href="{{ route('members.property-data-services') }}">Property Data Services</a></li>
                             </ul>
                         </li>
                     </ul>
