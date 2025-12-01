@@ -137,12 +137,12 @@
                 </div>
             </div>
 
-            <div class="card mt-4 border-success">
-                <div class="card-header bg-success text-white">
+            <div class="card mt-4">
+                <div class="card-header">
                     <h4 class="h6 mb-0">Timeline</h4>
                 </div>
                 <div class="card-body">
-                    <p class="mb-1"><strong>Royal Assent:</strong> 27 October 2025 <span class="badge bg-success">Complete</span></p>
+                    <p class="mb-1"><strong>Royal Assent:</strong> 27 October 2025 - Complete</p>
                     <p class="mb-1"><strong>Phase 1:</strong> 1 May 2026 - Main provisions take effect</p>
                     <p class="mb-0"><strong>Phases 2 & 3:</strong> Further provisions roll out in stages</p>
                 </div>

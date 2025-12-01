@@ -13,7 +13,7 @@
 
     <!-- Government Sources Section -->
     <section class="mb-5">
-        <h2 class="h3 mb-4 text-primary">Government Sources</h2>
+        <h2 class="h3 mb-4">Government Sources</h2>
 
         <div class="card">
             <div class="card-header">
@@ -71,7 +71,7 @@
 
     <!-- Commercial Leaders Section -->
     <section class="mb-5">
-        <h2 class="h3 mb-4 text-primary">Commercial Data Leaders</h2>
+        <h2 class="h3 mb-4">Commercial Data Leaders</h2>
 
         <div class="row">
             <!-- HomeLet -->
@@ -79,7 +79,7 @@
                 <div class="card h-100">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h3 class="h6 mb-0">HomeLet Rental Index</h3>
-                        <span class="badge bg-success">Benchmark</span>
+                        <span class="badge bg-secondary">Benchmark</span>
                     </div>
                     <div class="card-body">
                         <p class="small mb-2"><strong>UK's most comprehensive rental benchmark</strong></p>
@@ -88,7 +88,7 @@
                             <li>Designed with LSE methodology</li>
                             <li>Comprehensive market coverage</li>
                         </ul>
-                        <div class="badge bg-info">Real transaction data</div>
+                        <div class="badge bg-secondary">Real transaction data</div>
                     </div>
                 </div>
             </div>
@@ -107,7 +107,7 @@
                             <li>Rental yield calculations</li>
                             <li>Market trend analysis</li>
                         </ul>
-                        <div class="badge bg-warning text-dark">Multi-platform data</div>
+                        <div class="badge bg-secondary">Multi-platform data</div>
                     </div>
                 </div>
             </div>
@@ -125,7 +125,7 @@
                             <li>1700% more new build comparables than Land Registry</li>
                             <li>Professional valuation tools</li>
                         </ul>
-                        <div class="badge bg-primary">Enhanced comparables</div>
+                        <div class="badge bg-secondary">Enhanced comparables</div>
                     </div>
                 </div>
             </div>
@@ -134,7 +134,7 @@
 
     <!-- Specialist Analytics Section -->
     <section class="mb-5">
-        <h2 class="h3 mb-4 text-primary">Specialist PRS Analytics</h2>
+        <h2 class="h3 mb-4">Specialist PRS Analytics</h2>
 
         <div class="row">
             <div class="col-lg-6 mb-4">
@@ -150,7 +150,7 @@
                             <li>Landlord behavior analysis</li>
                             <li>Market trend reporting</li>
                         </ul>
-                        <div class="badge bg-success">Sector specialist</div>
+                        <div class="badge bg-secondary">Sector specialist</div>
                     </div>
                 </div>
             </div>
@@ -168,7 +168,7 @@
                             <li>Tenant behavior patterns</li>
                             <li>Risk assessment data</li>
                         </ul>
-                        <div class="badge bg-info">Payment analytics</div>
+                        <div class="badge bg-secondary">Payment analytics</div>
                     </div>
                 </div>
             </div>
@@ -177,10 +177,10 @@
 
     <!-- Future Development Section -->
     <section class="mb-5">
-        <h2 class="h3 mb-4 text-primary">Future Government Database</h2>
+        <h2 class="h3 mb-4">Future Government Database</h2>
 
-        <div class="card border-warning">
-            <div class="card-header bg-warning">
+        <div class="card">
+            <div class="card-header">
                 <h3 class="h6 mb-0">PRS Database (Planned)</h3>
             </div>
             <div class="card-body">
@@ -196,9 +196,7 @@
                         </ul>
                     </div>
                     <div class="col-md-6">
-                        <div class="alert alert-info py-2">
-                            <small><strong>Status:</strong> In development as part of the Renters' Rights Act 2025 implementation</small>
-                        </div>
+                        <p class="small mb-0"><strong>Status:</strong> In development as part of the Renters' Rights Act 2025 implementation</p>
                     </div>
                 </div>
             </div>
@@ -207,8 +205,8 @@
 
     <!-- Key Insights Section -->
     <section class="mb-5">
-        <div class="card border-primary">
-            <div class="card-header bg-primary text-white">
+        <div class="card">
+            <div class="card-header">
                 <h2 class="h5 mb-0">Why PRS-Specific Data Matters</h2>
             </div>
             <div class="card-body">
@@ -229,9 +227,7 @@
                         </ul>
                     </div>
                 </div>
-                <div class="alert alert-success mt-3 mb-0">
-                    <small><strong>Bottom Line:</strong> These data sources are critical for landlords making informed investment and management decisions in the private rental sector.</small>
-                </div>
+                <p class="small mt-3 mb-0"><strong>Bottom Line:</strong> These data sources are critical for landlords making informed investment and management decisions in the private rental sector.</p>
             </div>
         </div>
     </section>
