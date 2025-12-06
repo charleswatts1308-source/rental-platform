@@ -35,6 +35,7 @@
                     <div class="col-12 col-lg-6">
                         <div class="bg-light rounded p-3 h-100">
                             <h6 class="text-uppercase fw-bolder text-secondary mb-3">Property Address</h6>
+                            <p class="small text-muted mb-3">Enter postcode first - we'll validate it and fill in the city.<br>Often postcode and address line 1 is all you need.</p>
                             <div class="mb-3">
                                 <label for="rental_post_code" class="form-label">Postcode</label>
                                 <input type="text" class="form-control" id="rental_post_code" name="rental_post_code"

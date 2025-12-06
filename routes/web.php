@@ -3,7 +3,7 @@
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RentalController;
 use App\Http\Controllers\FileAttachmentController;
-use App\Http\Controllers\PageViewController;
+use App\Http\Controllers\AdminController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/about', function () {
@@ -14,9 +14,9 @@ Route::get('/privacy', function () {
     return view('privacy');
 });
 
-Route::get('/old-home-page', function () {
-    return view('old-home-page');
-})->name('old-home-page');
+Route::get('/cookies', function () {
+    return view('cookies');
+});
 
 Route::get('/', function () {
     return view('welcome');
@@ -44,9 +44,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/files/{id}/download', [FileAttachmentController::class, 'download'])->name('files.download');
     Route::delete('/files/{id}', [FileAttachmentController::class, 'destroy'])->name('files.destroy');
 
-    // Page view stats (TODO: Add admin authorization later)
-    Route::get('/stats/page-views', [PageViewController::class, 'index'])->name('stats.page-views');
-
     // Member information pages
     Route::prefix('members')->name('members.')->group(function () {
         Route::get('/renters-rights-bill', fn() => view('members.renters-rights-bill'))->name('renters-rights-bill');
@@ -58,6 +55,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/property-data-services', fn() => view('members.property-data-services'))->name('property-data-services');
         Route::get('/tenantandlandlord', fn() => view('members.tenantandlandlord'))->name('tenantandlandlord');
     });
+});
+
+// Admin routes (user ID 1 only)
+Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/users', [AdminController::class, 'users'])->name('users');
+    Route::get('/page-views', [AdminController::class, 'pageViews'])->name('page-views');
+    Route::get('/rentals', [AdminController::class, 'rentals'])->name('rentals');
 });
 
 require __DIR__.'/auth.php';

@@ -22,15 +22,15 @@
 
         <p>We offer a Landlord Contact Service that discovers what information is available in the public realm and helps establish communication between tenants and landlords.</p>
 
-        <div class="mb-4">
+        {{-- <div class="mb-4">
             <button type="button" class="btn btn-outline-secondary">Yes Please</button>
-        </div>
+        </div> --}}
 
         <p>Landlords routinely conduct checks on prospective tenants - bank statements, previous landlord references, and CCJ checks are standard practice. The principle of mutual transparency suggests that tenants should have access to similar information about their landlords.</p>
 
-        <div class="mb-4">
+        {{-- <div class="mb-4">
             <button type="button" class="btn btn-outline-secondary">Yes Please</button>
-        </div>
+        </div> --}}
 
         <p>Under the new rules, tenants can conduct their own research into landlord circumstances. The legislation also introduces a Landlord Register database to improve transparency across the sector.</p>
 

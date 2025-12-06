@@ -1,2 +1,11 @@
+# Allow all crawlers on public pages
 User-agent: *
-Disallow:
+Allow: /
+Disallow: /admin/
+Disallow: /members/
+Disallow: /rentals/
+Disallow: /profile/
+Disallow: /dashboard
+
+# Sitemap location
+Sitemap: https://renters.rent/sitemap.xml

@@ -259,15 +259,4 @@
         </div>
     </section>
 
-    <!-- Call to Action -->
-    <section class="mb-5">
-        <div class="text-center bg-light rounded p-4">
-            <h2 class="h4 mb-3">Time to Change the Balance</h2>
-            <p class="mb-4">The rental industry shouldn't just serve landlords. Renters deserve professional support, tools, and community too.</p>
-            <div class="d-grid gap-2 d-md-block">
-                <button type="button" class="btn btn-secondary btn-lg">Join the Movement</button>
-                <button type="button" class="btn btn-outline-secondary btn-lg">Stay Updated</button>
-            </div>
-        </div>
-    </section>
 @endsection

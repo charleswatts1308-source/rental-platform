@@ -81,14 +81,8 @@
 
                 <div class="navbar-collapse collapse order-xl-1" id="navbarSupportedContent">
                     <ul class="navbar-nav flex-grow-1">
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle text-dark" href="javascript:void(0);" id="companyDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                Company
-                            </a>
-                            <ul class="dropdown-menu" aria-labelledby="companyDropdown">
-                                <li><a class="dropdown-item" href="/about">About Us</a></li>
-                                <li><a class="dropdown-item" href="/privacy">Privacy</a></li>
-                            </ul>
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" href="/about">About Us</a>
                         </li>
 
                         <li class="nav-item dropdown">
@@ -100,12 +94,6 @@
                                 <li><a class="dropdown-item" href="{{ route('rentals.create') }}">Add New Rental</a></li>
                             </ul>
                         </li>
-
-                        @auth
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" href="{{ route('stats.page-views') }}">Stats</a>
-                        </li>
-                        @endauth
 
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle text-dark" href="#" id="theLawDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -138,6 +126,19 @@
                                 <li><a class="dropdown-item" href="{{ route('members.property-data-services') }}">Property Data Services</a></li>
                             </ul>
                         </li>
+
+                        @if(Auth::id() === 13)
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle text-dark" href="#" id="adminDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                Admin
+                            </a>
+                            <ul class="dropdown-menu" aria-labelledby="adminDropdown">
+                                <li><a class="dropdown-item" href="{{ route('admin.users') }}">Users</a></li>
+                                <li><a class="dropdown-item" href="{{ route('admin.page-views') }}">Page Views</a></li>
+                                <li><a class="dropdown-item" href="{{ route('admin.rentals') }}">Rentals</a></li>
+                            </ul>
+                        </li>
+                        @endif
                     </ul>
                 </div>
             </div>
@@ -185,8 +186,7 @@
                     <ul class="list-unstyled mb-0 d-flex gap-3">
                         <li><a href="/about" class="text-light text-decoration-none">About Us</a></li>
                         <li><a href="/privacy" class="text-light text-decoration-none">Privacy Policy</a></li>
-                        <li><a href="/about" class="text-light text-decoration-none">Company</a></li>
-                        <li><a href="/about" class="text-light text-decoration-none">Cookies</a></li>
+                        <li><a href="/cookies" class="text-light text-decoration-none">Cookies</a></li>
                     </ul>
                 </div>
 

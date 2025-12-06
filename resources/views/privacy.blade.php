@@ -57,7 +57,7 @@
 
             <h2 class="h5 mt-4">8. Contact Us</h2>
             <p>If you have any questions about this Privacy Policy or our data practices, please contact us at:</p>
-            <p><strong>Email:</strong> privacy@renters.rent</p>
+            <p><strong>Email:</strong> admin@renters.rent</p>
 
             <h2 class="h5 mt-4">9. Changes to This Policy</h2>
             <p>We may update this Privacy Policy from time to time. We will notify you of any changes by posting the new policy on this page and updating the "Last updated" date.</p>

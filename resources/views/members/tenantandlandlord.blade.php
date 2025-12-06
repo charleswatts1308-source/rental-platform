@@ -18,12 +18,14 @@
 
         <p>In England, Section 21 of the Housing Act 1988 handed landlords a trump card: evict with two months' notice, no reason needed. Even better for the landlord.</p>
 
-        <h3 class="h5 mt-4 mb-3">But... No Longer</h3>
+        <h3 class="h5 mt-4 mb-3">But ... No Longer</h3>
 
-        <p>From May 2026, Section 21 goes. The Renters' Rights Act requires landlords to justify every eviction. Rent arrears, antisocial behaviour, selling up - all still valid grounds. But "because I said so" is no longer enough.</p>
+        <p>From 1st May 2026, Section 21 is gone. The Renters' Rights Act requires landlords to justify every eviction.
+           <br>Rent arrears, antisocial behaviour, selling up - are all still valid reasons.
+           <br>But "because I said so" is no longer enough.</p>
 
         <div class="alert alert-success mt-4">
-            <p class="lead mb-0"><strong>At long, long last, the law has changed in the tenant's favour.</strong></p>
+            <p class="lead mb-0"><strong>At long, long last, the law has changed back, in the tenant's favour.</strong></p>
         </div>
     </div>
 </div>

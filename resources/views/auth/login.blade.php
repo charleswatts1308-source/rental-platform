@@ -10,6 +10,14 @@
                 <h4 class="mb-0">Login to Your Account</h4>
             </div>
             <div class="card-body p-4">
+                <!-- Redirect Notice -->
+                @if (session()->has('url.intended'))
+                    <div class="alert alert-warning mb-3" role="alert">
+                        <strong>Members Only</strong><br>
+                        We reserve these pages for members, so please login or <a href="{{ route('register') }}">register</a>.
+                    </div>
+                @endif
+
                 <!-- Session Status -->
                 @if (session('status'))
                     <div class="alert alert-success mb-3" role="alert">

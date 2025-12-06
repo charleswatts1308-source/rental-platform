@@ -7,7 +7,7 @@
 
 <!-- Introduction -->
 <div class="alert alert-info mb-4">
-    <h4 class="alert-heading">Now Law - Royal Assent 27 October 2025</h4>
+    <h4 class="alert-heading">Royal Assent 27 October 2025</h4>
     <p class="mb-0">The Renters' Rights Act is now law. Here are the key changes as they affect renters, with implementation starting 1 May 2026.</p>
 </div>
 
