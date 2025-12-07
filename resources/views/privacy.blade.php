@@ -7,7 +7,7 @@
 
 <div class="card mb-4">
         <div class="card-body">
-            <p class="text-muted"><strong>Last updated:</strong> December 2024</p>
+            <p class="text-muted"><strong>Last updated:</strong> December 2025</p>
 
             <h2 class="h5 mt-4">1. Introduction</h2>
             <p>Renters ("we", "our", or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, and safeguard your personal information when you use our website and services.</p>
@@ -57,7 +57,7 @@
 
             <h2 class="h5 mt-4">8. Contact Us</h2>
             <p>If you have any questions about this Privacy Policy or our data practices, please contact us at:</p>
-            <p><strong>Email:</strong> admin@renters.rent</p>
+            <p><strong>Email:</strong> <a href="mailto:admin@renters.rent">admin@renters.rent</a></p>
 
             <h2 class="h5 mt-4">9. Changes to This Policy</h2>
             <p>We may update this Privacy Policy from time to time. We will notify you of any changes by posting the new policy on this page and updating the "Last updated" date.</p>

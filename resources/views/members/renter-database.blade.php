@@ -111,8 +111,7 @@
                         </ol>
 
                         <div class="d-grid d-md-block">
-                            <button type="button" class="btn btn-secondary btn-lg">Join Renters Database</button>
-                            <button type="button" class="btn btn-outline-secondary btn-lg ms-md-2">Learn More</button>
+                            <a href="{{ route('register') }}" class="btn btn-primary btn-lg">Register</a>
                         </div>
                     </div>
                     <div class="col-md-4">

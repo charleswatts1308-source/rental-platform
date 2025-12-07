@@ -9,7 +9,7 @@
     <div class="col-12">
         <div class="alert alert-success">
             <h4>Welcome back!</h4>
-            <p>You're successfully logged in to your Renters account.</p>
+            <p>You're logged in to your Renters account.</p>
         </div>
 
         <div class="row">
