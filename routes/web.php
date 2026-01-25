@@ -10,6 +10,10 @@ Route::get('/about', function () {
     return view('about');
 });
 
+Route::get('/homepage2', function () {
+    return view('homepage2');
+});
+
 Route::get('/privacy', function () {
     return view('privacy');
 });

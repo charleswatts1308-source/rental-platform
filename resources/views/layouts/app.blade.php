@@ -41,8 +41,29 @@
         <div class="container-fluid bg-white border-bottom py-3">
             <div class="container d-flex justify-content-between align-items-center">
                 <a href="/" class="d-flex align-items-center text-decoration-none text-dark">
-                    <img src="{{ asset('images/testlogo.jpg') }}" alt="Renters Logo" height="80" class="me-3">
-                    <h1 class="h1 mb-0">Renters</h1>
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 120" width="300" height="90" class="me-3">
+                        <!-- Roof/House Icon -->
+                        <path d="M 50 45 L 80 20 L 110 45 L 105 45 L 105 70 L 55 70 L 55 45 Z"
+                              fill="#10b981" stroke="#10b981" stroke-width="2" stroke-linejoin="round"/>
+
+                        <!-- Door -->
+                        <rect x="72" y="55" width="16" height="15" fill="#fff"/>
+
+                        <!-- People dots (representing community) -->
+                        <circle cx="65" cy="50" r="3" fill="#fff" opacity="0.9"/>
+                        <circle cx="80" cy="48" r="3" fill="#fff" opacity="0.9"/>
+                        <circle cx="95" cy="50" r="3" fill="#fff" opacity="0.9"/>
+
+                        <!-- Text -->
+                        <text x="130" y="60" font-family="Arial, sans-serif" font-size="48" font-weight="700" fill="#047857">
+                          Renters
+                        </text>
+
+                        <!-- Tagline (optional) -->
+                        <text x="132" y="80" font-family="Arial, sans-serif" font-size="14" fill="#64748b" letter-spacing="2">
+                          STRENGTH IN NUMBERS
+                        </text>
+                    </svg>
                 </a>
             </div>
         </div>
@@ -83,6 +104,15 @@
                     <ul class="navbar-nav flex-grow-1">
                         <li class="nav-item">
                             <a class="nav-link text-dark" href="/about">About Us</a>
+                        </li>
+
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle text-dark" href="#" id="newPagesDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                NewPages
+                            </a>
+                            <ul class="dropdown-menu" aria-labelledby="newPagesDropdown">
+                                <li><a class="dropdown-item" href="/homepage2">Homepage2</a></li>
+                            </ul>
                         </li>
 
                         <li class="nav-item dropdown">

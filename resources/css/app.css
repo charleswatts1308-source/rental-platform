@@ -1,3 +1,2 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* Custom styles for the application */
+/* Bootstrap is loaded via CDN in layouts/app.blade.php */
