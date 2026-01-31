@@ -5,6 +5,12 @@
 @section('content')
 <h1 class="mb-4">Page Views</h1>
 
+<div class="alert alert-info mb-4">
+    <p class="mb-1"><strong>Total Page Views:</strong> {{ $totalPageViews }}</p>
+    <p class="mb-1"><strong>Other Page Views:</strong> {{ $humanPageViews }}</p>
+    <p class="mb-0"><strong>Authentic Crawlers:</strong> {{ $crawlerPageViews }}</p>
+</div>
+
 <p class="text-muted mb-3">Showing {{ $pageViews->count() }} most recent page views</p>
 
 <div class="table-responsive">

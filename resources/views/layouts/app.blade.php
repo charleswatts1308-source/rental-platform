@@ -6,6 +6,9 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Renters') - {{ config('app.name', 'Laravel') }}</title>
 
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
+
     <!-- Bootstrap CSS - Bootswatch Spacelab Theme -->
     <link href="https://cdn.jsdelivr.net/npm/bootswatch@5.3.0/dist/spacelab/bootstrap.min.css" rel="stylesheet">
     <!-- Tailwind CSS (for existing forms) -->
@@ -112,6 +115,7 @@
                             </a>
                             <ul class="dropdown-menu" aria-labelledby="newPagesDropdown">
                                 <li><a class="dropdown-item" href="/homepage2">Homepage2</a></li>
+                                <li><a class="dropdown-item" href="/get-repairs-done">Get Repairs Done</a></li>
                             </ul>
                         </li>
 
@@ -157,7 +161,7 @@
                             </ul>
                         </li>
 
-                        @if(Auth::id() === 13)
+                        @if(Auth::id() === 13 || app()->environment('local'))
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle text-dark" href="#" id="adminDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                                 Admin

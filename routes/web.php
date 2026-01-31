@@ -14,6 +14,10 @@ Route::get('/homepage2', function () {
     return view('homepage2');
 });
 
+Route::get('/get-repairs-done', function () {
+    return view('get-repairs-done');
+});
+
 Route::get('/privacy', function () {
     return view('privacy');
 });

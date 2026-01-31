@@ -5,7 +5,21 @@
 @section('content')
 <h1 class="mb-4">Users</h1>
 
-<p class="text-muted mb-3">Showing {{ $users->count() }} most recent users</p>
+<div class="alert alert-info mb-4">
+    <p class="mb-1"><strong>Total Verified:</strong> {{ $totalVerified }}</p>
+    <p class="mb-0"><strong>Total Non-Verified:</strong> {{ $totalNonVerified }}</p>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <h5 class="card-title">Non-Verified by Month</h5>
+        @foreach($monthlyNonVerified as $month)
+            <p class="mb-1">Non-Verified {{ $month['label'] }}: {{ $month['count'] }}</p>
+        @endforeach
+    </div>
+</div>
+
+<p class="text-muted mb-3">Showing {{ $users->count() }} most recent verified users</p>
 
 <div class="table-responsive">
     <table class="table table-striped table-sm">
