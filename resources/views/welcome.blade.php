@@ -3,68 +3,73 @@
 @section('title', 'Home')
 
 @section('content')
-<div class="container py-5">
-    <div class="row">
-        <div class="col-lg-8 mx-auto">
-            <h1 class="display-4 text-center mb-4">Renters.rent</h1>
-            <p class="lead text-center mb-5">4.6 million renter households in England
-                <br>Your rents are £52 billion per year
-                <br>This is the PRS sector
-                <br>3% of UK GDP
-                <br>Huge strength in numbers</p>
+<h1 class="mb-4">Welcome to Renters</h1>
 
-            <!-- One Purpose -->
-            <div class="card border-0 shadow-sm mb-4">
-                <div class="card-body p-4">
-                    <h2 class="h5 mb-3">One Purpose</h2>
-                    <p class="mb-0">To help you get a better deal from your landlord.</p>
-                    <br>That may be to get things repaired, or negotiate a rent reduction, or even to buy your property</p>
+<p>If you live in the UK and rent your home, this is for you.</p>
 
-                </div>
-            </div>
+<p>You may have heard about the Renter Rights Act.</p>
+<p>Its coming into force in 2 months time on May 1st.</p>
+<p>It means you have much stronger rights of possession.</p>
+<p>Your landlord can no longer evict you as they please.</p>
+<hr>
+<p>You can push back against shoddy conditions and rent increases.</p>
+<p>To push back successfully you will need a systematic approach.</p>
+<p>That is what I am offering here – a systematic process. </p>
+<p>Pressing the landlord to comply with their legal obligations. </p>
+<p>This will massively improve value-for-money on your rent.</p>
+<p>Sign up is free - Sign up</p>
+<hr>
+<p>I'm starting with getting your repairs and improvements done.</p>
+<p>All you need do now is sign up.</p>
+<p>Then I'll ask for your agent and landlord details and repairsand improvements list. </p>
+<p>The system will do the rest.
 
-            <!-- The Law Changed -->
-            <div class="card border-0 shadow-sm mb-4">
-                <div class="card-body p-4">
-                    <h2 class="h5 mb-3">The Law has Changed</h2>
-                    <p class="mb-0">On 1 May 2026, Section 21 "no-fault evictions" ends. The best news for renters in 36 years. The balance of power has seriously shifted in your favour.</p>
-                </div>
-            </div>
+<p>Sign up is free - Sign up</p>
+<hr>
+<h3 class="mb-4">The Property Repair Process</h3>
+<p>Using a legally correct letter/email protocol, we will engage with agent/landlord on your behalf to get repairs done.</p>
+<p>Full corresponcence history will be maintained and availble for your inspection.</p>
+<p>Landlords can no longer evade this responsibility by ending the agreement.</p>
+<p>This will involve letter1, letter2, letter3, with a sensible interval betwen each.</p>
+<p>Responses will range from immediate and helpful to "no reply"</p>
+<p>In the event of "no reply" the landlord will be in breach of contract.</p>
+<p>Letter4 will then advise that costs will be taken from the rent</p>
+<hr>
 
-            <!-- What Now -->
-            <div class="card border-0 shadow-sm mb-4">
-                <div class="card-body p-4">
-                    <h2 class="h5 mb-3">What Now?</h2>
-                    <p class="mb-0">Join Renters.rent and become a member. Enter details of your rented home, your agent and landlord.
-                        The more that join, the more leverage you will all have.</p>
-                </div>
-            </div>
+<h1 class="mb-4">More details</h1>
+<p>There are 4.6 million renter households in England</p>
+<p>Your combined rents are £52 billion per year</p>
+<p>This is the PRS sector - it's 3% of UK GDP </p>
+<p>You're between Agiculture and Construction</p>
+<p>It's big - that means big strength in numbers</p>
+<p>As a joined up group you'd have powerful economic leverage.</p>
+<p>This group has never existed before.</p>
+<p>Join in helping create it.</p>
+<p>Sign up</p>
 
-            <!-- What You Get -->
-            <div class="card border-0 shadow-sm mb-4">
-                <div class="card-body p-4">
-                    <h2 class="h5 mb-3">What You Get</h2>
-                    <p class="mb-0">The bargaining power that comes from belonging to an expanding membership.</p>
-                    <br>
-                    <p class="mb-0">Access to our free members pages covering all important topics,
-                        particularly how to contact your landlord formally and start negotiations. </p>
-                    <br>
-                    <p class="mb-0">Access to our paid service to discover your landlord's situation just like they do to you.</p>
-                </div>
-            </div>
+<hr>
+<h3 class="mb-4">Why now</h3>
+<p>Crucially the Renters Rights Act is coming into force on May 1st this year.</p>
+<p>This removes the landlord's right to end your tenancy without good cause - this "right" has been known as Section 21.</p>
+<p>Section 21 became law 36 years ago - before the internet existed, so renters/tenants were powerless</p>
+<p>Now its gone and you are free to enforce your new rights, with the power of the internet.</p>
+<p>Your landlord cannot retaliate with eviction</p>
+<p>Your landlord has to comply with your new rights</p>
+<p>This is new territory</p>
+<p>Sign up</p>
+<hr>
 
-            <!-- Share This -->
-            <div class="card border-0 shadow-sm mb-4">
-                <div class="card-body p-4">
-                    <h2 class="h5 mb-3">Share This</h2>
-                    <p class="mb-0">The more renters who join, the stronger we all become.</p>
-                </div>
-            </div>
+<h3 class="mb-4">What to do</h3>
+<p>You sign up and be counted</p>
+<p>You provide details of your landlord and agent</p>
+<p>You provide details of repairs needed in your property</p>
 
-            <div class="text-center mt-5">
-                <a href="{{ route('register') }}" class="btn btn-primary btn-lg px-5">Register</a>
-            </div>
-        </div>
-    </div>
+
+<div class="alert alert-success mb-4">
+    <p class="lead mb-0"><strong>Join us - sign up and be counted</strong></p>
+</div>
+
+<div class="text-center mt-4">
+    <a href="{{ route('register') }}" class="btn btn-primary btn-lg px-5">Register</a>
 </div>
 @endsection

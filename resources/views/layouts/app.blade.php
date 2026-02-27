@@ -9,10 +9,19 @@
     <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
 
-    <!-- Bootstrap CSS - Bootswatch Spacelab Theme -->
-    <link href="https://cdn.jsdelivr.net/npm/bootswatch@5.3.0/dist/spacelab/bootstrap.min.css" rel="stylesheet">
-    <!-- Tailwind CSS (for existing forms) -->
-    {{-- @vite(['resources/css/app.css', 'resources/js/app.js']) --}}
+    <!-- Bootstrap CSS - Bootswatch Theme (light/dark based on device preference) -->
+    <link id="bootswatch-theme" href="https://cdn.jsdelivr.net/npm/bootswatch@5.3.0/dist/spacelab/bootstrap.min.css" rel="stylesheet">
+    <script>
+        if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.getElementById('bootswatch-theme').href =
+                'https://cdn.jsdelivr.net/npm/bootswatch@5.3.0/dist/darkly/bootstrap.min.css';
+        }
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
+            document.getElementById('bootswatch-theme').href = e.matches
+                ? 'https://cdn.jsdelivr.net/npm/bootswatch@5.3.0/dist/darkly/bootstrap.min.css'
+                : 'https://cdn.jsdelivr.net/npm/bootswatch@5.3.0/dist/spacelab/bootstrap.min.css';
+        });
+    </script>
 
     <style>
         /* Fix footer to not overlap content */
@@ -36,12 +45,28 @@
             color: #ffffff !important;
             transition: color 0.3s ease;
         }
+
+        /* Dark mode overrides for header */
+        @media (prefers-color-scheme: dark) {
+            .header-bar {
+                background-color: #222 !important;
+            }
+            .header-bar a {
+                color: #fff !important;
+            }
+            .logo-text {
+                fill: #34d399 !important;
+            }
+            .logo-tagline {
+                fill: #94a3b8 !important;
+            }
+        }
     </style>
 </head>
 <body>
     <!-- Header -->
     <header>
-        <div class="container-fluid bg-white border-bottom py-3">
+        <div class="container-fluid header-bar bg-white border-bottom py-3">
             <div class="container d-flex justify-content-between align-items-center">
                 <a href="/" class="d-flex align-items-center text-decoration-none text-dark">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 120" width="300" height="90" class="me-3">
@@ -58,12 +83,12 @@
                         <circle cx="95" cy="50" r="3" fill="#fff" opacity="0.9"/>
 
                         <!-- Text -->
-                        <text x="130" y="60" font-family="Arial, sans-serif" font-size="48" font-weight="700" fill="#047857">
+                        <text x="130" y="60" font-family="Arial, sans-serif" font-size="48" font-weight="700" fill="#047857" class="logo-text">
                           Renters
                         </text>
 
                         <!-- Tagline (optional) -->
-                        <text x="132" y="80" font-family="Arial, sans-serif" font-size="14" fill="#64748b" letter-spacing="2">
+                        <text x="132" y="80" font-family="Arial, sans-serif" font-size="14" fill="#64748b" letter-spacing="2" class="logo-tagline">
                           STRENGTH IN NUMBERS
                         </text>
                     </svg>
@@ -71,7 +96,7 @@
             </div>
         </div>
 
-        <nav class="navbar navbar-expand-xl navbar-light bg-white border-bottom box-shadow mb-3">
+        <nav class="navbar navbar-expand-xl navbar-light header-bar bg-white border-bottom box-shadow mb-3">
             <div class="container">
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent"
                         aria-expanded="false" aria-label="Toggle navigation">
