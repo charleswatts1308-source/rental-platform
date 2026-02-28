@@ -66,10 +66,10 @@
 <body>
     <!-- Header -->
     <header>
-        <div class="container-fluid header-bar bg-white border-bottom py-3">
+        <div class="container-fluid header-bar bg-white border-bottom py-1">
             <div class="container d-flex justify-content-between align-items-center">
                 <a href="/" class="d-flex align-items-center text-decoration-none text-dark">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 120" width="300" height="90" class="me-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 90" width="240" height="54" class="me-3">
                         <!-- Roof/House Icon -->
                         <path d="M 50 45 L 80 20 L 110 45 L 105 45 L 105 70 L 55 70 L 55 45 Z"
                               fill="#10b981" stroke="#10b981" stroke-width="2" stroke-linejoin="round"/>
