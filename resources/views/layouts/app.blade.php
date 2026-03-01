@@ -46,6 +46,21 @@
             transition: color 0.3s ease;
         }
 
+        /* Hide tagline on small screens */
+        @media (max-width: 575px) {
+            .logo-tagline {
+                display: none;
+            }
+        }
+
+        /* Auth buttons: add border and padding on larger screens only */
+        @media (min-width: 576px) {
+            .auth-buttons {
+                padding-left: 1rem;
+                border-left: 1px solid #dee2e6;
+            }
+        }
+
         /* Dark mode overrides for header */
         @media (prefers-color-scheme: dark) {
             .header-bar {
@@ -69,7 +84,7 @@
         <nav class="navbar navbar-expand-xl navbar-light header-bar bg-white border-bottom box-shadow mb-3">
             <div class="container">
                 <a href="/" class="navbar-brand d-flex align-items-center text-decoration-none p-0">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 90" width="200" height="45" class="me-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="48 0 352 90" width="200" height="45" class="me-2">
                         <!-- Roof/House Icon -->
                         <path d="M 50 45 L 80 20 L 110 45 L 105 45 L 105 70 L 55 70 L 55 45 Z"
                               fill="#10b981" stroke="#10b981" stroke-width="2" stroke-linejoin="round"/>
@@ -87,7 +102,7 @@
                           Renters
                         </text>
 
-                        <!-- Tagline (optional) -->
+                        <!-- Tagline (hidden on small screens) -->
                         <text x="132" y="80" font-family="Arial, sans-serif" font-size="14" fill="#64748b" letter-spacing="2" class="logo-tagline">
                           STRENGTH IN NUMBERS
                         </text>
@@ -100,7 +115,7 @@
                 </button>
 
                 <!-- Authentication Links - Always Visible -->
-                <div class="ms-auto ps-3 border-start d-flex align-items-center order-xl-2">
+                <div class="ms-auto d-flex align-items-center order-xl-2 auth-buttons">
                     @guest
                         <a href="{{ route('login') }}" class="btn btn-outline-primary btn-sm me-1">Login</a>
                         <a href="{{ route('register') }}" class="btn btn-primary btn-sm">Register</a>
