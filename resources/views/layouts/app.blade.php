@@ -68,7 +68,7 @@
     <header class="sticky-top">
         <nav class="navbar navbar-expand-xl navbar-light header-bar bg-white border-bottom box-shadow mb-3">
             <div class="container">
-                <a href="/" class="navbar-brand d-flex align-items-center text-decoration-none">
+                <a href="/" class="navbar-brand d-flex align-items-center text-decoration-none p-0">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 90" width="200" height="45" class="me-2">
                         <!-- Roof/House Icon -->
                         <path d="M 50 45 L 80 20 L 110 45 L 105 45 L 105 70 L 55 70 L 55 45 Z"
@@ -102,8 +102,8 @@
                 <!-- Authentication Links - Always Visible -->
                 <div class="ms-auto ps-3 border-start d-flex align-items-center order-xl-2">
                     @guest
-                        <a href="{{ route('login') }}" class="btn btn-outline-primary me-2">Login</a>
-                        <a href="{{ route('register') }}" class="btn btn-primary">Register</a>
+                        <a href="{{ route('login') }}" class="btn btn-outline-primary btn-sm me-1">Login</a>
+                        <a href="{{ route('register') }}" class="btn btn-primary btn-sm">Register</a>
                     @else
                         <div class="dropdown">
                             <a class="btn btn-outline-secondary dropdown-toggle small text-lowercase fw-normal" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
