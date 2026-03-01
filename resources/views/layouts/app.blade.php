@@ -65,11 +65,11 @@
 </head>
 <body>
     <!-- Header -->
-    <header>
-        <div class="container-fluid header-bar bg-white border-bottom py-1">
-            <div class="container d-flex justify-content-between align-items-center">
-                <a href="/" class="d-flex align-items-center text-decoration-none text-dark">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 90" width="240" height="54" class="me-3">
+    <header class="sticky-top">
+        <nav class="navbar navbar-expand-xl navbar-light header-bar bg-white border-bottom box-shadow mb-3">
+            <div class="container">
+                <a href="/" class="navbar-brand d-flex align-items-center text-decoration-none">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 90" width="200" height="45" class="me-2">
                         <!-- Roof/House Icon -->
                         <path d="M 50 45 L 80 20 L 110 45 L 105 45 L 105 70 L 55 70 L 55 45 Z"
                               fill="#10b981" stroke="#10b981" stroke-width="2" stroke-linejoin="round"/>
@@ -93,11 +93,7 @@
                         </text>
                     </svg>
                 </a>
-            </div>
-        </div>
 
-        <nav class="navbar navbar-expand-xl navbar-light header-bar bg-white border-bottom box-shadow mb-3">
-            <div class="container">
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent"
                         aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
