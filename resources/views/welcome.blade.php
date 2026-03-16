@@ -21,14 +21,19 @@ This is the biggest change for UK renters in 100 years.<br>
 The removal of Section21 combined with the power of internet communities means you can shake the UK rental market to its core. <br>
 <br>
 Think I’m exaggerating ?  <br>
-Sign up and find out for yourself.<br>
+
+4.7 million UK renters.<br>
+One platform.<br>
+Find out what happens when you all put your energy in the same place.<br>
 <br>
-Sign-up is free and once registered you can see our site content.
+Sign up is free - then find out for yourself.<br>
+<br>
+Once registered - all will become clear.
 <br>
 
 <div class="alert alert-success mb-4">
-    <p class="lead mb-0"><strong>Join us</strong></p>
-</div>
+    {{-- <p class="lead mb-0"><strong>Join us</strong></p>
+</div> --}}
 
 <div class="text-center mt-4">
     <a href="{{ route('register') }}" class="btn btn-primary btn-lg px-5">Register</a>

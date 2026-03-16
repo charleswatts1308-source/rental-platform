@@ -146,16 +146,6 @@
                         </li>
 
                         <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle text-dark" href="#" id="newPagesDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                NewPages
-                            </a>
-                            <ul class="dropdown-menu" aria-labelledby="newPagesDropdown">
-                                <li><a class="dropdown-item" href="/homepage2">Homepage2</a></li>
-                                <li><a class="dropdown-item" href="/get-repairs-done">Get Repairs Done</a></li>
-                            </ul>
-                        </li>
-
-                        <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle text-dark" href="#" id="RentalProfileDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                                 Your Rental Profile
                             </a>
@@ -170,9 +160,10 @@
                                 The Law
                             </a>
                             <ul class="dropdown-menu" aria-labelledby="theLawDropdown">
-                                <li><a class="dropdown-item" href="{{ route('members.renters-rights-bill') }}">Renters' Rights Act 2025</a></li>
+                                <li><a class="dropdown-item" href="{{ route('members.renters-rights-act') }}">Renters' Rights Act 2025</a></li>
                                 <li><a class="dropdown-item" href="{{ route('members.tenantandlandlord') }}">Tenant and Landlord</a></li>
                                 <li><a class="dropdown-item" href="{{ route('members.landlord-database') }}">Landlord Database</a></li>
+                                <li><a class="dropdown-item" href="{{ route('members.renter-rights-explained') }}">Renter Rights Explained</a></li>
                             </ul>
                         </li>
 
@@ -181,19 +172,11 @@
                                 For Renters
                             </a>
                             <ul class="dropdown-menu" aria-labelledby="forRentersDropdown">
-                                <li><a class="dropdown-item" href="{{ route('members.renter-database') }}">Renter Database</a></li>
                                 <li><a class="dropdown-item" href="{{ route('members.know-your-landlord') }}">Know Your Landlord</a></li>
-                                <li><a class="dropdown-item" href="{{ route('members.renter-support-services') }}">Renter Support Services</a></li>
-                            </ul>
-                        </li>
-
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle text-dark" href="#" id="forLandlordsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                For Landlords
-                            </a>
-                            <ul class="dropdown-menu" aria-labelledby="forLandlordsDropdown">
-                                <li><a class="dropdown-item" href="{{ route('members.landlord-support-services') }}">Landlord Support Services</a></li>
-                                <li><a class="dropdown-item" href="{{ route('members.property-data-services') }}">Property Data Services</a></li>
+                                <li><a class="dropdown-item" href="{{ route('members.the-long-game') }}">The Long Game</a></li>
+                                <li><a class="dropdown-item" href="{{ route('members.repair-notices') }}">Repair Notices</a></li>
+                                <li><a class="dropdown-item" href="{{ route('members.the-big-picture') }}">The Big Picture</a></li>
+                                <li><a class="dropdown-item" href="{{ route('members.property-types') }}">Property Types</a></li>
                             </ul>
                         </li>
 

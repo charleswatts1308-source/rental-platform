@@ -3,30 +3,25 @@
 @section('title', 'About Us')
 
 @section('content')
-<h1 class="mb-4">About Us</h1>
+<h1 class="mb-4">About Renters</h1>
 
-<div class="card mb-4">
-    <div class="card-body">
-        <p class="lead text-muted">This platform connects UK renters with information about their shared landlords and each other.</p>
+<p>I'm a semi-retired software developer, with thirty years specialising in databases.</p>
 
-        <h2 class="h5 mt-4">Our Mission</h2>
-        <p>
-            We believe that when renters have access to good information and can connect with others in similar situations,
-            the entire rental market works more effectively for everyone. As a neutral platform, we provide the tools and
-            connections that help individual renters make informed decisions about their housing.
-        </p>
+<p>In my younger years I was a renter, then a landlord. Now I have children who are renters. I've seen both sides.</p>
 
-        <h2 class="h5 mt-4">The Challenge We Address</h2>
-        <p>
-            Right now, many of the UK's 4.6 million renter households are effectively powerless when dealing with rental issues.
-            As individual renters facing landlords, agents, and a complex legal system, they often have little leverage and
-            limited recourse when problems arise. Despite being part of a £52 billion sector that represents 3% of the UK economy,
-            individual renters are isolated and lack the collective influence their numbers should provide.
-        </p>
-        <p>
-            Our platform helps renters understand they're part of something much bigger and provides the information and
-            connections that can help rebalance these dynamics naturally.
-        </p>
-    </div>
-</div>
+<p>For the last two years I've watched the conditions for this platform gradually evolve. <br>
+    The Renters Rights Act and its abolition of Section 21 combined with the internet is a truly explosive combination. <br>
+    Add in the growing frustration of a generation priced out of ownership, and it's even more so.</p>
+
+<hr>
+
+<p>I'm not a campaign group. I have no funding, no investors, no agenda beyond the platform itself.</p>
+
+<p>I have built the platform, I will maintain it and develop the services you need as you ask for them. <br>
+    I will enjoy that.</p>
+
+<p>Make the most of it and turn the tables on our feudal system of private renting.</p>
+
+<p>Your rental money is yours to give and theirs to earn.</p>
+
 @endsection

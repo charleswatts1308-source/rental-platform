@@ -10,14 +10,6 @@ Route::get('/about', function () {
     return view('about');
 });
 
-Route::get('/homepage2', function () {
-    return view('homepage2');
-});
-
-Route::get('/get-repairs-done', function () {
-    return view('get-repairs-done');
-});
-
 Route::get('/privacy', function () {
     return view('privacy');
 });
@@ -54,14 +46,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Member information pages
     Route::prefix('members')->name('members.')->group(function () {
-        Route::get('/renters-rights-bill', fn() => view('members.renters-rights-bill'))->name('renters-rights-bill');
+        Route::get('/renters-rights-act', fn() => view('members.renters-rights-act'))->name('renters-rights-act');
         Route::get('/know-your-landlord', fn() => view('members.know-your-landlord'))->name('know-your-landlord');
-        Route::get('/renter-database', fn() => view('members.renter-database'))->name('renter-database');
         Route::get('/landlord-database', fn() => view('members.landlord-database'))->name('landlord-database');
-        Route::get('/renter-support-services', fn() => view('members.renter-support-services'))->name('renter-support-services');
-        Route::get('/landlord-support-services', fn() => view('members.landlord-support-services'))->name('landlord-support-services');
-        Route::get('/property-data-services', fn() => view('members.property-data-services'))->name('property-data-services');
         Route::get('/tenantandlandlord', fn() => view('members.tenantandlandlord'))->name('tenantandlandlord');
+        Route::get('/the-long-game', fn() => view('members.the-long-game'))->name('the-long-game');
+        Route::get('/repair-notices', fn() => view('members.repair-notices'))->name('repair-notices');
+        Route::get('/the-big-picture', fn() => view('members.the-big-picture'))->name('the-big-picture');
+        Route::get('/property-types', fn() => view('members.property-types'))->name('property-types');
+        Route::get('/renter-rights-explained', fn() => view('members.renter-rights-explained'))->name('renter-rights-explained');
     });
 });
 
