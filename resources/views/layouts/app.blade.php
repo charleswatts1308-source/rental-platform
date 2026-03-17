@@ -46,6 +46,14 @@
             transition: color 0.3s ease;
         }
 
+        /* Dial down heading sizes */
+        h1 {
+            font-size: 1.75rem;
+        }
+        h3 {
+            font-size: 1.35rem;
+        }
+
         /* Hide tagline on small screens */
         @media (max-width: 575px) {
             .logo-tagline {
@@ -103,7 +111,7 @@
                         </text>
 
                         <!-- Tagline (hidden on small screens) -->
-                        <text x="132" y="80" font-family="Arial, sans-serif" font-size="14" fill="#64748b" letter-spacing="2" class="logo-tagline">
+                        <text x="50" y="89" font-family="Arial, sans-serif" font-size="14" fill="#64748b" letter-spacing="5" class="logo-tagline">
                           STRENGTH IN NUMBERS
                         </text>
                     </svg>
@@ -175,6 +183,7 @@
                                 <li><a class="dropdown-item" href="{{ route('members.know-your-landlord') }}">Know Your Landlord</a></li>
                                 <li><a class="dropdown-item" href="{{ route('members.the-long-game') }}">The Long Game</a></li>
                                 <li><a class="dropdown-item" href="{{ route('members.repair-notices') }}">Repair Notices</a></li>
+                        <li><a class="dropdown-item" href="{{ route('members.beyond-repair') }}">Beyond Repair</a></li>
                                 <li><a class="dropdown-item" href="{{ route('members.the-big-picture') }}">The Big Picture</a></li>
                                 <li><a class="dropdown-item" href="{{ route('members.property-types') }}">Property Types</a></li>
                             </ul>

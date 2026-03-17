@@ -13,7 +13,11 @@
 
 <p>But here's the interesting part: even as pure fantasy, who exactly has the public's sympathy? Landlords — many holding multiple properties, leveraged on the back of a generation priced out of ownership — or the tenants writing the cheques?</p>
 
-<p>And consider where the money goes. Withheld rent doesn't vanish. It stays in the hands of working people who spend it in their local economy. The landlord's mortgage payment pauses. The tenant's grocery shop doesn't. How many landlord pensions are quietly being funded by renters who can't afford one themselves?</p>
+<p>And consider where the money goes. Withheld rent doesn't vanish.
+    It stays in the hands of working people who spend it in their local economy.
+    The landlord's mortgage payment pauses.
+    The tenant's grocery shop doesn't.
+    How many landlord pensions are quietly being funded by renters who can't afford one themselves?</p>
 
 <hr>
 

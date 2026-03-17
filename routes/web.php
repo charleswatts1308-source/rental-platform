@@ -55,6 +55,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/the-big-picture', fn() => view('members.the-big-picture'))->name('the-big-picture');
         Route::get('/property-types', fn() => view('members.property-types'))->name('property-types');
         Route::get('/renter-rights-explained', fn() => view('members.renter-rights-explained'))->name('renter-rights-explained');
+        Route::get('/beyond-repair', fn() => view('members.beyond-repair'))->name('beyond-repair');
     });
 });
 
