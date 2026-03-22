@@ -40,6 +40,7 @@
         </tr>
     </tbody>
 </table>
+<p class="text-muted"><small>Source: English Private Landlord Survey 2024 (MHCLG)</small></p>
 
 <hr>
 
@@ -48,6 +49,37 @@
 <p>Most landlords are not corporations or professional property empires. According to the English Private Landlord Survey, 45% own just one rental property. The majority see themselves not as business operators but as investors — 56% describe their rental property as a long-term contribution to their pension.</p>
 
 <p>That is an important distinction. A pension investor's priority is yield and asset value, not the quality of the service they provide. The tenant is the income stream, not the customer.</p>
+
+<table class="table table-striped mt-4">
+    <thead>
+        <tr>
+            <th>Portfolio size</th>
+            <th>% of landlords</th>
+            <th>% of tenancies</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>1 property</td>
+            <td>45%</td>
+            <td>21%</td>
+        </tr>
+        <tr>
+            <td>2–4 properties</td>
+            <td>38%</td>
+            <td>30%</td>
+        </tr>
+        <tr>
+            <td>5+ properties</td>
+            <td>17%</td>
+            <td>49%</td>
+        </tr>
+    </tbody>
+</table>
+<p class="text-muted"><small>Source: English Private Landlord Survey 2024 (MHCLG)</small></p>
+
+
+
 
 <hr>
 

@@ -29,6 +29,7 @@
             display: flex;
             flex-direction: column;
             min-height: 100vh;
+
         }
 
         main {
@@ -125,8 +126,8 @@
                 <!-- Authentication Links - Always Visible -->
                 <div class="ms-auto d-flex align-items-center order-xl-2 auth-buttons">
                     @guest
-                        <a href="{{ route('login') }}" class="btn btn-outline-primary btn-sm me-1">Login</a>
-                        <a href="{{ route('register') }}" class="btn btn-primary btn-sm">Register</a>
+                        <a href="{{ route('login') }}" class="btn btn-sm me-1" style="color: #047857; border-color: #047857;">Login</a>
+                        <a href="{{ route('register') }}" class="btn btn-sm text-white" style="background-color: #047857;">Register</a>
                     @else
                         <div class="dropdown">
                             <a class="btn btn-outline-secondary dropdown-toggle small text-lowercase fw-normal" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
