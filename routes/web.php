@@ -19,7 +19,7 @@ Route::get('/cookies', function () {
 });
 
 Route::get('/', function () {
-    return view('welcome');
+    return view('welcome-2');
 });
 
 Route::get('/dashboard', function () {
