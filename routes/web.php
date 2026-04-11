@@ -4,6 +4,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RentalController;
 use App\Http\Controllers\FileAttachmentController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\ContactMessageController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/about', function () {
@@ -40,6 +41,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/rentals/{rental}/edit', [RentalController::class, 'edit'])->name('rentals.edit');
     Route::put('/rentals/{rental}', [RentalController::class, 'update'])->name('rentals.update');
 
+    // Contact us
+    Route::get('/contact', [ContactMessageController::class, 'create'])->name('contact.create');
+    Route::post('/contact', [ContactMessageController::class, 'store'])->name('contact.store');
+
     // File attachment routes
     Route::get('/files/{id}/download', [FileAttachmentController::class, 'download'])->name('files.download');
     Route::delete('/files/{id}', [FileAttachmentController::class, 'destroy'])->name('files.destroy');
@@ -68,6 +73,9 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     Route::get('/users', [AdminController::class, 'users'])->name('users');
     Route::get('/page-views', [AdminController::class, 'pageViews'])->name('page-views');
     Route::get('/rentals', [AdminController::class, 'rentals'])->name('rentals');
+    Route::get('/contact-messages', [AdminController::class, 'contactMessages'])->name('contact-messages');
+    Route::get('/contact-messages/{contactMessage}', [AdminController::class, 'contactMessageShow'])->name('contact-messages.show');
+    Route::post('/contact-messages/{contactMessage}/reply', [AdminController::class, 'contactMessageReply'])->name('contact-messages.reply');
 });
 
 require __DIR__.'/auth.php';

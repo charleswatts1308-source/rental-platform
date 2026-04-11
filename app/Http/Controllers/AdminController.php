@@ -5,6 +5,10 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Models\PageView;
 use App\Models\Rental;
+use App\Models\ContactMessage;
+use App\Mail\ContactReply;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 
 class AdminController extends Controller
 {
@@ -71,5 +75,43 @@ class AdminController extends Controller
             ->get();
 
         return view('admin.rentals', compact('rentals'));
+    }
+
+    public function contactMessages()
+    {
+        $messages = ContactMessage::with('user')
+            ->orderByRaw('replied_at IS NOT NULL, created_at DESC')
+            ->limit(100)
+            ->get();
+
+        return view('admin.contact-messages', compact('messages'));
+    }
+
+    public function contactMessageShow(ContactMessage $contactMessage)
+    {
+        $contactMessage->load('user');
+        return view('admin.contact-message-show', compact('contactMessage'));
+    }
+
+    public function contactMessageReply(Request $request, ContactMessage $contactMessage)
+    {
+        if ($contactMessage->admin_reply) {
+            return redirect()->route('admin.contact-messages.show', $contactMessage->id)
+                ->with('success', 'This message has already been replied to.');
+        }
+
+        $request->validate([
+            'admin_reply' => 'required|string|max:5000',
+        ]);
+
+        $contactMessage->update([
+            'admin_reply' => $request->admin_reply,
+            'replied_at' => now(),
+        ]);
+
+        Mail::to($contactMessage->user->email)->send(new ContactReply($contactMessage));
+
+        return redirect()->route('admin.contact-messages.show', $contactMessage->id)
+            ->with('success', 'Reply sent to ' . $contactMessage->user->email);
     }
 }

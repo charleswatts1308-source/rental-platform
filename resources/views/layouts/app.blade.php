@@ -154,6 +154,10 @@
                             <a class="nav-link text-dark" href="/about">About Us</a>
                         </li>
 
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" href="{{ route('contact.create') }}">Contact Us</a>
+                        </li>
+
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle text-dark" href="#" id="howItWorksDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                                 How It Works
@@ -215,6 +219,7 @@
                                 <li><a class="dropdown-item" href="{{ route('admin.users') }}">Users</a></li>
                                 <li><a class="dropdown-item" href="{{ route('admin.page-views') }}">Page Views</a></li>
                                 <li><a class="dropdown-item" href="{{ route('admin.rentals') }}">Rentals</a></li>
+                                <li><a class="dropdown-item" href="{{ route('admin.contact-messages') }}">Contact Messages</a></li>
                             </ul>
                         </li>
                         @endif
