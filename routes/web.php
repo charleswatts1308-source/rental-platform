@@ -44,19 +44,23 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/files/{id}/download', [FileAttachmentController::class, 'download'])->name('files.download');
     Route::delete('/files/{id}', [FileAttachmentController::class, 'destroy'])->name('files.destroy');
 
-    // Member information pages
+    // Auth-only member pages
     Route::prefix('members')->name('members.')->group(function () {
-        Route::get('/renters-rights-act', fn() => view('members.renters-rights-act'))->name('renters-rights-act');
-        Route::get('/know-your-landlord', fn() => view('members.know-your-landlord'))->name('know-your-landlord');
-        Route::get('/landlord-database', fn() => view('members.landlord-database'))->name('landlord-database');
         Route::get('/tenantandlandlord', fn() => view('members.tenantandlandlord'))->name('tenantandlandlord');
         Route::get('/thought-experiment', fn() => view('members.thought-experiment'))->name('thought-experiment');
-        Route::get('/repair-notices', fn() => view('members.repair-notices'))->name('repair-notices');
-        Route::get('/scale-of-prs', fn() => view('members.scale-of-prs'))->name('scale-of-prs');
-        Route::get('/property-types', fn() => view('members.property-types'))->name('property-types');
-        Route::get('/renter-rights-explained', fn() => view('members.renter-rights-explained'))->name('renter-rights-explained');
         Route::get('/equity-conversation', fn() => view('members.equity-conversation'))->name('equity-conversation');
     });
+});
+
+// Public member pages
+Route::prefix('members')->name('members.')->group(function () {
+    Route::get('/renters-rights-act', fn() => view('members.renters-rights-act'))->name('renters-rights-act');
+    Route::get('/know-your-landlord', fn() => view('members.know-your-landlord'))->name('know-your-landlord');
+    Route::get('/landlord-database', fn() => view('members.landlord-database'))->name('landlord-database');
+    Route::get('/repair-notices', fn() => view('members.repair-notices'))->name('repair-notices');
+    Route::get('/scale-of-prs', fn() => view('members.scale-of-prs'))->name('scale-of-prs');
+    Route::get('/property-types', fn() => view('members.property-types'))->name('property-types');
+    Route::get('/renter-rights-explained', fn() => view('members.renter-rights-explained'))->name('renter-rights-explained');
 });
 
 // Admin routes (user ID 1 only)
