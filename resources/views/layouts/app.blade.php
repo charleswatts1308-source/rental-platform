@@ -182,10 +182,10 @@
                             </a>
                             <ul class="dropdown-menu" aria-labelledby="forRentersDropdown">
                                 <li><a class="dropdown-item" href="{{ route('members.know-your-landlord') }}">Know Your Landlord</a></li>
-                                <li><a class="dropdown-item" href="{{ route('members.the-long-game') }}">The Long Game</a></li>
+                                <li><a class="dropdown-item" href="{{ route('members.thought-experiment') }}">Thought Experiment</a></li>
                                 <li><a class="dropdown-item" href="{{ route('members.repair-notices') }}">Repair Notices</a></li>
-                        <li><a class="dropdown-item" href="{{ route('members.beyond-repair') }}">Beyond Repair</a></li>
-                                <li><a class="dropdown-item" href="{{ route('members.the-big-picture') }}">The Big Picture</a></li>
+                        <li><a class="dropdown-item" href="{{ route('members.equity-conversation') }}">Equity Conversation</a></li>
+                                <li><a class="dropdown-item" href="{{ route('members.scale-of-prs') }}">Scale of PRS</a></li>
                                 <li><a class="dropdown-item" href="{{ route('members.property-types') }}">Property Types</a></li>
                             </ul>
                         </li>

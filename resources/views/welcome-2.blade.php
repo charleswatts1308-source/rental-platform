@@ -3,14 +3,24 @@
 @section('title', 'Home')
 
 @section('content')
-<p class="lead">The UK's private rented sector is one of the largest industries in the country.</p>
+<p class="lead">Welcome to Renters <br>Kickstart your rented home's repairs and maintenance. </p>
+
+<p class="lead">The UK's private rented sector, the PRS,  is one of the largest industries in the country.</p>
 <p>Bigger by revenue than defence. Bigger than tourism. A colossal transfer of money, every month, from tenants to landlords.</p>
 <p>4.7 million households. Every age, income, and background. The money flowing in is enormous.
     What flows back &mdash; in terms of maintained, safe, fit-for-purpose homes &mdash; is far less impressive.</p>
 
+<p>14% of rentals are flat conversions, 34% are terraced houses, all typically older Victorian or Edwardian stock. 48% of the entire sector lives in one of these two property types.</p>
+
+<p>Many of these properties have ageing heating systems, poor insulation,
+    and structural characteristics that make damp and cold a persistent problem rather than an occasional one.</p>
+
+<p>A significant portion of PRS housing entered the rental market because owners moved on, inherited property, or couldn't sell.
+    The tenant inherits whatever condition the property was in.</p>
+
 <hr>
 
-<h5 class="mb-1" style="border-left: 6px solid #047857; padding-left: 0.5rem;">Something Has Changed</h5>
+<h5 class="mb-1" style="border-left: 6px solid #047857; padding-left: 0.5rem;">Renters Rights Act - new rules</h5>
 <p>Section 21 is gone. For the last 38 years a landlord could respond to any complaint with a no-fault eviction notice.
     That tool is gone. You can now raise concerns about your home without fear of losing it.
     You are now protected by new laws contained in the Renters Rights Act 2026.
@@ -18,14 +28,14 @@
 
 <hr>
 
-<h5 class="mb-1" style="border-left: 6px solid #047857; padding-left: 0.5rem;">The Problem That Remains</h5>
+<h5 class="mb-1" style="border-left: 6px solid #047857; padding-left: 0.5rem;">You still have to ask</h5>
 <p>Knowing you can now ask is a great thing. But getting a helpful response will still take much time and effort.
     Today's landlords have become very used to doing the bare minimum, and will not be keen to change.
     Many single property landlords are likely to be frightened by the cost implications.</p>
 <p> What do you do if your landlord or agent does not enter into a useful dialogue?
     Is your landlord is actually unwilling or financially unable to get the work done? What to do then?</p>
     You're paying big rent, you deserve to be a valued customer.<br>
-    We'll get you there with our Landlord Contact Service.
+    We'll get you there with our Landlord Contact Service. New tools for a new era.
 <hr>
 
 <h5 class="mb-1" style="border-left: 6px solid #047857; padding-left: 0.5rem;">Our Landlord Contact Service</h5>

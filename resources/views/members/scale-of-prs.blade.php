@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'The Big Picture')
+@section('title', 'Scale of PRS')
 
 @section('content')
 <h1 class="mb-4">The Scale of the Private Rental Sector</h1>
@@ -9,34 +9,35 @@
 
 <p>Every month they collectively pay around £6.4 billion in rent. Every year that is approximately £77 billion — more than one and a half times the entire UK defence budget.</p>
 
-<p>That is not a niche market. That is one of the largest single flows of money in the British economy, moving quietly and continuously from tenants to landlords, month after month.</p>
+<p>This is not a niche market. This is one of the largest single flows of money in the British economy,
+    moving quietly and continuously from tenants to landlords, month after month.</p>
 
 <table class="table table-striped mt-4">
     <thead>
         <tr>
             <th>Sector</th>
-            <th>Annual value</th>
+            <th>Annual value (approximate)</th>
         </tr>
     </thead>
     <tbody>
         <tr>
             <td>UK Defence budget</td>
-            <td>~£50bn</td>
+            <td>£50bn</td>
         </tr>
         <tr>
             <td>UK Tourism (economic output)</td>
-            <td>~£58bn</td>
+            <td>£58bn</td>
         </tr>
         <tr><td><strong>UK Private Rental Sector</strong></td>
-            <td><strong>~£77bn</strong></td>
+            <td><strong>£77bn</strong></td>
         </tr>
         <tr>
             <td>UK Retail (economic output)</td>
-            <td>~£115bn</td>
+            <td>£115bn</td>
         </tr>
         <tr>
             <td>UK Hospitality (turnover)</td>
-            <td>~£153bn</td>
+            <td>£153bn</td>
         </tr>
     </tbody>
 </table>
@@ -105,6 +106,6 @@
 
 <p>The private rental sector has operated largely outside that framework. No pricing regulator. No mandatory standards enforcement with teeth. No organised voice on the tenant side.</p>
 
-<p>That is what this platform exists to change.</p>
+<p>This platform offers you the opportunity to get organised !</p>
 
 @endsection

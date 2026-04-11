@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'The Long Game')
+@section('title', 'Thought Experiment')
 
 @section('content')
 <h1 class="mb-4">What If Every Renter Stopped Paying?</h1>

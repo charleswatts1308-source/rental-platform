@@ -11,7 +11,9 @@
 
 <h3 class="mb-3">You can't be evicted without a reason</h3>
 
-<p>Before May 1st, your landlord could end your tenancy with two months' notice and no explanation required. That's gone. From now on, a landlord who wants you out must have a legally defined reason — rent arrears, anti-social behaviour, or a genuine intention to sell.</p>
+<p>Before May 1st, your landlord could end your tenancy with two months' notice and no explanation required. That's gone.
+    From now on, a landlord who wants you out must have a legally defined reason — rent arrears, anti-social behaviour, a genuine intention to sell
+    or use the property for family.</p>
 
 <p>If you've been nervous about complaining, asking for repairs, or pushing back on a rent increase — that nervousness was rational. It no longer needs to be.</p>
 
@@ -21,7 +23,7 @@
 
 <p>Fixed-term tenancies are abolished. All tenancies become periodic — running month to month indefinitely. Your landlord can't simply wait for your contract to expire and decline to renew. You stay until you choose to leave, or until they have a legal reason to ask you to go.</p>
 
-<p>You can still leave with two months' notice whenever you want. The flexibility now runs both ways.</p>
+<p>Provided your landlord continues to let the property, you have possession as long as you want, and you can leave with just two months.</p>
 
 <hr>
 
@@ -39,7 +41,8 @@
 
 <h3 class="mb-3">Your home must meet minimum standards</h3>
 
-<p>The Decent Homes Standard now applies to private rentals. Landlords are legally required to address health hazards — damp, mould, unsafe heating — within defined timeframes. This is no longer a matter of goodwill.</p>
+<p>The Decent Homes Standard now applies to private rentals. Landlords will be legally required to address health hazards — damp, mould, unsafe heating — within defined timeframes.
+    This is no longer a matter of goodwill. The start dates for legal enforcement has not yet been announced.</p>
 
 <hr>
 
@@ -51,14 +54,16 @@
 
 <h3 class="mb-3">There is now a formal complaints route</h3>
 
-<p>Every landlord must register with a Landlord Redress Scheme and a national landlord database. For the first time, there is a formal, impartial route to resolve disputes — you are not limited to court action or simply giving up.</p>
+<p>Every landlord must register with a Landlord Redress Scheme and a national landlord database.
+    For the first time, there is a formal, impartial route to resolve disputes — you are not limited to court action or simply giving up.
+    Implementation dates have not yet been announced.
+</p>
 
 <hr>
 
 <h3 class="mb-3">The bottom line</h3>
 
-<p>Every one of these changes was resisted by landlord organisations for years. They are now law. The balance of power in the private rental sector has shifted — not completely, not permanently, but significantly.</p>
+<p>Every one of these changes was resisted by landlord organisations for years. They are now law. The balance of power in the private rental sector has shifted..</p>
 
-<p>What you do with that shift is up to you.</p>
 
 @endsection

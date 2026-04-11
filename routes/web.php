@@ -50,12 +50,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/know-your-landlord', fn() => view('members.know-your-landlord'))->name('know-your-landlord');
         Route::get('/landlord-database', fn() => view('members.landlord-database'))->name('landlord-database');
         Route::get('/tenantandlandlord', fn() => view('members.tenantandlandlord'))->name('tenantandlandlord');
-        Route::get('/the-long-game', fn() => view('members.the-long-game'))->name('the-long-game');
+        Route::get('/thought-experiment', fn() => view('members.thought-experiment'))->name('thought-experiment');
         Route::get('/repair-notices', fn() => view('members.repair-notices'))->name('repair-notices');
-        Route::get('/the-big-picture', fn() => view('members.the-big-picture'))->name('the-big-picture');
+        Route::get('/scale-of-prs', fn() => view('members.scale-of-prs'))->name('scale-of-prs');
         Route::get('/property-types', fn() => view('members.property-types'))->name('property-types');
         Route::get('/renter-rights-explained', fn() => view('members.renter-rights-explained'))->name('renter-rights-explained');
-        Route::get('/beyond-repair', fn() => view('members.beyond-repair'))->name('beyond-repair');
+        Route::get('/equity-conversation', fn() => view('members.equity-conversation'))->name('equity-conversation');
     });
 });
 

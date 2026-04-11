@@ -13,15 +13,14 @@
 <h3 class="mb-3">How It Works</h3>
 
 <p>You tell us what needs fixing.
-    We send a formal notice to your landlord and agent on your behalf
-    — you remain anonymous.
+    We send a formal notice to your landlord and agent on your behalf.
     The notice references your rights under the Renters Rights Act and sets a reasonable deadline for response,
     You approve every letter before it's sent.</p>
 <hr>
 
 <h3 class="mb-3">Why This Works</h3>
 
-<p>A formal notice from an organised platform, arriving once, then again, then again at escalating levels,
+<p>A formal notice from an organised platform, arriving once, then repeated at escalating levels,
     is a different thing from a tenant asking informally.
     It is obvious that a system is keeping records on your behalf.</p>
 

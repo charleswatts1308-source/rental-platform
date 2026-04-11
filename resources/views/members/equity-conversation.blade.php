@@ -1,9 +1,9 @@
 @extends('layouts.app')
 
-@section('title', 'Beyond Repairs')
+@section('title', 'Equity Conversation')
 
 @section('content')
-<h1 class="mb-4">Beyond Repair — The Equity Conversation</h1>
+<h1 class="mb-4">The Equity Conversation</h1>
 
 <p>The repair notice process exists to get things fixed. But for some tenants, in some situations, it may open a door to something more significant.</p>
 

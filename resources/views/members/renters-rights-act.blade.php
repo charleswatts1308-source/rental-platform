@@ -5,7 +5,7 @@
 @section('content')
 <h1 class="mb-4">Renters' Rights Act 2025</h1>
 
-<p>Royal Assent 27 October 2025. The Renters' Rights Act is now law. Here are the key changes as they affect renters, with implementation starting 1 May 2026.</p>
+<p>Following Royal Assent 27 October 2025, The Renters' Rights Act is now law. Here are the key changes as they affect renters, with implementation starting 1 May 2026.</p>
 
 <hr>
 
@@ -15,14 +15,14 @@
 <ul>
     <li>Rent arrears</li>
     <li>Anti-social behaviour</li>
-    <li>A desire to sell the property</li>
+    <li>Intention to sell the property, or use it for own family.</li>
 </ul>
 
 <hr>
 
 <h3 class="mb-3">2. End of Fixed-Term Tenancies - Move to Periodic Tenancies</h3>
 
-<p>The Renters' Rights Act will convert all fixed-term assured shorthold tenancies (ASTs) to periodic tenancies from 1 May 2026. Any fixed-term tenancies you sign now will be affected by this when the Act takes effect.</p>
+<p>The Renters' Rights Act will convert all fixed-term assured shorthold tenancies (ASTs) to periodic tenancies (APTs) from 1 May 2026. Any fixed-term tenancies you sign now will be affected by this when the Act takes effect.</p>
 
 <p>Both existing and new tenancies will be periodic, running from month to month without fixed terms. <strong>Tenants will be able to terminate at any time with two months' notice.</strong> This gives tenants much more flexibility to leave while providing ongoing security.</p>
 

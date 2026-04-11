@@ -66,6 +66,6 @@
 
 <p>The combination of older stock, under-invested maintenance, and tenants who have historically been reluctant to complain for fear of eviction has created a sector with a significant and largely undocumented repair backlog.</p>
 
-<p>That backlog now has somewhere to go.</p>
+<p>Let's start to deal with it !</p>
 
 @endsection
