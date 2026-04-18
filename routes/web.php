@@ -20,7 +20,7 @@ Route::get('/cookies', function () {
 });
 
 Route::get('/', function () {
-    return view('welcome-2');
+    return view('welcome-3');
 });
 
 Route::get('/dashboard', function () {
