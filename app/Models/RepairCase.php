@@ -43,7 +43,7 @@ class RepairCase extends Model
         'tenant_user_id',
         'property_id',
         'landlord_contact_id',
-        'category',
+        'category_key',
         'severity',
         'status',
         'current_stage',
@@ -79,6 +79,11 @@ class RepairCase extends Model
     public function landlordContact(): BelongsTo
     {
         return $this->belongsTo(LandlordContact::class);
+    }
+
+    public function category(): BelongsTo
+    {
+        return $this->belongsTo(RepairCategory::class, 'category_key', 'key');
     }
 
     public function messages(): HasMany
