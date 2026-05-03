@@ -5,6 +5,7 @@ use App\Http\Controllers\CaseController;
 use App\Http\Controllers\ContactMessageController;
 use App\Http\Controllers\FileAttachmentController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\PropertyController;
 use App\Http\Controllers\RentalController;
 use App\Http\Controllers\Webhooks\MailgunInboundController;
 use Illuminate\Support\Facades\Route;
@@ -46,6 +47,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Contact us
     Route::get('/contact', [ContactMessageController::class, 'create'])->name('contact.create');
     Route::post('/contact', [ContactMessageController::class, 'store'])->name('contact.store');
+
+    // Properties (tenant-side registry)
+    Route::get('/properties', [PropertyController::class, 'index'])->name('properties.index');
+    Route::get('/properties/create', [PropertyController::class, 'create'])->name('properties.create');
+    Route::post('/properties', [PropertyController::class, 'store'])->name('properties.store');
+    Route::get('/properties/{property}/edit', [PropertyController::class, 'edit'])->name('properties.edit');
+    Route::patch('/properties/{property}', [PropertyController::class, 'update'])->name('properties.update');
 
     // Repair cases (Landlord Contact Service)
     Route::get('/cases', [CaseController::class, 'index'])->name('cases.index');
