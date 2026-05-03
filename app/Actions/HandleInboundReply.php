@@ -5,10 +5,12 @@ namespace App\Actions;
 use App\Enums\CaseStatus;
 use App\Enums\MessageDirection;
 use App\Enums\SenderRole;
+use App\Mail\Notifications\LandlordReplyReceived;
 use App\Models\CaseMessage;
 use App\Models\ReplyToken;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Mews\Purifier\Facades\Purifier;
 
 /**
@@ -72,7 +74,7 @@ class HandleInboundReply
 
         $case = $replyToken->case;
 
-        return DB::transaction(function () use ($payload, $case, $replyToken) {
+        $message = DB::transaction(function () use ($payload, $case, $replyToken) {
             $bodyHtml = (string) ($payload['body-html'] ?? '');
             $bodyPlain = (string) ($payload['body-plain'] ?? '');
             $bodyRaw = $bodyHtml !== '' ? $bodyHtml : $bodyPlain;
@@ -122,6 +124,10 @@ class HandleInboundReply
 
             return $message;
         });
+
+        Mail::to($case->tenant->email)->queue(new LandlordReplyReceived($case));
+
+        return $message;
     }
 
     private function extractToken(string $recipient): ?string

@@ -9,11 +9,13 @@ use App\Models\RepairCase;
 use App\Models\ReplyToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Mail;
 
 uses(RefreshDatabase::class);
 
 beforeEach(function () {
     Config::set('services.mailgun.webhook_signing_key', 'test-signing-key-shhh');
+    Mail::fake();
 });
 
 function inboundPayload(string $tokenValue, array $overrides = []): array
