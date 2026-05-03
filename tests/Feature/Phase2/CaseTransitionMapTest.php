@@ -25,6 +25,7 @@ it('permits every transition listed in the design doc', function (CaseStatus $fr
     'on_hold → resolved' => [CaseStatus::OnHold, CaseStatus::Resolved],
     'on_hold → abandoned' => [CaseStatus::OnHold, CaseStatus::Abandoned],
     'dormant → tenant_action_required' => [CaseStatus::Dormant, CaseStatus::TenantActionRequired],
+    'dormant → awaiting_tenant_review' => [CaseStatus::Dormant, CaseStatus::AwaitingTenantReview],
     'dormant → abandoned' => [CaseStatus::Dormant, CaseStatus::Abandoned],
 ]);
 

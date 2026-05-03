@@ -30,7 +30,6 @@ it('throws InvalidCaseTransitionException for illegal transitions', function (
     'dormant → awaiting_landlord' => [CaseStatus::Dormant, CaseStatus::AwaitingLandlord],
     'dormant → on_hold' => [CaseStatus::Dormant, CaseStatus::OnHold],
     'dormant → resolved (must abandon, not resolve)' => [CaseStatus::Dormant, CaseStatus::Resolved],
-    'dormant → awaiting_tenant_review' => [CaseStatus::Dormant, CaseStatus::AwaitingTenantReview],
     'resolved → awaiting_landlord (terminal)' => [CaseStatus::Resolved, CaseStatus::AwaitingLandlord],
     'resolved → open (terminal)' => [CaseStatus::Resolved, CaseStatus::Open],
     'abandoned → awaiting_landlord (terminal)' => [CaseStatus::Abandoned, CaseStatus::AwaitingLandlord],

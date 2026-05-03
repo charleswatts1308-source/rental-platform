@@ -139,6 +139,7 @@ class RepairCase extends Model
         ],
         'dormant' => [
             'tenant_action_required' => 'tenant_re_engaged',
+            'awaiting_tenant_review' => 'inbound_received',
             'abandoned' => 'case_abandoned',
         ],
         // resolved and abandoned are terminal — no allowed transitions out.
