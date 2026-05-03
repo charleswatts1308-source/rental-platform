@@ -271,9 +271,7 @@ Dormant cases never escalate. Tenant can re-engage at any time which moves statu
 
 ## Case status state machine
 
-The `cases.status` enum drives the workflow. Every transition listed here is permitted; any transition not listed is illegal and must be rejected at the model layer. Implementation: a `transitionTo($newStatus, $context)` method on the `RepairCase` Eloquent model that validates the move against this table, applies side effects, and writes the appropriate `case_events` row. Direct writes to `status` outside this method are a bug.
-
-**Model class naming:** The Eloquent model is named `RepairCase` because `Case` is a reserved keyword in PHP. The table remains `cases` (set via `protected $table = 'cases';` on the model). Foreign key columns stay as `case_id` everywhere. Relationship methods on related models are named `case()` and pass the FK explicitly — e.g. `$this->belongsTo(RepairCase::class, 'case_id')` — so calling code reads as `$message->case->status` in the domain language.
+The `cases.status` enum drives the workflow. Every transition listed here is permitted; any transition not listed is illegal and must be rejected at the model layer. Implementation: a `transitionTo($newStatus, $context)` method on the `Case` model that validates the move against this table, applies side effects, and writes the appropriate `case_events` row. Direct writes to `status` outside this method are a bug.
 
 | From | To | Trigger | Initiator | Side effects |
 |---|---|---|---|---|

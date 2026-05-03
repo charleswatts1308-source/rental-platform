@@ -53,13 +53,6 @@ chore: add Landlord Contact Service design and implementation plan
 - Database tests use the `RefreshDatabase` trait. Never test against a populated database.
 - Run `php artisan test` before every commit. Do not commit failing tests.
 
-### Naming
-
-- The Eloquent model for the `cases` table is `RepairCase`, not `Case` (which is reserved in PHP). The model declares `protected $table = 'cases';`. File: `app/Models/RepairCase.php`.
-- All foreign key columns stay as `case_id` regardless of the model rename.
-- Relationship methods on related models (`CaseMessage`, `ReplyToken`, `CaseEvent`, `MessageAttachment`) are named `case()` and specify the FK explicitly: `$this->belongsTo(RepairCase::class, 'case_id')`. This keeps `$message->case` reading as domain language.
-- Other model class names are unaffected: `LandlordContact`, `CaseMessage`, `ReplyToken`, `CaseEvent`, `MessageAttachment`. Only the bare word `Case` collides with PHP's reserved words.
-
 ### Migrations
 
 - All FK columns declare `onDelete` behaviour explicitly per the design doc.
@@ -123,10 +116,10 @@ Green tests, all six tables exist with correct schema (verify via MariaDB CLI or
 
 ### Phase 2 — Case state machine
 
-**Goal:** The `RepairCase` model owns all status transitions via a `transitionTo($newStatus, array $context = [])` method that validates, applies side effects, and writes events. Direct writes to `status` from outside the model are rejected.
+**Goal:** The `Case` model owns all status transitions via a `transitionTo($newStatus, array $context = [])` method that validates, applies side effects, and writes events. Direct writes to `status` from outside the model are rejected.
 
 **Deliverables:**
-- `transitionTo` method on `RepairCase` model
+- `transitionTo` method on `Case` model
 - Transition table from the design doc encoded as a static array or class constant on the model
 - A custom exception (`InvalidCaseTransitionException`) thrown for illegal transitions
 - Event-writing logic invoked on every successful transition
