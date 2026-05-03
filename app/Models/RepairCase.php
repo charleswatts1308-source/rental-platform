@@ -18,6 +18,18 @@ class RepairCase extends Model
 
     protected $table = 'cases';
 
+    protected static function booted(): void
+    {
+        static::created(function (self $case): void {
+            $case->events()->create([
+                'event_type' => 'case_opened',
+                'actor_user_id' => $case->tenant_user_id,
+                'actor_label' => 'tenant',
+                'occurred_at' => $case->opened_at ?? now(),
+            ]);
+        });
+    }
+
     protected $fillable = [
         'url_slug',
         'tenant_user_id',
