@@ -3,8 +3,13 @@
 use App\Enums\CaseStatus;
 use App\Models\RepairCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Mail;
 
 uses(RefreshDatabase::class);
+
+beforeEach(function () {
+    Mail::fake();
+});
 
 /**
  * Helper: put a case into tenant_action_required and seed an entry event

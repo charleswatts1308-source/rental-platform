@@ -3,9 +3,11 @@
 namespace App\Console\Commands;
 
 use App\Enums\CaseStatus;
+use App\Mail\Notifications\DormancyReminder;
 use App\Models\RepairCase;
 use Carbon\CarbonInterface;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Mail;
 
 /**
  * Daily sweep that handles tenant disengagement from
@@ -24,10 +26,9 @@ use Illuminate\Console\Command;
  *   - >=  7 days  → write dormancy_reminder_sent with day_offset 7
  *                   (if not already sent since current entry)
  *
- * Mail dispatch for the reminder events themselves is wired in Phase 7
- * (DormancyReminder mailable). For Phase 5 the events serve as the
- * audit-trail / idempotency marker; Phase 7 will queue the actual mail
- * alongside the event write.
+ * The DormancyReminder mailable is queued alongside each
+ * dormancy_reminder_sent event; the event row's existence is what
+ * keeps both the event and the mail idempotent across re-runs.
  *
  * dormancy_reminder_sent is a new entry in the case_events controlled
  * vocabulary (not in the design doc's initial list).
@@ -113,5 +114,7 @@ class SweepDormancy extends Command
             'occurred_at' => now(),
             'meta' => ['day_offset' => $offset],
         ]);
+
+        Mail::to($case->tenant->email)->queue(new DormancyReminder($case, $offset));
     }
 }
