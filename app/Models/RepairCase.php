@@ -135,6 +135,7 @@ class RepairCase extends Model
         }
 
         DB::transaction(function () use ($oldStatus, $newStatus, $context) {
+            $this->applyColumnSideEffects($oldStatus, $newStatus, $context);
             $this->status = $newStatus;
             $this->save();
 
@@ -146,5 +147,20 @@ class RepairCase extends Model
                 'meta' => $context['meta'] ?? null,
             ]);
         });
+    }
+
+    private function applyColumnSideEffects(CaseStatus $oldStatus, CaseStatus $newStatus, array $context): void
+    {
+        if (in_array($newStatus, [CaseStatus::Resolved, CaseStatus::Abandoned], true)) {
+            $this->closed_at = now();
+        }
+
+        if ($newStatus === CaseStatus::OnHold) {
+            $this->hold_until = $context['hold_until'] ?? null;
+        }
+
+        if ($oldStatus === CaseStatus::TenantActionRequired && $newStatus === CaseStatus::AwaitingLandlord) {
+            $this->current_stage = $this->current_stage + 1;
+        }
     }
 }
