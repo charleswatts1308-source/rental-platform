@@ -18,6 +18,8 @@ class RepairCase extends Model
 
     protected $table = 'cases';
 
+    private bool $inTransition = false;
+
     protected static function booted(): void
     {
         static::created(function (self $case): void {
@@ -27,6 +29,12 @@ class RepairCase extends Model
                 'actor_label' => 'tenant',
                 'occurred_at' => $case->opened_at ?? now(),
             ]);
+        });
+
+        static::updating(function (self $case): void {
+            if ($case->isDirty('status') && ! $case->inTransition) {
+                throw InvalidCaseTransitionException::directWrite();
+            }
         });
     }
 
@@ -149,7 +157,12 @@ class RepairCase extends Model
         DB::transaction(function () use ($oldStatus, $newStatus, $context) {
             $this->applyColumnSideEffects($oldStatus, $newStatus, $context);
             $this->status = $newStatus;
-            $this->save();
+            $this->inTransition = true;
+            try {
+                $this->save();
+            } finally {
+                $this->inTransition = false;
+            }
 
             $this->events()->create([
                 'event_type' => self::TRANSITIONS[$oldStatus->value][$newStatus->value],
