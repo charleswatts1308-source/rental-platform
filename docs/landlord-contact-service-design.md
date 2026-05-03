@@ -412,6 +412,7 @@ These are real concerns but worth implementing once attack patterns are observed
 2. Inbound subdomain — `inbox.renters.rent` confirmed. Mailgun account and DNS configuration deferred until closer to go-live (post-Phase 6).
 3. Outbound From address — `cases@mg.renters.rent` (sending subdomain), with display name `"{tenant first name} via renters.rent"`. Mailgun setup wizard handles SPF/DKIM/DMARC alignment when the account is created.
 4. Hold duration — tenant picks any future date, or constrained to a set of options (7, 14, 30 days)?
+5. Inbound attachment processing — design's inbound flow step 8 ("Process attachments into message_attachments rows") was not implemented in Phase 4 (not in the implementation plan's deliverables). Decision needed on which phase implements this and whether attachment scanning policy needs work first.
 
 ## Deferred decisions
 
