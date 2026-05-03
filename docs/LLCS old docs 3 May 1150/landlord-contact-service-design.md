@@ -45,7 +45,7 @@ The correspondence case. One per (tenant, property, landlord_contact, repair iss
 | `tenant_user_id` | bigint unsigned NOT NULL FK → users.id | |
 | `property_id` | bigint unsigned NOT NULL FK → properties.id | |
 | `landlord_contact_id` | bigint unsigned NOT NULL FK → landlord_contacts.id | |
-| `category_key` | varchar(50) NOT NULL FK → repair_categories.key | repair category; see `repair_categories` table |
+| `category` | varchar(50) NOT NULL | repair category (damp, heating, electrical, etc.) |
 | `severity` | enum('routine','serious','emergency') NOT NULL DEFAULT 'routine' | drives Awaab's Law schedules later |
 | `status` | enum(...) NOT NULL DEFAULT 'open' | see below |
 | `current_stage` | tinyint unsigned NOT NULL DEFAULT 1 | which letter in the sequence |
@@ -303,10 +303,6 @@ The `cases.status` enum drives the workflow. Every transition listed here is per
 
 - `resolved` and `abandoned` are terminal. No transitions out. If a tenant wants to revisit a closed case, they open a new one — closure is the boundary that makes the audit trail legally clean.
 - The escalation timer (`next_stage_eligible_at`) only runs in `awaiting_landlord` and `on_hold`. It is paused in `awaiting_tenant_review`, `tenant_action_required`, `dormant`, and the terminals.
-- `case_opened` is written automatically when a case row is created (via the model's `created` boot hook), with `actor_label='tenant'` and `actor_user_id=tenant_user_id`. The transition table starts at `(start) → open` for completeness; the implementation realises this as a creation hook rather than a `transitionTo` call.
-- `hold_until` is not cleared on transitions out of `on_hold`. It persists as a historical record of the most recent hold for audit purposes.
-- Direct writes to `cases.status` outside `transitionTo` are rejected by an `updating` boot hook that throws `InvalidCaseTransitionException::directWrite`. The hook catches Eloquent property assignment and `update()` calls. **Limitation:** raw query-builder mass updates (`DB::table('cases')->update(...)`) bypass Eloquent events and are not protected. Code in this project must never use raw query-builder updates against `cases.status`; use `transitionTo` exclusively.
-- Multi-event transitions (e.g. `open → awaiting_landlord` writes `notice_sent`, with `token_issued` to follow when the token-minting side effect is wired) write the canonical state-change event in the state machine layer. Peripheral events for side effects (`token_issued`, `token_superseded`) are written by the code that performs those side effects — typically the action class that orchestrates the transition.
 - Inbound mail can arrive in any non-terminal state. Behaviour:
   - `awaiting_landlord` → moves to `awaiting_tenant_review` (drawn).
   - `on_hold` → moves to `awaiting_tenant_review` (drawn).
@@ -342,20 +338,7 @@ These are real concerns but worth implementing once attack patterns are observed
 ## Implementation notes for Claude Code
 
 - All migrations should use `bigint unsigned` for PKs and FKs. Laravel's `$table->id()` and `$table->foreignId()` produce this by default.
-- Foreign key onDelete behaviours, all explicit at the migration site (`->restrictOnDelete()`, `->cascadeOnDelete()`, `->nullOnDelete()`):
-
-| FK | onDelete | Rationale |
-|---|---|---|
-| `landlord_contacts.invited_by_user_id` | RESTRICT | Contact is shared across tenants; deleting the inviter must not cascade |
-| `cases.tenant_user_id` | RESTRICT | Active cases must be closed before tenant deletion (admin workflow, not cascade) |
-| `cases.property_id` | RESTRICT | Properties with cases are part of the legal record |
-| `cases.landlord_contact_id` | RESTRICT | Contact deletion must not orphan or destroy cases |
-| `cases.category_key` | RESTRICT | Categories with cases cannot be deleted; use `active = 0` instead |
-| `case_messages.case_id` | CASCADE | Messages are owned by their case |
-| `reply_tokens.case_id` | CASCADE | Tokens are owned by their case |
-| `case_events.case_id` | CASCADE | Events are owned by their case |
-| `case_events.actor_user_id` | SET NULL | Immutable audit trail survives user deletion; actor_label still records role |
-| `message_attachments.case_message_id` | CASCADE | Attachments are owned by their message |
+- Foreign keys should declare `onDelete` behaviour explicitly. Suggested defaults: `cases.tenant_user_id` → restrict (don't allow deleting a user with open cases without intervention); `case_messages.case_id` → cascade; `message_attachments.case_message_id` → cascade; `reply_tokens.case_id` → cascade; `case_events.case_id` → cascade.
 - `url_slug` generation: helper that calls `Str::random(12)` and retries on collision (vanishingly unlikely but cheap to handle).
 - Token generation: `Str::random(20)`. Same retry-on-collision pattern.
 - HTML Purifier: `composer require mews/purifier`, then sanitise via `Purifier::clean($html)`. Default config is reasonable; can tighten later.
@@ -366,6 +349,8 @@ These are real concerns but worth implementing once attack patterns are observed
 ## Open items to resolve before build
 
 1. Stage schedule day offsets — confirm against current PAP and Awaab's Law guidance. Likely needs solicitor / housing law review at some point.
-2. Inbound subdomain — `inbox.renters.rent` confirmed. Mailgun account and DNS configuration deferred until closer to go-live (post-Phase 6).
-3. Outbound From address — `cases@mg.renters.rent` (sending subdomain), with display name `"{tenant first name} via renters.rent"`. Mailgun setup wizard handles SPF/DKIM/DMARC alignment when the account is created.
-4. Hold duration — tenant picks any future date, or constrained to a set of options (7, 14, 30 days)?
+2. Inbound subdomain — confirm `inbox.renters.rent` (or chosen name) is configured in Mailgun and DNS MX points there.
+3. Outbound From address — confirm `cases@renters.rent` (or chosen) and that SPF/DKIM/DMARC are aligned for it.
+4. Tenant identity in From — display name format. Suggested: `"{tenant first name} via renters.rent" <cases@renters.rent>`. Privacy vs. clarity tradeoff worth a conscious choice.
+5. Repair categories list — fixed enum or freeform with a starter set? Affects template selection logic.
+6. Hold duration — tenant picks any future date, or constrained to a set of options (7, 14, 30 days)?

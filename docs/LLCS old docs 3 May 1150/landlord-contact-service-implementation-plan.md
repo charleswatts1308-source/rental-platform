@@ -143,40 +143,7 @@ All 21 transitions covered, all illegal transitions tested.
 
 ### Phase 3 — Outbound mail composition and Mailgun send
 
-**Prerequisite commits before Phase 3 proper begins:**
-
-The `repair_categories` lookup table was added to the design after Phase 1 was completed, and Mailgun packages are not yet installed. Two prerequisite commits:
-
-**Prerequisite 1: Mailgun packages and config**
-
-```bash
-composer require symfony/mailgun-mailer symfony/http-client
-composer require mews/purifier
-```
-
-(`mews/purifier` is needed for Phase 4's HTML sanitisation but installing both transactional packages together is cleaner than splitting across phases.)
-
-Add Mailgun configuration to `config/services.php` (Laravel's mail config likely already references `services.mailgun`; verify and add if missing). Add placeholder entries to `.env.example`:
-
-```
-MAIL_MAILER=log               # local dev stays on log driver
-MAILGUN_DOMAIN=mg.renters.rent
-MAILGUN_SECRET=                # populated in production .env, not committed
-MAILGUN_ENDPOINT=api.eu.mailgun.net   # EU region for UK data residency
-MAILGUN_WEBHOOK_SIGNING_KEY=   # populated in production .env, used in Phase 4
-```
-
-Do not change the working `.env` to switch from log to mailgun — that's a deployment-time change, not a code change.
-
-**Prerequisite 2: repair_categories table and cases.category_key**
-
-1. New migration: create `repair_categories` table per the design doc schema. Seeder populates the 11 starter categories.
-2. Migration on `cases`: add `category_key varchar(50) NOT NULL` column with FK → `repair_categories.key` (RESTRICT). If the original Phase 1 migration of `cases` included a `category varchar(50)` column, this prerequisite either replaces it (drop column, add new) or modifies it (rename + add FK). Pick the approach that produces the cleaner migration history; the production database has no rows so either is safe.
-3. Update factory and tests: `RepairCaseFactory` now supplies a valid `category_key` (FK-resolved against the seeded `repair_categories` table). Existing Phase 1 tests that exercised the `category` field need updating to match.
-
-Run the full suite to confirm everything still passes after these changes, then proceed with Phase 3 proper.
-
-**Phase 3 goal:** A tenant action triggers composition of a stage-appropriate letter, mints a reply token, dispatches via Mailgun, and records the outbound `case_message`.
+**Goal:** A tenant action triggers composition of a stage-appropriate letter, mints a reply token, dispatches via Mailgun, and records the outbound `case_message`.
 
 **Deliverables:**
 - A `SendCaseNotice` action class (single-purpose service) that orchestrates: token mint → message compose → Mailgun dispatch → event write
