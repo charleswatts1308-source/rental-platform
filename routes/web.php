@@ -5,6 +5,7 @@ use App\Http\Controllers\RentalController;
 use App\Http\Controllers\FileAttachmentController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\ContactMessageController;
+use App\Http\Controllers\Webhooks\MailgunInboundController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/about', function () {
@@ -77,5 +78,9 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     Route::get('/contact-messages/{contactMessage}', [AdminController::class, 'contactMessageShow'])->name('contact-messages.show');
     Route::post('/contact-messages/{contactMessage}/reply', [AdminController::class, 'contactMessageReply'])->name('contact-messages.reply');
 });
+
+Route::post('/webhooks/mailgun/inbound', MailgunInboundController::class)
+    ->middleware('verify.mailgun.signature')
+    ->name('webhooks.mailgun.inbound');
 
 require __DIR__.'/auth.php';
