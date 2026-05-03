@@ -6,6 +6,7 @@ use App\Enums\LandlordContactRole;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class LandlordContact extends Model
 {
@@ -32,5 +33,10 @@ class LandlordContact extends Model
     public function invitedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'invited_by_user_id');
+    }
+
+    public function cases(): HasMany
+    {
+        return $this->hasMany(RepairCase::class, 'landlord_contact_id');
     }
 }
