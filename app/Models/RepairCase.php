@@ -170,7 +170,8 @@ class RepairCase extends Model
             }
 
             $this->events()->create([
-                'event_type' => self::TRANSITIONS[$oldStatus->value][$newStatus->value],
+                'event_type' => $context['event_type_override']
+                    ?? self::TRANSITIONS[$oldStatus->value][$newStatus->value],
                 'actor_user_id' => $context['actor_user_id'] ?? null,
                 'actor_label' => $context['actor_label'] ?? 'system',
                 'occurred_at' => now(),
