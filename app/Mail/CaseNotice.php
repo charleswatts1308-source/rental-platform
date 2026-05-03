@@ -8,6 +8,7 @@ use App\Models\ReplyToken;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Address;
+use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
@@ -50,7 +51,11 @@ class CaseNotice extends Mailable
 
     public function attachments(): array
     {
-        return [];
+        return $this->message->attachments
+            ->map(fn ($attachment) => Attachment::fromStorageDisk($attachment->disk, $attachment->path)
+                ->as($attachment->original_filename ?? basename($attachment->path))
+                ->withMime($attachment->mime_type))
+            ->all();
     }
 
     private function tenantFirstName(): string

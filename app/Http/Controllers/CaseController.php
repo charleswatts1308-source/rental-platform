@@ -6,10 +6,7 @@ use App\Actions\SendCaseNotice;
 use App\Enums\CaseSeverity;
 use App\Enums\CaseStatus;
 use App\Enums\LandlordContactRole;
-use App\Enums\MessageDirection;
-use App\Enums\ScanStatus;
 use App\Models\LandlordContact;
-use App\Models\MessageAttachment;
 use App\Models\Property;
 use App\Models\RepairCase;
 use App\Models\RepairCategory;
@@ -125,24 +122,12 @@ class CaseController extends Controller
 
             $attachmentInputs = $this->savePhotos($request->file('photos', []) ?? [], $case->id);
 
-            $message = $this->sendCaseNotice->execute(
+            $this->sendCaseNotice->execute(
                 $case,
                 $validated['description'] ?? null,
                 $userId,
+                $attachmentInputs,
             );
-
-            foreach ($attachmentInputs as $info) {
-                MessageAttachment::create([
-                    'case_message_id' => $message->id,
-                    'disk' => self::PHOTO_DISK,
-                    'path' => $info['path'],
-                    'original_filename' => $info['original_filename'],
-                    'mime_type' => $info['mime_type'],
-                    'size_bytes' => $info['size_bytes'],
-                    'direction' => MessageDirection::Outbound,
-                    'scan_status' => ScanStatus::Skipped,
-                ]);
-            }
 
             return $case;
         });
@@ -180,7 +165,7 @@ class CaseController extends Controller
 
     /**
      * @param  array<int, UploadedFile>  $files
-     * @return array<int, array{path: string, original_filename: string, mime_type: string, size_bytes: int}>
+     * @return array<int, array{disk: string, path: string, original_filename: string, mime_type: string, size_bytes: int}>
      */
     private function savePhotos(array $files, int $caseId): array
     {
@@ -197,6 +182,7 @@ class CaseController extends Controller
             );
 
             $stored[] = [
+                'disk' => self::PHOTO_DISK,
                 'path' => $path,
                 'original_filename' => $file->getClientOriginalName(),
                 'mime_type' => $file->getMimeType() ?? 'application/octet-stream',

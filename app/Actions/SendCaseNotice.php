@@ -4,9 +4,11 @@ namespace App\Actions;
 
 use App\Enums\CaseStatus;
 use App\Enums\MessageDirection;
+use App\Enums\ScanStatus;
 use App\Enums\SenderRole;
 use App\Mail\CaseNotice;
 use App\Models\CaseMessage;
+use App\Models\MessageAttachment;
 use App\Models\RepairCase;
 use App\Models\ReplyToken;
 use App\Services\ReplyTokenGenerator;
@@ -37,9 +39,16 @@ class SendCaseNotice
         private ReplyTokenGenerator $tokenGenerator,
     ) {}
 
-    public function execute(RepairCase $case, ?string $tenantStatement = null, ?int $actorUserId = null): CaseMessage
-    {
-        return DB::transaction(function () use ($case, $tenantStatement, $actorUserId) {
+    /**
+     * @param  array<int, array{disk: string, path: string, original_filename: string, mime_type: string, size_bytes: int}>  $attachmentInputs
+     */
+    public function execute(
+        RepairCase $case,
+        ?string $tenantStatement = null,
+        ?int $actorUserId = null,
+        array $attachmentInputs = [],
+    ): CaseMessage {
+        return DB::transaction(function () use ($case, $tenantStatement, $actorUserId, $attachmentInputs) {
             $isFirstSend = $case->status === CaseStatus::Open;
             $isEscalation = $case->status === CaseStatus::TenantActionRequired;
 
@@ -77,6 +86,19 @@ class SendCaseNotice
                 'to_address_raw' => $case->landlordContact->email,
                 'sent_at' => now(),
             ]);
+
+            foreach ($attachmentInputs as $info) {
+                MessageAttachment::create([
+                    'case_message_id' => $message->id,
+                    'disk' => $info['disk'],
+                    'path' => $info['path'],
+                    'original_filename' => $info['original_filename'],
+                    'mime_type' => $info['mime_type'],
+                    'size_bytes' => $info['size_bytes'],
+                    'direction' => MessageDirection::Outbound,
+                    'scan_status' => ScanStatus::Skipped,
+                ]);
+            }
 
             $mailable = new CaseNotice(
                 $case->fresh()->load(['tenant', 'property', 'landlordContact', 'category']),
