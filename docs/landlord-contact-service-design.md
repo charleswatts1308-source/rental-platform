@@ -9,7 +9,7 @@ Built on existing Laravel/Breeze platform with MariaDB. Email handled by Mailgun
 ## Existing tables (unchanged)
 
 - `users` — Breeze auth, holds tenants
-- `properties` — owned/managed by users (tenants register the property they rent)
+- `properties` — owned/managed by users (tenants register the property they rent). Created as a Phase 1 prerequisite when the legacy `rentals` table was found to conflate property and tenancy concepts. The `rentals` table is left untouched alongside `properties` and is scheduled for retirement post-Phase 7.
 
 ## New tables
 
@@ -144,7 +144,7 @@ Audit log. Every state-changing thing that happens to a case writes a row here. 
 | `created_at` | timestamp | no `updated_at` — events are immutable |
 
 **Initial event_type vocabulary:**
-- `case_opened`, `case_resolved`, `case_abandoned`, `case_dormant`
+- `case_opened`, `case_resolved`, `case_abandoned`, `case_dormant`, `tenant_re_engaged`
 - `notice_sent`, `inbound_received`, `inbound_quarantined`
 - `escalation_eligible`, `escalation_confirmed_by_tenant`, `stage_advanced`
 - `hold_set`, `hold_expired`
@@ -176,6 +176,43 @@ Files associated with a case_message — outbound (tenant's photos of the repair
 
 **Assumption for v1:** no malware scanning beyond Mailgun's default for inbound. Column reserved so it can be wired up later without a migration.
 
+### `repair_categories`
+
+Lookup table for case categorisation. Domain-extensible without migrations — categories evolve as the platform learns.
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | bigint unsigned PK | |
+| `key` | varchar(50) NOT NULL | UNIQUE; stable identifier (e.g. `damp_mould`); used in code and as FK target from `cases` |
+| `label` | varchar(100) NOT NULL | human-readable display name (e.g. "Damp and mould") |
+| `description` | varchar(500) NULL | guidance shown to tenants when selecting on the form |
+| `sort_order` | int unsigned NOT NULL DEFAULT 0 | controls display order in dashboard form |
+| `active` | tinyint(1) NOT NULL DEFAULT 1 | inactive categories stay resolvable for historical cases but don't appear in form |
+| `requires_description` | tinyint(1) NOT NULL DEFAULT 0 | true for `other`; tenant must supply free text |
+| `created_at`, `updated_at` | | |
+
+**Indexes:** `UNIQUE(key)`, `INDEX(active, sort_order)`
+
+**Initial seed (11 categories):**
+
+| key | label | requires_description |
+|---|---|---|
+| `damp_mould` | Damp and mould | 0 |
+| `heating` | Heating and hot water | 0 |
+| `electrical` | Electrical | 0 |
+| `plumbing` | Plumbing and drainage | 0 |
+| `structural` | Structural (walls, ceilings, floors, roof) | 0 |
+| `windows_doors` | Windows and doors | 0 |
+| `pest_infestation` | Pest infestation | 0 |
+| `appliances` | Landlord-supplied appliances | 0 |
+| `safety` | Safety (alarms, gas, security) | 0 |
+| `external` | External (gutters, drainage, garden) | 0 |
+| `other` | Other | 1 |
+
+`sort_order` for the seed: assign 10, 20, 30, ... in the order above (`damp_mould` first), with `other` last at 110. Gaps of 10 leave room for future insertions without renumbering.
+
+**FK shape on `cases`:** `cases.category_key varchar(50)` references `repair_categories.key`. Foreign key on `key` rather than `id` keeps `case` rows human-readable in raw SQL without forcing a join. `onDelete RESTRICT` — categories with cases against them cannot be deleted; deactivate via `active = 0` instead.
+
 ## Process flows
 
 ### Outbound: notice send
@@ -184,17 +221,17 @@ Files associated with a case_message — outbound (tenant's photos of the repair
 2. System resolves landlord_contact:
    - If tenant supplies an email matching an existing `landlord_contacts.email`, link to that row.
    - If new, create `landlord_contacts` row with `invited_by_user_id = tenant`, `role` from form input.
-3. System creates `cases` row: `status = 'open'`, `current_stage = 1`, generates `url_slug`.
+3. System creates `cases` row: `status = 'open'`, `current_stage = 1`, generates `url_slug`. The `created` boot hook on `RepairCase` writes a `case_opened` event automatically.
 4. System mints a `reply_tokens` row for the case: random 20-char base62, `bound_email = landlord_contact.email`.
 5. System composes outbound `case_messages` row from template `template_key = 'stage_1_initial_notice'`. Body assembled from template + property details + repair description + tenant_statement (if any).
 6. Mail dispatched via Mailgun:
-   - From: platform-controlled address (e.g. `cases@renters.rent`)
+   - From: `"renters.rent cases" <cases@mg.renters.rent>` (or per tenant identity convention — see security/identity section)
    - Reply-To: `{token}@inbox.renters.rent`
    - To: `landlord_contact.email`
    - Attachments: outbound `message_attachments` (photos)
 7. Mailgun returns message_id; stored on `case_messages.mailgun_message_id`.
 8. `case_messages.sent_at` set, `case_events` rows written: `notice_sent`, `token_issued`.
-9. Case status moves to `awaiting_landlord`. `next_stage_eligible_at` set per stage 1 schedule.
+9. Case status moves to `awaiting_landlord` via `transitionTo`. `next_stage_eligible_at` set per stage 1 schedule.
 
 ### Inbound: landlord reply
 
@@ -206,14 +243,14 @@ Files associated with a case_message — outbound (tenant's photos of the repair
 6. Build `case_messages` row:
    - `direction = 'inbound'`, `sender_role = 'landlord'`
    - `body_raw` = HTML body as received
-   - `body_sanitised` = HTML Purifier output (use `mews/purifier` package)
+   - `body_sanitised` = HTML Purifier output (`mews/purifier` package)
    - `from_address_raw` = From header as received
    - `spf_pass`, `dkim_pass` from Mailgun-supplied verification fields
 7. **Quarantine check:** if `from_address_raw` does not match `landlord_contact.email` for the case (allowing for case-insensitivity and `+suffix` variants), set `quarantine_reason = 'unexpected_from_address'`. Message is stored but hidden from main thread; surfaced to tenant with a warning banner.
 8. Process attachments into `message_attachments` rows.
 9. Increment `reply_tokens.use_count`, set `last_used_at`.
 10. Write `case_events`: `inbound_received` (or `inbound_quarantined`).
-11. Update case status to `awaiting_tenant_review`.
+11. Update case status to `awaiting_tenant_review` via `transitionTo`.
 12. Send notification email to tenant: subject "The landlord has responded to your case", deep-link to case in dashboard, no message content in the notification body.
 
 ### Escalation: stage advance
@@ -230,7 +267,7 @@ WHERE status IN ('awaiting_landlord', 'on_hold')
 
 For each:
 
-1. Move status to `tenant_action_required`.
+1. Move status to `tenant_action_required` via `transitionTo`.
 2. Write `case_events.escalation_eligible`.
 3. Send notification email to tenant: "Your case is ready for the next step."
 
@@ -277,7 +314,7 @@ The `cases.status` enum drives the workflow. Every transition listed here is per
 
 | From | To | Trigger | Initiator | Side effects |
 |---|---|---|---|---|
-| (start) | `open` | case form submitted | tenant | row created, `url_slug` minted, `opened_at` set |
+| (start) | `open` | case form submitted | tenant | row created, `url_slug` minted, `opened_at` set; `case_opened` event written via `created` boot hook |
 | `open` | `awaiting_landlord` | first notice send action | tenant (via dashboard) | reply_token minted; outbound case_message; Mailgun send; `next_stage_eligible_at` set per stage 1 schedule; events: `notice_sent`, `token_issued` |
 | `awaiting_landlord` | `awaiting_tenant_review` | inbound webhook routes to case | system | case_message stored; events: `inbound_received` (or `inbound_quarantined` if from-mismatch) |
 | `awaiting_landlord` | `tenant_action_required` | `next_stage_eligible_at <= NOW()`, daily sweep | system | tenant notification email; event: `escalation_eligible` |
@@ -329,6 +366,8 @@ The `cases.status` enum drives the workflow. Every transition listed here is per
 
 **Sender mismatch quarantine:** when inbound `from_address_raw` doesn't match the case's expected landlord_contact email, message is stored with `quarantine_reason` set. Surfaced to tenant with explanatory warning. They can choose to accept it into the thread (and the system updates `landlord_contact.email` for future correspondence) or dismiss it.
 
+**Tenant identity in From header:** the From address on outbound letters identifies the tenant by first name only, with no surname or real email exposed. Format: `"{tenant first name} via renters.rent" <cases@mg.renters.rent>`. The landlord knows who they're dealing with; the platform shields the tenant's real contact details. The Reply-To is the per-case token address; landlords cannot reply to the tenant directly.
+
 **Audit trail:** `case_events` is the legal-grade record. Every state change writes a row. Treat as append-only — no updates, no deletes.
 
 **Items deferred:**
@@ -356,10 +395,11 @@ These are real concerns but worth implementing once attack patterns are observed
 | `case_events.case_id` | CASCADE | Events are owned by their case |
 | `case_events.actor_user_id` | SET NULL | Immutable audit trail survives user deletion; actor_label still records role |
 | `message_attachments.case_message_id` | CASCADE | Attachments are owned by their message |
+
 - `url_slug` generation: helper that calls `Str::random(12)` and retries on collision (vanishingly unlikely but cheap to handle).
 - Token generation: `Str::random(20)`. Same retry-on-collision pattern.
 - HTML Purifier: `composer require mews/purifier`, then sanitise via `Purifier::clean($html)`. Default config is reasonable; can tighten later.
-- Mailgun: existing renters.rent integration already handles outbound. Inbound webhook needs a new route (`POST /webhooks/mailgun/inbound`) and a `Route::post(...)->middleware('verify.mailgun.signature')` middleware.
+- Mailgun: outbound via `symfony/mailgun-mailer` and `symfony/http-client` (Laravel's mail facade routes through Symfony's transport). Inbound webhook needs a new route (`POST /webhooks/mailgun/inbound`) and a `Route::post(...)->withoutMiddleware(VerifyCsrfToken::class)->middleware('verify.mailgun.signature')` setup. Mailgun region: EU (`api.eu.mailgun.net`) for UK data residency.
 - Job for escalation sweep: Laravel scheduled command running daily at e.g. 06:00 UTC. Idempotent — running it twice in one day must produce no extra escalations.
 - Notification emails to tenant: separate Mailable classes per event type. Keep notification subjects neutral; never include landlord content in the subject or preview text (privacy).
 
