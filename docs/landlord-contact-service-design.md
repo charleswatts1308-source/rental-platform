@@ -411,7 +411,7 @@ These are real concerns but worth implementing once attack patterns are observed
 1. Stage schedule day offsets — confirm against current PAP and Awaab's Law guidance. Likely needs solicitor / housing law review at some point.
 2. Inbound subdomain — `inbox.renters.rent` confirmed. Mailgun account and DNS configuration deferred until closer to go-live (post-Phase 6).
 3. Outbound From address — `cases@mg.renters.rent` (sending subdomain), with display name `"{tenant first name} via renters.rent"`. Mailgun setup wizard handles SPF/DKIM/DMARC alignment when the account is created.
-4. Hold duration — tenant picks any future date, or constrained to a set of options (7, 14, 30 days)?
+4. ~~Hold duration — tenant picks any future date, or constrained to a set of options (7, 14, 30 days)?~~ **Resolved Phase 6b:** any future date. Validation enforces `after:today`. If real usage shows tenants struggle to pick appropriate dates, a constrained dropdown can replace this in a future phase.
 5. Inbound attachment processing — design's inbound flow step 8 ("Process attachments into message_attachments rows") was not implemented in Phase 4 (not in the implementation plan's deliverables). Decision needed on which phase implements this and whether attachment scanning policy needs work first.
 
 ## Deferred decisions
@@ -440,3 +440,10 @@ Decisions taken during implementation that have not yet been folded into the mai
 ### Phase 6.5
 
 - **Postcode normalisation.** UK postcodes are accepted in lenient input formats (e.g. `m14et`, `EC1A1BB`) and stored in canonical form (upper-case, single space before the inward part: `M1 4ET`, `EC1A 1BB`). Validation regex: `/^[A-Z]{1,2}\d[A-Z\d]?\s*\d[A-Z]{2}$/i`. Storage in canonical form means downstream consumers (Land Registry integration in particular, which expects canonical formatting) don't have to renormalise on read.
+
+### Phase 6b
+
+- **Re-engage from `dormant` is POST-only, not GET.** The design state machine row's trigger phrase "tenant views case" is shorthand for tenant intent; the implementation requires an explicit `POST /cases/{slug}/re-engage` action triggered by a button on the dormant case's detail page. GET requests must not have state-changing side effects (HTTP semantics, prefetch safety, CSRF protection). The design doc body's transition table should be read with this clarification.
+- **`awaiting_tenant_review` and `tenant_action_required` expose the same UI actions.** The design table lists `awaiting_tenant_review → tenant_action_required` as a transition triggered by "tenant chooses action panel". In practice the same action buttons (hold/resolve/abandon) are valid from both states, so the tenant never needs to traverse this transition manually — it's only reached today via the daily escalation sweep when `next_stage_eligible_at` lapses. The state distinction matters for the system (whether the escalation timer applies) but not for the UI. A future phase may collapse the two states or remove the transition; for v1 the redundancy is harmless.
+- **Photos on escalation sends.** The outbound attachment plumbing now flows through `SendCaseNotice` for any send, but the `send-next` action route passes no attachments — escalation letters carry only the original photos from the initial notice. If tenants should attach new photos at escalation, the wiring is ready and only the form and validation in `sendNext` need to grow.
+- **Quarantined messages render `body_sanitised` in the warning panel.** The design's "stored but hidden from main thread; surfaced to tenant with a warning banner" is implemented as a separate warning section showing the sanitised body so the tenant can judge the sender mismatch. `body_raw` remains inaccessible to tenant-facing routes. Better than a pure "a quarantined message exists" notification because it lets the tenant decide whether to accept or dismiss the message.
