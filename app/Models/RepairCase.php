@@ -73,4 +73,49 @@ class RepairCase extends Model
     {
         return $this->hasMany(CaseEvent::class, 'case_id');
     }
+
+    /**
+     * Permitted status transitions: from-status value => list of to-status values.
+     * Any (from, to) pair not present here is illegal and rejected by transitionTo().
+     */
+    private const ALLOWED_TRANSITIONS = [
+        'open' => ['awaiting_landlord'],
+        'awaiting_landlord' => [
+            'awaiting_tenant_review',
+            'tenant_action_required',
+            'resolved',
+            'abandoned',
+        ],
+        'awaiting_tenant_review' => [
+            'tenant_action_required',
+            'on_hold',
+            'resolved',
+            'abandoned',
+        ],
+        'tenant_action_required' => [
+            'awaiting_landlord',
+            'on_hold',
+            'resolved',
+            'abandoned',
+            'dormant',
+        ],
+        'on_hold' => [
+            'tenant_action_required',
+            'awaiting_tenant_review',
+            'resolved',
+            'abandoned',
+        ],
+        'dormant' => [
+            'tenant_action_required',
+            'abandoned',
+        ],
+        // resolved and abandoned are terminal — no allowed transitions out.
+        'resolved' => [],
+        'abandoned' => [],
+    ];
+
+    public static function isTransitionAllowed(CaseStatus $from, CaseStatus $to): bool
+    {
+        return in_array($to->value, self::ALLOWED_TRANSITIONS[$from->value] ?? [], true);
+    }
 }
