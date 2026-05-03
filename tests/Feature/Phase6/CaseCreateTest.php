@@ -79,7 +79,7 @@ it('creates a case, mints a token, queues the notice, and transitions to awaitin
 
     $response = $this->actingAs($tenant)->post('/cases', validStorePayload($property->id));
 
-    $response->assertRedirect('/cases');
+    $response->assertRedirectContains('/cases/');
 
     $case = RepairCase::firstOrFail();
     expect($case->status)->toBe(CaseStatus::AwaitingLandlord);
@@ -168,7 +168,7 @@ it('creates a case successfully when no photos are uploaded', function () {
 
     $response = $this->actingAs($tenant)->post('/cases', validStorePayload($property->id));
 
-    $response->assertRedirect('/cases');
+    $response->assertRedirectContains('/cases/');
     expect(MessageAttachment::count())->toBe(0);
     expect(RepairCase::count())->toBe(1);
 });

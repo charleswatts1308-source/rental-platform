@@ -59,6 +59,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/cases', [CaseController::class, 'index'])->name('cases.index');
     Route::get('/cases/create', [CaseController::class, 'create'])->name('cases.create');
     Route::post('/cases', [CaseController::class, 'store'])->name('cases.store');
+    Route::get('/cases/{slug}', [CaseController::class, 'show'])->name('cases.show');
 
     // File attachment routes
     Route::get('/files/{id}/download', [FileAttachmentController::class, 'download'])->name('files.download');

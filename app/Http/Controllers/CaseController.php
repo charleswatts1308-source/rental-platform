@@ -49,6 +49,36 @@ class CaseController extends Controller
         return view('cases.index', ['cases' => $cases]);
     }
 
+    public function show(string $slug): View
+    {
+        $case = RepairCase::where('url_slug', $slug)->firstOrFail();
+        $this->authorize('view', $case);
+
+        $case->load([
+            'property',
+            'landlordContact',
+            'category',
+            'tenant',
+        ]);
+
+        $messages = $case->messages()
+            ->whereNull('quarantine_reason')
+            ->orderBy('created_at')
+            ->with('attachments')
+            ->get();
+
+        $quarantined = $case->messages()
+            ->whereNotNull('quarantine_reason')
+            ->orderBy('created_at')
+            ->get();
+
+        return view('cases.show', [
+            'case' => $case,
+            'messages' => $messages,
+            'quarantined' => $quarantined,
+        ]);
+    }
+
     public function create(Request $request): View
     {
         $this->authorize('create', RepairCase::class);
@@ -133,8 +163,8 @@ class CaseController extends Controller
         });
 
         return redirect()
-            ->route('cases.index')
-            ->with('success', 'Repair notice sent. Case #'.$case->url_slug.' is now awaiting a landlord response.');
+            ->route('cases.show', $case->url_slug)
+            ->with('success', 'Repair notice sent. The first letter is now on its way to your landlord.');
     }
 
     private function resolveLandlordContact(array $validated, int $userId): LandlordContact
