@@ -1,10 +1,11 @@
 <?php
 
+use App\Http\Controllers\AdminController;
+use App\Http\Controllers\CaseController;
+use App\Http\Controllers\ContactMessageController;
+use App\Http\Controllers\FileAttachmentController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RentalController;
-use App\Http\Controllers\FileAttachmentController;
-use App\Http\Controllers\AdminController;
-use App\Http\Controllers\ContactMessageController;
 use App\Http\Controllers\Webhooks\MailgunInboundController;
 use Illuminate\Support\Facades\Route;
 
@@ -45,6 +46,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Contact us
     Route::get('/contact', [ContactMessageController::class, 'create'])->name('contact.create');
     Route::post('/contact', [ContactMessageController::class, 'store'])->name('contact.store');
+
+    // Repair cases (Landlord Contact Service)
+    Route::get('/cases', [CaseController::class, 'index'])->name('cases.index');
+    Route::get('/cases/create', [CaseController::class, 'create'])->name('cases.create');
+    Route::post('/cases', [CaseController::class, 'store'])->name('cases.store');
 
     // File attachment routes
     Route::get('/files/{id}/download', [FileAttachmentController::class, 'download'])->name('files.download');
