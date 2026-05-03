@@ -4,10 +4,12 @@ namespace App\Models;
 
 use App\Enums\CaseSeverity;
 use App\Enums\CaseStatus;
+use App\Exceptions\InvalidCaseTransitionException;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\DB;
 
 class RepairCase extends Model
 {
@@ -75,39 +77,44 @@ class RepairCase extends Model
     }
 
     /**
-     * Permitted status transitions: from-status value => list of to-status values.
+     * Permitted status transitions: from-status => [to-status => primary-event-type].
      * Any (from, to) pair not present here is illegal and rejected by transitionTo().
+     * The event_type is the canonical status-change marker for that transition;
+     * later phases may write peripheral events (token_issued, notice_sent, etc.)
+     * alongside without changing the state machine.
      */
-    private const ALLOWED_TRANSITIONS = [
-        'open' => ['awaiting_landlord'],
+    private const TRANSITIONS = [
+        'open' => [
+            'awaiting_landlord' => 'notice_sent',
+        ],
         'awaiting_landlord' => [
-            'awaiting_tenant_review',
-            'tenant_action_required',
-            'resolved',
-            'abandoned',
+            'awaiting_tenant_review' => 'inbound_received',
+            'tenant_action_required' => 'escalation_eligible',
+            'resolved' => 'case_resolved',
+            'abandoned' => 'case_abandoned',
         ],
         'awaiting_tenant_review' => [
-            'tenant_action_required',
-            'on_hold',
-            'resolved',
-            'abandoned',
+            'tenant_action_required' => 'escalation_eligible',
+            'on_hold' => 'hold_set',
+            'resolved' => 'case_resolved',
+            'abandoned' => 'case_abandoned',
         ],
         'tenant_action_required' => [
-            'awaiting_landlord',
-            'on_hold',
-            'resolved',
-            'abandoned',
-            'dormant',
+            'awaiting_landlord' => 'stage_advanced',
+            'on_hold' => 'hold_set',
+            'resolved' => 'case_resolved',
+            'abandoned' => 'case_abandoned',
+            'dormant' => 'case_dormant',
         ],
         'on_hold' => [
-            'tenant_action_required',
-            'awaiting_tenant_review',
-            'resolved',
-            'abandoned',
+            'tenant_action_required' => 'hold_expired',
+            'awaiting_tenant_review' => 'inbound_received',
+            'resolved' => 'case_resolved',
+            'abandoned' => 'case_abandoned',
         ],
         'dormant' => [
-            'tenant_action_required',
-            'abandoned',
+            'tenant_action_required' => 'tenant_re_engaged',
+            'abandoned' => 'case_abandoned',
         ],
         // resolved and abandoned are terminal — no allowed transitions out.
         'resolved' => [],
@@ -116,6 +123,28 @@ class RepairCase extends Model
 
     public static function isTransitionAllowed(CaseStatus $from, CaseStatus $to): bool
     {
-        return in_array($to->value, self::ALLOWED_TRANSITIONS[$from->value] ?? [], true);
+        return array_key_exists($to->value, self::TRANSITIONS[$from->value] ?? []);
+    }
+
+    public function transitionTo(CaseStatus $newStatus, array $context = []): void
+    {
+        $oldStatus = $this->status;
+
+        if (! self::isTransitionAllowed($oldStatus, $newStatus)) {
+            throw InvalidCaseTransitionException::illegalTransition($oldStatus, $newStatus);
+        }
+
+        DB::transaction(function () use ($oldStatus, $newStatus, $context) {
+            $this->status = $newStatus;
+            $this->save();
+
+            $this->events()->create([
+                'event_type' => self::TRANSITIONS[$oldStatus->value][$newStatus->value],
+                'actor_user_id' => $context['actor_user_id'] ?? null,
+                'actor_label' => $context['actor_label'] ?? 'system',
+                'occurred_at' => now(),
+                'meta' => $context['meta'] ?? null,
+            ]);
+        });
     }
 }
