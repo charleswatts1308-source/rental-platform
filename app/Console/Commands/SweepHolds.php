@@ -3,8 +3,10 @@
 namespace App\Console\Commands;
 
 use App\Enums\CaseStatus;
+use App\Mail\Notifications\HoldExpired;
 use App\Models\RepairCase;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Mail;
 
 /**
  * Daily sweep that releases on_hold cases whose hold_until has passed,
@@ -33,6 +35,7 @@ class SweepHolds extends Command
         $count = 0;
         foreach ($cases as $case) {
             $case->transitionTo(CaseStatus::TenantActionRequired);
+            Mail::to($case->tenant->email)->queue(new HoldExpired($case));
             $count++;
         }
 

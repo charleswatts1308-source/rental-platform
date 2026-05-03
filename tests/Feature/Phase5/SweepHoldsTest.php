@@ -3,8 +3,13 @@
 use App\Enums\CaseStatus;
 use App\Models\RepairCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Mail;
 
 uses(RefreshDatabase::class);
+
+beforeEach(function () {
+    Mail::fake();
+});
 
 it('releases on_hold cases past their hold_until', function () {
     $case = RepairCase::factory()->create([
