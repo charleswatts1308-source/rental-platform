@@ -63,4 +63,9 @@ class RepairCase extends Model
     {
         return $this->hasMany(CaseMessage::class, 'case_id');
     }
+
+    public function replyTokens(): HasMany
+    {
+        return $this->hasMany(ReplyToken::class, 'case_id');
+    }
 }
