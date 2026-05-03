@@ -412,3 +412,13 @@ These are real concerns but worth implementing once attack patterns are observed
 2. Inbound subdomain — `inbox.renters.rent` confirmed. Mailgun account and DNS configuration deferred until closer to go-live (post-Phase 6).
 3. Outbound From address — `cases@mg.renters.rent` (sending subdomain), with display name `"{tenant first name} via renters.rent"`. Mailgun setup wizard handles SPF/DKIM/DMARC alignment when the account is created.
 4. Hold duration — tenant picks any future date, or constrained to a set of options (7, 14, 30 days)?
+
+## Deferred decisions
+
+Decisions taken during implementation that have not yet been folded into the main body of this document. Each entry references the phase that produced it. When the related main-body section is next revised, deferred decisions for that area should be merged in and removed from this list.
+
+### Phase 4
+
+- **`event_type_override` context key on `transitionTo`.** Allows the same (from, to) transition pair to write different events based on context — specifically `inbound_received` vs `inbound_quarantined` for the same `awaiting_landlord → awaiting_tenant_review` transition. Defaults still come from the `TRANSITIONS` map; the override is opt-in.
+- **`dormant → awaiting_tenant_review` added to the formal transition map.** The design doc's transition table omitted this row, but the "rules out of band" section explicitly required the inbound-wakes-dormant behaviour. Adding to the formal map keeps the state machine the single source of truth. **Design doc body should be updated to include this row in the transition table at the next revision.**
+- **15-minute replay window on Mailgun signature verification.** Defensive default not specified by design but consistent with Mailgun's documented best practice. Webhook payloads with timestamps older than 15 minutes are rejected as potential replays.
