@@ -7,6 +7,7 @@ use App\Enums\CaseStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class RepairCase extends Model
 {
@@ -56,5 +57,10 @@ class RepairCase extends Model
     public function landlordContact(): BelongsTo
     {
         return $this->belongsTo(LandlordContact::class);
+    }
+
+    public function messages(): HasMany
+    {
+        return $this->hasMany(CaseMessage::class, 'case_id');
     }
 }
