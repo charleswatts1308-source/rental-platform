@@ -79,6 +79,96 @@ class CaseController extends Controller
         ]);
     }
 
+    public function sendNext(Request $request, string $slug): RedirectResponse
+    {
+        $case = $this->findCaseOrFail($slug);
+        $this->authorize('sendNext', $case);
+
+        $this->sendCaseNotice->execute(
+            $case,
+            actorUserId: $request->user()->id,
+        );
+
+        return redirect()
+            ->route('cases.show', $case->url_slug)
+            ->with('success', 'Next letter dispatched.');
+    }
+
+    public function hold(Request $request, string $slug): RedirectResponse
+    {
+        $case = $this->findCaseOrFail($slug);
+        $this->authorize('hold', $case);
+
+        $validated = $request->validate([
+            'hold_until' => ['required', 'date', 'after:today'],
+        ]);
+
+        $case->transitionTo(CaseStatus::OnHold, [
+            'actor_user_id' => $request->user()->id,
+            'actor_label' => 'tenant',
+            'hold_until' => $validated['hold_until'],
+        ]);
+
+        return redirect()
+            ->route('cases.show', $case->url_slug)
+            ->with('success', 'Case paused until '.$case->fresh()->hold_until->format('d M Y').'.');
+    }
+
+    public function resolve(Request $request, string $slug): RedirectResponse
+    {
+        $case = $this->findCaseOrFail($slug);
+        $this->authorize('resolve', $case);
+
+        $case->transitionTo(CaseStatus::Resolved, [
+            'actor_user_id' => $request->user()->id,
+            'actor_label' => 'tenant',
+        ]);
+
+        return redirect()
+            ->route('cases.show', $case->url_slug)
+            ->with('success', 'Case marked resolved.');
+    }
+
+    public function abandon(Request $request, string $slug): RedirectResponse
+    {
+        $case = $this->findCaseOrFail($slug);
+        $this->authorize('abandon', $case);
+
+        $validated = $request->validate([
+            'reason' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $case->transitionTo(CaseStatus::Abandoned, [
+            'actor_user_id' => $request->user()->id,
+            'actor_label' => 'tenant',
+            'meta' => array_filter(['reason' => $validated['reason'] ?? null]),
+        ]);
+
+        return redirect()
+            ->route('cases.show', $case->url_slug)
+            ->with('success', 'Case marked abandoned.');
+    }
+
+    public function reEngage(Request $request, string $slug): RedirectResponse
+    {
+        $case = $this->findCaseOrFail($slug);
+        $this->authorize('reEngage', $case);
+
+        $case->transitionTo(CaseStatus::TenantActionRequired, [
+            'actor_user_id' => $request->user()->id,
+            'actor_label' => 'tenant',
+        ]);
+
+        return redirect()
+            ->route('cases.show', $case->url_slug)
+            ->with('success', 'Case re-engaged.');
+    }
+
+    private function findCaseOrFail(string $slug): RepairCase
+    {
+        return RepairCase::where('url_slug', $slug)->firstOrFail();
+    }
+
     public function create(Request $request): View
     {
         $this->authorize('create', RepairCase::class);

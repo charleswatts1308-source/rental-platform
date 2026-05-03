@@ -60,6 +60,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/cases/create', [CaseController::class, 'create'])->name('cases.create');
     Route::post('/cases', [CaseController::class, 'store'])->name('cases.store');
     Route::get('/cases/{slug}', [CaseController::class, 'show'])->name('cases.show');
+    Route::post('/cases/{slug}/send-next', [CaseController::class, 'sendNext'])->name('cases.send-next');
+    Route::post('/cases/{slug}/hold', [CaseController::class, 'hold'])->name('cases.hold');
+    Route::post('/cases/{slug}/resolve', [CaseController::class, 'resolve'])->name('cases.resolve');
+    Route::post('/cases/{slug}/abandon', [CaseController::class, 'abandon'])->name('cases.abandon');
+    Route::post('/cases/{slug}/re-engage', [CaseController::class, 'reEngage'])->name('cases.re-engage');
 
     // File attachment routes
     Route::get('/files/{id}/download', [FileAttachmentController::class, 'download'])->name('files.download');
