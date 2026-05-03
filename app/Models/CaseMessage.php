@@ -7,6 +7,7 @@ use App\Enums\SenderRole;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class CaseMessage extends Model
 {
@@ -49,5 +50,10 @@ class CaseMessage extends Model
     public function case(): BelongsTo
     {
         return $this->belongsTo(RepairCase::class, 'case_id');
+    }
+
+    public function attachments(): HasMany
+    {
+        return $this->hasMany(MessageAttachment::class);
     }
 }
