@@ -266,6 +266,31 @@ Plus `php artisan schedule:list` showing all three commands registered.
 **Acceptance check:**
 Manual: log in as a test tenant, create a case end-to-end, verify the email lands at a Mailgun-routed test address, simulate a reply, verify it appears in the dashboard, take an action, verify the state transition.
 
+### Phase 6.5 — Properties registration UI
+
+**Goal:** Tenants can register the properties they rent through the dashboard. Closes the gap surfaced during Phase 6a where case creation requires a `properties` row but no UI exists to create one.
+
+**Position in plan:** Lands between Phase 6a (case index + create) and Phase 6b (case detail + action routes). Phase 6b depends on this being complete because the case-creation flow exercised in 6b's tests needs a working properties UI to set up scenarios.
+
+**Deliverables:**
+- `PropertyController` with `index`, `create`, `store`, `edit`, `update` actions (delete deferred — properties with cases against them cannot be deleted per the FK RESTRICT, and properties without cases can be left as orphan records harmlessly).
+- Routes inside the existing `auth, verified` middleware group: `GET /properties`, `GET /properties/create`, `POST /properties`, `GET /properties/{property}/edit`, `PATCH /properties/{property}`.
+- Bootstrap-styled Blade views for list and form (`resources/views/properties/index.blade.php`, `resources/views/properties/create.blade.php`, `resources/views/properties/edit.blade.php`).
+- `PropertyPolicy` enforcing that tenants can only see, edit, or attach cases to properties they registered (`registered_by_user_id` match).
+- Pest tests:
+  - Cross-tenant isolation on the index (tenant cannot see another tenant's properties)
+  - Cross-tenant isolation on edit (403 on attempting to edit another tenant's property)
+  - Validation: required fields (address line 1, postcode), postcode format check (UK postcode regex acceptable for v1)
+  - Store creates the row with `registered_by_user_id` set to the authenticated user
+  - Update modifies the existing row, does not create a new one
+  - Attempting to update another tenant's property returns 403 without modifying anything
+
+**Acceptance check:**
+```bash
+php artisan test --filter=Property
+```
+Plus manual verification: log in as a test tenant, register a property end-to-end through the new UI, then create a case against that property to confirm the case-creation flow now works without tinker intervention.
+
 ### Phase 7 — Tenant notification emails
 
 **Goal:** Tenants receive notifications at the right moments: landlord reply received, escalation eligible, hold expired, dormancy reminders.
