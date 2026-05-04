@@ -88,3 +88,19 @@ Followed by a separate non-Phase-8 commit redesigning the actual sequence (admin
 
 - Bounce handling (Mailgun events webhook) is a separate future phase, parked in the design doc's open items
 - Land Registry-anchored landlord identity for de-duplication is the long-term architectural answer for the duplicate-contact problem; out of scope for Phase 8
+
+## Severity handling — to be decided during Phase 8
+
+Cases carry a `severity` field (routine/serious/emergency) but v1 does not use it to drive platform behaviour. Severity is captured but informational only.
+
+Awaab's Law specifies tighter timeframes for serious hazards (14 days investigation, 7 days repair start) and emergencies (24 hours). The platform's v1 schedule (0/14/14/21 days) does not differentiate by severity.
+
+Three positions to choose from when Phase 8 is built:
+
+- **Position A — severity drives schedule.** Different escalation timing per severity. Most aligned with statutory framework but adds real complexity (per-case schedules visible in dashboard, three test schedules, configurable schedule variants).
+- **Position B — severity drives letter content, not timing.** Uniform schedule, but template variants per severity cite the relevant statutory framework. Cleaner mechanically; legal force comes through letter content rather than timing.
+- **Position C — severity informational only.** Current v1 behaviour. Honest but weak; the form field does no work.
+
+Working preference toward Position B given the platform's documented-correspondence posture rather than activist-intervention posture, but defer to Phase 8 when the configurable infrastructure makes the question concrete rather than abstract.
+
+Schema implication if Position B is chosen: add nullable `severity` column to `letter_templates`, unique constraint on (stage_key, severity), null severity is the default fallback.
