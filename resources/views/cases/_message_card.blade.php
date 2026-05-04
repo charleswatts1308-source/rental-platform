@@ -24,7 +24,17 @@
                     {{ $message->tenant_statement }}
                 </div>
             @endif
-            <p class="text-muted small mb-0">A formal repair letter was sent to your landlord. The full text is recorded for the audit trail.</p>
+            @if($message->body_raw)
+                <details class="mt-2">
+                    <summary class="small text-muted" style="cursor:pointer;">View the letter sent to your landlord</summary>
+                    <iframe srcdoc="{{ $message->body_raw }}"
+                            sandbox=""
+                            style="width:100%;min-height:520px;border:1px solid #dee2e6;border-radius:4px;margin-top:0.75rem;background:#fff;"
+                            title="Outbound letter, stage {{ $message->stage_at_send }}"></iframe>
+                </details>
+            @else
+                <p class="text-muted small mb-0">A formal repair letter was sent to your landlord. The full text is recorded for the audit trail.</p>
+            @endif
         @endif
 
         @if($message->attachments->isNotEmpty())
