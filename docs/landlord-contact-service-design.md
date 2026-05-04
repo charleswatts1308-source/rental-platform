@@ -413,6 +413,7 @@ These are real concerns but worth implementing once attack patterns are observed
 3. Outbound From address — `cases@mg.renters.rent` (sending subdomain), with display name `"{tenant first name} via renters.rent"`. Mailgun setup wizard handles SPF/DKIM/DMARC alignment when the account is created.
 4. ~~Hold duration — tenant picks any future date, or constrained to a set of options (7, 14, 30 days)?~~ **Resolved Phase 6b:** any future date. Validation enforces `after:today`. If real usage shows tenants struggle to pick appropriate dates, a constrained dropdown can replace this in a future phase.
 5. Inbound attachment processing — design's inbound flow step 8 ("Process attachments into message_attachments rows") was not implemented in Phase 4 (not in the implementation plan's deliverables). Decision needed on which phase implements this and whether attachment scanning policy needs work first.
+6. Mailgun event/bounce handling — the design specifies inbound-reply webhook handling but does not address Mailgun's broader event webhooks (bounces, deferrals, spam complaints, delivery confirmations). Real-world consequence: mistyped landlord emails currently produce silent dead-end cases. Future phase: a separate webhook route consuming Mailgun's events API, surfacing bounces to the tenant via `case_events` and the dashboard. Combined with a tenant-side landlord-contact-edit flow, this would close the loop on Problem 1 (mistyped contacts) raised in design discussion. Out of scope for v1 launch but real-world important.
 
 ## Deferred decisions
 
