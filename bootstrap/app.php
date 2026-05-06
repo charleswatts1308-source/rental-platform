@@ -15,8 +15,13 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\TrackPageViews::class,
         ]);
 
+        $middleware->validateCsrfTokens(except: [
+            'webhooks/mailgun/*',
+        ]);
+
         $middleware->alias([
             'admin' => \App\Http\Middleware\AdminMiddleware::class,
+            'verify.mailgun.signature' => \App\Http\Middleware\VerifyMailgunSignature::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
