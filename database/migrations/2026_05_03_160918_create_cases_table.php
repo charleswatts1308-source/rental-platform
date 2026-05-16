@@ -35,7 +35,7 @@ return new class extends Migration
             $table->unsignedTinyInteger('current_stage')->default(1);
             $table->timestamp('next_stage_eligible_at')->nullable();
             $table->timestamp('hold_until')->nullable();
-            $table->timestamp('opened_at');
+            $table->timestamp('opened_at')->useCurrent();
             $table->timestamp('closed_at')->nullable();
             $table->timestamps();
 
