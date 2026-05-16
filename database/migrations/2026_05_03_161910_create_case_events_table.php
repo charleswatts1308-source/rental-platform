@@ -19,7 +19,7 @@ return new class extends Migration
                 ->constrained('users')
                 ->nullOnDelete();
             $table->string('actor_label', 32)->nullable();
-            $table->timestamp('occurred_at');
+            $table->timestamp('occurred_at')->nullable();
             $table->json('meta')->nullable();
             $table->timestamp('created_at')->useCurrent();
 
