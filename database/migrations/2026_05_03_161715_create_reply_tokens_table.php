@@ -15,7 +15,7 @@ return new class extends Migration
                 ->cascadeOnDelete();
             $table->char('token', 20)->unique();
             $table->string('bound_email');
-            $table->timestamp('issued_at');
+            $table->timestamp('issued_at')->useCurrent();
             $table->timestamp('expires_at')->nullable();
             $table->timestamp('superseded_at')->nullable();
             $table->unsignedInteger('use_count')->default(0);
