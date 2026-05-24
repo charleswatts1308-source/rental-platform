@@ -16,7 +16,14 @@
         @endif
 
         @if($isInbound)
-            <div class="message-body">{!! $message->body_sanitised !!}</div>
+            @if($message->body_sanitised)
+                <div class="message-body">{!! $message->body_sanitised !!}</div>
+            @elseif($message->body_raw)
+                {{-- Plain-text reply (no HTML part): render the raw text safely. --}}
+                <div class="message-body">{!! nl2br(e($message->body_raw)) !!}</div>
+            @else
+                <p class="text-muted small mb-0">This reply had no readable content.</p>
+            @endif
         @else
             @if($message->tenant_statement)
                 <div class="border-start border-3 ps-3 mb-3">
