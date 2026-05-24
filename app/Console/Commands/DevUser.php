@@ -56,8 +56,10 @@ class DevUser extends Command
                 'email' => $address,
                 'password' => Hash::make($this->option('password')),
                 'is_admin' => false,
-                'email_verified_at' => now(),
             ]);
+            // email_verified_at is not mass-assignable; set it directly so the
+            // tenant clears the `verified` middleware.
+            $user->markEmailAsVerified();
 
             $this->line("tenant_created id={$user->id} email={$address}");
         }

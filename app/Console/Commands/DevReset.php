@@ -80,13 +80,15 @@ class DevReset extends Command
 
         $email = $this->option('email');
 
-        User::create([
+        $admin = User::create([
             'name' => 'Admin',
             'email' => $email,
             'password' => Hash::make($this->option('password')),
             'is_admin' => true,
-            'email_verified_at' => now(),
         ]);
+        // email_verified_at is not mass-assignable; set it directly so the
+        // admin clears the `verified` middleware on the admin routes.
+        $admin->markEmailAsVerified();
 
         $this->line("admin_created={$email}");
         $this->line('admin_id=1');
