@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\PageView;
-use App\Models\Rental;
 use App\Models\ContactMessage;
 use App\Mail\ContactReply;
 use Illuminate\Http\Request;
@@ -64,17 +63,6 @@ class AdminController extends Controller
             ->get();
 
         return view('admin.page-views', compact('pageViews', 'totalPageViews', 'crawlerPageViews', 'humanPageViews'));
-    }
-
-    public function rentals()
-    {
-        $rentals = Rental::select('rentals.*', 'users.name as user_name')
-            ->join('users', 'rentals.user_id', '=', 'users.id')
-            ->orderBy('date_created', 'desc')
-            ->limit(100)
-            ->get();
-
-        return view('admin.rentals', compact('rentals'));
     }
 
     public function contactMessages()

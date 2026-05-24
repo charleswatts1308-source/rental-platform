@@ -13,7 +13,6 @@ class FileAttachment extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'rental_id',
         'file_name',
         'blob_url',
         'content_type',
@@ -25,13 +24,8 @@ class FileAttachment extends Model
         'uploaded_date' => 'datetime',
     ];
 
-    /**
-     * Get the rental that owns the file attachment.
-     */
-    public function rental()
-    {
-        return $this->belongsTo(Rental::class, 'rental_id', 'rental_id');
-    }
+    // NOTE: this table is not yet wired to an owner (rentals removed). A
+    // property/case relationship will be added when it is re-integrated.
 
     /**
      * Get human-readable file size.

@@ -43,6 +43,6 @@
 <hr>
 
 
-<a href="{{ route('rentals.create') }}" class="btn btn-success btn-lg mb-4">Start a Repair Notice</a>
+<a href="{{ route('cases.create') }}" class="btn btn-success btn-lg mb-4">Start a Repair Notice</a>
 
 @endsection

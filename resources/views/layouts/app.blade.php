@@ -176,9 +176,6 @@
                                 Your Rental Profile
                             </a>
                             <ul class="dropdown-menu" aria-labelledby="RentalProfileDropdown">
-                                <li><a class="dropdown-item" href="{{ route('rentals.index') }}">Your Rentals</a></li>
-                                <li><a class="dropdown-item" href="{{ route('rentals.create') }}">Add New Rental</a></li>
-                                <li><hr class="dropdown-divider"></li>
                                 <li><a class="dropdown-item" href="{{ route('properties.index') }}">Your Properties</a></li>
                                 <li><a class="dropdown-item" href="{{ route('cases.index') }}">Your Repair Cases</a></li>
                             </ul>
@@ -224,7 +221,6 @@
                             <ul class="dropdown-menu" aria-labelledby="adminDropdown">
                                 <li><a class="dropdown-item" href="{{ route('admin.users') }}">Users</a></li>
                                 <li><a class="dropdown-item" href="{{ route('admin.page-views') }}">Page Views</a></li>
-                                <li><a class="dropdown-item" href="{{ route('admin.rentals') }}">Rentals</a></li>
                                 <li><a class="dropdown-item" href="{{ route('admin.contact-messages') }}">Contact Messages</a></li>
                             </ul>
                         </li>

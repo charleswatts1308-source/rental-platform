@@ -3,10 +3,8 @@
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\CaseController;
 use App\Http\Controllers\ContactMessageController;
-use App\Http\Controllers\FileAttachmentController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PropertyController;
-use App\Http\Controllers\RentalController;
 use App\Http\Controllers\Webhooks\MailgunInboundController;
 use Illuminate\Support\Facades\Route;
 
@@ -36,14 +34,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    // Rental routes (delete functionality removed for GDPR compliance)
-    Route::get('/rentals', [RentalController::class, 'index'])->name('rentals.index');
-    Route::get('/rentals/create', [RentalController::class, 'create'])->name('rentals.create');
-    Route::post('/rentals', [RentalController::class, 'store'])->name('rentals.store');
-    Route::get('/rentals/{rental}', [RentalController::class, 'show'])->name('rentals.show');
-    Route::get('/rentals/{rental}/edit', [RentalController::class, 'edit'])->name('rentals.edit');
-    Route::put('/rentals/{rental}', [RentalController::class, 'update'])->name('rentals.update');
-
     // Contact us
     Route::get('/contact', [ContactMessageController::class, 'create'])->name('contact.create');
     Route::post('/contact', [ContactMessageController::class, 'store'])->name('contact.store');
@@ -65,10 +55,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/cases/{slug}/resolve', [CaseController::class, 'resolve'])->name('cases.resolve');
     Route::post('/cases/{slug}/abandon', [CaseController::class, 'abandon'])->name('cases.abandon');
     Route::post('/cases/{slug}/re-engage', [CaseController::class, 'reEngage'])->name('cases.re-engage');
-
-    // File attachment routes
-    Route::get('/files/{id}/download', [FileAttachmentController::class, 'download'])->name('files.download');
-    Route::delete('/files/{id}', [FileAttachmentController::class, 'destroy'])->name('files.destroy');
 
     // Auth-only member pages
     Route::prefix('members')->name('members.')->group(function () {
@@ -93,7 +79,6 @@ Route::prefix('members')->name('members.')->group(function () {
 Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/users', [AdminController::class, 'users'])->name('users');
     Route::get('/page-views', [AdminController::class, 'pageViews'])->name('page-views');
-    Route::get('/rentals', [AdminController::class, 'rentals'])->name('rentals');
     Route::get('/contact-messages', [AdminController::class, 'contactMessages'])->name('contact-messages');
     Route::get('/contact-messages/{contactMessage}', [AdminController::class, 'contactMessageShow'])->name('contact-messages.show');
     Route::post('/contact-messages/{contactMessage}/reply', [AdminController::class, 'contactMessageReply'])->name('contact-messages.reply');
