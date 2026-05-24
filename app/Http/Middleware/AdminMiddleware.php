@@ -11,7 +11,7 @@ class AdminMiddleware
 {
     public function handle(Request $request, Closure $next): Response
     {
-        if (Auth::id() !== 13 && !app()->environment('local')) {
+        if (! Auth::user()?->is_admin) {
             abort(403, 'Unauthorized');
         }
 

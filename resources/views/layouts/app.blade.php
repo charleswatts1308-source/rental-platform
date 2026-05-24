@@ -216,7 +216,7 @@
                             </ul>
                         </li>
 
-                        @if(Auth::id() === 13 || app()->environment('local'))
+                        @if(Auth::user()?->is_admin)
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle text-dark" href="#" id="adminDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                                 Admin
