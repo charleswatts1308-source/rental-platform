@@ -18,6 +18,11 @@ use Illuminate\Support\Facades\Schema;
  *
  * Preserved: repair_categories (seeded reference data) and all framework
  * tables (migrations, cache, jobs, sessions, etc.).
+ *
+ * Note: repair_categories content is deliberately NOT truncated OR seeded
+ * here — reset only clears transactional data and leaves reference data as it
+ * found it. Seeding repair_categories (when empty, e.g. a freshly-migrated
+ * staging DB) is dev:lifecycle's responsibility, not dev:reset's.
  */
 class DevReset extends Command
 {
