@@ -74,7 +74,11 @@ class DevLifecycle extends Command
 
         $this->newLine();
 
-        $categoryKeys = RepairCategory::where('active', true)->orderBy('sort_order')->pluck('key')->all();
+        $categoryKeys = $this->ensureCategoryKeys();
+        if ($categoryKeys === []) {
+            return self::FAILURE;
+        }
+
         $total = count($specs);
         $rows = [];
 
@@ -118,6 +122,33 @@ class DevLifecycle extends Command
         $this->printSummary($rows, $adminEmail, $adminPassword);
 
         return self::SUCCESS;
+    }
+
+    /**
+     * Active repair-category keys for the demo cases.
+     *
+     * repair_categories is reference data dev:reset preserves but does not
+     * seed, so on a freshly-migrated DB (e.g. staging) it can be empty — which
+     * previously caused a modulo-by-zero when cycling categories. Seed it
+     * (idempotent RepairCategorySeeder) if empty, and fail clearly if seeding
+     * still produces nothing.
+     *
+     * @return array<int, string>
+     */
+    private function ensureCategoryKeys(): array
+    {
+        $keys = RepairCategory::where('active', true)->orderBy('sort_order')->pluck('key')->all();
+
+        if ($keys === []) {
+            $this->callSilently('db:seed', ['--class' => 'RepairCategorySeeder', '--force' => true]);
+            $keys = RepairCategory::where('active', true)->orderBy('sort_order')->pluck('key')->all();
+        }
+
+        if ($keys === []) {
+            $this->error('No active repair categories found, and seeding produced none. Run `php artisan db:seed --class=RepairCategorySeeder` and retry.');
+        }
+
+        return $keys;
     }
 
     /**
