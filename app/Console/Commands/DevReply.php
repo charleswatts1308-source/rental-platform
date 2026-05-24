@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Enums\LandlordContactRole;
 use App\Enums\MessageDirection;
 use App\Models\ReplyToken;
 use App\Models\RepairCase;
@@ -33,7 +34,7 @@ class DevReply extends Command
         {--case= : Case id or url_slug (defaults to the latest case with an active reply token)}
         {--from= : Sender address (defaults to the landlord email; mismatch triggers quarantine)}
         {--subject=Re: Your repair notice : Email subject}
-        {--body=Thank you for your notice. I will arrange an inspection shortly. : Plain-text body}';
+        {--body= : Override the reply body (plain text; default is a realistic multi-paragraph reply)}';
 
     protected $description = 'Simulate an inbound landlord reply via a signed in-process webhook (local/staging only)';
 
@@ -59,6 +60,8 @@ class DevReply extends Command
         $from = $this->option('from') ?? $case->landlordContact->email;
         $domain = (string) (config('services.mailgun.domain') ?: 'inbound.renters.rent');
 
+        [$bodyHtml, $bodyPlain] = $this->resolveBody($case->landlordContact->role);
+
         $timestamp = (string) time();
         $nonce = Str::random(50);
         $payload = [
@@ -66,7 +69,8 @@ class DevReply extends Command
             'sender' => $from,
             'from' => $from,
             'subject' => $this->option('subject'),
-            'body-plain' => $this->option('body'),
+            'body-html' => $bodyHtml,
+            'body-plain' => $bodyPlain,
             'X-Mailgun-Spf' => 'Pass',
             'X-Mailgun-Dkim-Check-Result' => 'Pass',
             'Message-Id' => '<'.Str::random(24).'@'.$domain.'>',
@@ -102,6 +106,40 @@ class DevReply extends Command
         );
 
         return self::SUCCESS;
+    }
+
+    /**
+     * Build the reply body as [html, plain].
+     *
+     * An explicit --body overrides both parts (the plain text is also wrapped
+     * to minimal HTML). Otherwise a realistic multi-paragraph reply is used,
+     * with the sign-off tailored to landlord vs agent. Sending an HTML part is
+     * what makes HandleInboundReply populate body_sanitised via Purifier, so
+     * the demo exercises the production (sanitised-HTML) render path.
+     *
+     * @return array{0:string,1:string}
+     */
+    private function resolveBody(LandlordContactRole $role): array
+    {
+        $override = $this->option('body');
+        if ($override !== null && $override !== '') {
+            return ['<p>'.nl2br(e($override)).'</p>', $override];
+        }
+
+        $signOff = $role === LandlordContactRole::Agent ? 'Lettings Team' : 'The Landlord';
+
+        $paragraphs = [
+            'Dear Sir/Madam,',
+            'Thank you for your letter regarding the repairs at the property. I am sorry for the inconvenience this has caused.',
+            'I have contacted my usual contractor and will arrange for them to inspect the issue within the next seven days. I will confirm a date with you shortly and make sure the necessary work is carried out promptly.',
+            'Please do not hesitate to get in touch if you need anything further in the meantime.',
+        ];
+
+        $html = collect($paragraphs)->map(fn ($p) => '<p>'.e($p).'</p>')->implode('')
+            .'<p>Kind regards,<br>'.e($signOff).'</p>';
+        $plain = implode("\n\n", $paragraphs)."\n\nKind regards,\n{$signOff}";
+
+        return [$html, $plain];
     }
 
     /**
