@@ -1,0 +1,37 @@
+LLCS SNAGGING LIST
+==================
+
+Minor bugs and rough edges spotted while testing the Landlord Contact Service
+UI. These are deferred on purpose - none are blockers. They'll be fixed in a
+batch once the whole LLCS lifecycle has been walked through, so testing isn't
+interrupted.
+
+If something actually BLOCKS testing (a crash, a 500, data loss, a broken
+flow), don't park it here - flag it straight away.
+
+To add a snag: copy the dashed block below, fill it in, leave Status as "open".
+Severity guide: cosmetic = looks off / minor = awkward / functional = wrong.
+
+
+--------------------------------------------------------------------
+#1
+Page:        Main nav dropdown
+Severity:    cosmetic
+Saw:         Dropdown still titled "Your Rental Profile" after rentals removal
+Expected:    A title that fits its contents (Properties + Repair Cases only)
+Status:      open
+Notes:       Flagged during rentals removal (commit 929d2f6). Maybe "Your Tenancy".
+--------------------------------------------------------------------
+#2
+Page: Cases - landlord agent email not shown
+Severity:
+Saw:
+Expected:
+Status:      open
+Notes:
+--------------------------------------------------------------------
+
+
+ALREADY FIXED THIS PASS (for reference)
+- Plain-text landlord replies showed as an empty card on the case page.
+  Fixed in commit 13d01b1.
