@@ -28,7 +28,7 @@ function inboundPayload(string $tokenValue, array $overrides = []): array
         'timestamp' => $timestamp,
         'token' => $signatureToken,
         'signature' => hash_hmac('sha256', $timestamp.$signatureToken, $signingKey),
-        'recipient' => $tokenValue.'@inbox.renters.rent',
+        'recipient' => $tokenValue.'@'.config('services.mailgun.inbound_domain'),
         'sender' => 'landlord@example.com',
         'from' => 'Mr Landlord <landlord@example.com>',
         'subject' => 'Re: repair issue',
@@ -70,7 +70,7 @@ it('routes a valid inbound reply to the correct case', function () {
     $message = $case->fresh()->messages()->where('direction', MessageDirection::Inbound->value)->sole();
     expect($message->sender_role)->toBe(SenderRole::Landlord);
     expect($message->from_address_raw)->toBe('Mr Landlord <landlord@example.com>');
-    expect($message->to_address_raw)->toBe($token->token.'@inbox.renters.rent');
+    expect($message->to_address_raw)->toBe($token->token.'@'.config('services.mailgun.inbound_domain'));
     expect($message->mailgun_message_id)->toBe('20260503184500.abcdef@mg.example.com');
     expect($message->spf_pass)->toBeTrue();
     expect($message->dkim_pass)->toBeTrue();
@@ -114,7 +114,7 @@ it('routes a superseded but still in-window token correctly', function () {
 
 it('returns 200 for a malformed recipient and stores no message', function () {
     $payload = inboundPayload('whatever');
-    $payload['recipient'] = 'not-a-token@inbox.renters.rent';
+    $payload['recipient'] = 'not-a-token@'.config('services.mailgun.inbound_domain');
 
     $response = $this->post('/webhooks/mailgun/inbound', $payload);
 

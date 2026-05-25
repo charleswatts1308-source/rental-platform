@@ -58,7 +58,7 @@ class DevReply extends Command
         }
 
         $from = $this->option('from') ?? $case->landlordContact->email;
-        $domain = (string) (config('services.mailgun.domain') ?: 'inbound.renters.rent');
+        $domain = (string) config('services.mailgun.inbound_domain');
 
         [$bodyHtml, $bodyPlain] = $this->resolveBody($case->landlordContact->role);
 

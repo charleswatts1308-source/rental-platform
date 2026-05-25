@@ -96,7 +96,7 @@ it('sets the From envelope to cases@mg.renters.rent with the tenant first name',
     $envelope = (new CaseNotice($case, $message, $token))->envelope();
     $from = $envelope->from;
 
-    expect($from->address)->toBe('cases@mg.renters.rent');
+    expect($from->address)->toBe(config('services.mailgun.cases_from_address'));
     expect($from->name)->toBe('Alex via renters.rent');
 });
 
@@ -106,7 +106,7 @@ it('sets the Reply-To envelope to the token-bound inbox address', function () {
     $envelope = (new CaseNotice($case, $message, $token))->envelope();
 
     expect($envelope->replyTo)->toHaveCount(1);
-    expect($envelope->replyTo[0]->address)->toBe('abcdefghij1234567890@inbox.renters.rent');
+    expect($envelope->replyTo[0]->address)->toBe('abcdefghij1234567890@'.config('services.mailgun.inbound_domain'));
 });
 
 it('uses a stage-appropriate subject line', function () {

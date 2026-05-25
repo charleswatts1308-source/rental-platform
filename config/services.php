@@ -20,6 +20,11 @@ return [
         'endpoint' => env('MAILGUN_ENDPOINT', 'api.eu.mailgun.net'),
         'scheme' => 'https',
         'webhook_signing_key' => env('MAILGUN_WEBHOOK_SIGNING_KEY'),
+        // Required per-environment, deliberately no default: CaseNotice throws if
+        // either is missing, so a misconfigured env fails loudly instead of sending
+        // production-shaped identity through the wrong domain.
+        'cases_from_address' => env('MAILGUN_CASES_FROM_ADDRESS'),
+        'inbound_domain' => env('MAILGUN_INBOUND_DOMAIN'),
     ],
 
     'postmark' => [

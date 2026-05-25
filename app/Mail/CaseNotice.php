@@ -12,6 +12,7 @@ use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
+use RuntimeException;
 
 class CaseNotice extends Mailable
 {
@@ -21,15 +22,29 @@ class CaseNotice extends Mailable
         public RepairCase $case,
         public CaseMessage $message,
         public ReplyToken $token,
-    ) {}
+    ) {
+        if (blank(config('services.mailgun.cases_from_address'))) {
+            throw new RuntimeException(
+                'MAILGUN_CASES_FROM_ADDRESS is not configured. Refusing to send a case notice '
+                .'without an explicit From address — set it in this environment\'s .env.'
+            );
+        }
+
+        if (blank(config('services.mailgun.inbound_domain'))) {
+            throw new RuntimeException(
+                'MAILGUN_INBOUND_DOMAIN is not configured. Refusing to send a case notice '
+                .'without an explicit inbound reply domain — set it in this environment\'s .env.'
+            );
+        }
+    }
 
     public function envelope(): Envelope
     {
         $tenantFirstName = $this->tenantFirstName();
 
         return new Envelope(
-            from: new Address('cases@mg.renters.rent', "{$tenantFirstName} via renters.rent"),
-            replyTo: [new Address("{$this->token->token}@inbox.renters.rent")],
+            from: new Address(config('services.mailgun.cases_from_address'), "{$tenantFirstName} via renters.rent"),
+            replyTo: [new Address("{$this->token->token}@".config('services.mailgun.inbound_domain'))],
             subject: $this->subjectForStage(),
         );
     }

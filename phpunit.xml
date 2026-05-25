@@ -26,6 +26,8 @@
         <env name="DB_CONNECTION" value="sqlite"/>
         <env name="DB_DATABASE" value=":memory:"/>
         <env name="MAIL_MAILER" value="array"/>
+        <env name="MAILGUN_CASES_FROM_ADDRESS" value="cases@mg.renters.rent"/>
+        <env name="MAILGUN_INBOUND_DOMAIN" value="inbox.renters.rent"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>
         <env name="PULSE_ENABLED" value="false"/>
