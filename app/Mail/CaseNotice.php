@@ -43,9 +43,13 @@ class CaseNotice extends Mailable
         $tenantFirstName = $this->tenantFirstName();
 
         return new Envelope(
-            from: new Address(config('services.mailgun.cases_from_address'), "{$tenantFirstName} via renters.rent"),
+            from: new Address((string) config('services.mailgun.cases_from_address'), "{$tenantFirstName} via renters.rent"),
             replyTo: [new Address("{$this->token->token}@".config('services.mailgun.inbound_domain'))],
             subject: $this->subjectForStage(),
+            // Tags the message with the environment (production/staging/local) so a
+            // misrouted send is instantly visible in Mailgun's per-domain log view.
+            // Laravel maps Envelope tags to Mailgun's o:tag (via Symfony TagHeader).
+            tags: [app()->environment()],
         );
     }
 

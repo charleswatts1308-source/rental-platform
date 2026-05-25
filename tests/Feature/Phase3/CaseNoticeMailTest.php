@@ -109,6 +109,14 @@ it('sets the Reply-To envelope to the token-bound inbox address', function () {
     expect($envelope->replyTo[0]->address)->toBe('abcdefghij1234567890@'.config('services.mailgun.inbound_domain'));
 });
 
+it('tags the message with the current environment for Mailgun log filtering', function () {
+    ['case' => $case, 'message' => $message, 'token' => $token] = makeCaseFor(1);
+
+    $envelope = (new CaseNotice($case, $message, $token))->envelope();
+
+    expect($envelope->tags)->toContain(app()->environment());
+});
+
 it('uses a stage-appropriate subject line', function () {
     ['case' => $c1, 'message' => $m1, 'token' => $t1] = makeCaseFor(1);
     ['case' => $c2, 'message' => $m2, 'token' => $t2] = makeCaseFor(2);
