@@ -21,6 +21,7 @@ The single biggest blocker. Without an active Mailgun configuration, outbound ca
 - [ ] Inbound subdomain `inbox.renters.rent` configured. Add the MX record Mailgun provides; this is the address the per-case `{token}@inbox.renters.rent` reply addresses route through.
 - [ ] Inbound route in Mailgun pointing all `*@inbox.renters.rent` to `https://<your-domain>/webhooks/mailgun/inbound`.
 - [ ] Webhook signing key generated. Copy this into `MAILGUN_WEBHOOK_SIGNING_KEY` in production `.env`.
+- [ ] **`MAILGUN_CASES_FROM_ADDRESS` and `MAILGUN_INBOUND_DOMAIN` set in `.env`** — both are now **mandatory, no default**: `CaseNotice` throws and no case notices send if either is missing. Production values: `cases@mg.renters.rent` and `inbox.renters.rent`.
 - [ ] **DNS propagation can take hours.** Don't deploy the same day you start Mailgun setup.
 
 ### Domain & HTTPS
@@ -55,6 +56,8 @@ MAILGUN_DOMAIN=mg.renters.rent
 MAILGUN_SECRET=<from mailgun api keys>
 MAILGUN_ENDPOINT=api.eu.mailgun.net
 MAILGUN_WEBHOOK_SIGNING_KEY=<from mailgun webhooks page>
+MAILGUN_CASES_FROM_ADDRESS=cases@mg.renters.rent
+MAILGUN_INBOUND_DOMAIN=inbox.renters.rent
 ```
 
 - [ ] `.env` written, secrets stored only in `.env`, never committed.
