@@ -30,16 +30,22 @@ class DevLifecycle extends Command
 
     private const ADMIN_PASSWORD = 'password';
 
-    /** Spread specs: [status, tenant name, tenant email, landlord email, landlord role, severity]. */
+    /**
+     * Spread specs: [status, tenant name, landlord role, severity].
+     *
+     * Tenant and landlord email addresses are config-driven (DEV_TENANT_EMAIL,
+     * DEV_LANDLORD_EMAIL) so every demo case collapses onto two real
+     * authorisable addresses we control — see config/dev.php.
+     */
     private const SPECS = [
-        ['open', 'Alice Adams', 'tenant1@example.test', 'maria.gomez@example.test', 'landlord', 'routine'],
-        ['awaiting_landlord', 'Bob Brennan', 'tenant2@example.test', 'james.okoro@example.test', 'landlord', 'serious'],
-        ['awaiting_tenant_review', 'Carla Diaz', 'tenant3@example.test', 'lettings@brightmove.example.test', 'agent', 'routine'],
-        ['tenant_action_required', 'Derek Evans', 'tenant4@example.test', 'priya.shah@example.test', 'landlord', 'emergency'],
-        ['on_hold', 'Fiona Grant', 'tenant5@example.test', 'tom.baker@example.test', 'landlord', 'routine'],
-        ['resolved', 'George Hill', 'tenant6@example.test', 'lena.fischer@example.test', 'landlord', 'serious'],
-        ['abandoned', 'Hannah Ito', 'tenant7@example.test', 'omar.haddad@example.test', 'landlord', 'routine'],
-        ['dormant', 'Ian Jones', 'tenant8@example.test', 'sara.lindqvist@example.test', 'landlord', 'serious'],
+        ['open', 'Alice Adams', 'landlord', 'routine'],
+        ['awaiting_landlord', 'Bob Brennan', 'landlord', 'serious'],
+        ['awaiting_tenant_review', 'Carla Diaz', 'agent', 'routine'],
+        ['tenant_action_required', 'Derek Evans', 'landlord', 'emergency'],
+        ['on_hold', 'Fiona Grant', 'landlord', 'routine'],
+        ['resolved', 'George Hill', 'landlord', 'serious'],
+        ['abandoned', 'Hannah Ito', 'landlord', 'routine'],
+        ['dormant', 'Ian Jones', 'landlord', 'serious'],
     ];
 
     /** --outcome values mapped to the case status they drive to. */
@@ -65,6 +71,15 @@ class DevLifecycle extends Command
             return self::FAILURE;
         }
 
+        $tenantEmail = config('dev.tenant_email');
+        $landlordEmail = config('dev.landlord_email');
+
+        if (blank($tenantEmail) || blank($landlordEmail)) {
+            $this->error('dev:lifecycle requires DEV_TENANT_EMAIL and DEV_LANDLORD_EMAIL in .env');
+
+            return self::FAILURE;
+        }
+
         $specs = $this->resolveSpecs();
         if ($specs === null) {
             return self::FAILURE;
@@ -82,15 +97,15 @@ class DevLifecycle extends Command
         $total = count($specs);
         $rows = [];
 
-        foreach ($specs as $i => [$status, $name, $email, $landlordEmail, $role, $severity]) {
-            $tenant = User::where('email', $email)->first();
+        foreach ($specs as $i => [$status, $name, $role, $severity]) {
+            $tenant = User::where('email', $tenantEmail)->first();
             if ($tenant === null) {
-                $this->callSilently('dev:user', ['--email' => $email, '--name' => $name]);
-                $tenant = User::where('email', $email)->first();
+                $this->callSilently('dev:user', ['--email' => $tenantEmail, '--name' => $name]);
+                $tenant = User::where('email', $tenantEmail)->first();
             }
 
             $this->callSilently('dev:case', [
-                '--tenant' => $email,
+                '--tenant' => $tenantEmail,
                 '--landlord-email' => $landlordEmail,
                 '--landlord-role' => $role,
                 '--severity' => $severity,
@@ -113,7 +128,7 @@ class DevLifecycle extends Command
             $rows[] = [
                 (string) $case->id,
                 $case->status->value,
-                $email,
+                $tenantEmail,
                 $landlordEmail,
                 $this->tokenStatus($case),
             ];
@@ -152,7 +167,7 @@ class DevLifecycle extends Command
     }
 
     /**
-     * @return array<int, array{0:string,1:string,2:string,3:string,4:string,5:string}>|null
+     * @return array<int, array{0:string,1:string,2:string,3:string}>|null
      */
     private function resolveSpecs(): ?array
     {
@@ -171,8 +186,6 @@ class DevLifecycle extends Command
         return [[
             self::OUTCOMES[$outcome],
             'Sample Tenant',
-            'tenant1@example.test',
-            'maria.gomez@example.test',
             'landlord',
             'serious',
         ]];

@@ -28,6 +28,8 @@
         <env name="MAIL_MAILER" value="array"/>
         <env name="MAILGUN_CASES_FROM_ADDRESS" value="cases@mg.renters.rent"/>
         <env name="MAILGUN_INBOUND_DOMAIN" value="inbox.renters.rent"/>
+        <env name="DEV_TENANT_EMAIL" value="tenant@inbox.test"/>
+        <env name="DEV_LANDLORD_EMAIL" value="landlord@inbox.test"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>
         <env name="PULSE_ENABLED" value="false"/>
