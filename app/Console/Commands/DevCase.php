@@ -34,12 +34,12 @@ class DevCase extends Command
         {--landlord-role=landlord : landlord|agent}
         {--count=1 : Number of cases to create}';
 
-    protected $description = 'Create repair case(s) in the Open state with property + landlord (local/staging only)';
+    protected $description = 'Create repair case(s) in the Open state with property + landlord (local/staging/preprod only)';
 
     public function handle(): int
     {
-        if (! app()->environment('local', 'staging')) {
-            $this->error('dev:case is restricted to the local and staging environments.');
+        if (! app()->environment('local', 'staging', 'preprod')) {
+            $this->error('dev:case is restricted to the local, staging, and preprod environments.');
 
             return self::FAILURE;
         }

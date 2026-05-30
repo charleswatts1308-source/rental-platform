@@ -36,12 +36,12 @@ class DevReply extends Command
         {--subject=Re: Your repair notice : Email subject}
         {--body= : Override the reply body (plain text; default is a realistic multi-paragraph reply)}';
 
-    protected $description = 'Simulate an inbound landlord reply via a signed in-process webhook (local/staging only)';
+    protected $description = 'Simulate an inbound landlord reply via a signed in-process webhook (local/staging/preprod only)';
 
     public function handle(): int
     {
-        if (! app()->environment('local', 'staging')) {
-            $this->error('dev:reply is restricted to the local and staging environments.');
+        if (! app()->environment('local', 'staging', 'preprod')) {
+            $this->error('dev:reply is restricted to the local, staging, and preprod environments.');
 
             return self::FAILURE;
         }

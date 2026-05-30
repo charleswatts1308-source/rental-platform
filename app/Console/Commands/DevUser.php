@@ -22,12 +22,12 @@ class DevUser extends Command
         {--password=password : Password for the created tenant(s)}
         {--count=1 : Number of tenants to create}';
 
-    protected $description = 'Create tenant user(s) for development (local/staging only)';
+    protected $description = 'Create tenant user(s) for development (local/staging/preprod only)';
 
     public function handle(): int
     {
-        if (! app()->environment('local', 'staging')) {
-            $this->error('dev:user is restricted to the local and staging environments.');
+        if (! app()->environment('local', 'staging', 'preprod')) {
+            $this->error('dev:user is restricted to the local, staging, and preprod environments.');
 
             return self::FAILURE;
         }

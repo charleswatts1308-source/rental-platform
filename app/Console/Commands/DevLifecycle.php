@@ -55,12 +55,12 @@ class DevLifecycle extends Command
         {--outcome= : Single-case mode: resolved|abandoned|dormant|on_hold|in_review}
         {--no-reset : Skip the initial dev:reset (layer onto existing state)}';
 
-    protected $description = 'Build a demo spread of cases across every status, or a single case to a chosen outcome (local/staging only)';
+    protected $description = 'Build a demo spread of cases across every status, or a single case to a chosen outcome (local/staging/preprod only)';
 
     public function handle(): int
     {
-        if (! app()->environment('local', 'staging')) {
-            $this->error('dev:lifecycle is restricted to the local and staging environments.');
+        if (! app()->environment('local', 'staging', 'preprod')) {
+            $this->error('dev:lifecycle is restricted to the local, staging, and preprod environments.');
 
             return self::FAILURE;
         }

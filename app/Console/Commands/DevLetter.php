@@ -32,12 +32,12 @@ class DevLetter extends Command
         {--stage=1 : Target stage to drive the case to (1-4)}
         {--statement= : Tenant statement for the first letter}';
 
-    protected $description = 'Drive a case through outbound notices up to a target stage (local/staging only)';
+    protected $description = 'Drive a case through outbound notices up to a target stage (local/staging/preprod only)';
 
     public function handle(SendCaseNotice $notice): int
     {
-        if (! app()->environment('local', 'staging')) {
-            $this->error('dev:letter is restricted to the local and staging environments.');
+        if (! app()->environment('local', 'staging', 'preprod')) {
+            $this->error('dev:letter is restricted to the local, staging, and preprod environments.');
 
             return self::FAILURE;
         }

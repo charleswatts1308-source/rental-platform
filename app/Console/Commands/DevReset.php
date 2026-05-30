@@ -55,12 +55,12 @@ class DevReset extends Command
         {--password=password : Password for the seeded admin}
         {--force : Skip the confirmation prompt}';
 
-    protected $description = 'Wipe all data to a clean slate and seed a single admin (local/staging only)';
+    protected $description = 'Wipe all data to a clean slate and seed a single admin (local/staging/preprod only)';
 
     public function handle(): int
     {
-        if (! app()->environment('local', 'staging')) {
-            $this->error('dev:reset is restricted to the local and staging environments.');
+        if (! app()->environment('local', 'staging', 'preprod')) {
+            $this->error('dev:reset is restricted to the local, staging, and preprod environments.');
 
             return self::FAILURE;
         }
