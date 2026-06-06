@@ -1,6 +1,6 @@
 # CC BRIEF — Silence Model, Phase 1: Schema + Templates
 
-**Read first:** `docs/llcs-silence-model-design-Sat-2026-06-06-1130am.md`
+**Read first:** `docs/llcs-silence-model-design.md`
 — the agreed design this phase implements. This brief covers Phase 1 only.
 
 **Discipline:** report first, edit second. Deliverable 0 (below) before

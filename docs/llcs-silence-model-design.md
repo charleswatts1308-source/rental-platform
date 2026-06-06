@@ -1,6 +1,6 @@
 # LLCS Silence Model — Design
 
-**File:** `docs/llcs-silence-model-design-Sat-2026-06-06-1130am.md`
+**File:** `docs/llcs-silence-model-design.md`
 **Status:** Design agreed. Supersedes the fixed-ladder escalation model.
 **Origin:** Half-duplex snag (tenant could view landlord replies but not respond). Design sessions Fri/Sat 2026-06-05/06.
 
@@ -152,6 +152,25 @@ follow-up on day 10 of the landlord's 14 restarts the 14: the landlord has
 new material to respond to, and a tenant who wants the clock to run simply
 stays quiet. One rule, no special cases.
 
+### D7 — Tenant-initiated escalation on unsatisfactory reply (OPEN)
+
+Identified at 2b: silence detection never escalates against a landlord
+who replies but refuses ("won't fix it") — an engaged-but-unhelpful
+landlord stops the clock every cycle and the ladder never climbs. The
+tenant needs a path to escalate on reply *content*, which the machine
+cannot judge.
+
+Interim answer (2b): the existing tenant "send next notice" action
+(CaseController::sendNextNotice) survives the 2b demolition and serves
+as tenant-initiated escalation. It is consistent with the model — the
+escalation letter is a tenant message; ball flips to landlord, clock
+restarts, ratchet advances.
+
+To resolve at Phase 3, alongside the tenant reply action: whether
+tenant-initiated escalation remains a distinct action, merges into the
+reply flow ("reply" vs "reply and escalate"), or is redesigned. Until
+then D7 is open and the click stays.
+
 ---
 
 ## 3. The razor (cross-cutting principle)
@@ -202,15 +221,6 @@ Many existing tests will break **correctly** — they assert the old model.
 They are the demolition survey: each break identifies a behaviour change;
 rewrite assertions to the new model.
 
-> **2b implementer note — tenant nudges are NOT case_messages rows.**
-> Per D2 the tenant-side nudge ladder is private/non-evidential. The
-> Phase 2a escalation-counter predicate (`SilenceClock::escalationCounter`)
-> depends on the invariant that every outbound `case_messages` row with
-> `direction=outbound, sender_role=system, stage_at_send IS NOT NULL` is
-> an escalation letter. Sending nudges as `case_messages` rows would
-> inflate the counter and cause shadow-correct sends to misfire. Nudges
-> must be mail-only, or live on a separate non-evidential table.
-
 ## 6. Scheduler
 
 The sweep job changes from "stage N deadline passed → fire stage N+1" to:
@@ -249,14 +259,25 @@ The sweep job changes from "stage N deadline passed → fire stage N+1" to:
    only**, sends nothing, transitions nothing. Old behaviour fully
    intact; 377-test baseline still green. Exploratory check: compare
    shadow log against expected behaviour on demo cases.
-3. **Phase 2b — Cutover + demolition.** New model takes over sends and
-   transitions; old ladder logic **removed** (brief enumerates deletions,
-   not just additions). Test-suite refactor lands here. First deliverable
-   is a **report, not edits**: which tests break, and what each becomes
-   under the new model — weakened/gutted assertions are not an acceptable
-   fix. Named tests required for the D4 in-flight guardrail.
-4. **Phase 3 — Tenant reply.** UI action + controller + state handling;
-   reuses outbound letter machinery; the original snag closes.
+3. **Phase 2b — Landlord-side cutover + demolition.** Landlord silence
+   fires escalations live via the sweep (tenant notified per
+   auto-escalation, active-row idiom); counter ≥ max logs exhausted
+   intent only (no state until Phase 4). Tenant-side verdicts (nudges,
+   dormancy) REMAIN SHADOW — a live nudge points at a tenant action
+   that doesn't exist until Phase 3. SweepEscalations + EscalationEligible
+   + ladder timing demolished; SweepDormancy/SweepHolds and the tenant
+   "send next notice" click (D7 interim) survive until Phase 3.
+   `--pretend-today` always forces full shadow. Test-suite refactor
+   lands here, report-first: disposition per broken test, weakened
+   assertions not acceptable.
+4. **Phase 3 — Tenant reply + tenant-side go-live.** UI action +
+   controller + state handling; reuses outbound letter machinery; the
+   original snag closes. Tenant-side silence handling (nudges,
+   dormancy sequence) goes LIVE here — the nudge finally has an action
+   to point at. SweepDormancy/SweepHolds demolished; D7 resolved
+   (tenant-initiated escalation: distinct action, merged into reply
+   flow, or redesigned). Nudge sends are mail-only, never
+   case_messages rows (evidential-record invariant).
 5. **Phase 4 — `escalation_exhausted`.** State, transitions, tenant
    notification, landlord-closer send-point, guidance content scaffold
    (content rows can be rough; they're data).

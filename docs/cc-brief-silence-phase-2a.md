@@ -1,6 +1,6 @@
 # CC BRIEF — Silence Model, Phase 2a: Clock in Shadow Mode
 
-**Read first:** `docs/llcs-silence-model-design-Sat-2026-06-06-1130am.md`
+**Read first:** `docs/llcs-silence-model-design.md`
 (design doc — authoritative for what and why; if this brief conflicts
 with it, the design doc wins, flag the conflict) and your own Phase 1
 implementation as merged at a775ad2.
