@@ -51,6 +51,9 @@ class RepairCase extends Model
         'hold_until',
         'opened_at',
         'closed_at',
+        'ball_with',
+        'silence_clock_started_at',
+        'silence_settings_snapshot',
     ];
 
     protected function casts(): array
@@ -63,6 +66,8 @@ class RepairCase extends Model
             'hold_until' => 'datetime',
             'opened_at' => 'datetime',
             'closed_at' => 'datetime',
+            'silence_clock_started_at' => 'datetime',
+            'silence_settings_snapshot' => 'array',
         ];
     }
 
@@ -99,6 +104,11 @@ class RepairCase extends Model
     public function events(): HasMany
     {
         return $this->hasMany(CaseEvent::class, 'case_id');
+    }
+
+    public function shadowLogs(): HasMany
+    {
+        return $this->hasMany(SilenceShadowLog::class, 'case_id');
     }
 
     /**

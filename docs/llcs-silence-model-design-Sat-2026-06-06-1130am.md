@@ -202,6 +202,15 @@ Many existing tests will break **correctly** — they assert the old model.
 They are the demolition survey: each break identifies a behaviour change;
 rewrite assertions to the new model.
 
+> **2b implementer note — tenant nudges are NOT case_messages rows.**
+> Per D2 the tenant-side nudge ladder is private/non-evidential. The
+> Phase 2a escalation-counter predicate (`SilenceClock::escalationCounter`)
+> depends on the invariant that every outbound `case_messages` row with
+> `direction=outbound, sender_role=system, stage_at_send IS NOT NULL` is
+> an escalation letter. Sending nudges as `case_messages` rows would
+> inflate the counter and cause shadow-correct sends to misfire. Nudges
+> must be mail-only, or live on a separate non-evidential table.
+
 ## 6. Scheduler
 
 The sweep job changes from "stage N deadline passed → fire stage N+1" to:
