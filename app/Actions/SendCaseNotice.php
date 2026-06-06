@@ -12,8 +12,10 @@ use App\Models\LetterTemplate;
 use App\Models\MessageAttachment;
 use App\Models\RepairCase;
 use App\Models\ReplyToken;
+use App\Models\Setting;
 use App\Services\LetterTemplateRenderer;
 use App\Services\ReplyTokenGenerator;
+use App\Services\Silence\SilenceClock;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
@@ -134,6 +136,20 @@ class SendCaseNotice
                 'body_raw' => $rendered['body'],
             ]);
 
+            // Silence-model clock start (Phase 2a). The letter is now
+            // committed evidence; ball flips to landlord; the silence
+            // clock starts running. Snapshot the current settings so
+            // a mid-flight settings change can't retro-affect this
+            // clock (D4 in-flight guardrail).
+            //
+            // Attributes are set here and persisted by transitionTo's
+            // save() below — same pattern as next_stage_eligible_at.
+            // Old code paths do not read these columns; zero behaviour
+            // change in this phase.
+            $case->ball_with = 'landlord';
+            $case->silence_clock_started_at = now();
+            $case->silence_settings_snapshot = SilenceClock::snapshotCurrentSettings();
+
             Mail::to($case->landlordContact->email)->queue(new CaseNotice(
                 $caseForVars,
                 $message->fresh(),
@@ -199,11 +215,12 @@ class SendCaseNotice
      * Anything not on that list passes through the renderer as the
      * literal `{{token}}` text, so misspellings are visible.
      *
-     * `response_days` is hardcoded to 14 here — Phase 2a will swap the
-     * source to read from the seeded `escalation.interval_days` setting.
-     * The hardcoded value matches the seeded default, so the on-the-
-     * wire wording is the same on either side of that swap (D4
-     * letter/deadline consistency guardrail).
+     * `response_days` reads `escalation.interval_days` from Settings
+     * (Phase 2a swap from the Phase 1 hardcoded 14). The seeded value
+     * is 14, matching the prior hardcode, so on-the-wire wording is
+     * unchanged. This satisfies D4 letter/deadline consistency: the
+     * letter's stated deadline now comes from the same source the new
+     * silence scheduler will enforce.
      *
      * @return array<string, string|int|null>
      */
@@ -215,7 +232,7 @@ class SendCaseNotice
             'case_reference' => $case->url_slug,
             'property_address' => $this->propertyAddress($case),
             'issue_description' => $tenantStatement,
-            'response_days' => 14,
+            'response_days' => (int) Setting::get('escalation.interval_days', 14),
             'notice_number' => $noticeNumber,
             'deadline_date' => null,
         ];

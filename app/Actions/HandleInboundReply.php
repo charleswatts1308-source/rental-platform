@@ -8,6 +8,7 @@ use App\Enums\SenderRole;
 use App\Mail\Notifications\LandlordReplyReceived;
 use App\Models\CaseMessage;
 use App\Models\ReplyToken;
+use App\Services\Silence\SilenceClock;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -102,15 +103,32 @@ class HandleInboundReply
             $replyToken->last_used_at = now();
             $replyToken->save();
 
+            // Silence-model clock flip (Phase 2a). A landlord-direction
+            // message landed; ball flips to tenant; clock restarts with
+            // a fresh settings snapshot per D6 + D4. Quarantine status is
+            // irrelevant here — the landlord engaged, and the tenant gets
+            // notified, so the silence model treats the message as
+            // having arrived. Pure column writes; old code reads none of
+            // these. Zero behaviour change.
+            $case->ball_with = 'tenant';
+            $case->silence_clock_started_at = now();
+            $case->silence_settings_snapshot = SilenceClock::snapshotCurrentSettings();
+
             $eventType = $quarantineReason !== null ? 'inbound_quarantined' : 'inbound_received';
 
             if (in_array($case->status, self::STATES_THAT_TRANSITION, true)) {
+                // transitionTo's save() persists the clock attributes
+                // alongside the status change.
                 $case->transitionTo(CaseStatus::AwaitingTenantReview, [
                     'actor_label' => 'system',
                     'event_type_override' => $eventType,
                     'meta' => ['message_id' => $message->id],
                 ]);
             } else {
+                // No transition — but the clock-start columns still need
+                // to be persisted. Status is not dirty, so the booted
+                // updating listener's direct-write check is satisfied.
+                $case->save();
                 $case->events()->create([
                     'event_type' => $eventType,
                     'actor_label' => 'system',
