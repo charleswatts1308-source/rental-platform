@@ -16,26 +16,38 @@ use App\Models\Setting;
 use App\Services\LetterTemplateRenderer;
 use App\Services\ReplyTokenGenerator;
 use App\Services\Silence\SilenceClock;
-use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use LogicException;
 
 /**
- * Orchestrates the outbound notice flow:
- * supersede the active reply token (if any), mint a new one, compose
- * the outbound case_message, queue the mail to the landlord_contact,
- * write peripheral case_events, and transition the case via
- * transitionTo (which writes the canonical state-change event and
- * applies column side effects like current_stage++).
+ * Orchestrates the outbound notice flow: supersede the active reply
+ * token (if any), mint a new one, compose the outbound case_message,
+ * render + freeze the letter against the active template, queue the
+ * mail to the landlord_contact, write peripheral case_events, restart
+ * the silence clock, and either transition the case or stay put.
  *
- * Callable from two case states:
- * - Open (first send): writes token_issued; transitionTo writes
- *   notice_sent as canonical.
- * - TenantActionRequired (escalation): writes
- *   escalation_confirmed_by_tenant, notice_sent, token_issued,
- *   token_superseded; transitionTo writes stage_advanced as
- *   canonical and bumps current_stage.
+ * Three entry states with distinct post-send shapes (silence-phase-2b):
+ *
+ * - Open (first send): peripheral events token_issued + token_superseded?;
+ *   transitionTo writes notice_sent as canonical, advancing to
+ *   awaiting_landlord.
+ *
+ * - TenantActionRequired (tenant click escalation, D7-preserved):
+ *   peripheral events escalation_confirmed_by_tenant + notice_sent +
+ *   token_issued + token_superseded; transitionTo writes stage_advanced
+ *   as canonical, advancing to awaiting_landlord and bumping
+ *   current_stage++.
+ *
+ * - AwaitingLandlord (silence sweep auto-escalation, NEW in 2b):
+ *   peripheral events auto_escalation_sent + token_issued +
+ *   token_superseded; NO transitionTo (status stays awaiting_landlord);
+ *   case is explicitly saved to persist the clock-restart attributes.
+ *   Ratchet advances via the new case_messages row itself; the
+ *   counter is derived, not stored.
+ *
+ * Every entry path restarts the silence clock (ball=landlord,
+ * silence_clock_started_at=now, fresh settings snapshot per D4).
  */
 class SendCaseNotice
 {
@@ -56,13 +68,20 @@ class SendCaseNotice
         return DB::transaction(function () use ($case, $tenantStatement, $actorUserId, $attachmentInputs) {
             $isFirstSend = $case->status === CaseStatus::Open;
             $isEscalation = $case->status === CaseStatus::TenantActionRequired;
+            $isAutoEscalation = $case->status === CaseStatus::AwaitingLandlord;
 
-            if (! $isFirstSend && ! $isEscalation) {
+            if (! $isFirstSend && ! $isEscalation && ! $isAutoEscalation) {
                 throw new LogicException(
-                    'SendCaseNotice can only run from Open or TenantActionRequired; case is in '.$case->status->value
+                    'SendCaseNotice can only run from Open, TenantActionRequired, or AwaitingLandlord; case is in '.$case->status->value
                 );
             }
 
+            // Counter-derived notice number, post-2b:
+            // - first send / auto-escalation: current_stage stays meaningful as
+            //   the "highest stage reached" — auto-escalation lands at current_stage+1
+            //   the same way tenant escalation does, because both advance the
+            //   message-derived counter.
+            // - tenant escalation: same +1 as today.
             $targetStage = $isFirstSend ? $case->current_stage : $case->current_stage + 1;
 
             $oldToken = $case->replyTokens()->whereNull('superseded_at')->first();
@@ -80,14 +99,10 @@ class SendCaseNotice
                 'issued_at' => now(),
             ]);
 
-            // The template_key column is dual-written alongside the new
-            // letter_template_id FK for this phase. Dropping template_key
-            // is deferred — Phase 1 ruling 2.
             $message = $case->messages()->create([
                 'direction' => MessageDirection::Outbound,
                 'sender_role' => SenderRole::System,
                 'stage_at_send' => $targetStage,
-                'template_key' => $this->templateKeyForStage($targetStage),
                 'subject' => null,
                 'body_raw' => '',
                 'tenant_statement' => $tenantStatement,
@@ -109,8 +124,7 @@ class SendCaseNotice
             }
 
             // Look up the template via D1 fallback (active stage=N, else
-            // active stage=NULL). With only the generic wake-up seeded in
-            // v1, every notice number lands on it.
+            // active stage=NULL).
             $template = LetterTemplate::forEscalation($targetStage);
             if ($template === null) {
                 throw new LogicException(
@@ -125,10 +139,10 @@ class SendCaseNotice
                 $this->buildLetterVars($caseForVars, $tenantStatement, $targetStage),
             );
 
-            // The freeze. After this update the rendered subject + body
-            // are the evidence: the mailable's send path reads them
-            // verbatim and never re-renders. Template id + updated_at
-            // snapshot answer "which wording was in force".
+            // The freeze. The rendered subject + body are the evidence:
+            // the mailable's send path reads them verbatim and never
+            // re-renders. Template id + updated_at snapshot answer
+            // "which wording was in force".
             $message->update([
                 'letter_template_id' => $template->id,
                 'letter_template_updated_at' => $template->updated_at,
@@ -136,16 +150,12 @@ class SendCaseNotice
                 'body_raw' => $rendered['body'],
             ]);
 
-            // Silence-model clock start (Phase 2a). The letter is now
-            // committed evidence; ball flips to landlord; the silence
-            // clock starts running. Snapshot the current settings so
-            // a mid-flight settings change can't retro-affect this
-            // clock (D4 in-flight guardrail).
-            //
-            // Attributes are set here and persisted by transitionTo's
-            // save() below — same pattern as next_stage_eligible_at.
-            // Old code paths do not read these columns; zero behaviour
-            // change in this phase.
+            // Silence-model clock (re)start. Ball flips to landlord, the
+            // silence clock restarts, settings snapshot is refreshed
+            // (D4 in-flight guardrail). For first-send and tenant
+            // escalation these are persisted by transitionTo's save()
+            // below. For auto-escalation we save explicitly since there
+            // is no transition.
             $case->ball_with = 'landlord';
             $case->silence_clock_started_at = now();
             $case->silence_settings_snapshot = SilenceClock::snapshotCurrentSettings();
@@ -156,6 +166,12 @@ class SendCaseNotice
                 $newToken,
             ));
 
+            // Peripheral events. The canonical state-change event (for
+            // first-send and tenant-escalation) is written by transitionTo.
+            // For auto-escalation there is no transition; auto_escalation_sent
+            // is the canonical record of the send in the audit trail and
+            // distinguishes system-initiated sends from tenant-initiated
+            // (notice_sent + stage_advanced) for evidential purposes.
             if ($isEscalation) {
                 $case->events()->create([
                     'event_type' => 'escalation_confirmed_by_tenant',
@@ -165,6 +181,13 @@ class SendCaseNotice
                 ]);
                 $case->events()->create([
                     'event_type' => 'notice_sent',
+                    'actor_label' => 'system',
+                    'occurred_at' => now(),
+                    'meta' => ['stage' => $targetStage, 'message_id' => $message->id],
+                ]);
+            } elseif ($isAutoEscalation) {
+                $case->events()->create([
+                    'event_type' => 'auto_escalation_sent',
                     'actor_label' => 'system',
                     'occurred_at' => now(),
                     'meta' => ['stage' => $targetStage, 'message_id' => $message->id],
@@ -187,25 +210,23 @@ class SendCaseNotice
                 ]);
             }
 
-            $case->next_stage_eligible_at = $this->nextStageEligibleAt($targetStage);
-            $case->transitionTo(CaseStatus::AwaitingLandlord, [
-                'actor_user_id' => $actorUserId,
-                'actor_label' => 'tenant',
-            ]);
+            if ($isAutoEscalation) {
+                // No transition — status stays awaiting_landlord. Persist
+                // the clock-restart attributes explicitly. Also bump
+                // current_stage to mirror the side effect that
+                // transitionTo's applyColumnSideEffects performs on the
+                // TenantActionRequired → AwaitingLandlord transition.
+                $case->current_stage = $targetStage;
+                $case->save();
+            } else {
+                $case->transitionTo(CaseStatus::AwaitingLandlord, [
+                    'actor_user_id' => $actorUserId,
+                    'actor_label' => 'tenant',
+                ]);
+            }
 
             return $message->fresh();
         });
-    }
-
-    private function templateKeyForStage(int $stage): string
-    {
-        return match ($stage) {
-            1 => 'stage_1_initial_notice',
-            2 => 'stage_2_follow_up',
-            3 => 'stage_3_formal_warning',
-            4 => 'stage_4_pre_action',
-            default => throw new LogicException("No template defined for stage {$stage}"),
-        };
     }
 
     /**
@@ -215,12 +236,9 @@ class SendCaseNotice
      * Anything not on that list passes through the renderer as the
      * literal `{{token}}` text, so misspellings are visible.
      *
-     * `response_days` reads `escalation.interval_days` from Settings
-     * (Phase 2a swap from the Phase 1 hardcoded 14). The seeded value
-     * is 14, matching the prior hardcode, so on-the-wire wording is
-     * unchanged. This satisfies D4 letter/deadline consistency: the
-     * letter's stated deadline now comes from the same source the new
-     * silence scheduler will enforce.
+     * `response_days` reads `escalation.interval_days` from Settings —
+     * D4 letter/deadline consistency: the letter's stated deadline
+     * matches the source the silence sweep enforces.
      *
      * @return array<string, string|int|null>
      */
@@ -248,17 +266,5 @@ class SendCaseNotice
             $p->city,
             $p->postcode,
         ]));
-    }
-
-    private function nextStageEligibleAt(int $stageJustSent): ?CarbonInterface
-    {
-        $daysUntilNext = match ($stageJustSent) {
-            1, 2 => 14,
-            3 => 21,
-            4 => null,
-            default => null,
-        };
-
-        return $daysUntilNext === null ? null : now()->addDays($daysUntilNext);
     }
 }

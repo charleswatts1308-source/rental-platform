@@ -47,7 +47,6 @@ class RepairCase extends Model
         'severity',
         'status',
         'current_stage',
-        'next_stage_eligible_at',
         'hold_until',
         'opened_at',
         'closed_at',
@@ -62,7 +61,6 @@ class RepairCase extends Model
             'severity' => CaseSeverity::class,
             'status' => CaseStatus::class,
             'current_stage' => 'integer',
-            'next_stage_eligible_at' => 'datetime',
             'hold_until' => 'datetime',
             'opened_at' => 'datetime',
             'closed_at' => 'datetime',
@@ -123,8 +121,13 @@ class RepairCase extends Model
             'awaiting_landlord' => 'notice_sent',
         ],
         'awaiting_landlord' => [
+            // 'tenant_action_required' transition removed in silence-phase-2b:
+            // SweepEscalations was its only driver and is demolished. Silence
+            // sweep auto-escalation now SENDS WITHOUT TRANSITIONING — case
+            // stays awaiting_landlord, clock restarts, ratchet advances via
+            // the new case_messages row. See SendCaseNotice $isAutoEscalation
+            // branch.
             'awaiting_tenant_review' => 'inbound_received',
-            'tenant_action_required' => 'escalation_eligible',
             'resolved' => 'case_resolved',
             'abandoned' => 'case_abandoned',
         ],

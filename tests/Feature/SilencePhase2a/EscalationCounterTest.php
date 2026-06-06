@@ -16,8 +16,8 @@ uses(RefreshDatabase::class);
  *
  * Predicate: case_messages WHERE direction=outbound AND sender_role=
  * system AND stage_at_send IS NOT NULL. This works for fresh
- * Phase-1+ rows (both template_key and letter_template_id stamped),
- * for legacy rows (template_key set, letter_template_id null), and
+ * Phase-1+ rows (letter_template_id stamped), for legacy rows
+ * (letter_template_id null), and
  * naturally excludes future Phase-4 exhaustion_landlord rows
  * (stage_at_send=NULL) and Phase-3 tenant outbound rows
  * (sender_role=tenant).
@@ -34,7 +34,6 @@ function addEscalationLetter(RepairCase $case, int $stage, ?int $letterTemplateI
         'direction' => MessageDirection::Outbound,
         'sender_role' => SenderRole::System,
         'stage_at_send' => $stage,
-        'template_key' => "stage_{$stage}_test",
         'letter_template_id' => $letterTemplateId,
     ]);
 }
@@ -55,7 +54,7 @@ it('counts post-Phase-1 escalation rows via stage_at_send', function () {
     expect((new SilenceClock)->escalationCounter($case))->toBe(3);
 });
 
-it('counts legacy rows where letter_template_id is null but template_key + stage_at_send are set', function () {
+it('counts legacy rows where letter_template_id is null but stage_at_send is set', function () {
     $case = makeCase();
     addEscalationLetter($case, 1, null);
     addEscalationLetter($case, 2, null);
@@ -94,7 +93,6 @@ it('excludes outbound rows whose stage_at_send is null — simulates future exha
         'direction' => MessageDirection::Outbound,
         'sender_role' => SenderRole::System,
         'stage_at_send' => null,
-        'template_key' => null,
         'letter_template_id' => $exhaustionTemplate->id,
     ]);
 

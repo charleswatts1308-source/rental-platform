@@ -9,11 +9,15 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::command('cases:sweep-holds')->dailyAt('06:00');
-Schedule::command('cases:sweep-escalations')->dailyAt('06:05');
 Schedule::command('cases:sweep-dormancy')->dailyAt('06:10');
 
-// Silence-model shadow sweep (Phase 2a). Logs intended actions only —
-// no sends, no transitions. Runs alongside the old sweeps but writes
-// to a separate table (silence_shadow_log). 2b will swap this to live
-// and delete the three sweeps above.
-Schedule::command('silence:sweep')->dailyAt('06:15');
+// Silence-model sweep. Landlord-side runs LIVE post-2b (the
+// landlord-side cutover): send_escalation verdicts fire real letters.
+// Tenant-side remains shadow until Phase 3 (nudges/dormancy go-live
+// when the tenant reply UI exists). --pretend-today always forces full
+// shadow — never sends on either side.
+//
+// withoutOverlapping prevents two scheduled runs racing if a sweep
+// runs long. Combined with the per-case lockForUpdate guard inside
+// the command, this gives defence-in-depth against double-send.
+Schedule::command('silence:sweep')->dailyAt('06:15')->withoutOverlapping();

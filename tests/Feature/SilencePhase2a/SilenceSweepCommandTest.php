@@ -39,16 +39,23 @@ function sweepCaseLandlord(int $daysAgo = 15): RepairCase
     return $case->fresh();
 }
 
-it('shadow sweep sends no mail — Mail::assertNothingQueued', function () {
+it('pretend-mode sweep sends no mail — even with expired landlord-side clocks', function () {
+    // silence-phase-2b: --pretend-today forces full shadow on either
+    // side. This test pins the post-2b safety guarantee.
     Mail::fake();
-    sweepCaseLandlord();
+    app()->detectEnvironment(fn () => 'local');
+    sweepCaseLandlord();   // expired landlord-side; would normally fire
 
-    $this->artisan('silence:sweep')->assertSuccessful();
+    $future = \Illuminate\Support\Carbon::now()->addDays(15)->toDateString();
+    $this->artisan("silence:sweep --pretend-today={$future}")->assertSuccessful();
 
     Mail::assertNothingQueued();
 });
 
-it('shadow sweep makes no status transitions — case status unchanged', function () {
+it('sweep makes no status transitions on landlord auto-escalation — case stays awaiting_landlord', function () {
+    // silence-phase-2b: auto-escalation sends without transitioning;
+    // status remains awaiting_landlord. The "no transitions" property
+    // survives even when the sweep DOES send.
     Mail::fake();
     $case = sweepCaseLandlord();
     $statusBefore = $case->status;
@@ -58,12 +65,14 @@ it('shadow sweep makes no status transitions — case status unchanged', functio
     expect($case->fresh()->status)->toBe($statusBefore);
 });
 
-it('shadow sweep writes no case_events', function () {
+it('pretend-mode sweep writes no case_events — full shadow on either side', function () {
     Mail::fake();
+    app()->detectEnvironment(fn () => 'local');
     $case = sweepCaseLandlord();
     $eventsBefore = CaseEvent::query()->count();
 
-    $this->artisan('silence:sweep')->assertSuccessful();
+    $future = \Illuminate\Support\Carbon::now()->addDays(15)->toDateString();
+    $this->artisan("silence:sweep --pretend-today={$future}")->assertSuccessful();
 
     expect(CaseEvent::query()->count())->toBe($eventsBefore);
 });

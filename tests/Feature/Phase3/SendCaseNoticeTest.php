@@ -67,7 +67,7 @@ it('writes an outbound case_message with stage 1 fields on first send', function
     expect($message->direction)->toBe(MessageDirection::Outbound);
     expect($message->sender_role)->toBe(SenderRole::System);
     expect($message->stage_at_send)->toBe(1);
-    expect($message->template_key)->toBe('stage_1_initial_notice');
+    expect($message->letter_template_id)->not->toBeNull();
     expect($message->body_raw)->toContain('Landlord and Tenant Act 1985');
     expect($message->subject)->toContain('Repair issue notice');
     expect($message->to_address_raw)->toBe('landlord@example.com');
@@ -98,17 +98,10 @@ it('transitions an Open case to AwaitingLandlord on first send', function () {
     expect($case->fresh()->status)->toBe(CaseStatus::AwaitingLandlord);
 });
 
-it('sets next_stage_eligible_at 14 days out after stage 1', function () {
-    Mail::fake();
-    $case = makeOpenCase();
-
-    Carbon::setTestNow('2026-06-01 10:00:00');
-    sendCaseNoticeAction()->execute($case);
-    Carbon::setTestNow();
-
-    $eligibleAt = $case->fresh()->next_stage_eligible_at;
-    expect($eligibleAt->toDateString())->toBe('2026-06-15');
-});
+// "sets next_stage_eligible_at 14 days out after stage 1" — DELETED per
+// silence-phase-2b D0.1 #13. The column and its per-stage cadence are
+// demolished; the silence model uses settings-driven intervals
+// (covered by SilencePhase2a InflightGuardrailTest).
 
 it('queues the CaseNotice mailable to the landlord contact', function () {
     Mail::fake();
@@ -177,30 +170,13 @@ it('on escalation: increments current_stage and uses the new stage in the messag
     $message = sendCaseNoticeAction()->execute($case);
 
     expect($message->stage_at_send)->toBe(3);
-    expect($message->template_key)->toBe('stage_3_formal_warning');
     expect($case->fresh()->current_stage)->toBe(3);
 });
 
-it('on escalation: sets next_stage_eligible_at 21 days out after stage 3 send', function () {
-    Mail::fake();
-    $case = makeTenantActionRequiredCaseWithActiveToken(currentStage: 2);
-
-    Carbon::setTestNow('2026-06-01 10:00:00');
-    sendCaseNoticeAction()->execute($case);
-    Carbon::setTestNow();
-
-    expect($case->fresh()->next_stage_eligible_at->toDateString())->toBe('2026-06-22');
-});
-
-it('after stage 4 send: next_stage_eligible_at is null', function () {
-    Mail::fake();
-    $case = makeTenantActionRequiredCaseWithActiveToken(currentStage: 3);
-
-    sendCaseNoticeAction()->execute($case);
-
-    expect($case->fresh()->next_stage_eligible_at)->toBeNull();
-    expect($case->fresh()->current_stage)->toBe(4);
-});
+// "on escalation: sets next_stage_eligible_at 21 days out after stage 3 send"
+// — DELETED per silence-phase-2b D0.1 #14.
+// "after stage 4 send: next_stage_eligible_at is null" — DELETED per
+// silence-phase-2b D0.1 #15.
 
 it('throws when called on a case in an unsupported status', function () {
     Mail::fake();

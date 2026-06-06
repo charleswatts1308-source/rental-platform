@@ -47,12 +47,12 @@ it('casts current_stage to integer', function () {
 
 it('casts datetime columns to Carbon instances', function () {
     $case = RepairCase::factory()->create([
-        'next_stage_eligible_at' => now(),
+        'silence_clock_started_at' => now(),
         'hold_until' => now()->addDays(7),
         'closed_at' => now(),
     ]);
 
-    expect($case->next_stage_eligible_at)->toBeInstanceOf(Carbon::class);
+    expect($case->silence_clock_started_at)->toBeInstanceOf(Carbon::class);
     expect($case->hold_until)->toBeInstanceOf(Carbon::class);
     expect($case->opened_at)->toBeInstanceOf(Carbon::class);
     expect($case->closed_at)->toBeInstanceOf(Carbon::class);

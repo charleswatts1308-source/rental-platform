@@ -35,10 +35,10 @@ it('throws the directWrite variant of the exception, not illegalTransition', fun
 it('allows updating other columns directly without status change', function () {
     $case = RepairCase::factory()->create(['status' => CaseStatus::AwaitingLandlord]);
 
-    $case->next_stage_eligible_at = now()->addDays(14);
+    $case->silence_clock_started_at = now()->subDays(3);
     $case->save();
 
-    expect($case->fresh()->next_stage_eligible_at)->not->toBeNull();
+    expect($case->fresh()->silence_clock_started_at)->not->toBeNull();
 });
 
 it('allows transitionTo to change status without throwing', function () {
