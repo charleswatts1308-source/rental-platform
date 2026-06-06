@@ -13,6 +13,14 @@ To add a snag: copy the dashed block below, fill it in, leave Status as "open".
 Severity guide: cosmetic = looks off / minor = awkward / functional = wrong.
 
 
+#
+Page:
+Severity:
+Saw:
+Expected:
+Status:
+Notes:
+
 --------------------------------------------------------------------
 #1
 Page:        Main nav dropdown
@@ -30,8 +38,123 @@ Expected:
 Status:      open
 Notes:
 --------------------------------------------------------------------
+#3
+Page:        Email - stage 1 initial notice (all stages, any demo case)
+Severity:    minor
+Saw:         "My description of the issue:" followed by boilerplate
+             "Please arrange to inspect and repair the reported issue."
+Expected:    A plausible per-case description (UI-created cases get the
+             tenant's typed statement; demo cases need realistic text).
+Status:      open
+Notes:       Cause: dev:letter falls back to its default --statement and
+             dev:lifecycle calls it without one.
+Fix:         Add a 5th 'statement' column to DevLifecycle::SPECS and pass
+             it via --statement when calling dev:letter.
+--------------------------------------------------------------------
 
 
 ALREADY FIXED THIS PASS (for reference)
 - Plain-text landlord replies showed as an empty card on the case page.
   Fixed in commit 13d01b1.
+
+#4
+Page:        Case reference (system-wide: dashboard, notification emails, URLs)
+Severity:    Low — cosmetic/UX; not blocking. Pre-flip change, zero migration cost.
+Saw:         Case reference is a 12-char mixed-case random string (e.g. Bmjomam2aaSV).
+Expected:    Short, human-quotable reference: 6 uppercase chars, human-safe alphabet,
+             case-insensitive, random, unique, never reused.
+Status:      Open — design decided, ready for CC.
+Notes:       Use case is a tenant quoting the reference to a landlord verbally/in
+             writing ("re: case TRE3YU"), so it must survive being said aloud and
+             retyped. Security is NOT carried by the reference — per-tenant login +
+             server-side ownership checks already gate case access, so the reference
+             can be short without weakening anything. Random (not sequential) so it
+             leaks neither case volume nor allows walking. Only preprod seed data
+             exists, so this is a free change now; would be costly post-go-live.
+
+
+# Snag list entry
+
+```
+#            <next-number>
+Page:        Tenant case dashboard / case correspondence flow
+Severity:    Medium — capability gap, not a defect. Design decision required before
+             implementation. Not blocking current testing, but affects core flow.
+Saw:         Conversation is effectively half-duplex. Landlord can reply freely by
+             email (round-trip proven working). Tenant receives a notification and
+             can VIEW the reply in the dashboard, but has no action to RESPOND /
+             supply further information back to the landlord.
+Expected:    Tenant should have a "reply / add information" action at appropriate
+             case states, sending a new message to the landlord (with the same
+             {token}@mg.renters.rent Reply-To so the landlord's reply round-trips),
+             logged to case_messages, and transitioning the case state accordingly.
+Status:      Open — DESIGN REQUIRED. Not yet a CC brief.
+Notes:       Surfaced when landlord replied "you have omitted the details of the
+             issue" and there was no tenant path to respond with the detail.
+             This is a STATE-MACHINE change (new transition(s)), not just a button:
+             must decide, per state, whether tenant-reply is valid and what it
+             transitions to. Open design questions:
+               - Which states allow tenant reply? (awaiting_tenant_review = yes;
+                 awaiting_landlord = maybe/add-info; on_hold/resolved/dormant = ?)
+               - What does tenant reply transition to? (likely awaiting_tenant_review
+                 -> awaiting_landlord — ball back to landlord)
+               - Reuses outbound-letter + token machinery? (each tenant reply is
+                 effectively another letter in the thread)
+               - Token continuity over a long thread vs 90-day expiry model.
+             SEPARATE but related: the trigger for this was the BLANK DESCRIPTION
+             defect (still un-diagnosed: seed-data gap vs CaseNotice template bug).
+             That has its own check pending and must not be masked by this feature.
+```
+
+--------------------------------------------------------------------
+#5
+Page:        Login page (when arriving from a notification email)
+Severity:    minor
+Saw:         Click "Open this case" in landlord-reply notification → login
+             page loads with empty email field, requires both email and
+             password to proceed.
+Expected:    Email pre-populated with the tenant's address (the notification
+             went to that address; pre-populating doesn't leak anything).
+Status:      open
+Notes:       Cause: LandlordReplyReceived sends a plain unsigned
+             route('cases.show', ...) URL; the auth redirect to /login has
+             no identity hint, and login.blade reads only old('email').
+Fix:         Notification points at a signed /login?email=... built via
+             URL::temporarySignedRoute; login.blade reads request('email').
+--------------------------------------------------------------------
+#6
+Page:        Login page (one-click sign-in from notification email)
+Severity:    minor — UX win; security trade-off named
+Saw:         Tenant must type their password every time they arrive from
+             "Open this case" — even though they just clicked a link sent
+             to their own inbox.
+Expected:    One-click sign-in: clicking the notification logs the tenant
+             in for that session and lands them directly on the case page.
+Status:      open — DECISION REQUIRED (magic-link trade-off below)
+Notes:       Threat model: anyone with inbox access can sign in — same bar
+             as the existing password-reset flow (inbox access already =
+             account takeover), so no new security ceiling is lowered.
+             UX win is large if reply-and-act becomes a frequent flow.
+Fix:         Add a signed temporary route + middleware that verifies the
+             signature, calls Auth::login on the tenant, redirects to the
+             case. ~half-day with single-use token table + tests.
+--------------------------------------------------------------------
+#7
+Page:        Create-case form — landlord email + name fields
+Severity:    minor
+Saw:         When the typed landlord_email already exists in
+             landlord_contacts, the name field stays empty. Tenant can type
+             a different name with no warning — controller silently keeps
+             the existing row's name (correct backend behaviour, no UX cue).
+Expected:    On a recognised email, name field auto-fills with the existing
+             landlord's name and shows a "this landlord is already in our
+             system" hint (and probably becomes read-only).
+Status:      open
+Notes:       Form is plain static HTML (resources/views/cases/create.blade.php):
+             no JS, no lookup endpoint. Controller find-or-create at
+             CaseController.php:262-268 silently discards form name on a hit.
+Fix:         Add GET /api/landlord-lookup?email=... (auth-only, rate-limited),
+             plus ~30 lines of JS on the create form: on email blur, fetch
+             and pre-populate the name field with a "known landlord" hint.
+--------------------------------------------------------------------
+
