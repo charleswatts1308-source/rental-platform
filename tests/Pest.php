@@ -15,6 +15,16 @@ pest()->extend(Tests\TestCase::class)
  // ->use(Illuminate\Foundation\Testing\RefreshDatabase::class)
     ->in('Feature');
 
+// Seed the letter_templates rows for every Feature test that uses
+// RefreshDatabase. Without this, SendCaseNotice's lookup throws when
+// the table is empty. Guarded so tests not using RefreshDatabase don't
+// fail when the table doesn't exist yet.
+uses()->beforeEach(function () {
+    if (\Illuminate\Support\Facades\Schema::hasTable('letter_templates')) {
+        $this->seed(\Database\Seeders\LetterTemplateSeeder::class);
+    }
+})->in('Feature');
+
 /*
 |--------------------------------------------------------------------------
 | Expectations

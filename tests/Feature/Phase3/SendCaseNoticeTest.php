@@ -10,6 +10,7 @@ use App\Models\LandlordContact;
 use App\Models\RepairCase;
 use App\Models\RepairCategory;
 use App\Models\ReplyToken;
+use App\Services\LetterTemplateRenderer;
 use App\Services\ReplyTokenGenerator;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
@@ -19,7 +20,7 @@ uses(RefreshDatabase::class);
 
 function sendCaseNoticeAction(): SendCaseNotice
 {
-    return new SendCaseNotice(new ReplyTokenGenerator);
+    return new SendCaseNotice(new ReplyTokenGenerator, new LetterTemplateRenderer);
 }
 
 function makeOpenCase(): RepairCase
@@ -68,7 +69,7 @@ it('writes an outbound case_message with stage 1 fields on first send', function
     expect($message->stage_at_send)->toBe(1);
     expect($message->template_key)->toBe('stage_1_initial_notice');
     expect($message->body_raw)->toContain('Landlord and Tenant Act 1985');
-    expect($message->subject)->toContain('Repair issue notification');
+    expect($message->subject)->toContain('Repair issue notice');
     expect($message->to_address_raw)->toBe('landlord@example.com');
     expect($message->sent_at)->toBeInstanceOf(Carbon::class);
 });

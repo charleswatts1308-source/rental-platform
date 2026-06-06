@@ -12,7 +12,19 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
-function makeCaseFor(int $stage, ?string $tokenValue = null): array
+/**
+ * Post-Phase-1 contract: CaseNotice is a "forwarder" Mailable. The
+ * subject and body are FROZEN on the case_message row by SendCaseNotice
+ * at orchestration time. The mailable reads them verbatim — it never
+ * re-renders. The "given fixtures, produces stage-N letter content"
+ * end-to-end belongs to SendCaseNotice and its freeze tests.
+ *
+ * Tests here cover only what the mailable itself owns:
+ *   - envelope (From, Reply-To, subject mirror, tags)
+ *   - content (body forwarded verbatim from message.body_raw)
+ *   - constructor invariants (refuses to send without a frozen body/subject)
+ */
+function makeMailFixtures(array $messageOverrides = [], ?string $tokenValue = null): array
 {
     $tenant = User::factory()->create(['name' => 'Alex Smith']);
     $property = Property::factory()->create([
@@ -33,65 +45,39 @@ function makeCaseFor(int $stage, ?string $tokenValue = null): array
         'case_id' => $case->id,
         'token' => $tokenValue,
     ]));
-    $message = CaseMessage::factory()->create([
+    $message = CaseMessage::factory()->create(array_merge([
         'case_id' => $case->id,
-        'stage_at_send' => $stage,
-        'template_key' => match ($stage) {
-            1 => 'stage_1_initial_notice',
-            2 => 'stage_2_follow_up',
-            3 => 'stage_3_formal_warning',
-            4 => 'stage_4_pre_action',
-        },
+        'stage_at_send' => 1,
+        'template_key' => 'stage_1_initial_notice',
+        'subject' => 'Repair issue notice 1 — 12 Example Street, SW1A 1AA (case test-slug)',
+        'body_raw' => '<p>Frozen body — this is what arrives in the landlord\'s inbox verbatim.</p>',
         'tenant_statement' => 'Damp patch on the bedroom ceiling, getting worse since last month.',
-    ]);
+    ], $messageOverrides));
 
     return compact('case', 'message', 'token');
 }
 
-it('renders the stage 1 initial notice template', function () {
-    ['case' => $case, 'message' => $message, 'token' => $token] = makeCaseFor(1);
+it('content body is the message body_raw verbatim — no re-render', function () {
+    ['case' => $case, 'message' => $message, 'token' => $token] = makeMailFixtures([
+        'body_raw' => '<p>Exactly these bytes, please.</p>',
+    ]);
 
     $rendered = (new CaseNotice($case, $message, $token))->render();
 
-    expect($rendered)->toContain('formally notify');
-    expect($rendered)->toContain('12 Example Street');
-    expect($rendered)->toContain('SW1A 1AA');
-    expect($rendered)->toContain('Damp and mould');
-    expect($rendered)->toContain('section 11 of the Landlord and Tenant Act 1985');
-    expect($rendered)->toContain('Alex');
-    expect($rendered)->toContain('Damp patch on the bedroom ceiling');
+    expect($rendered)->toContain('Exactly these bytes, please.');
 });
 
-it('renders the stage 2 follow-up template', function () {
-    ['case' => $case, 'message' => $message, 'token' => $token] = makeCaseFor(2);
+it('envelope subject mirrors the frozen message.subject', function () {
+    ['case' => $case, 'message' => $message, 'token' => $token] = makeMailFixtures([
+        'subject' => 'A bespoke frozen subject line',
+    ]);
 
-    $rendered = (new CaseNotice($case, $message, $token))->render();
-
-    expect($rendered)->toContain('follow up');
-    expect($rendered)->toContain('section 11 of the Landlord and Tenant Act 1985');
-});
-
-it('renders the stage 3 formal warning template', function () {
-    ['case' => $case, 'message' => $message, 'token' => $token] = makeCaseFor(3);
-
-    $rendered = (new CaseNotice($case, $message, $token))->render();
-
-    expect($rendered)->toContain('formal warning');
-    expect($rendered)->toContain('Pre-Action Protocol');
-});
-
-it('renders the stage 4 pre-action template', function () {
-    ['case' => $case, 'message' => $message, 'token' => $token] = makeCaseFor(4);
-
-    $rendered = (new CaseNotice($case, $message, $token))->render();
-
-    expect($rendered)->toContain('pre-action letter');
-    expect($rendered)->toContain('Pre-Action Protocol for Housing Conditions');
-    expect($rendered)->toContain('Housing Act 2004');
+    expect((new CaseNotice($case, $message, $token))->envelope()->subject)
+        ->toBe('A bespoke frozen subject line');
 });
 
 it('sets the From envelope to cases@mg.renters.rent with the tenant first name', function () {
-    ['case' => $case, 'message' => $message, 'token' => $token] = makeCaseFor(1);
+    ['case' => $case, 'message' => $message, 'token' => $token] = makeMailFixtures();
 
     $envelope = (new CaseNotice($case, $message, $token))->envelope();
     $from = $envelope->from;
@@ -101,7 +87,9 @@ it('sets the From envelope to cases@mg.renters.rent with the tenant first name',
 });
 
 it('sets the Reply-To envelope to the token-bound inbox address', function () {
-    ['case' => $case, 'message' => $message, 'token' => $token] = makeCaseFor(1, 'abcdefghij1234567890');
+    ['case' => $case, 'message' => $message, 'token' => $token] = makeMailFixtures(
+        tokenValue: 'abcdefghij1234567890'
+    );
 
     $envelope = (new CaseNotice($case, $message, $token))->envelope();
 
@@ -110,21 +98,25 @@ it('sets the Reply-To envelope to the token-bound inbox address', function () {
 });
 
 it('tags the message with the current environment for Mailgun log filtering', function () {
-    ['case' => $case, 'message' => $message, 'token' => $token] = makeCaseFor(1);
+    ['case' => $case, 'message' => $message, 'token' => $token] = makeMailFixtures();
 
     $envelope = (new CaseNotice($case, $message, $token))->envelope();
 
     expect($envelope->tags)->toContain(app()->environment());
 });
 
-it('uses a stage-appropriate subject line', function () {
-    ['case' => $c1, 'message' => $m1, 'token' => $t1] = makeCaseFor(1);
-    ['case' => $c2, 'message' => $m2, 'token' => $t2] = makeCaseFor(2);
-    ['case' => $c3, 'message' => $m3, 'token' => $t3] = makeCaseFor(3);
-    ['case' => $c4, 'message' => $m4, 'token' => $t4] = makeCaseFor(4);
+it('refuses to construct when message.body_raw is blank', function () {
+    ['case' => $case, 'message' => $message, 'token' => $token] = makeMailFixtures([
+        'body_raw' => '',
+    ]);
 
-    expect((new CaseNotice($c1, $m1, $t1))->envelope()->subject)->toContain('Repair issue notification');
-    expect((new CaseNotice($c2, $m2, $t2))->envelope()->subject)->toContain('Follow-up');
-    expect((new CaseNotice($c3, $m3, $t3))->envelope()->subject)->toContain('Formal warning');
-    expect((new CaseNotice($c4, $m4, $t4))->envelope()->subject)->toContain('Pre-action');
-});
+    new CaseNotice($case, $message, $token);
+})->throws(RuntimeException::class);
+
+it('refuses to construct when message.subject is blank', function () {
+    ['case' => $case, 'message' => $message, 'token' => $token] = makeMailFixtures([
+        'subject' => null,
+    ]);
+
+    new CaseNotice($case, $message, $token);
+})->throws(RuntimeException::class);

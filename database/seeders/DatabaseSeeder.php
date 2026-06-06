@@ -16,6 +16,8 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call(RepairCategorySeeder::class);
+        $this->call(LetterTemplateSeeder::class);
+        $this->call(SettingSeeder::class);
 
         User::factory()->create([
             'name' => 'Test User',

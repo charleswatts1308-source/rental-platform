@@ -20,6 +20,8 @@ class CaseMessage extends Model
         'sender_role',
         'stage_at_send',
         'template_key',
+        'letter_template_id',
+        'letter_template_updated_at',
         'subject',
         'body_raw',
         'body_sanitised',
@@ -44,6 +46,7 @@ class CaseMessage extends Model
             'dkim_pass' => 'boolean',
             'sent_at' => 'datetime',
             'received_at' => 'datetime',
+            'letter_template_updated_at' => 'datetime',
         ];
     }
 
@@ -55,5 +58,10 @@ class CaseMessage extends Model
     public function attachments(): HasMany
     {
         return $this->hasMany(MessageAttachment::class);
+    }
+
+    public function letterTemplate(): BelongsTo
+    {
+        return $this->belongsTo(LetterTemplate::class);
     }
 }
