@@ -1,0 +1,39 @@
+# CLAUDE.md — Working Agreements
+
+Standing rules. Project history and current-phase state live in `docs/`.
+
+## Rewrites
+- Phase briefs in `docs/cc-brief-*.md`. **Deliverable 0 is always a report — no code edits.** Hard stop until D0 is accepted.
+- Implementation report stops at the end of every phase before merge.
+
+## Git
+- Branch per phase, tag `pre-<phase>` on main before branching, **zero commits to main** during a rewrite, `--no-ff` merge after green suite + acceptance met. **Never push without explicit user ask.**
+
+## Authority
+- `docs/llcs-silence-model-design.md` is authoritative and **wins over any brief**. Flag conflicts; don't silently follow the brief.
+
+## Docs policy
+- Auto-commit anything new or modified under `docs/` alongside the current change — no permission round-trip. Stable filenames for living docs; timestamps only on immutable write-ups.
+
+## Mail (no exceptions)
+- Production + preprod (dotrent): Mailgun `mg.renters.rent`, both directions.
+- Staging: Mailgun sandbox, **outbound only** (sandbox cannot do inbound).
+- Local: Mailpit only.
+- `config/services.php` Mailgun keys carry **production defaults** (`mg.renters.rent`); env overrides per environment.
+
+## Env allow-list
+- `dev:*` artisan commands and `silence:sweep --pretend-today` are gated to `local/staging/preprod` via `app()->environment([...])`. Production refuses them.
+
+## Evidential invariants
+- Outbound landlord letters are **frozen** on `case_messages` at send time — the mailable reads `body_raw`/`subject` verbatim and never re-renders.
+- Tenant nudges and tenant notifications are **mail-only**. They MUST NOT create `case_messages` rows — the escalation counter predicate (outbound system rows with non-null `stage_at_send`) depends on this.
+
+## State machine + counter
+- `RepairCase::TRANSITIONS` is the single source of truth; only `transitionTo()` may change status.
+- Escalation counter is **derived** from `case_messages`, never stored, never reset (D3 ratchet).
+
+## Time
+- Time is an **injected parameter** through any sweep/clock/decision code (`CarbonInterface $now`). No `Carbon::setTestNow` in production code. No flag-branching on pretend / test modes — the same code path serves real, pretend, and test invocations.
+
+## Tests
+- **No weakened assertions, ever** — rewrites assert at least as strongly. D0 disposition list is the reference; deltas go in the implementation report.
