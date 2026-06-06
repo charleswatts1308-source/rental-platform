@@ -8,9 +8,11 @@ use App\Enums\ScanStatus;
 use App\Enums\SenderRole;
 use App\Mail\CaseNotice;
 use App\Models\CaseMessage;
+use App\Models\LetterTemplate;
 use App\Models\MessageAttachment;
 use App\Models\RepairCase;
 use App\Models\ReplyToken;
+use App\Services\LetterTemplateRenderer;
 use App\Services\ReplyTokenGenerator;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
@@ -37,6 +39,7 @@ class SendCaseNotice
 {
     public function __construct(
         private ReplyTokenGenerator $tokenGenerator,
+        private LetterTemplateRenderer $renderer,
     ) {}
 
     /**
@@ -75,6 +78,9 @@ class SendCaseNotice
                 'issued_at' => now(),
             ]);
 
+            // The template_key column is dual-written alongside the new
+            // letter_template_id FK for this phase. Dropping template_key
+            // is deferred — Phase 1 ruling 2.
             $message = $case->messages()->create([
                 'direction' => MessageDirection::Outbound,
                 'sender_role' => SenderRole::System,
@@ -100,18 +106,39 @@ class SendCaseNotice
                 ]);
             }
 
-            $mailable = new CaseNotice(
-                $case->fresh()->load(['tenant', 'property', 'landlordContact', 'category']),
-                $message,
-                $newToken,
+            // Look up the template via D1 fallback (active stage=N, else
+            // active stage=NULL). With only the generic wake-up seeded in
+            // v1, every notice number lands on it.
+            $template = LetterTemplate::forEscalation($targetStage);
+            if ($template === null) {
+                throw new LogicException(
+                    "No active escalation template found for stage {$targetStage}. "
+                    .'Seed the letter_templates table (LetterTemplateSeeder) or activate a row.'
+                );
+            }
+
+            $caseForVars = $case->fresh()->load(['tenant', 'property', 'landlordContact']);
+            $rendered = $this->renderer->render(
+                $template,
+                $this->buildLetterVars($caseForVars, $tenantStatement, $targetStage),
             );
 
+            // The freeze. After this update the rendered subject + body
+            // are the evidence: the mailable's send path reads them
+            // verbatim and never re-renders. Template id + updated_at
+            // snapshot answer "which wording was in force".
             $message->update([
-                'body_raw' => $mailable->render(),
-                'subject' => $mailable->envelope()->subject,
+                'letter_template_id' => $template->id,
+                'letter_template_updated_at' => $template->updated_at,
+                'subject' => $rendered['subject'],
+                'body_raw' => $rendered['body'],
             ]);
 
-            Mail::to($case->landlordContact->email)->queue($mailable);
+            Mail::to($case->landlordContact->email)->queue(new CaseNotice(
+                $caseForVars,
+                $message->fresh(),
+                $newToken,
+            ));
 
             if ($isEscalation) {
                 $case->events()->create([
@@ -163,6 +190,47 @@ class SendCaseNotice
             4 => 'stage_4_pre_action',
             default => throw new LogicException("No template defined for stage {$stage}"),
         };
+    }
+
+    /**
+     * Build the letter-template variables for an escalation send.
+     *
+     * Whitelist source of truth is LetterTemplateRenderer::WHITELIST.
+     * Anything not on that list passes through the renderer as the
+     * literal `{{token}}` text, so misspellings are visible.
+     *
+     * `response_days` is hardcoded to 14 here — Phase 2a will swap the
+     * source to read from the seeded `escalation.interval_days` setting.
+     * The hardcoded value matches the seeded default, so the on-the-
+     * wire wording is the same on either side of that swap (D4
+     * letter/deadline consistency guardrail).
+     *
+     * @return array<string, string|int|null>
+     */
+    private function buildLetterVars(RepairCase $case, ?string $tenantStatement, int $noticeNumber): array
+    {
+        return [
+            'tenant_name' => $case->tenant->name,
+            'landlord_name' => $case->landlordContact->name ?: 'Sir or Madam',
+            'case_reference' => $case->url_slug,
+            'property_address' => $this->propertyAddress($case),
+            'issue_description' => $tenantStatement,
+            'response_days' => 14,
+            'notice_number' => $noticeNumber,
+            'deadline_date' => null,
+        ];
+    }
+
+    private function propertyAddress(RepairCase $case): string
+    {
+        $p = $case->property;
+
+        return implode(', ', array_filter([
+            $p->address_line1,
+            $p->address_line2,
+            $p->city,
+            $p->postcode,
+        ]));
     }
 
     private function nextStageEligibleAt(int $stageJustSent): ?CarbonInterface

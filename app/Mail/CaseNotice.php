@@ -15,6 +15,18 @@ use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
 
+/**
+ * Sends a pre-rendered case notice to the landlord.
+ *
+ * IMPORTANT — the body and subject are FROZEN on $message at
+ * orchestration time (see SendCaseNotice). This mailable never
+ * re-renders: envelope reads $message->subject; content reads
+ * $message->body_raw. Even on QUEUE_CONNECTION other than sync, the
+ * worker sends the exact bytes the orchestrator recorded as evidence.
+ *
+ * The mailable still owns envelope concerns (From, Reply-To, tagging)
+ * and attachment dispatch — those are not part of the rendered body.
+ */
 class CaseNotice extends Mailable
 {
     use Queueable, SerializesModels;
@@ -43,6 +55,16 @@ class CaseNotice extends Mailable
             ]);
             throw new RuntimeException($reason);
         }
+
+        if (blank($this->message->subject) || blank($this->message->body_raw)) {
+            $reason = 'CaseNotice received a message row without a frozen subject or body. '
+                .'SendCaseNotice must populate both before queueing.';
+            Log::error('[LLCS] CaseNotice aborted: '.$reason, [
+                'case_id' => $this->case->id,
+                'message_id' => $this->message->id,
+            ]);
+            throw new RuntimeException($reason);
+        }
     }
 
     public function envelope(): Envelope
@@ -52,7 +74,7 @@ class CaseNotice extends Mailable
         return new Envelope(
             from: new Address((string) config('services.mailgun.cases_from_address'), "{$tenantFirstName} via renters.rent"),
             replyTo: [new Address("{$this->token->token}@".config('services.mailgun.inbound_domain'))],
-            subject: $this->subjectForStage(),
+            subject: $this->message->subject,
             // Tags the message with the environment (production/staging/local) so a
             // misrouted send is instantly visible in Mailgun's per-domain log view.
             // Laravel maps Envelope tags to Mailgun's o:tag (via Symfony TagHeader).
@@ -62,17 +84,7 @@ class CaseNotice extends Mailable
 
     public function content(): Content
     {
-        return new Content(
-            view: 'emails.case-notices.'.$this->message->template_key,
-            with: [
-                'case' => $this->case,
-                'caseMessage' => $this->message,
-                'category' => $this->case->category,
-                'property' => $this->case->property,
-                'tenantFirstName' => $this->tenantFirstName(),
-                'propertyAddress' => $this->propertyAddress(),
-            ],
-        );
+        return new Content(htmlString: $this->message->body_raw);
     }
 
     public function attachments(): array
@@ -87,30 +99,5 @@ class CaseNotice extends Mailable
     private function tenantFirstName(): string
     {
         return explode(' ', trim((string) $this->case->tenant->name))[0] ?: 'Tenant';
-    }
-
-    private function propertyAddress(): string
-    {
-        $p = $this->case->property;
-
-        return implode(', ', array_filter([
-            $p->address_line1,
-            $p->address_line2,
-            $p->city,
-            $p->postcode,
-        ]));
-    }
-
-    private function subjectForStage(): string
-    {
-        $shortAddress = ($this->case->property->address_line1).', '.($this->case->property->postcode);
-
-        return match ($this->message->stage_at_send) {
-            1 => 'Repair issue notification — '.$shortAddress,
-            2 => 'Follow-up: repair issue — '.$shortAddress,
-            3 => 'Formal warning: repair issue — '.$shortAddress,
-            4 => 'Pre-action letter: repair issue — '.$shortAddress,
-            default => 'Repair correspondence — '.$shortAddress,
-        };
     }
 }

@@ -1,6 +1,6 @@
 # Phase 8 — Configurable letter sequence and templates (parked design notes)
 
-**Status:** Not yet scheduled. These are design decisions reached during conversation and parked for reference. To be turned into a build-ready design doc when Phase 8 is the next phase on the agenda.
+**Status:** SUPERSEDED (2026-06-06) by `docs/llcs-silence-model-design-Sat-2026-06-06-1130am.md`. The silence-model design retires the four-letter ladder (D1) and replaces this file's `letter_templates` shape (stage_key FK + separate `letter_stages` table + severity column + dual-save in-flight semantics) with a `type` string + nullable `stage` column and a fixed-whitelist placeholder renderer. Kept for historical context only — do not implement from this file.
 
 ## Why this phase exists
 
