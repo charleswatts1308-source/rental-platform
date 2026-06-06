@@ -158,3 +158,30 @@ Fix:         Add GET /api/landlord-lookup?email=... (auth-only, rate-limited),
              and pre-populate the name field with a "known landlord" hint.
 --------------------------------------------------------------------
 
+--------------------------------------------------------------------
+#8
+Page:        System-wide — outbound mail delivery status
+Severity:    Medium — evidential blind spot. Capability gap, not a defect.
+             Post-cutover feature, not part of the silence-model rewrite.
+Saw:         The platform records a letter as sent (frozen in case_messages,
+             accepted by Mailgun) but has no knowledge of whether it was
+             delivered. Evidenced 2026-06-06 on gafol: 10 sends accepted,
+             4 failed at Gmail with 550 spam blocks — the system showed no
+             trace; only a human reading the Mailgun dashboard found out.
+             (Sandbox-domain reputation caused the failures — production's
+             DMARC-aligned mg.renters.rent won't fail at that rate — but
+             the blind spot exists regardless of rate.)
+Expected:    Platform consumes Mailgun delivery webhooks (delivered /
+             failed / bounced events), stamps delivery status on the
+             case_messages row, and surfaces failures to the tenant
+             ("your letter could not be delivered to <address>") with a
+             path to act (correct the address, resend).
+Status:      open — post-cutover feature. Design needed (webhook endpoint
+             reuses the existing HMAC-verified inbound pattern; new
+             delivery_status + delivered_at columns; tenant notification
+             on hard failure).
+Notes:       For a service whose promise is "your landlord was notified,
+             here's the proof", sent-but-not-delivered is the one
+             discrepancy that must never be silent. 2026-06-06 test data:
+             40% silent loss on a reputation-damaged domain.
+--------------------------------------------------------------------
