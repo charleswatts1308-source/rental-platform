@@ -21,7 +21,7 @@ content — not the landlord's, not the tenant's.
 
 ---
 
-## 2. Decisions (D1–D6, all agreed)
+## 2. Decisions (D1–D13, all agreed)
 
 ### D1 — A "stage" is a severity level, not a ladder rung
 
@@ -68,7 +68,7 @@ dormant. Dormancy becomes the end of an explained, recoverable sequence,
 not a silent timeout. A tenant reply at any point resumes the case and
 flips the ball back to the landlord. The existing `on_hold` state serves
 as an explicit tenant "pause this case" action (suspends nudges for a
-stated period) — may be wired in v1 or deferred.
+stated period) — wired in Phase 3, see D10.
 
 Nudge copy lives in the same `letter_templates` table, distinguished by a
 `type` column.
@@ -159,7 +159,7 @@ signposting (guidance/FAQ content: s.11 rights, what counts as
 disrepair, council / ombudsman routes — all data rows, never code).
 
 Consequences:
-- `CaseController::sendNextNotice` and its UI are demolished in Phase 3.
+- `CaseController::sendNext` and its UI are demolished in Phase 3.
   The escalation ladder is driven exclusively by `silence:sweep`.
 - The hard case is covered without any button: landlord replies "I'll
   fix it next week", then nothing — the reply restarted the clock,
@@ -257,6 +257,40 @@ links travel only to the tenant's own inbox.
 Mechanics: token table, signed route + middleware, single-use,
 expiry. Supersedes snag #5 (login email pre-fill — pointless once
 links log you in) and closes snag #6.
+
+### D13 — Letter consent: authorise once, preview the first, notify the rest
+
+Letters go out in the tenant's name ("Yours faithfully, {{tenant_name}}").
+The consent model:
+
+1. **Authorisation is given once, at case creation.** Explicit wording at
+   the create-case form: by opening this case the tenant authorises
+   renters.rent to send escalating letters in their name if the landlord
+   does not respond. The letter wording is viewable at that point (the
+   Phase 1 renderer against the case's actual data).
+2. **The first letter is previewed before it is sent.** Case creation is
+   the one moment a preview costs nothing — the tenant is present and
+   acting. The form flow becomes: enter details → see notice 1 rendered
+   with their actual description → confirm → send. This also catches
+   description typos before they are frozen into evidence (D9 makes the
+   description immutable and ubiquitous, so this is the only correction
+   point).
+3. **Subsequent letters are notified after, never gated before.** The
+   sweep sends; the tenant notification says what went out; the full
+   letter sits on the case record. Pause (D10) is the standing opt-out
+   for a tenant who wants letters to stop.
+
+Explicitly rejected: per-letter tenant approval ("here's the next
+letter, press send"). It would reintroduce the disease the silence
+model cured — escalation reliable only up to the tenant's attention —
+and recreate D7's judgment step in new clothes. The tenant controls
+the process (open, pause, resolve, abandon) and sees everything; they
+do not gate each send. The authorisation is the contract; the
+templates are the published wording; the case record is complete.
+
+Phase 3 build consequence: the create-case flow gains the preview +
+confirm step (today it fires notice 1 immediately with no preview).
+The authorisation copy is content (template/data), not code.
 
 ---
 
@@ -368,10 +402,11 @@ The sweep job changes from "stage N deadline passed → fire stage N+1" to:
    D9 across all outbound mail. Magic-link sign-in per D12 on all
    touched emails. Dormancy revival window per D11. DEMOLITION:
    SweepDormancy, SweepHolds (absorbed by silence:sweep),
-   CaseController::sendNextNotice + UI (D7 resolved). Nudge sends
+   CaseController::sendNext + UI (D7 resolved). Nudge sends
    remain mail-only, never case_messages rows (evidential invariant).
-   Ride-along snags: #1 (nav title), #9 (shadow-log truncation), #10
-   (sweep summary tally).
+   Create-case flow gains the notice-1 preview + confirm step and the
+   one-time authorisation wording per D13. Ride-along snags: #1 (nav
+   title), #9 (shadow-log truncation), #10 (sweep summary tally).
 5. **Phase 4 — `escalation_exhausted`.** State, transitions, tenant
    notification, landlord-closer send-point, guidance content scaffold
    (content rows can be rough; they're data).
