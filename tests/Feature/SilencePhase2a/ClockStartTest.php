@@ -99,15 +99,15 @@ it('it overwrites the snapshot at clock restart — a fresh send re-snapshots cu
     Mail::fake();
     $case = openCaseForClock();
 
-    // First send at default settings.
+    // First send at default settings — open → awaiting_landlord.
     sendActionForClock()->execute($case);
     $firstSnapshot = $case->fresh()->silence_settings_snapshot;
     $firstStartedAt = $case->fresh()->silence_clock_started_at;
 
-    // Edit a setting, drive to next stage, send again.
+    // Edit a setting, then a fresh send (the new auto-escalation
+    // path in 2b — SendCaseNotice from awaiting_landlord) restarts
+    // the clock and re-snapshots.
     Setting::query()->where('key', 'escalation.interval_days')->update(['value' => '7']);
-    $case->refresh();
-    $case->transitionTo(CaseStatus::TenantActionRequired);
 
     Carbon::setTestNow(Carbon::now()->addMinute());
     sendActionForClock()->execute($case->fresh());

@@ -29,6 +29,7 @@ class SilenceShadowLog extends Model
         'ball_with',
         'silence_days',
         'intended_action',
+        'executed',
         'intended_letter_template_id',
         'escalation_counter_value',
         'nudge_number',
@@ -44,6 +45,7 @@ class SilenceShadowLog extends Model
             'silence_days' => 'integer',
             'escalation_counter_value' => 'integer',
             'nudge_number' => 'integer',
+            'executed' => 'boolean',
             'is_pretend' => 'boolean',
             'pretend_today' => 'date',
         ];

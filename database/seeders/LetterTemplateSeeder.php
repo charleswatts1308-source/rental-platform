@@ -76,6 +76,14 @@ class LetterTemplateSeeder extends Seeder
                 'subject' => 'Your repair case {{case_reference}} — the escalation process has run its course',
                 'body' => $this->tenantExhaustionBody(),
             ],
+            [
+                'code' => 'auto_escalation_tenant_notice',
+                'description' => 'Tenant notification fired by silence:sweep when it auto-escalates a landlord-side case. Active-row idiom: if active, the sweep sends; if not, the sweep skips silently — content edits via phpMyAdmin.',
+                'type' => 'tenant_notification',
+                'stage' => null,
+                'subject' => "We've sent notice {{notice_number}} to your landlord — case {{case_reference}}",
+                'body' => $this->autoEscalationTenantNoticeBody(),
+            ],
         ];
     }
 
@@ -208,6 +216,39 @@ HTML;
 <p>Log in to your dashboard to see your options from here — external routes available to you include the local authority's environmental health team, the relevant property ombudsman, and court action. The full correspondence record on your case is ready to be shared with any of them as evidence.</p>
 
 <p>renters.rent does not act on your behalf with these bodies — the decision and the next step are yours.</p>
+
+<p>Best regards,<br>
+The renters.rent team</p>
+
+<hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;">
+
+<p style="font-size: 11px; color: #888;">
+This is a private message between renters.rent and you as the tenant. It is not part of the landlord-facing case correspondence.
+</p>
+
+</body>
+</html>
+HTML;
+    }
+
+    private function autoEscalationTenantNoticeBody(): string
+    {
+        return <<<'HTML'
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Notice sent on your behalf</title>
+</head>
+<body style="font-family: Arial, sans-serif; font-size: 14px; color: #222; line-height: 1.5;">
+
+<p>Hi {{tenant_name}},</p>
+
+<p>We've sent notice <strong>{{notice_number}}</strong> to {{landlord_name}} on your behalf about the repair issue at {{property_address}}.</p>
+
+<p>Your last message to your landlord went out more than {{response_days}} days ago, so the silence clock expired and the system escalated automatically. The letter is on the case record (reference <strong>{{case_reference}}</strong>) — log in to your renters.rent dashboard to view it.</p>
+
+<p>If the landlord replies, the clock resets and you'll be notified. If silence continues, the next notice will be scheduled automatically.</p>
 
 <p>Best regards,<br>
 The renters.rent team</p>

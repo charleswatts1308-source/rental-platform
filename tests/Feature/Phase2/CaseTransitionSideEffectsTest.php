@@ -88,12 +88,15 @@ it('does not increment current_stage on other transitions', function () {
 });
 
 it('does not set closed_at on non-terminal transitions', function () {
+    // Uses awaiting_landlord → awaiting_tenant_review post-2b
+    // (the awaiting_landlord → tenant_action_required transition was
+    // demolished alongside SweepEscalations).
     $case = RepairCase::factory()->create([
         'status' => CaseStatus::AwaitingLandlord,
         'closed_at' => null,
     ]);
 
-    $case->transitionTo(CaseStatus::TenantActionRequired);
+    $case->transitionTo(CaseStatus::AwaitingTenantReview);
 
     expect($case->fresh()->closed_at)->toBeNull();
 });

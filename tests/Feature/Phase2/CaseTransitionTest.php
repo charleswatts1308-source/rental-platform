@@ -27,7 +27,9 @@ it('transitions to the target status and writes the canonical event', function (
 })->with([
     'open → awaiting_landlord' => [CaseStatus::Open, CaseStatus::AwaitingLandlord, 'notice_sent'],
     'awaiting_landlord → awaiting_tenant_review' => [CaseStatus::AwaitingLandlord, CaseStatus::AwaitingTenantReview, 'inbound_received'],
-    'awaiting_landlord → tenant_action_required' => [CaseStatus::AwaitingLandlord, CaseStatus::TenantActionRequired, 'escalation_eligible'],
+    // 'awaiting_landlord → tenant_action_required' — DELETED per
+    // silence-phase-2b D0.1 #17. SweepEscalations was the only driver;
+    // silence:sweep auto-escalation now sends without transitioning.
     'awaiting_landlord → resolved' => [CaseStatus::AwaitingLandlord, CaseStatus::Resolved, 'case_resolved'],
     'awaiting_landlord → abandoned' => [CaseStatus::AwaitingLandlord, CaseStatus::Abandoned, 'case_abandoned'],
     'awaiting_tenant_review → tenant_action_required' => [CaseStatus::AwaitingTenantReview, CaseStatus::TenantActionRequired, 'escalation_eligible'],

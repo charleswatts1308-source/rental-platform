@@ -48,7 +48,6 @@ function makeMailFixtures(array $messageOverrides = [], ?string $tokenValue = nu
     $message = CaseMessage::factory()->create(array_merge([
         'case_id' => $case->id,
         'stage_at_send' => 1,
-        'template_key' => 'stage_1_initial_notice',
         'subject' => 'Repair issue notice 1 — 12 Example Street, SW1A 1AA (case test-slug)',
         'body_raw' => '<p>Frozen body — this is what arrives in the landlord\'s inbox verbatim.</p>',
         'tenant_statement' => 'Damp patch on the bedroom ceiling, getting worse since last month.',

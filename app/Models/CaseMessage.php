@@ -19,7 +19,6 @@ class CaseMessage extends Model
         'direction',
         'sender_role',
         'stage_at_send',
-        'template_key',
         'letter_template_id',
         'letter_template_updated_at',
         'subject',

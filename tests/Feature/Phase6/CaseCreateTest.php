@@ -86,7 +86,8 @@ it('creates a case, mints a token, queues the notice, and transitions to awaitin
     expect($case->tenant_user_id)->toBe($tenant->id);
     expect($case->property_id)->toBe($property->id);
     expect($case->current_stage)->toBe(1);
-    expect($case->next_stage_eligible_at)->not->toBeNull();
+    expect($case->silence_clock_started_at)->not->toBeNull();
+    expect($case->ball_with)->toBe('landlord');
     expect($case->replyTokens()->whereNull('superseded_at')->count())->toBe(1);
 
     Mail::assertQueued(CaseNotice::class);

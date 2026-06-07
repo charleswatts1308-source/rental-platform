@@ -89,15 +89,11 @@ it('subject is the rendered template subject — substituted with notice_number 
     expect($message->subject)->not->toContain('{{case_reference}}');
 });
 
-it('dual-writes template_key and letter_template_id — Phase 1 transitional shape', function () {
-    Mail::fake();
-    $case = makeOpenCaseForFreeze();
-
-    $message = sendAction()->execute($case);
-
-    expect($message->template_key)->toBe('stage_1_initial_notice');
-    expect($message->letter_template_id)->not->toBeNull();
-});
+// "dual-writes template_key and letter_template_id" — DELETED per
+// silence-phase-2b D0.1 #16. The dual-write closed the Phase 1
+// transitional window; template_key is dropped in 2b. The
+// letter_template_id assertion is now covered by the existing
+// "stamps letter_template_id" test in this same file.
 
 it('throws a LogicException when no active escalation template is found', function () {
     Mail::fake();

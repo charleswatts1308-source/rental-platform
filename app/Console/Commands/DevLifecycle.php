@@ -230,7 +230,8 @@ class DevLifecycle extends Command
                 .', '.$this->landlordReplies($case),
 
             'tenant_action_required' => $this->sendFirstLetter($case)
-                .', '.$this->escalate($case),
+                .', '.$this->landlordReplies($case)
+                .', '.$this->escalateFromReview($case),
 
             'on_hold' => $this->sendFirstLetter($case)
                 .', '.$this->landlordReplies($case)
@@ -241,11 +242,13 @@ class DevLifecycle extends Command
                 .', '.$this->transition($case, CaseStatus::Resolved, $tenantContext, 'resolved'),
 
             'abandoned' => $this->sendFirstLetter($case)
-                .', '.$this->escalate($case)
+                .', '.$this->landlordReplies($case)
+                .', '.$this->escalateFromReview($case)
                 .', '.$this->transition($case, CaseStatus::Abandoned, $tenantContext, 'abandoned'),
 
             'dormant' => $this->sendFirstLetter($case)
-                .', '.$this->escalate($case)
+                .', '.$this->landlordReplies($case)
+                .', '.$this->escalateFromReview($case)
                 .', '.$this->transition($case, CaseStatus::Dormant, [], 'gone dormant'),
 
             default => 'created',
@@ -266,11 +269,18 @@ class DevLifecycle extends Command
         return 'landlord replied';
     }
 
-    private function escalate(RepairCase $case): string
+    /**
+     * Post-silence-phase-2b: the awaiting_landlord → tenant_action_required
+     * transition has been removed (SweepEscalations demolished). TAR is
+     * now reached from awaiting_tenant_review via tenant click. The
+     * dev-tooling lifecycle uses the same path so the seed data exercises
+     * the post-2b reachability rules.
+     */
+    private function escalateFromReview(RepairCase $case): string
     {
         $case->refresh()->transitionTo(CaseStatus::TenantActionRequired);
 
-        return 'escalated';
+        return 'escalated by tenant from review';
     }
 
     /**

@@ -55,9 +55,9 @@
                         <dt class="col-5">Opened</dt>
                         <dd class="col-7">{{ $case->opened_at?->format('d M Y') }}</dd>
 
-                        @if($case->next_stage_eligible_at)
+                        @if($case->silence_clock_started_at && $case->ball_with === 'landlord' && isset($case->silence_settings_snapshot['escalation.interval_days']))
                             <dt class="col-5">Next escalation</dt>
-                            <dd class="col-7">{{ $case->next_stage_eligible_at->format('d M Y') }}</dd>
+                            <dd class="col-7">{{ $case->silence_clock_started_at->copy()->addDays((int) $case->silence_settings_snapshot['escalation.interval_days'])->format('d M Y') }}</dd>
                         @endif
 
                         @if($case->hold_until)

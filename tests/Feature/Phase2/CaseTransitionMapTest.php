@@ -8,7 +8,7 @@ it('permits every transition listed in the design doc', function (CaseStatus $fr
 })->with([
     'open → awaiting_landlord' => [CaseStatus::Open, CaseStatus::AwaitingLandlord],
     'awaiting_landlord → awaiting_tenant_review' => [CaseStatus::AwaitingLandlord, CaseStatus::AwaitingTenantReview],
-    'awaiting_landlord → tenant_action_required' => [CaseStatus::AwaitingLandlord, CaseStatus::TenantActionRequired],
+    // 'awaiting_landlord → tenant_action_required' removed in silence-phase-2b.
     'awaiting_landlord → resolved' => [CaseStatus::AwaitingLandlord, CaseStatus::Resolved],
     'awaiting_landlord → abandoned' => [CaseStatus::AwaitingLandlord, CaseStatus::Abandoned],
     'awaiting_tenant_review → tenant_action_required' => [CaseStatus::AwaitingTenantReview, CaseStatus::TenantActionRequired],

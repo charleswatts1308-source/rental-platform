@@ -185,3 +185,82 @@ Notes:       For a service whose promise is "your landlord was notified,
              discrepancy that must never be silent. 2026-06-06 test data:
              40% silent loss on a reputation-damaged domain.
 --------------------------------------------------------------------
+#9
+Page:        dev:reset truncation list (DevReset.php) — silence-model
+             tooling gap surfaced during silence-phase-2b live-fire.
+Severity:    minor — corrupts shadow-report storytelling, no data loss.
+Saw:         silence_shadow_log is not in DevReset::TABLES, so
+             dev:lifecycle's reset preserves yesterday's shadow rows.
+             Today's reseed reuses case IDs 1..8; silence:shadow-report
+             aliases stale case_id=N rows to today's freshly-minted
+             slug for N, producing a confusing report that looks like
+             today's sweep walked multiple dates.
+Expected:    dev:reset wipes silence_shadow_log alongside the other
+             transactional tables; a fresh dev:lifecycle yields a
+             shadow report that contains only today's rows.
+Status:      open
+Notes:       Confirmed 2026-06-07 gafol live-fire: yesterday's three
+             pretend probes (06-21, 07-01, 07-11) survived overnight,
+             merged into today's 07-11 swept_at group, and inflated
+             COUNT to 12 against an actual 6 cases swept once.
+Fix:         Add 'silence_shadow_log' to DevReset::TABLES (constant
+             at top of the class). One-liner, no migration.
+--------------------------------------------------------------------
+#10
+Page:        silence:sweep summary line (SilenceSweep.php:117-137).
+Severity:    cosmetic — count display only; underlying rows correct.
+Saw:         Re-tally filters `swept_at = $now AND is_pretend = $isPretend`.
+             For pretend mode, $now is the deterministic
+             `pretend_today 09:00:00`, so two pretend sweeps on the
+             same date share a swept_at. The second sweep's summary
+             counts BOTH runs' rows (e.g. 12 verdicts reported for 6
+             cases × 2 invocations).
+Expected:    Summary counts only rows written by the current
+             invocation.
+Status:      open
+Notes:       Cosmetic — every individual shadow row is correct and
+             carries its own swept_at + pretend_today + verdict.
+             Only the operator-facing summary tally inflates.
+Fix:         Track the row IDs written this invocation (collect from
+             writeShadowRow / writeExceptionShadowRow returns) and
+             tally from those, instead of a swept_at re-query. Or
+             switch swept_at to the real wall-clock even on pretend
+             runs and keep pretend_today as the only horizon column.
+--------------------------------------------------------------------
+#11
+Page:        Stage 2+ escalation letters (click path + sweep path).
+             Render path issue, not seed data.
+Severity:    minor — pre-existing UX/evidential, not a 2b regression.
+Saw:         Letters rendered "My description of the issue:" followed
+             by an EMPTY value on every stage past the first send.
+             Confirmed on gafol stage-2 auto-escalation 2026-06-07.
+Expected:    A meaningful issue description on every escalation
+             letter (the landlord-facing record is supposed to remind
+             them what the case is about, every time).
+Status:      open — DECISION REQUIRED at Phase 3 alongside tenant
+             reply UI.
+Notes:       Root cause: SendCaseNotice::execute's $tenantStatement
+             defaults to null, and both subsequent callers pass null:
+             - CaseController::sendNext (line 87) — tenant click.
+             - SilenceSweep::handleCase (line 200) — auto-escalation.
+             Only first-send (create-case form line 245-250) passes
+             the tenant's typed description. case_messages.tenant_
+             statement is per-message; cases table has no description
+             column. So there is no current source for stage 2+.
+             Design doc lists {{issue_description}} as a whitelist
+             placeholder but does not specify a source for sweep /
+             click escalation rounds.
+Fix:         Three options, decide at Phase 3:
+             (1) Carry forward — read the latest prior outbound's
+                 tenant_statement and pass it as $tenantStatement in
+                 both callers. Cheapest; matches the intuition that
+                 the thread keeps the same description throughout.
+             (2) Persist on case — add cases.description, populate at
+                 case creation, pull on every send. Cleaner; schema
+                 change.
+             (3) Template surgery — strip the label when the variable
+                 is empty. Needs renderer-side conditionals, which
+                 the whitelist renderer deliberately lacks (Blade =
+                 RCE risk per design doc). Not recommended.
+             Both click + sweep paths to be fixed together.
+--------------------------------------------------------------------

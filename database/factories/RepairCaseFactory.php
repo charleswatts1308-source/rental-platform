@@ -30,7 +30,6 @@ class RepairCaseFactory extends Factory
             'severity' => CaseSeverity::Routine,
             'status' => CaseStatus::Open,
             'current_stage' => 1,
-            'next_stage_eligible_at' => null,
             'hold_until' => null,
             'opened_at' => now(),
             'closed_at' => null,
