@@ -302,15 +302,17 @@ class SilenceSweep extends Command
     }
 
     /**
-     * Correction 1 — catch up the nudge ladder for this clock window.
-     * Count `nudge_sent` events since silence_clock_started_at; if
-     * < verdict.nudgeNumber, send (verdict.nudgeNumber - count) nudges
-     * in ascending order. Each writes a queued mail + a nudge_sent
-     * event; NO case_messages row.
+     * One nudge per sweep. SilenceClock has already done the
+     * count-vs-thresholds reasoning and handed us a verdict whose
+     * `nudgeNumber` is the next unsent rung. We just send it.
      *
-     * The clock is NOT restarted (per Correction 1) — silence keeps
-     * accumulating from the original ball-flip until tenant reply or
-     * dormancy.
+     * The clock is NOT restarted (Correction 1) — silence keeps
+     * accumulating from the original ball-flip until tenant reply
+     * or dormancy lands.
+     *
+     * Race guard: re-count nudge_sent events under the lock. If the
+     * count has moved since the pre-lock evaluation (concurrent sweep
+     * fired the nudge), supersede.
      *
      * @return array{0: array<int, int>, 1: bool}
      */
@@ -323,27 +325,31 @@ class SilenceSweep extends Command
         bool $isPretend,
         ?string $pretendToday,
     ): array {
-        $targetLevel = (int) $verdict->nudgeNumber;
-        $alreadySent = $case->events()
+        $nudgeNumber = (int) $verdict->nudgeNumber;
+        $expectedPriorCount = $nudgeNumber - 1;
+
+        $currentCount = $case->events()
             ->where('event_type', 'nudge_sent')
             ->where('occurred_at', '>=', $case->silence_clock_started_at)
             ->count();
 
-        if ($alreadySent >= $targetLevel) {
-            $id = $this->writeShadowRow($case->id, $verdict, $now, $isPretend, $pretendToday, executed: false);
+        if ($currentCount !== $expectedPriorCount) {
+            $supersededVerdict = $this->supersededVerdict(
+                $verdict,
+                "nudge_sent count changed ({$expectedPriorCount} → {$currentCount}); concurrent sweep fired the nudge",
+            );
+            $id = $this->writeShadowRow($case->id, $supersededVerdict, $now, $isPretend, $pretendToday, executed: false);
 
             return [[$id], false];
         }
 
-        for ($next = $alreadySent + 1; $next <= $targetLevel; $next++) {
-            $this->dispatchNudge($case, $next, $renderer, $magicLinkGenerator);
-            $case->events()->create([
-                'event_type' => 'nudge_sent',
-                'actor_label' => 'system',
-                'occurred_at' => now(),
-                'meta' => ['nudge_number' => $next, 'silence_days' => $verdict->silenceDays],
-            ]);
-        }
+        $this->dispatchNudge($case, $nudgeNumber, $renderer, $magicLinkGenerator);
+        $case->events()->create([
+            'event_type' => 'nudge_sent',
+            'actor_label' => 'system',
+            'occurred_at' => now(),
+            'meta' => ['nudge_number' => $nudgeNumber, 'silence_days' => $verdict->silenceDays],
+        ]);
 
         $id = $this->writeShadowRow($case->id, $verdict, $now, $isPretend, $pretendToday, executed: true);
 

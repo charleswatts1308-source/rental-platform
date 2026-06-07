@@ -159,21 +159,55 @@ it('tenant-side: silence >= first threshold → send_nudge with nudge_number=1',
     expect($verdict->intendedLetterTemplate?->code)->toBe('tenant_nudge_generic');
 });
 
-it('tenant-side: silence >= second threshold → send_nudge with nudge_number=2', function () {
+it('tenant-side: silence >= second threshold WITH nudge 1 already sent → send_nudge with nudge_number=2', function () {
     $case = tenantSideCase(startedAt: Carbon::now()->subDays(20));
-    $verdict = (new SilenceClock)->evaluate($case, Carbon::now());
+    $case->events()->create([
+        'event_type' => 'nudge_sent',
+        'actor_label' => 'system',
+        'occurred_at' => Carbon::now()->subDays(10),
+        'meta' => ['nudge_number' => 1],
+    ]);
+
+    $verdict = (new SilenceClock)->evaluate($case->fresh(), Carbon::now());
 
     expect($verdict->intendedAction)->toBe(IntendedAction::SendNudge);
     expect($verdict->nudgeNumber)->toBe(2);
 });
 
-it('tenant-side: silence >= dormancy threshold → transition_dormant_intent', function () {
-    $case = tenantSideCase(startedAt: Carbon::now()->subDays(30));
+it('tenant-side: silence >= second threshold with NO nudges yet → still nudge 1 (next unwalked rung)', function () {
+    $case = tenantSideCase(startedAt: Carbon::now()->subDays(21));
+
     $verdict = (new SilenceClock)->evaluate($case, Carbon::now());
+
+    expect($verdict->intendedAction)->toBe(IntendedAction::SendNudge);
+    expect($verdict->nudgeNumber)->toBe(1);
+});
+
+it('tenant-side: silence >= dormancy threshold WITH full ladder walked → transition_dormant_intent', function () {
+    $case = tenantSideCase(startedAt: Carbon::now()->subDays(30));
+    foreach ([1, 2] as $n) {
+        $case->events()->create([
+            'event_type' => 'nudge_sent',
+            'actor_label' => 'system',
+            'occurred_at' => Carbon::now()->subDays(30 - ($n * 5)),
+            'meta' => ['nudge_number' => $n],
+        ]);
+    }
+
+    $verdict = (new SilenceClock)->evaluate($case->fresh(), Carbon::now());
 
     expect($verdict->intendedAction)->toBe(IntendedAction::TransitionDormantIntent);
     expect($verdict->intendedLetterTemplate)->toBeNull();
     expect($verdict->reasoning)->toContain('dormant');
+});
+
+it('tenant-side: silence >= dormancy threshold with NO nudges yet → next unwalked nudge (1), NOT dormant (D2 promise)', function () {
+    $case = tenantSideCase(startedAt: Carbon::now()->subDays(35));
+
+    $verdict = (new SilenceClock)->evaluate($case, Carbon::now());
+
+    expect($verdict->intendedAction)->toBe(IntendedAction::SendNudge);
+    expect($verdict->nudgeNumber)->toBe(1);
 });
 
 it('tenant-side: nudge derivation is stateless — re-evaluation at the same horizon yields same nudge_number (ruling c)', function () {

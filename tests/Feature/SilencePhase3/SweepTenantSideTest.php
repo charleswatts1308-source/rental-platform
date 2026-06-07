@@ -67,23 +67,81 @@ it('does not re-fire nudge 1 on the same day (idempotency via nudge_sent count)'
     expect($case->events()->where('event_type', 'nudge_sent')->count())->toBe(1);
 });
 
-it('catches up nudges 1 and 2 in a single sweep run when both thresholds passed', function () {
+it('fires nudge 2 when count=1 and silence >= nudge.second_days (20)', function () {
     $case = phase3TenantSideCase(silenceDaysAgo: 21);
+    $case->events()->create([
+        'event_type' => 'nudge_sent',
+        'actor_label' => 'system',
+        'occurred_at' => now()->subDays(10),
+        'meta' => ['nudge_number' => 1],
+    ]);
 
     $this->artisan('silence:sweep')->assertSuccessful();
 
     expect($case->events()->where('event_type', 'nudge_sent')->count())->toBe(2);
-    $nudgeNumbers = $case->events()
+    $latest = $case->events()
         ->where('event_type', 'nudge_sent')
-        ->pluck('meta')
-        ->map(fn ($m) => $m['nudge_number'] ?? null)
-        ->all();
-    expect($nudgeNumbers)->toContain(1);
-    expect($nudgeNumbers)->toContain(2);
+        ->orderByDesc('id')
+        ->first();
+    expect($latest->meta['nudge_number'] ?? null)->toBe(2);
 });
 
-it('transitions to dormant at silence_days >= nudge.dormancy_days (30)', function () {
-    $case = phase3TenantSideCase(silenceDaysAgo: 31);
+it('sends ONE nudge per sweep — count=0 at silence=21 fires nudge 1 only, not 1+2', function () {
+    $case = phase3TenantSideCase(silenceDaysAgo: 21);
+
+    $this->artisan('silence:sweep')->assertSuccessful();
+
+    expect($case->events()->where('event_type', 'nudge_sent')->count())->toBe(1);
+    $latest = $case->events()->where('event_type', 'nudge_sent')->sole();
+    expect($latest->meta['nudge_number'] ?? null)->toBe(1);
+});
+
+// ─── Ladder-walk dormancy (D2 explained-recoverable-sequence) ────
+
+it('does NOT transition dormant at silence>=30 when count=0 — fires nudge 1 instead', function () {
+    $case = phase3TenantSideCase(silenceDaysAgo: 35);
+
+    $this->artisan('silence:sweep')->assertSuccessful();
+
+    $case->refresh();
+    expect($case->status)->toBe(CaseStatus::AwaitingTenantReview);
+    expect($case->dormant_at)->toBeNull();
+    expect($case->events()->where('event_type', 'nudge_sent')->count())->toBe(1);
+    $latest = $case->events()->where('event_type', 'nudge_sent')->sole();
+    expect($latest->meta['nudge_number'] ?? null)->toBe(1);
+});
+
+it('does NOT transition dormant at silence>=30 when count=1 — fires nudge 2 instead', function () {
+    $case = phase3TenantSideCase(silenceDaysAgo: 35);
+    $case->events()->create([
+        'event_type' => 'nudge_sent',
+        'actor_label' => 'system',
+        'occurred_at' => now()->subDays(20),
+        'meta' => ['nudge_number' => 1],
+    ]);
+
+    $this->artisan('silence:sweep')->assertSuccessful();
+
+    $case->refresh();
+    expect($case->status)->toBe(CaseStatus::AwaitingTenantReview);
+    expect($case->dormant_at)->toBeNull();
+    $latest = $case->events()
+        ->where('event_type', 'nudge_sent')
+        ->orderByDesc('id')
+        ->first();
+    expect($latest->meta['nudge_number'] ?? null)->toBe(2);
+});
+
+it('transitions dormant at silence>=30 ONLY when both nudges have been sent (count>=2)', function () {
+    $case = phase3TenantSideCase(silenceDaysAgo: 35);
+    foreach ([1, 2] as $n) {
+        $case->events()->create([
+            'event_type' => 'nudge_sent',
+            'actor_label' => 'system',
+            'occurred_at' => now()->subDays(35 - ($n * 5)),
+            'meta' => ['nudge_number' => $n],
+        ]);
+    }
 
     $this->artisan('silence:sweep')->assertSuccessful();
 
@@ -93,7 +151,15 @@ it('transitions to dormant at silence_days >= nudge.dormancy_days (30)', functio
 });
 
 it('dormant transition fires the dormancy_transition_notice mail', function () {
-    phase3TenantSideCase(silenceDaysAgo: 31);
+    $case = phase3TenantSideCase(silenceDaysAgo: 35);
+    foreach ([1, 2] as $n) {
+        $case->events()->create([
+            'event_type' => 'nudge_sent',
+            'actor_label' => 'system',
+            'occurred_at' => now()->subDays(35 - ($n * 5)),
+            'meta' => ['nudge_number' => $n],
+        ]);
+    }
 
     $this->artisan('silence:sweep')->assertSuccessful();
 
