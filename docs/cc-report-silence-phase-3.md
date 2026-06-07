@@ -1,6 +1,6 @@
 # Silence Model — Phase 3 implementation report
 
-**Branch:** `silence-phase-3` at `45b4376` (off `main` at `30a2032`).
+**Branch:** `silence-phase-3` (off `main` at `30a2032`).
 **Pre-tag:** `pre-silence-phase-3` → `30a2032`.
 **Status:** Implementation complete. Merge HELD pending gafol joint
 live-fire per acceptance #2.
@@ -8,13 +8,18 @@ live-fire per acceptance #2.
 Implementation discipline: report-first within the phase, no merge
 until live-fire passes. Matches Phase 2b precedent.
 
+**Revision history**
+- `45b4376` → initial implementation + report at `803fe83`.
+- `(this revision)` → deviation 2 corrected (dormancy now walks the
+  ladder; see §Deviations); test reconciliation closed to 446.
+
 ---
 
 ## Acceptance — disposition
 
 | # | Criterion | Status |
 |---|---|---|
-| 1 | Suite green; count against the post-disposition baseline. | **PASS** — 441 passed (1029 assertions). Net delta −15 vs the 456 post-2b baseline, matching the approved D0.1 disposition (≈37 demolition tests removed, ≈22 new SilencePhase3 tests added). |
+| 1 | Suite green; count against the post-disposition baseline. | **PASS** — 446 passed (1044 assertions). Net delta −10 vs the 456 post-2b baseline; reconciled per-file in §Test reconciliation below. |
 | 2 | Live fire on gafol, jointly reviewed. | **HELD** — runbook lands in a follow-up commit; deploy + live-fire is operator-driven; joint review at the end. |
 | 3 | Pretend sweep executes nothing, all intents logged. | **PASS** in suite (`pretend mode executes nothing on tenant-side either` in `SweepTenantSideTest`, plus the inherited Phase 2b pretend tests in `SilenceSweepLiveTest`). To be re-verified on gafol. |
 | 4 | Diff confirms demolition complete and untouched-list respected. | **PASS** — see §Demolition + §Untouched below. |
@@ -28,12 +33,30 @@ until live-fire passes. Matches Phase 2b precedent.
   AwaitingLandlord. The transition wasn't in the pre-Phase-3 map
   (D0 inferred it could be added without flagging). Added in this
   commit; tests assert it both ways.
-- **No catch-up dormancy.** D0.5 left this ambiguous — "the dormancy
-  notification IS the catch-up communication when the sweep was
-  delayed past the nudge thresholds; missed nudges are not back-
-  filled." Implemented accordingly: TransitionDormantIntent
-  transitions to Dormant + dormancy_transition_notice, no missed
-  nudges are dispatched.
+- **Dormancy walks the ladder (fixed).** Initial implementation let a
+  case land in Dormant at silence ≥ 30 days regardless of nudge
+  history — a gap scenario (sweep paused, settings change, hold
+  expiry edge) could dormancy-fy a case that was never warned. That
+  violated D2's "explained, recoverable sequence" promise. Corrected:
+  the tenant-side verdict is now the **next unwalked rung**, not the
+  threshold reached. Specifically:
+  - `SilenceClock::tenantSideVerdict` reads
+    `nudgesSentSinceClockStart` (count of `nudge_sent` events since
+    `silence_clock_started_at`) and returns `SendNudge(count+1)` if
+    the next nudge's silence threshold has been crossed; only returns
+    `TransitionDormantIntent` when `silence_days >= dormancy_days`
+    AND `count >= 2` (full ladder walked).
+  - `SilenceSweep::executeNudge` simplified to one nudge per sweep,
+    with a count-based race guard inside the locked transaction.
+  - Normal daily cadence is behaviourally identical (clock reaches
+    10 → nudge 1; reaches 20 → nudge 2; reaches 30 with count=2 →
+    dormant). Only gap scenarios change: silence=35 with count=0
+    fires nudge 1, doesn't transition; next sweep fires nudge 2;
+    third sweep transitions to dormant. Dormancy never lands on an
+    unwarned case.
+  - Tests added under `SilencePhase3/SweepTenantSideTest` (ladder-
+    walk gap scenarios) and `SilencePhase2a/DecisionBranchTest`
+    (verdict-level coverage of next-unwalked rung).
 - **`tenant_replied` event written on the AwaitingLandlord self-send
   branch** (in addition to the transition path's canonical event).
   Without it the audit trail for a tenant reply when no transition
@@ -116,16 +139,57 @@ Per the brief §Scope explicitly untouched:
 
 ---
 
-## Test disposition — final
+## Test reconciliation — per file
 
-| Group | Count | Notes |
-|---|---|---|
-| Deleted | ~37 | Whole-file deletes for demolished features (SweepDormancy 11, SweepHolds 8, DormancyReminder 6, HoldExpired 5, LandlordReplyReceived ≈3, TenantClickCoexists 4) |
-| Rewritten | ≈50 | TRANSITIONS, SendCaseNotice signature, CaseAction (hold/resolve/abandon valid-state list), CaseCreate (preview→confirm two-step), LetterTemplateRenderer (header wrap), Inbound webhook (no-TAR), CaseTransition* (parametrisation), TurnDetection (no-TAR), ClockStart (container DI), SilenceSweepLive (tenant-side LIVE), etc. |
-| Unaffected-but-touched | ≈25 | Fixtures use the factory's new `description` default; cases reference the new transitions; no assertion changes. |
-| New under SilencePhase3/ | ≈47 | TenantReplyTest (15), SweepTenantSideTest (11), MagicLinkTest (5), DemolitionTest (16) |
+Per-file counts derived by running each file in isolation
+(`php artisan test <path>`) and comparing to a baseline run of the
+file at `30a2032` (the tip of main pre-Phase-3). For modified files
+the baseline was re-executed with the `TenantActionRequired` enum
+case temporarily restored so the file would compile, then removed
+again; the resulting counts reflect every test that survives the
+compile step on either side.
 
-Final: **441 passed, 1029 assertions** on `45b4376`.
+| File | Baseline | Current | Δ | Note |
+|---|---:|---:|---:|---|
+| **Deleted (demolished features)** | | | | |
+| `Phase5/SweepDormancyTest.php` | 11 | — | −11 | SweepDormancy demolished |
+| `Phase5/SweepHoldsTest.php` | 7 | — | −7 | SweepHolds demolished |
+| `Phase7/DormancyReminderTest.php` | 6 | — | −6 | mailable demolished |
+| `Phase7/HoldExpiredTest.php` | 5 | — | −5 | mailable demolished |
+| `Phase7/LandlordReplyReceivedTest.php` | 6 | — | −6 | mailable demolished |
+| `SilencePhase2b/TenantClickCoexistsTest.php` | 4 | — | −4 | D7 click path demolished |
+| **Deleted subtotal** | **39** | **0** | **−39** | |
+| **Modified** | | | | |
+| `Phase2/CaseIllegalTransitionTest.php` | 21 | 13 | −8 | dropped TAR illegal-transition rows |
+| `Phase2/CaseTransitionMapTest.php` | 42 | 37 | −5 | TAR transitions dropped; D8 + Phase 3 transitions added |
+| `Phase2/CaseTransitionSideEffectsTest.php` | 14 | 13 | −1 | TAR closed_at param row dropped; dormant_at stamp/clear added |
+| `Phase2/CaseTransitionTest.php` | 22 | 19 | −3 | TAR canonical-event rows dropped; tenant_replied + Phase 3 rows added |
+| `Phase3/SendCaseNoticeTest.php` | 10 | 10 | 0 | `$isEscalation` tests retargeted at auto-escalation branch |
+| `Phase4/DormantWakeTransitionTest.php` | 4 | 4 | 0 | rewrote 1 test for Phase 3 revival transitions |
+| `Phase4/WebhookInboundReplyTest.php` | 17 | 16 | −1 | TAR no-transition clause removed |
+| `Phase5/ScheduleRegistrationTest.php` | 3 | 3 | 0 | swap: 2 demolition-positive → 2 demolition-negative |
+| `Phase6/CaseActionTest.php` | 16 | 11 | −5 | sendNext (3) + reEngage (3) gone; hold.max_days (+1) added |
+| `Phase6/CaseCreateTest.php` | 14 | 16 | +2 | preview→confirm flow tests added |
+| `Phase6/OutboundAttachmentTest.php` | 3 | 3 | 0 | confirm-POST threaded through |
+| `SilencePhase1/LetterTemplateRendererTest.php` | 6 | 9 | +3 | header wrap + ui_copy skip + renderFreeForm |
+| `SilencePhase1/SendCaseNoticeFreezeTest.php` | 7 | 7 | 0 | signature-only updates |
+| `SilencePhase2a/ClockStartTest.php` | 4 | 4 | 0 | container DI for HandleInboundReply |
+| `SilencePhase2a/TurnDetectionTest.php` | 11 | 9 | −2 | 2 TAR-flavoured tests dropped |
+| `SilencePhase2a/DecisionBranchTest.php` | 12 | 14 | +2 | tenant-side ladder-walk expansion |
+| `SilencePhase2b/DemolitionTest.php` | 9 | 8 | −1 | obsolete TAR-illegal-transition test removed |
+| `SilencePhase2b/SilenceSweepLiveTest.php` | 13 | 13 | 0 | tenant-side-shadow test rewritten to tenant-side-LIVE |
+| **Modified subtotal** | **228** | **209** | **−19** | |
+| **New under SilencePhase3/** | | | | |
+| `TenantReplyTest.php` | — | 15 | +15 | D8 availability + reply outbound shape |
+| `SweepTenantSideTest.php` | — | 13 | +13 | nudge live + ladder-walk + ResumeFromHold |
+| `MagicLinkTest.php` | — | 5 | +5 | D12 mint + consume + reuse + expiry |
+| `DemolitionTest.php` | — | 15 | +15 | TAR / sendNext / reEngage / mailables / new routes / new columns |
+| **New subtotal** | **0** | **48** | **+48** | |
+
+**Closure:** baseline 456 + (−39 delete) + (−19 modified) + (+48 new)
+= **446** ✓ matches the runner.
+
+Final: **446 passed, 1044 assertions**.
 
 ---
 
@@ -155,9 +219,20 @@ Final: **441 passed, 1029 assertions** on `45b4376`.
 
 Notes for whoever writes the Phase 3 runbook (acceptance #2):
 
-- New migrations to run on gafol (in this order):
-  - `2026_06_07_080001_add_description_to_cases_table` (NOT NULL —
-    pre-flight: confirm `cases` table is empty on gafol).
+- **Run `dev:reset --force` BEFORE `migrate`.** The gafol `cases`
+  table holds today's 2b-era rows from the last live-fire, including
+  rows with `status='tenant_action_required'`. The Phase 3 ENUM-drop
+  migration will fail with "Data truncated" if any row holds that
+  value, and the `cases.description` NOT NULL migration needs the
+  table empty (no backfill path in this phase). Sequence on gafol:
+  ```
+  php artisan dev:reset --force      # wipes case data (Plesk allow-list)
+  php artisan migrate --force        # applies the 4 new migrations
+  php artisan db:seed --class=SettingSeeder --force
+  php artisan db:seed --class=LetterTemplateSeeder --force
+  ```
+- New migrations applied in order:
+  - `2026_06_07_080001_add_description_to_cases_table` (NOT NULL).
   - `2026_06_07_080002_add_dormant_at_to_cases_table` (nullable).
   - `2026_06_07_080003_create_magic_login_tokens_table`.
   - `2026_06_07_080004_drop_tenant_action_required_from_cases_status_enum`
@@ -176,14 +251,25 @@ Notes for whoever writes the Phase 3 runbook (acceptance #2):
     Mailgun-routed outbound and the case transitions to
     awaiting_landlord; the response from the landlord round-trips
     via the webhook as before.
-  - **Tenant nudge live:** `dev:age-clock --case=2 --days=11`
-    (case 2 must be in awaiting_tenant_review post-letter +
-    landlord-reply) → `silence:sweep` → expect 1 nudge_sent event
-    + tenant inbox arrival, NO new case_messages row, clock NOT
-    restarted.
-  - **Dormancy live:** `dev:age-clock --case=2 --days=31` →
-    `silence:sweep` → case 2 transitions to Dormant with dormant_at
-    stamped + dormancy_transition_notice mail.
+  - **Tenant nudge live + dormancy ladder walk:**
+    - `dev:age-clock --case=2 --days=11` (case 2 in
+      awaiting_tenant_review post-letter + landlord-reply) →
+      `silence:sweep` → expect nudge 1 fired (1 `nudge_sent` event
+      with `meta.nudge_number=1`), NO `case_messages` row, clock NOT
+      restarted. Status remains `awaiting_tenant_review`.
+    - `dev:age-clock --case=2 --days=11` again (case 2 now at
+      ~silence=22) → `silence:sweep` → expect nudge 2 fired (count=2),
+      no transition.
+    - `dev:age-clock --case=2 --days=9` (case 2 now at ~silence=31)
+      → `silence:sweep` → expect the dormancy transition fires only
+      now that the ladder is fully walked. Status becomes `dormant`,
+      `dormant_at` stamped, `dormancy_transition_notice` queued.
+    - **Gap test:** repeat the sequence on a different case but
+      skip the intermediate sweeps — `dev:age-clock --case=N
+      --days=35` straight away → `silence:sweep` must fire nudge 1
+      (NOT transition to dormant); next sweep fires nudge 2; third
+      sweep transitions to dormant. The D2 explained-recoverable-
+      sequence promise: dormancy never lands on an unwarned case.
   - **Hold expiry absorbed:** `dev:age-hold --case=5 --days=14`
     (case 5 in OnHold post-pause) → `silence:sweep` → case 5
     transitions direct to AwaitingLandlord with hold_expired event
