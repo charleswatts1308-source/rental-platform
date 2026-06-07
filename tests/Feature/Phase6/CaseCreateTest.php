@@ -94,6 +94,44 @@ it('POST /cases stages the payload and redirects to the preview, NOT the case', 
     expect(RepairCase::count())->toBe(0);
 });
 
+it('Edit round-trip — GET /cases/create after staging re-fills the form from the staged payload (D0.8)', function () {
+    [$tenant, $property] = tenantWithProperty();
+
+    // Stage a draft (POST /cases) including a photo, then click "Edit"
+    // (a plain GET back to the create form).
+    $this->actingAs($tenant)->post('/cases', validStorePayload(
+        $property->id,
+        ['description' => 'Persistent damp behind the kitchen units.']
+    ) + ['photos' => [UploadedFile::fake()->image('damp.jpg')]]);
+
+    $response = $this->actingAs($tenant)->get('/cases/create');
+
+    $response->assertOk();
+    // old() repopulates the text inputs from the staged payload.
+    $response->assertSee('Persistent damp behind the kitchen units.');
+    $response->assertSee('landlord@example.com');
+    // The staged photo can't re-seed a file input, but it survives in the
+    // session payload — the cue tells the tenant it's safe.
+    $response->assertSee('photo is saved');
+});
+
+it('Edit round-trip does not leak another tenant\'s staged draft', function () {
+    [$tenant, $property] = tenantWithProperty();
+    [$otherTenant] = tenantWithProperty();
+
+    $this->actingAs($tenant)->post('/cases', validStorePayload(
+        $property->id,
+        ['description' => 'Only this tenant should see this draft.']
+    ));
+
+    // A different tenant hitting the create form gets a blank form — the
+    // payload is gated on user_id.
+    $response = $this->actingAs($otherTenant)->get('/cases/create');
+
+    $response->assertOk();
+    $response->assertDontSee('Only this tenant should see this draft.');
+});
+
 it('preview confirm creates the case, mints a token, queues the notice, and transitions to awaiting_landlord', function () {
     [$tenant, $property] = tenantWithProperty();
 

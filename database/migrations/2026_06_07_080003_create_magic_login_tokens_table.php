@@ -34,7 +34,13 @@ return new class extends Migration
                 ->nullable()
                 ->constrained('cases')
                 ->cascadeOnDelete();
-            $table->timestamp('expires_at');
+            // DATETIME, not TIMESTAMP: as the first timestamp column in
+            // the table, a NOT NULL TIMESTAMP on MariaDB (with
+            // explicit_defaults_for_timestamp=OFF, the gafol/prod default)
+            // is silently given ON UPDATE CURRENT_TIMESTAMP — so stamping
+            // used_at on consume would clobber the 7-day expiry to now().
+            // DATETIME never receives that implicit clause.
+            $table->dateTime('expires_at');
             $table->timestamp('used_at')->nullable();
             $table->timestamps();
 

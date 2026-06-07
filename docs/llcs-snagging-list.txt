@@ -359,3 +359,41 @@ Notes:       Surfaced precisely because Phase 3 inverts the usual order
 Fix:         Guard each truncation with Schema::hasTable($name) before
              truncating; skip-and-continue on a miss.
 --------------------------------------------------------------------
+#18
+Page:        Migrations — implicit ON UPDATE CURRENT_TIMESTAMP trap on
+             NOT NULL TIMESTAMP columns sitting FIRST in their table.
+Severity:    minor — latent landmine; dormant on insert-only tables.
+Saw:         Audit (2026-06-07, prompted by the magic_login_tokens Q1
+             finding) of every CREATE TABLE migration. On MariaDB with
+             explicit_defaults_for_timestamp=OFF (gafol/prod default),
+             the FIRST timestamp column in a table, if NOT NULL with no
+             explicit default, is silently given DEFAULT CURRENT_TIMESTAMP
+             ON UPDATE CURRENT_TIMESTAMP — so any UPDATE to the row
+             rewrites that column to now() (and the value lands in the DB
+             session TZ, hence the "+1h" BST gap seen on magic links).
+             Four tables carry the same first-column trap, all currently
+             insert-only so the trap is unexercised:
+               - page_views.view_date_time
+               - error_logs.error_date
+               - file_attachments.uploaded_date  (drop_rentals migration;
+                 may not be migrated on prod yet)
+               - silence_shadow_log.swept_at      (evidential log — would
+                 corrupt swept_at if a shadow row is ever updated)
+             Safe (verified, no action): reply_tokens (issued_at is
+             useCurrent → explicit default, expires_at is nullable and
+             not first), cases/case_events/case_messages/contact_messages
+             (first timestamp is nullable or useCurrent), and every
+             ->timestamps()/nullable() column.
+Expected:    No table relies on the implicit ON UPDATE; first timestamp
+             columns are either DATETIME or carry an explicit default.
+Status:      open — fixed for magic_login_tokens only (Q1, this commit:
+             expires_at → dateTime). The four above left as-is; flagged
+             so a future UPDATE path on any of them doesn't silently
+             corrupt the column.
+Notes:       Invisible to the test suite — SQLite has no ON UPDATE
+             CURRENT_TIMESTAMP semantics, so these only bite on MariaDB.
+Fix:         Per table, switch the offending column to dateTime() (never
+             receives the implicit clause) or give it an explicit default;
+             since these are pre-flip, a migrate:fresh re-applies the
+             amended migration on gafol (same path as the Q1 fix).
+--------------------------------------------------------------------

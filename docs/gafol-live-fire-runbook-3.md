@@ -429,3 +429,70 @@ can land, followed by the Phase 3 close-out write-up.
 - Production cutover is governed by `docs/pre-flip-checklist.md`.
 - Merge stays held until joint review passes per acceptance #2
   in the brief.
+
+---
+
+## Re-verify addendum — F1 + Q1 fixes (post-live-fire-1)
+
+The first gafol live-fire surfaced one blocker (F1) and one question
+(Q1); both are now fixed on the branch. This addendum re-verifies
+just those two — it does **not** re-run the full sequence above.
+
+**Why this needs `migrate:fresh`, not `migrate`.** The Q1 fix amends
+migration `2026_06_07_080003_create_magic_login_tokens_table` to use
+`dateTime('expires_at')` instead of `timestamp(...)`. Gafol's
+`migrations` table already records `080003` as run, so a plain
+`migrate --force` on redeploy sees nothing pending and the column
+keeps its old `TIMESTAMP` type (with the implicit
+`ON UPDATE CURRENT_TIMESTAMP` that caused the bug). The column must
+be rebuilt. The accepted path on gafol (preprod, seed-data box —
+no real data to preserve) is a full `migrate:fresh`.
+
+**Deploy (operator-driven):**
+```
+1. Plesk → Git (gafol) → Pull updates  (branch head = the F1/Q1 commit)
+2. Plesk → Laravel Toolkit → Composer → composer install
+3. Plesk → Laravel Toolkit → Artisan → migrate:fresh --force
+   • Rebuilds every table from scratch; magic_login_tokens.expires_at
+     is now DATETIME (no implicit ON UPDATE).
+   • dev:reset-before-migrate ordering is irrelevant here — fresh
+     drops everything first.
+4. Plesk → Laravel Toolkit → Artisan → db:seed --class=SettingSeeder --force
+5. Plesk → Laravel Toolkit → Artisan → db:seed --class=LetterTemplateSeeder --force
+6. Plesk → Laravel Toolkit → Artisan → config:clear ; cache:clear
+7. php artisan dev:lifecycle   (reseed the 7 lifecycle cases)
+```
+
+**Re-verify F1 — create-case Edit round-trip (D0.8):**
+```
+a. As a tenant, GET /cases/create, fill the form (description +
+   landlord email + a photo), POST /cases → lands on /cases/preview.
+b. Click "Edit" → back on /cases/create. Expected:
+   - Every text field is re-filled (description, landlord email,
+     name, severity, category, role, organisation).
+   - A green cue under the photo input: "Your 1 photo is saved …".
+   - The file input itself is empty (browsers can't pre-seed it) —
+     that's expected; the staged photo still promotes on Confirm.
+c. Change a field, Confirm → case created with the edited values.
+```
+
+**Re-verify Q1 — expires_at stable after consume:**
+```
+d. Trigger any tenant notification (e.g. dev:lifecycle already queued
+   some, or run a nudge sweep) so a magic_login_tokens row is minted.
+e. Note its expires_at (should be created_at + 7 days).
+f. Click the magic link (consume it).
+g. SQL re-check:
+   SELECT id, created_at, used_at, expires_at FROM magic_login_tokens
+   WHERE id = <that row>;
+   -- Expected: expires_at UNCHANGED (still created_at + 7 days),
+   --           used_at = consume time. expires_at must NOT have moved
+   --           to used_at + 1h (the pre-fix MariaDB ON UPDATE bug).
+h. Confirm the column type itself:
+   SHOW COLUMNS FROM magic_login_tokens LIKE 'expires_at';
+   -- Expected: Type = datetime, Extra column EMPTY (no
+   --           "on update current_timestamp()").
+```
+
+If F1 (a–c) and Q1 (d–h) both pass, acceptance #2 is met and the
+`--no-ff` merge of `silence-phase-3` into `main` can land.

@@ -207,11 +207,28 @@ class CaseController extends Controller
             ->orderBy('sort_order')
             ->get();
 
+        // D0.8 — returning from the preview "Edit" button lands here as a
+        // plain GET. Re-flash the staged inputs so every old() in the form
+        // repopulates; the file input can't be re-seeded (browser
+        // security), but the staged photos survive in the session payload
+        // and promote on confirm, so surface a count cue in the view.
+        $payload = session(self::PREVIEW_SESSION_KEY);
+        $stagedPhotoCount = 0;
+        if ($payload && (int) ($payload['user_id'] ?? 0) === $request->user()->id) {
+            // The staged 'validated' array is file-free (store() drops the
+            // UploadedFiles), so it flashes cleanly; old() then repopulates
+            // every text field. Photos can't re-seed a file input, so we
+            // surface a count cue instead.
+            $request->session()->flashInput($payload['validated']);
+            $stagedPhotoCount = count($payload['photos'] ?? []);
+        }
+
         return view('cases.create', [
             'properties' => $properties,
             'categories' => $categories,
             'severities' => CaseSeverity::cases(),
             'roles' => LandlordContactRole::cases(),
+            'stagedPhotoCount' => $stagedPhotoCount,
         ]);
     }
 
@@ -252,6 +269,13 @@ class CaseController extends Controller
             $request->file('photos', []) ?? [],
             $userId,
         );
+
+        // The uploaded files are staged to disk above; keeping the
+        // UploadedFile objects in the session payload would break
+        // serialisation on any non-array session driver (file/db/redis in
+        // prod). confirm() reads the staged 'photos' metadata, never
+        // validated['photos'], so drop them here.
+        unset($validated['photos']);
 
         session()->put(self::PREVIEW_SESSION_KEY, [
             'user_id' => $userId,
