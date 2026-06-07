@@ -397,3 +397,28 @@ Fix:         Per table, switch the offending column to dateTime() (never
              since these are pre-flip, a migrate:fresh re-applies the
              amended migration on gafol (same path as the Q1 fix).
 --------------------------------------------------------------------
+#19
+Page:        Tenant reply UI (cases.reply) — outbound tenant message.
+Severity:    feature request — NOT a defect. Deferred, phase TBD.
+Saw:         The tenant reply form (D8, Phase 3) sends text only. During
+             the 2026-06-07 gafol live-fire, a tenant replying about a
+             worsening issue naturally wanted to attach a photo of the
+             deterioration and had no way to.
+Expected:    Tenant replies should accept attachments (same JPG/PNG/PDF
+             ≤2MB, ≤6 files rule as create-case), promoted onto the
+             outbound tenant case_messages row and dispatched on the
+             CaseNotice to the landlord — mirroring the create-case
+             attachment path that already exists.
+Status:      open — deferred feature, phase TBD. Explicitly OUT OF SCOPE
+             for Phase 3 (the brief lists "attachments on tenant replies"
+             under untouched).
+Notes:       Surfaced by real usage in the live-fire, not by a test gap.
+             The machinery already exists end to end for create-case
+             (stagePreviewPhotos → promotePreviewPhotos → MessageAttachment
+             → CaseNotice::attachments). A tenant-reply version reuses the
+             same SendCaseNotice attachmentInputs parameter, which the
+             reply path currently calls without attachments.
+Fix:         Add a file input to the reply form + photo validation/staging
+             in CaseController::reply, thread attachmentInputs into the
+             tenant-reply SendCaseNotice call. Reuses existing helpers.
+--------------------------------------------------------------------
