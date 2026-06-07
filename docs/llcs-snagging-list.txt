@@ -27,7 +27,7 @@ Page:        Main nav dropdown
 Severity:    cosmetic
 Saw:         Dropdown still titled "Your Rental Profile" after rentals removal
 Expected:    A title that fits its contents (Properties + Repair Cases only)
-Status:      open
+Status:      open — scheduled: Phase 3 ride-along (per design update §6)
 Notes:       Flagged during rentals removal (commit 929d2f6). Maybe "Your Tenancy".
 --------------------------------------------------------------------
 #2
@@ -45,11 +45,14 @@ Saw:         "My description of the issue:" followed by boilerplate
              "Please arrange to inspect and repair the reported issue."
 Expected:    A plausible per-case description (UI-created cases get the
              tenant's typed statement; demo cases need realistic text).
-Status:      open
+Status:      closed — superseded by D9 (cases.description fixed at
+             creation, immutable). Fix lands in Phase 3 implementation.
 Notes:       Cause: dev:letter falls back to its default --statement and
              dev:lifecycle calls it without one.
-Fix:         Add a 5th 'statement' column to DevLifecycle::SPECS and pass
-             it via --statement when calling dev:letter.
+Fix:         D9 introduces cases.description on the cases table; the
+             dev:lifecycle SPECS row gains a description column and the
+             dev:letter --statement filler default dies. Implementation
+             in Phase 3.
 --------------------------------------------------------------------
 
 
@@ -88,7 +91,9 @@ Expected:    Tenant should have a "reply / add information" action at appropriat
              case states, sending a new message to the landlord (with the same
              {token}@mg.renters.rent Reply-To so the landlord's reply round-trips),
              logged to case_messages, and transitioning the case state accordingly.
-Status:      Open — DESIGN REQUIRED. Not yet a CC brief.
+Status:      closed — superseded by D8 / Phase 3 (design update §6). All open
+             design questions below resolved by D8's per-state availability
+             table and the transition-to-awaiting_landlord rule.
 Notes:       Surfaced when landlord replied "you have omitted the details of the
              issue" and there was no tenant path to respond with the detail.
              This is a STATE-MACHINE change (new transition(s)), not just a button:
@@ -115,12 +120,14 @@ Saw:         Click "Open this case" in landlord-reply notification → login
              password to proceed.
 Expected:    Email pre-populated with the tenant's address (the notification
              went to that address; pre-populating doesn't leak anything).
-Status:      open
+Status:      closed — superseded by D12 (magic-link sign-in on all Phase 3-
+             touched emails makes the pre-fill pointless: clicking the
+             link signs the tenant in directly).
 Notes:       Cause: LandlordReplyReceived sends a plain unsigned
              route('cases.show', ...) URL; the auth redirect to /login has
              no identity hint, and login.blade reads only old('email').
-Fix:         Notification points at a signed /login?email=... built via
-             URL::temporarySignedRoute; login.blade reads request('email').
+Fix:         D12 magic-link supersedes — pre-fill no longer needed.
+             Implementation in Phase 3.
 --------------------------------------------------------------------
 #6
 Page:        Login page (one-click sign-in from notification email)
@@ -130,14 +137,15 @@ Saw:         Tenant must type their password every time they arrive from
              to their own inbox.
 Expected:    One-click sign-in: clicking the notification logs the tenant
              in for that session and lands them directly on the case page.
-Status:      open — DECISION REQUIRED (magic-link trade-off below)
+Status:      closed by D12 (magic-link sign-in on all Phase 3-touched
+             emails — threat-model argument adopted verbatim).
 Notes:       Threat model: anyone with inbox access can sign in — same bar
              as the existing password-reset flow (inbox access already =
              account takeover), so no new security ceiling is lowered.
              UX win is large if reply-and-act becomes a frequent flow.
-Fix:         Add a signed temporary route + middleware that verifies the
-             signature, calls Auth::login on the tenant, redirects to the
-             case. ~half-day with single-use token table + tests.
+Fix:         D12 mechanics: signed single-use short-expiry token table,
+             route + middleware, Auth::login on click. Implementation
+             in Phase 3.
 --------------------------------------------------------------------
 #7
 Page:        Create-case form — landlord email + name fields
@@ -198,7 +206,7 @@ Saw:         silence_shadow_log is not in DevReset::TABLES, so
 Expected:    dev:reset wipes silence_shadow_log alongside the other
              transactional tables; a fresh dev:lifecycle yields a
              shadow report that contains only today's rows.
-Status:      open
+Status:      open — scheduled: Phase 3 ride-along (per design update §6)
 Notes:       Confirmed 2026-06-07 gafol live-fire: yesterday's three
              pretend probes (06-21, 07-01, 07-11) survived overnight,
              merged into today's 07-11 swept_at group, and inflated
@@ -217,7 +225,7 @@ Saw:         Re-tally filters `swept_at = $now AND is_pretend = $isPretend`.
              cases × 2 invocations).
 Expected:    Summary counts only rows written by the current
              invocation.
-Status:      open
+Status:      open — scheduled: Phase 3 ride-along (per design update §6)
 Notes:       Cosmetic — every individual shadow row is correct and
              carries its own swept_at + pretend_today + verdict.
              Only the operator-facing summary tally inflates.
@@ -237,8 +245,9 @@ Saw:         Letters rendered "My description of the issue:" followed
 Expected:    A meaningful issue description on every escalation
              letter (the landlord-facing record is supposed to remind
              them what the case is about, every time).
-Status:      open — DECISION REQUIRED at Phase 3 alongside tenant
-             reply UI.
+Status:      closed — superseded by D9 (cases.description fixed at
+             creation, immutable, on every outbound). Fix lands in
+             Phase 3 implementation.
 Notes:       Root cause: SendCaseNotice::execute's $tenantStatement
              defaults to null, and both subsequent callers pass null:
              - CaseController::sendNext (line 87) — tenant click.
@@ -250,17 +259,8 @@ Notes:       Root cause: SendCaseNotice::execute's $tenantStatement
              Design doc lists {{issue_description}} as a whitelist
              placeholder but does not specify a source for sweep /
              click escalation rounds.
-Fix:         Three options, decide at Phase 3:
-             (1) Carry forward — read the latest prior outbound's
-                 tenant_statement and pass it as $tenantStatement in
-                 both callers. Cheapest; matches the intuition that
-                 the thread keeps the same description throughout.
-             (2) Persist on case — add cases.description, populate at
-                 case creation, pull on every send. Cleaner; schema
-                 change.
-             (3) Template surgery — strip the label when the variable
-                 is empty. Needs renderer-side conditionals, which
-                 the whitelist renderer deliberately lacks (Blade =
-                 RCE risk per design doc). Not recommended.
-             Both click + sweep paths to be fixed together.
+Fix:         D9 picks option 2 (persist on case): add cases.description,
+             populate at case creation, pull on every send across both
+             click and sweep paths. Tenant-reply path (D8) also uses
+             the same source. Implementation in Phase 3.
 --------------------------------------------------------------------
