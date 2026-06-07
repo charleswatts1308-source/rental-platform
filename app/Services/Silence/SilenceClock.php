@@ -143,6 +143,21 @@ class SilenceClock
      */
     public function evaluate(RepairCase $case, CarbonInterface $now): SweepVerdict
     {
+        // Hold-expiry detection precedes the no-clock veto: OnHold is a
+        // no-silence-clock state, but its OWN deadline (hold_until) is
+        // what the sweep's hold-expiry absorption (Phase 3) hangs on.
+        if ($case->status === CaseStatus::OnHold && $case->hold_until !== null && $case->hold_until->lessThanOrEqualTo($now)) {
+            return new SweepVerdict(
+                intendedAction: IntendedAction::ResumeFromHold,
+                ballWith: null,
+                silenceDays: null,
+                intendedLetterTemplate: null,
+                escalationCounterValue: null,
+                nudgeNumber: null,
+                reasoning: "hold expired (hold_until={$case->hold_until->toDateString()}); transitions to awaiting_landlord",
+            );
+        }
+
         $ball = $this->ballFor($case);
 
         if ($ball === null) {
@@ -246,6 +261,21 @@ class SilenceClock
     }
 
     /**
+     * Tenant-side verdict — the next unwalked rung of the ladder
+     * (D2 explained-recoverable-sequence promise).
+     *
+     * The verdict is NOT "what threshold has the silence reached" but
+     * "what step is owed next, given what's been sent." TransitionDormantIntent
+     * only fires when the full nudge ladder has been walked (count >= 2);
+     * if a sweep gap drops a case into silence_days >= dormancy_days
+     * without having walked the rungs, the verdict is the next unsent
+     * nudge — one per sweep, clock untouched.
+     *
+     * Normal daily cadence: identical to the threshold-reached reading
+     * (silence reaches X, count is X-1, next is X). Gap scenarios (sweep
+     * disabled, settings change, hold expiry) are the case this fix
+     * actually treats — dormancy never lands on an unwarned case.
+     *
      * @param  array<string, int>  $snapshot
      */
     private function tenantSideVerdict(RepairCase $case, int $silenceDays, array $snapshot): SweepVerdict
@@ -254,11 +284,24 @@ class SilenceClock
         $second = (int) ($snapshot['nudge.second_days'] ?? 20);
         $dormancy = (int) ($snapshot['nudge.dormancy_days'] ?? 30);
 
-        // Stateless derivation per ruling c: nudge number is a function
-        // of silence_days vs the three snapshot thresholds. The shadow
-        // log row records the derived number; nothing is stored on the
-        // case.
-        if ($silenceDays >= $dormancy) {
+        if ($silenceDays < $first) {
+            return new SweepVerdict(
+                intendedAction: IntendedAction::NoAction,
+                ballWith: BallPosition::Tenant,
+                silenceDays: $silenceDays,
+                intendedLetterTemplate: null,
+                escalationCounterValue: null,
+                nudgeNumber: null,
+                reasoning: "tenant silence below first-nudge threshold ({$silenceDays}/{$first} days)",
+            );
+        }
+
+        $nudgesSent = $this->nudgesSentSinceClockStart($case);
+
+        // Dormancy fires only when both nudges have been sent AND silence
+        // has reached the dormancy threshold. Otherwise the verdict walks
+        // the ladder.
+        if ($silenceDays >= $dormancy && $nudgesSent >= 2) {
             return new SweepVerdict(
                 intendedAction: IntendedAction::TransitionDormantIntent,
                 ballWith: BallPosition::Tenant,
@@ -266,27 +309,64 @@ class SilenceClock
                 intendedLetterTemplate: null,
                 escalationCounterValue: null,
                 nudgeNumber: null,
-                reasoning: "tenant silence {$silenceDays} >= dormancy={$dormancy} days; would transition to dormant",
+                reasoning: "tenant silence {$silenceDays} >= dormancy={$dormancy} days; nudge ladder walked (count={$nudgesSent}); would transition to dormant",
             );
         }
 
-        if ($silenceDays >= $second) {
-            return $this->buildNudgeVerdict($silenceDays, nudgeNumber: 2, reasoning: "second-nudge threshold ({$silenceDays} >= {$second} days)");
+        $nextNudgeNumber = $nudgesSent + 1;
+
+        if ($nextNudgeNumber > 2) {
+            // All nudges sent but silence < dormancy threshold — wait.
+            return new SweepVerdict(
+                intendedAction: IntendedAction::NoAction,
+                ballWith: BallPosition::Tenant,
+                silenceDays: $silenceDays,
+                intendedLetterTemplate: null,
+                escalationCounterValue: null,
+                nudgeNumber: null,
+                reasoning: "tenant silence {$silenceDays} days; nudge ladder walked (count={$nudgesSent}); awaiting dormancy threshold ({$dormancy})",
+            );
         }
 
-        if ($silenceDays >= $first) {
-            return $this->buildNudgeVerdict($silenceDays, nudgeNumber: 1, reasoning: "first-nudge threshold ({$silenceDays} >= {$first} days)");
+        // Each rung has its own minimum-silence threshold; if silence
+        // hasn't yet reached the threshold for the next unsent nudge,
+        // wait. This is the daily-cadence "between rungs" no-op.
+        $requiredSilence = $nextNudgeNumber === 1 ? $first : $second;
+        if ($silenceDays < $requiredSilence) {
+            return new SweepVerdict(
+                intendedAction: IntendedAction::NoAction,
+                ballWith: BallPosition::Tenant,
+                silenceDays: $silenceDays,
+                intendedLetterTemplate: null,
+                escalationCounterValue: null,
+                nudgeNumber: null,
+                reasoning: "tenant silence {$silenceDays} days; next nudge {$nextNudgeNumber} needs silence >= {$requiredSilence}",
+            );
         }
 
-        return new SweepVerdict(
-            intendedAction: IntendedAction::NoAction,
-            ballWith: BallPosition::Tenant,
-            silenceDays: $silenceDays,
-            intendedLetterTemplate: null,
-            escalationCounterValue: null,
-            nudgeNumber: null,
-            reasoning: "tenant silence below first-nudge threshold ({$silenceDays}/{$first} days)",
+        return $this->buildNudgeVerdict(
+            $silenceDays,
+            nudgeNumber: $nextNudgeNumber,
+            reasoning: "next unsent nudge {$nextNudgeNumber} (count={$nudgesSent}); silence {$silenceDays} >= threshold {$requiredSilence}",
         );
+    }
+
+    /**
+     * Count `nudge_sent` events on the case since the current silence
+     * clock started. Resets to 0 implicitly on any clock restart (the
+     * old events become older than silence_clock_started_at and are
+     * excluded from the count).
+     */
+    private function nudgesSentSinceClockStart(RepairCase $case): int
+    {
+        if ($case->silence_clock_started_at === null) {
+            return 0;
+        }
+
+        return $case->events()
+            ->where('event_type', 'nudge_sent')
+            ->where('occurred_at', '>=', $case->silence_clock_started_at)
+            ->count();
     }
 
     private function buildNudgeVerdict(int $silenceDays, int $nudgeNumber, string $reasoning): SweepVerdict

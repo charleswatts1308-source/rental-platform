@@ -19,5 +19,14 @@ enum IntendedAction: string
     // Phase 4 builds the escalation_exhausted state. Until then the
     // shadow sweep logs the intent as a marker — never transitions.
     case TransitionExhaustedIntent = 'transition_exhausted_intent';
+
+    // Phase 3 dormancy goes LIVE: this is no longer an intent marker —
+    // silence:sweep executes a real transitionTo(Dormant) and queues
+    // the dormancy_transition_notice mail.
     case TransitionDormantIntent = 'transition_dormant_intent';
+
+    // Phase 3 — absorbs the demolished SweepHolds command. On_hold
+    // cases past hold_until transition straight to AwaitingLandlord
+    // (the landlord still owes a response — no TAR intermediate).
+    case ResumeFromHold = 'resume_from_hold';
 }

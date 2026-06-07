@@ -3,11 +3,29 @@
 use App\Models\LetterTemplate;
 use App\Services\LetterTemplateRenderer;
 
-it('substitutes whitelisted placeholders in both subject and body', function () {
-    $template = new LetterTemplate([
-        'subject' => 'Notice {{notice_number}} — case {{case_reference}}',
-        'body' => 'Dear {{landlord_name}}, the property is {{property_address}}.',
+/**
+ * Phase 3 — the renderer auto-injects the D9 header block and wraps
+ * with a minimal HTML envelope on every non-ui_copy template render.
+ * For substitution-only assertions, these tests use `type=ui_copy`,
+ * which the renderer recognises as bare-fragment output (rendered
+ * onto a web page, not into an outbound email) and skips the wrap.
+ *
+ * Wrap behaviour is asserted separately at the bottom of this file.
+ */
+function uiCopyTemplate(string $subject, string $body): LetterTemplate
+{
+    return new LetterTemplate([
+        'type' => 'ui_copy',
+        'subject' => $subject,
+        'body' => $body,
     ]);
+}
+
+it('substitutes whitelisted placeholders in both subject and body', function () {
+    $template = uiCopyTemplate(
+        'Notice {{notice_number}} — case {{case_reference}}',
+        'Dear {{landlord_name}}, the property is {{property_address}}.',
+    );
 
     $rendered = (new LetterTemplateRenderer)->render($template, [
         'notice_number' => 2,
@@ -21,10 +39,10 @@ it('substitutes whitelisted placeholders in both subject and body', function () 
 });
 
 it('passes unknown (non-whitelist) tokens through verbatim — misspellings are visible, not silent', function () {
-    $template = new LetterTemplate([
-        'subject' => 'Hello {{tennant_name}}',
-        'body' => 'Body {{frobnicate}} more body.',
-    ]);
+    $template = uiCopyTemplate(
+        'Hello {{tennant_name}}',
+        'Body {{frobnicate}} more body.',
+    );
 
     $rendered = (new LetterTemplateRenderer)->render($template, [
         'tennant_name' => 'Should be ignored — wrong spelling',
@@ -35,10 +53,10 @@ it('passes unknown (non-whitelist) tokens through verbatim — misspellings are 
 });
 
 it('renders null whitelisted values as empty string — fallbacks are the caller\'s responsibility', function () {
-    $template = new LetterTemplate([
-        'subject' => 'X',
-        'body' => 'Dear {{landlord_name}}, ref {{case_reference}}.',
-    ]);
+    $template = uiCopyTemplate(
+        'X',
+        'Dear {{landlord_name}}, ref {{case_reference}}.',
+    );
 
     $rendered = (new LetterTemplateRenderer)->render($template, [
         'landlord_name' => null,
@@ -49,10 +67,10 @@ it('renders null whitelisted values as empty string — fallbacks are the caller
 });
 
 it('does not execute PHP — Blade-style directives stay as plain text', function () {
-    $template = new LetterTemplate([
-        'subject' => 'X',
-        'body' => "@php echo 'pwned'; @endphp and {{ \$evil = 1 }} and <?php echo 1; ?>",
-    ]);
+    $template = uiCopyTemplate(
+        'X',
+        "@php echo 'pwned'; @endphp and {{ \$evil = 1 }} and <?php echo 1; ?>",
+    );
 
     $rendered = (new LetterTemplateRenderer)->render($template, []);
 
@@ -61,10 +79,10 @@ it('does not execute PHP — Blade-style directives stay as plain text', functio
 });
 
 it('tolerates whitespace inside braces — `{{  notice_number  }}` substitutes too', function () {
-    $template = new LetterTemplate([
-        'subject' => '{{  notice_number  }}',
-        'body' => '{{   case_reference   }}',
-    ]);
+    $template = uiCopyTemplate(
+        '{{  notice_number  }}',
+        '{{   case_reference   }}',
+    );
 
     $rendered = (new LetterTemplateRenderer)->render($template, [
         'notice_number' => 3,
@@ -84,4 +102,64 @@ it('exposes the whitelist for code that needs to know which keys are supported',
     expect(LetterTemplateRenderer::WHITELIST)->toContain('deadline_date');
     expect(LetterTemplateRenderer::WHITELIST)->toContain('response_days');
     expect(LetterTemplateRenderer::WHITELIST)->toContain('notice_number');
+    // Phase 3 D12 — magic_link added to the whitelist for tenant-bound mail.
+    expect(LetterTemplateRenderer::WHITELIST)->toContain('magic_link');
+});
+
+it('wraps non-ui_copy templates with the D9 header block and HTML envelope', function () {
+    $template = new LetterTemplate([
+        'type' => 'escalation',
+        'subject' => 'X',
+        'body' => '<p>The letter body.</p>',
+    ]);
+
+    $rendered = (new LetterTemplateRenderer)->render($template, [
+        'property_address' => '12 Example St',
+        'case_reference' => 'AB12CD',
+        'issue_description' => 'Boiler not working.',
+    ]);
+
+    expect($rendered['body'])->toContain('<!DOCTYPE html>');
+    expect($rendered['body'])->toContain('12 Example St');
+    expect($rendered['body'])->toContain('AB12CD');
+    expect($rendered['body'])->toContain('Boiler not working.');
+    expect($rendered['body'])->toContain('<p>The letter body.</p>');
+    // The header block precedes the body.
+    expect(strpos($rendered['body'], '12 Example St'))
+        ->toBeLessThan(strpos($rendered['body'], '<p>The letter body.</p>'));
+});
+
+it('skips the header wrap for ui_copy templates — they render as bare fragments', function () {
+    $template = new LetterTemplate([
+        'type' => 'ui_copy',
+        'subject' => 'X',
+        'body' => '<p>Authorisation copy.</p>',
+    ]);
+
+    $rendered = (new LetterTemplateRenderer)->render($template, [
+        'property_address' => '12 Example St',
+        'case_reference' => 'AB12CD',
+        'issue_description' => 'Boiler not working.',
+    ]);
+
+    expect($rendered['body'])->toBe('<p>Authorisation copy.</p>');
+    expect($rendered['body'])->not->toContain('<!DOCTYPE html>');
+});
+
+it('renders free-form bodies via renderFreeForm with the same header wrap', function () {
+    $rendered = (new LetterTemplateRenderer)->renderFreeForm(
+        'Hello, this is my reply with {{tenant_name}}.',
+        'Reply on {{case_reference}}',
+        [
+            'tenant_name' => 'Alice',
+            'case_reference' => 'AB12CD',
+            'property_address' => '12 Example St',
+            'issue_description' => 'Boiler not working.',
+        ],
+    );
+
+    expect($rendered['subject'])->toBe('Reply on AB12CD');
+    expect($rendered['body'])->toContain('Hello, this is my reply with Alice.');
+    expect($rendered['body'])->toContain('<!DOCTYPE html>');
+    expect($rendered['body'])->toContain('12 Example St');
 });

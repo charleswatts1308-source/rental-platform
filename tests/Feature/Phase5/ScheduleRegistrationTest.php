@@ -21,18 +21,18 @@ function commandIsScheduled(string $name): bool
     return false;
 }
 
-// cases:sweep-escalations registration test removed per
-// silence-phase-2b D0.1 (#8) — the command and schedule entry are
-// demolished.
-
-it('registers cases:sweep-holds on the scheduler', function () {
-    expect(commandIsScheduled('cases:sweep-holds'))->toBeTrue();
-});
-
-it('registers cases:sweep-dormancy on the scheduler', function () {
-    expect(commandIsScheduled('cases:sweep-dormancy'))->toBeTrue();
-});
+// Phase 3 — cases:sweep-holds and cases:sweep-dormancy are demolished;
+// both behaviours are absorbed into silence:sweep (tenant-side LIVE +
+// hold expiry as the new ResumeFromHold verdict).
 
 it('registers silence:sweep on the scheduler', function () {
     expect(commandIsScheduled('silence:sweep'))->toBeTrue();
+});
+
+it('does not register the demolished cases:sweep-holds command', function () {
+    expect(commandIsScheduled('cases:sweep-holds'))->toBeFalse();
+});
+
+it('does not register the demolished cases:sweep-dormancy command', function () {
+    expect(commandIsScheduled('cases:sweep-dormancy'))->toBeFalse();
 });

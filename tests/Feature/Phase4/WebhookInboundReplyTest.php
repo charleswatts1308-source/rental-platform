@@ -220,15 +220,11 @@ it('appends the message but does not transition when already in awaiting_tenant_
     expect($fresh->events()->where('event_type', 'inbound_received')->count())->toBe(1);
 });
 
-it('appends the message but does not transition when in tenant_action_required', function () {
-    [$case, $token] = caseWithActiveTokenIn(CaseStatus::TenantActionRequired);
-
-    $this->post('/webhooks/mailgun/inbound', inboundPayload($token->token));
-
-    $fresh = $case->fresh();
-    expect($fresh->status)->toBe(CaseStatus::TenantActionRequired);
-    expect($fresh->messages()->where('direction', MessageDirection::Inbound->value)->count())->toBe(1);
-});
+// Phase 3 — TAR demolished; this test's specific status target no
+// longer exists. The remaining "no transition on inbound" coverage is
+// the awaiting_tenant_review case (already covered by another test in
+// this file) — landlord-direction inbound during AwaitingTenantReview
+// doesn't transition because AwaitingTenantReview ∉ STATES_THAT_TRANSITION.
 
 it('stores the message but does not transition for a resolved (terminal) case', function () {
     [$case, $token] = caseWithActiveTokenIn(CaseStatus::Resolved);

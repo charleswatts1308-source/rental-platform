@@ -49,12 +49,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/cases', [CaseController::class, 'index'])->name('cases.index');
     Route::get('/cases/create', [CaseController::class, 'create'])->name('cases.create');
     Route::post('/cases', [CaseController::class, 'store'])->name('cases.store');
+    Route::get('/cases/preview', [CaseController::class, 'preview'])->name('cases.preview');
+    Route::post('/cases/preview/confirm', [CaseController::class, 'confirm'])->name('cases.confirm');
     Route::get('/cases/{slug}', [CaseController::class, 'show'])->name('cases.show');
-    Route::post('/cases/{slug}/send-next', [CaseController::class, 'sendNext'])->name('cases.send-next');
+    Route::post('/cases/{slug}/reply', [CaseController::class, 'reply'])->name('cases.reply');
     Route::post('/cases/{slug}/hold', [CaseController::class, 'hold'])->name('cases.hold');
     Route::post('/cases/{slug}/resolve', [CaseController::class, 'resolve'])->name('cases.resolve');
     Route::post('/cases/{slug}/abandon', [CaseController::class, 'abandon'])->name('cases.abandon');
-    Route::post('/cases/{slug}/re-engage', [CaseController::class, 'reEngage'])->name('cases.re-engage');
 
     // Auth-only member pages
     Route::prefix('members')->name('members.')->group(function () {
@@ -87,5 +88,12 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
 Route::post('/webhooks/mailgun/inbound', MailgunInboundController::class)
     ->middleware('verify.mailgun.signature')
     ->name('webhooks.mailgun.inbound');
+
+// D12 — magic-link sign-in for tenant inbox arrivals. Public route
+// (no auth middleware); the signed-URL signature and the single-use
+// + expiry checks inside the controller are the auth boundary.
+Route::get('/magic-link/{token}', [\App\Http\Controllers\MagicLinkController::class, 'consume'])
+    ->middleware('signed')
+    ->name('magic-link.consume');
 
 require __DIR__.'/auth.php';

@@ -192,6 +192,12 @@ Notes:       For a service whose promise is "your landlord was notified,
              here's the proof", sent-but-not-delivered is the one
              discrepancy that must never be silent. 2026-06-06 test data:
              40% silent loss on a reputation-damaged domain.
+             2026-06-07 (Phase 3 live-fire): repeat — Gmail returned
+             5.7.1 and blocked 4 sandbox sends; the Mailgun log was the
+             only ground truth, the platform showed nothing. Second
+             independent confirmation of the same blind spot; strengthens
+             the case for consuming delivery/failure webhooks before
+             go-live.
 --------------------------------------------------------------------
 #9
 Page:        dev:reset truncation list (DevReset.php) — silence-model
@@ -263,4 +269,156 @@ Fix:         D9 picks option 2 (persist on case): add cases.description,
              populate at case creation, pull on every send across both
              click and sweep paths. Tenant-reply path (D8) also uses
              the same source. Implementation in Phase 3.
+--------------------------------------------------------------------
+#12
+Page:        dev:lifecycle SPECS table (DevLifecycle::SPECS) — seed data.
+Severity:    cosmetic — demo-data realism only.
+Saw:         Per-case description text doesn't match the case's repair
+             category (e.g. a "damp/mould" category row carries a
+             description about a different issue). Spotted during the
+             2026-06-07 gafol live-fire after D9 populated descriptions.
+Expected:    Each SPECS row's 5th (description) column reads as a
+             plausible statement for that row's category_key.
+Status:      open — cosmetic, seed-data only.
+Fix:         Realign the description column against category_key in the
+             SPECS array. No code/migration — array text only.
+--------------------------------------------------------------------
+#13
+Page:        dev:age-clock gauge / operator output.
+Severity:    cosmetic — operator-facing display, sweep logic unaffected.
+Saw:         For tenant-ball cases the gauge prints the escalation
+             interval (landlord-side threshold) rather than the
+             nudge/dormancy ladder thresholds that actually govern a
+             tenant-side clock.
+Expected:    Gauge reflects the threshold set that applies to the
+             case's current ball (nudge.first_days / nudge.second_days /
+             dormancy_days when ball=tenant).
+Status:      open — cosmetic.
+Notes:       Confirmed 2026-06-07 gafol live-fire. The sweep verdicts
+             were correct throughout; only the human-readable gauge
+             mislabels the horizon for tenant-ball cases.
+Fix:         Branch the gauge readout on ball_with and pull the matching
+             threshold set.
+--------------------------------------------------------------------
+#14
+Page:        Case page (cases.show) — after a hold is released by sweep.
+Severity:    cosmetic — stale display; state machine correct.
+Saw:         After the sweep releases an expired hold (OnHold ->
+             AwaitingLandlord), the old hold_until value is still shown
+             on the case page and is not nulled on release.
+Expected:    Once a hold is released, hold_until either reads as past/
+             cleared or is not surfaced as an active pause.
+Status:      open — cosmetic.
+Notes:       The design keeps hold_until as a historical record on the
+             row (so don't necessarily null the column) — the snag is
+             the case page presenting a released hold as if still live.
+             Confirmed 2026-06-07 gafol live-fire (step 15).
+Fix:         Gate the hold_until display on status === on_hold (see #15;
+             same root predicate).
+--------------------------------------------------------------------
+#15
+Page:        Case page (cases.show) — "Next escalation" line.
+Severity:    cosmetic — informational line shown in the wrong state.
+Saw:         The "Next escalation" projection is rendered while the case
+             is on_hold, where escalation is paused and the line is
+             meaningless.
+Expected:    "Next escalation" suppressed (or replaced with the hold
+             status) while status === on_hold.
+Status:      open — cosmetic.
+Notes:       Confirmed 2026-06-07 gafol live-fire. Same state-awareness
+             gap as #14.
+Fix:         Suppress the escalation projection on on_hold (and other
+             non-escalating states).
+--------------------------------------------------------------------
+#16
+Page:        Case page / letter context — "Stage 1 of 4" progress label.
+Severity:    cosmetic — hardcoded denominator.
+Saw:         The stage label hardcodes 4 as the total notice count
+             instead of reading escalation.max_notices from settings.
+Expected:    Denominator reads the live escalation.max_notices value so
+             the label tracks the configured ladder length.
+Status:      open — cosmetic.
+Notes:       Confirmed 2026-06-07 gafol live-fire. Harmless while
+             max_notices=4 but drifts if the setting changes.
+Fix:         Replace the literal 4 with Setting::get('escalation.max_notices').
+--------------------------------------------------------------------
+#17
+Page:        dev:reset truncation list (DevReset.php) — deploy tooling.
+Severity:    minor — crashes mid-deploy on a partially-migrated DB.
+Saw:         During the 2026-06-07 gafol Phase 3 deploy, dev:reset
+             (run BEFORE migrate per the Phase 3 sequence) crashed when
+             its TABLES list named a table that the pending migrations
+             had not created yet.
+Expected:    dev:reset skips tables that don't exist instead of erroring,
+             so it is safe to run on a not-yet-fully-migrated schema
+             (which is exactly the Phase 3 dev:reset-before-migrate order).
+Status:      open — minor; worked around on the day by ordering.
+Notes:       Surfaced precisely because Phase 3 inverts the usual order
+             (reset then migrate). The reset must tolerate a schema that
+             is missing tables it would otherwise truncate.
+Fix:         Guard each truncation with Schema::hasTable($name) before
+             truncating; skip-and-continue on a miss.
+--------------------------------------------------------------------
+#18
+Page:        Migrations — implicit ON UPDATE CURRENT_TIMESTAMP trap on
+             NOT NULL TIMESTAMP columns sitting FIRST in their table.
+Severity:    minor — latent landmine; dormant on insert-only tables.
+Saw:         Audit (2026-06-07, prompted by the magic_login_tokens Q1
+             finding) of every CREATE TABLE migration. On MariaDB with
+             explicit_defaults_for_timestamp=OFF (gafol/prod default),
+             the FIRST timestamp column in a table, if NOT NULL with no
+             explicit default, is silently given DEFAULT CURRENT_TIMESTAMP
+             ON UPDATE CURRENT_TIMESTAMP — so any UPDATE to the row
+             rewrites that column to now() (and the value lands in the DB
+             session TZ, hence the "+1h" BST gap seen on magic links).
+             Four tables carry the same first-column trap, all currently
+             insert-only so the trap is unexercised:
+               - page_views.view_date_time
+               - error_logs.error_date
+               - file_attachments.uploaded_date  (drop_rentals migration;
+                 may not be migrated on prod yet)
+               - silence_shadow_log.swept_at      (evidential log — would
+                 corrupt swept_at if a shadow row is ever updated)
+             Safe (verified, no action): reply_tokens (issued_at is
+             useCurrent → explicit default, expires_at is nullable and
+             not first), cases/case_events/case_messages/contact_messages
+             (first timestamp is nullable or useCurrent), and every
+             ->timestamps()/nullable() column.
+Expected:    No table relies on the implicit ON UPDATE; first timestamp
+             columns are either DATETIME or carry an explicit default.
+Status:      open — fixed for magic_login_tokens only (Q1, this commit:
+             expires_at → dateTime). The four above left as-is; flagged
+             so a future UPDATE path on any of them doesn't silently
+             corrupt the column.
+Notes:       Invisible to the test suite — SQLite has no ON UPDATE
+             CURRENT_TIMESTAMP semantics, so these only bite on MariaDB.
+Fix:         Per table, switch the offending column to dateTime() (never
+             receives the implicit clause) or give it an explicit default;
+             since these are pre-flip, a migrate:fresh re-applies the
+             amended migration on gafol (same path as the Q1 fix).
+--------------------------------------------------------------------
+#19
+Page:        Tenant reply UI (cases.reply) — outbound tenant message.
+Severity:    feature request — NOT a defect. Deferred, phase TBD.
+Saw:         The tenant reply form (D8, Phase 3) sends text only. During
+             the 2026-06-07 gafol live-fire, a tenant replying about a
+             worsening issue naturally wanted to attach a photo of the
+             deterioration and had no way to.
+Expected:    Tenant replies should accept attachments (same JPG/PNG/PDF
+             ≤2MB, ≤6 files rule as create-case), promoted onto the
+             outbound tenant case_messages row and dispatched on the
+             CaseNotice to the landlord — mirroring the create-case
+             attachment path that already exists.
+Status:      open — deferred feature, phase TBD. Explicitly OUT OF SCOPE
+             for Phase 3 (the brief lists "attachments on tenant replies"
+             under untouched).
+Notes:       Surfaced by real usage in the live-fire, not by a test gap.
+             The machinery already exists end to end for create-case
+             (stagePreviewPhotos → promotePreviewPhotos → MessageAttachment
+             → CaseNotice::attachments). A tenant-reply version reuses the
+             same SendCaseNotice attachmentInputs parameter, which the
+             reply path currently calls without attachments.
+Fix:         Add a file input to the reply form + photo validation/staging
+             in CaseController::reply, thread attachmentInputs into the
+             tenant-reply SendCaseNotice call. Reuses existing helpers.
 --------------------------------------------------------------------

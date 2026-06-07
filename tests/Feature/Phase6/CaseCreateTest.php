@@ -2,7 +2,6 @@
 
 use App\Enums\CaseStatus;
 use App\Enums\MessageDirection;
-use App\Enums\SenderRole;
 use App\Mail\CaseNotice;
 use App\Models\CaseMessage;
 use App\Models\LandlordContact;
@@ -50,6 +49,18 @@ function validStorePayload(int $propertyId, array $overrides = []): array
     ], $overrides);
 }
 
+/**
+ * Phase 3 D13 — create flow is two-step: store→preview→confirm.
+ * Most existing tests verify the end result (a created case + queued
+ * notice), so the helper drives both POSTs.
+ */
+function submitAndConfirm(User $tenant, array $payload): \Illuminate\Testing\TestResponse
+{
+    test()->actingAs($tenant)->post('/cases', $payload);
+
+    return test()->actingAs($tenant)->post('/cases/preview/confirm');
+}
+
 it('shows the create form with the tenant\'s properties and active categories', function () {
     [$tenant, $property] = tenantWithProperty();
 
@@ -74,10 +85,57 @@ it('does not show another tenant\'s properties on the create form', function () 
     $response->assertDontSee('999 Hidden Lane');
 });
 
-it('creates a case, mints a token, queues the notice, and transitions to awaiting_landlord', function () {
+it('POST /cases stages the payload and redirects to the preview, NOT the case', function () {
     [$tenant, $property] = tenantWithProperty();
 
     $response = $this->actingAs($tenant)->post('/cases', validStorePayload($property->id));
+
+    $response->assertRedirect('/cases/preview');
+    expect(RepairCase::count())->toBe(0);
+});
+
+it('Edit round-trip — GET /cases/create after staging re-fills the form from the staged payload (D0.8)', function () {
+    [$tenant, $property] = tenantWithProperty();
+
+    // Stage a draft (POST /cases) including a photo, then click "Edit"
+    // (a plain GET back to the create form).
+    $this->actingAs($tenant)->post('/cases', validStorePayload(
+        $property->id,
+        ['description' => 'Persistent damp behind the kitchen units.']
+    ) + ['photos' => [UploadedFile::fake()->image('damp.jpg')]]);
+
+    $response = $this->actingAs($tenant)->get('/cases/create');
+
+    $response->assertOk();
+    // old() repopulates the text inputs from the staged payload.
+    $response->assertSee('Persistent damp behind the kitchen units.');
+    $response->assertSee('landlord@example.com');
+    // The staged photo can't re-seed a file input, but it survives in the
+    // session payload — the cue tells the tenant it's safe.
+    $response->assertSee('photo is saved');
+});
+
+it('Edit round-trip does not leak another tenant\'s staged draft', function () {
+    [$tenant, $property] = tenantWithProperty();
+    [$otherTenant] = tenantWithProperty();
+
+    $this->actingAs($tenant)->post('/cases', validStorePayload(
+        $property->id,
+        ['description' => 'Only this tenant should see this draft.']
+    ));
+
+    // A different tenant hitting the create form gets a blank form — the
+    // payload is gated on user_id.
+    $response = $this->actingAs($otherTenant)->get('/cases/create');
+
+    $response->assertOk();
+    $response->assertDontSee('Only this tenant should see this draft.');
+});
+
+it('preview confirm creates the case, mints a token, queues the notice, and transitions to awaiting_landlord', function () {
+    [$tenant, $property] = tenantWithProperty();
+
+    $response = submitAndConfirm($tenant, validStorePayload($property->id));
 
     $response->assertRedirectContains('/cases/');
 
@@ -93,23 +151,35 @@ it('creates a case, mints a token, queues the notice, and transitions to awaitin
     Mail::assertQueued(CaseNotice::class);
 });
 
-it('writes the description as the outbound message tenant_statement', function () {
+it('writes the description onto cases.description (D9) — frozen at creation', function () {
     [$tenant, $property] = tenantWithProperty();
 
-    $this->actingAs($tenant)->post('/cases', validStorePayload(
+    submitAndConfirm($tenant, validStorePayload(
+        $property->id,
+        ['description' => 'The boiler has been silent for nine days.']
+    ));
+
+    $case = RepairCase::firstOrFail();
+    expect($case->description)->toBe('The boiler has been silent for nine days.');
+});
+
+it('the outbound message body carries the description via the D9 header block', function () {
+    [$tenant, $property] = tenantWithProperty();
+
+    submitAndConfirm($tenant, validStorePayload(
         $property->id,
         ['description' => 'The boiler has been silent for nine days.']
     ));
 
     $message = CaseMessage::where('direction', MessageDirection::Outbound)->firstOrFail();
-    expect($message->tenant_statement)->toBe('The boiler has been silent for nine days.');
+    expect($message->body_raw)->toContain('The boiler has been silent for nine days.');
 });
 
 it('reuses an existing landlord_contact when the email matches', function () {
     [$tenant, $property] = tenantWithProperty();
     $existing = LandlordContact::factory()->create(['email' => 'shared@example.com']);
 
-    $this->actingAs($tenant)->post('/cases', validStorePayload(
+    submitAndConfirm($tenant, validStorePayload(
         $property->id,
         ['landlord_email' => 'SHARED@example.com']
     ));
@@ -121,7 +191,7 @@ it('reuses an existing landlord_contact when the email matches', function () {
 it('creates a new landlord_contact when the email is unknown', function () {
     [$tenant, $property] = tenantWithProperty();
 
-    $this->actingAs($tenant)->post('/cases', validStorePayload(
+    submitAndConfirm($tenant, validStorePayload(
         $property->id,
         ['landlord_email' => 'fresh@example.com', 'landlord_name' => 'Sam Owner']
     ));
@@ -150,9 +220,7 @@ it('uploads photos and creates message_attachments rows on the outbound message'
         UploadedFile::fake()->image('mould-2.png'),
     ];
 
-    $this->actingAs($tenant)->post('/cases', validStorePayload($property->id) + [
-        'photos' => $files,
-    ]);
+    submitAndConfirm($tenant, validStorePayload($property->id) + ['photos' => $files]);
 
     $message = CaseMessage::where('direction', MessageDirection::Outbound)->firstOrFail();
     $attachments = MessageAttachment::where('case_message_id', $message->id)->get();
@@ -167,7 +235,7 @@ it('uploads photos and creates message_attachments rows on the outbound message'
 it('creates a case successfully when no photos are uploaded', function () {
     [$tenant, $property] = tenantWithProperty();
 
-    $response = $this->actingAs($tenant)->post('/cases', validStorePayload($property->id));
+    $response = submitAndConfirm($tenant, validStorePayload($property->id));
 
     $response->assertRedirectContains('/cases/');
     expect(MessageAttachment::count())->toBe(0);
@@ -183,24 +251,19 @@ it('rejects a payload with missing required fields', function () {
         'property_id',
         'category_key',
         'severity',
+        'description',
         'landlord_email',
         'landlord_role',
     ]);
     expect(RepairCase::count())->toBe(0);
 });
 
-it('requires a description when the chosen category requires one', function () {
-    RepairCategory::factory()->create([
-        'key' => 'other',
-        'label' => 'Other',
-        'active' => true,
-        'requires_description' => true,
-    ]);
+it('rejects a missing description (now always required per D9)', function () {
     [$tenant, $property] = tenantWithProperty();
 
     $response = $this->actingAs($tenant)->post('/cases', validStorePayload(
         $property->id,
-        ['category_key' => 'other', 'description' => '']
+        ['description' => '']
     ));
 
     $response->assertSessionHasErrors('description');

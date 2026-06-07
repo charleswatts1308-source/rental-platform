@@ -32,6 +32,8 @@ class SettingSeeder extends Seeder
             'nudge.first_days' => '10',
             'nudge.second_days' => '20',
             'nudge.dormancy_days' => '30',
+            'dormancy.revival_days' => '90',
+            'hold.max_days' => '60',
         ];
 
         foreach ($defaults as $key => $value) {

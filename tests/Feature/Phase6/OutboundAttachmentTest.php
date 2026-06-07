@@ -34,6 +34,8 @@ function postCaseWithPhotos(User $tenant, Property $property, array $files): voi
         'landlord_role' => 'landlord',
         'photos' => $files,
     ]);
+    // Phase 3 D13 — second POST confirms the preview and actually fires the send.
+    test()->actingAs($tenant)->post('/cases/preview/confirm');
 }
 
 it('attaches uploaded photos to the queued CaseNotice mailable', function () {
@@ -62,6 +64,7 @@ it('queues the mailable with the rendered message attached, even when no photos 
         'landlord_email' => 'landlord@example.com',
         'landlord_role' => 'landlord',
     ]);
+    $this->actingAs($tenant)->post('/cases/preview/confirm');
 
     Mail::assertQueued(CaseNotice::class, function (CaseNotice $mail) {
         return $mail->attachments() === [];

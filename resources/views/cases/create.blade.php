@@ -70,6 +70,15 @@
 
             <div class="col-12">
                 <label for="photos" class="form-label">Photos (optional, up to 6)</label>
+                @if(($stagedPhotoCount ?? 0) > 0)
+                    <div class="form-text text-success mb-1">
+                        @if($stagedPhotoCount === 1)
+                            Your photo is saved — you don't need to re-attach it unless you want to change your selection.
+                        @else
+                            Your {{ $stagedPhotoCount }} photos are saved — you don't need to re-attach them unless you want to change your selection.
+                        @endif
+                    </div>
+                @endif
                 <input id="photos" name="photos[]" type="file" multiple
                        accept=".jpg,.jpeg,.png,.pdf"
                        class="form-control @error('photos') is-invalid @enderror @error('photos.*') is-invalid @enderror">
