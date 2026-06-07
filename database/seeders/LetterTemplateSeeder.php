@@ -6,7 +6,8 @@ use App\Models\LetterTemplate;
 use Illuminate\Database\Seeder;
 
 /**
- * Seeds the v1 letter templates per silence-model design D1, D2, D5.
+ * Seeds the v1 letter templates per silence-model design D1, D2, D5,
+ * D9, D11, D12, D13.
  *
  * Only ONE escalation template is seeded — `landlord_wakeup_generic`
  * (type=escalation, stage=NULL). This single row serves notice numbers
@@ -15,16 +16,20 @@ use Illuminate\Database\Seeder;
  *
  * Graduated per-stage letters can be reintroduced later by inserting
  * additional `escalation` rows with non-null `stage` values; no code
- * change required. That is the point of the table-driven design.
+ * change required.
  *
- * Templates 2-4 are seeded NOW but NOT wired by Phase 1 — their
- * send-points arrive in Phases 2 (nudge) and 4 (exhaustion). Wiring
- * them here would constitute behaviour change, which Phase 1
- * explicitly forbids.
+ * Phase 3 changes:
+ *   - Bodies stripped of <doctype>/<html>/<body> wrappers and the
+ *     inline property/reference/description block. The renderer
+ *     auto-injects the D9 header at the top of <body> and wraps with
+ *     a standard envelope. Templates are now body content only.
+ *   - {{magic_link}} placeholder added to tenant-bound bodies (D12).
+ *   - New rows: dormancy_transition_notice, hold_expired_notice,
+ *     landlord_reply_received_notice (template-rendered replacing
+ *     the old blade-rendered mailable), create_case_authorisation
+ *     (ui_copy for the D13 create-case form).
  *
  * Idempotent: existing codes are updated; new codes are inserted.
- * Editing path for production tuning is phpMyAdmin (the admin CRUD
- * is Phase 5).
  */
 class LetterTemplateSeeder extends Seeder
 {
@@ -84,33 +89,47 @@ class LetterTemplateSeeder extends Seeder
                 'subject' => "We've sent notice {{notice_number}} to your landlord — case {{case_reference}}",
                 'body' => $this->autoEscalationTenantNoticeBody(),
             ],
+            [
+                'code' => 'dormancy_transition_notice',
+                'description' => 'Tenant notification fired by silence:sweep on the tenant-side dormancy transition. Active-row idiom — present means send.',
+                'type' => 'tenant_notification',
+                'stage' => null,
+                'subject' => 'Your repair case {{case_reference}} has gone dormant',
+                'body' => $this->dormancyTransitionBody(),
+            ],
+            [
+                'code' => 'hold_expired_notice',
+                'description' => 'Tenant notification fired by silence:sweep when an OnHold case past hold_until resumes to AwaitingLandlord. Active-row idiom.',
+                'type' => 'tenant_notification',
+                'stage' => null,
+                'subject' => 'The hold on your repair case {{case_reference}} has ended',
+                'body' => $this->holdExpiredBody(),
+            ],
+            [
+                'code' => 'landlord_reply_received_notice',
+                'description' => 'Tenant notification fired by HandleInboundReply when the landlord replies. Phase 3 replaces the old blade-rendered LandlordReplyReceived mailable.',
+                'type' => 'tenant_notification',
+                'stage' => null,
+                'subject' => 'Your repair case {{case_reference}} has a new reply',
+                'body' => $this->landlordReplyReceivedBody(),
+            ],
+            [
+                'code' => 'create_case_authorisation',
+                'description' => 'D13 — one-time authorisation wording shown on the create-case preview before the first letter is sent. ui_copy type: rendered on the web page, not into an email; the header block + envelope wrap are skipped.',
+                'type' => 'ui_copy',
+                'stage' => null,
+                'subject' => 'You are about to send notice 1 to your landlord',
+                'body' => $this->createCaseAuthorisationBody(),
+            ],
         ];
     }
 
     private function landlordWakeupBody(): string
     {
         return <<<'HTML'
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<title>Repair issue notice</title>
-</head>
-<body style="font-family: Arial, sans-serif; font-size: 14px; color: #222; line-height: 1.5;">
-
 <p>Dear {{landlord_name}},</p>
 
-<p>I am writing to formally notify you of a repair issue at the rental property below. This is notice {{notice_number}} regarding case reference {{case_reference}}.</p>
-
-<p>
-  <strong>Property:</strong> {{property_address}}<br>
-  <strong>Case reference:</strong> {{case_reference}}
-</p>
-
-<p><strong>My description of the issue:</strong></p>
-<blockquote style="border-left: 3px solid #ccc; padding-left: 12px; margin-left: 0; color: #444;">
-  {{issue_description}}
-</blockquote>
+<p>I am writing to formally notify you of a repair issue at the rental property identified above. This is notice {{notice_number}} regarding the case.</p>
 
 <p>Under section 11 of the Landlord and Tenant Act 1985, you have a duty to keep in repair the structure and exterior of the property and to keep in proper working order the installations for the supply of water, gas, electricity and sanitation, and for space heating and water heating.</p>
 
@@ -125,28 +144,19 @@ class LetterTemplateSeeder extends Seeder
 <p style="font-size: 11px; color: #888;">
 This message was sent through renters.rent on behalf of the tenant. Replies are routed back to the tenant via the system; please reply to this email rather than emailing the tenant directly. The tenant's contact details are kept private to protect against retaliation.
 </p>
-
-</body>
-</html>
 HTML;
     }
 
     private function tenantNudgeBody(): string
     {
         return <<<'HTML'
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<title>Your repair case — a quick nudge</title>
-</head>
-<body style="font-family: Arial, sans-serif; font-size: 14px; color: #222; line-height: 1.5;">
-
 <p>Hi {{tenant_name}},</p>
 
-<p>This is a quiet nudge about your repair case <strong>{{case_reference}}</strong> at {{property_address}}.</p>
+<p>This is a quiet nudge about your repair case. The case is waiting on you for the next step.</p>
 
-<p>The case is waiting on you for the next step. If you'd like to keep things moving, log in to your renters.rent dashboard to pick it up. If you no longer need to pursue this, you can mark it resolved or pause it from the same place.</p>
+<p>If you'd like to keep things moving, log in to your renters.rent dashboard to pick it up. If you no longer need to pursue this, you can mark it resolved or pause it from the same place.</p>
+
+<p><a href="{{magic_link}}" style="display: inline-block; padding: 10px 16px; background: #2563eb; color: #fff; text-decoration: none; border-radius: 4px;">Open this case</a></p>
 
 <p>If we don't hear back, we'll send one more nudge, then mark the case dormant — but a reply from you at any time picks it straight back up.</p>
 
@@ -158,26 +168,15 @@ The renters.rent team</p>
 <p style="font-size: 11px; color: #888;">
 This is a private message between renters.rent and you as the tenant. It is not part of the landlord-facing case correspondence.
 </p>
-
-</body>
-</html>
 HTML;
     }
 
     private function exhaustionLandlordBody(): string
     {
         return <<<'HTML'
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<title>Closing correspondence</title>
-</head>
-<body style="font-family: Arial, sans-serif; font-size: 14px; color: #222; line-height: 1.5;">
-
 <p>Dear {{landlord_name}},</p>
 
-<p>This is a final notice regarding the unresolved repair issue at {{property_address}} (case reference {{case_reference}}).</p>
+<p>This is a final notice regarding the unresolved repair issue identified above.</p>
 
 <p>Repeated formal notices have been sent through this service over a sustained period without resolution. As a result, this matter is now being pursued through external channels open to the tenant, which may include reporting to the local authority's environmental health team, the relevant property ombudsman, or court action under section 11 of the Landlord and Tenant Act 1985.</p>
 
@@ -192,28 +191,19 @@ HTML;
 <p style="font-size: 11px; color: #888;">
 This message was sent through renters.rent on behalf of the tenant. The tenant's contact details are kept private to protect against retaliation.
 </p>
-
-</body>
-</html>
 HTML;
     }
 
     private function tenantExhaustionBody(): string
     {
         return <<<'HTML'
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<title>Your repair case — next steps</title>
-</head>
-<body style="font-family: Arial, sans-serif; font-size: 14px; color: #222; line-height: 1.5;">
-
 <p>Hi {{tenant_name}},</p>
 
-<p>Your repair case <strong>{{case_reference}}</strong> at {{property_address}} has reached the end of the escalation process. The landlord has not responded across the full sequence of formal notices.</p>
+<p>Your repair case has reached the end of the escalation process. The landlord has not responded across the full sequence of formal notices.</p>
 
-<p>Log in to your dashboard to see your options from here — external routes available to you include the local authority's environmental health team, the relevant property ombudsman, and court action. The full correspondence record on your case is ready to be shared with any of them as evidence.</p>
+<p><a href="{{magic_link}}" style="display: inline-block; padding: 10px 16px; background: #2563eb; color: #fff; text-decoration: none; border-radius: 4px;">Open this case</a></p>
+
+<p>External routes available to you include the local authority's environmental health team, the relevant property ombudsman, and court action. The full correspondence record on your case is ready to be shared with any of them as evidence.</p>
 
 <p>renters.rent does not act on your behalf with these bodies — the decision and the next step are yours.</p>
 
@@ -225,28 +215,19 @@ The renters.rent team</p>
 <p style="font-size: 11px; color: #888;">
 This is a private message between renters.rent and you as the tenant. It is not part of the landlord-facing case correspondence.
 </p>
-
-</body>
-</html>
 HTML;
     }
 
     private function autoEscalationTenantNoticeBody(): string
     {
         return <<<'HTML'
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<title>Notice sent on your behalf</title>
-</head>
-<body style="font-family: Arial, sans-serif; font-size: 14px; color: #222; line-height: 1.5;">
-
 <p>Hi {{tenant_name}},</p>
 
-<p>We've sent notice <strong>{{notice_number}}</strong> to {{landlord_name}} on your behalf about the repair issue at {{property_address}}.</p>
+<p>We've sent notice <strong>{{notice_number}}</strong> to {{landlord_name}} on your behalf.</p>
 
-<p>Your last message to your landlord went out more than {{response_days}} days ago, so the silence clock expired and the system escalated automatically. The letter is on the case record (reference <strong>{{case_reference}}</strong>) — log in to your renters.rent dashboard to view it.</p>
+<p>Your last message to your landlord went out more than {{response_days}} days ago, so the silence clock expired and the system escalated automatically. The letter is on the case record.</p>
+
+<p><a href="{{magic_link}}" style="display: inline-block; padding: 10px 16px; background: #2563eb; color: #fff; text-decoration: none; border-radius: 4px;">Open this case</a></p>
 
 <p>If the landlord replies, the clock resets and you'll be notified. If silence continues, the next notice will be scheduled automatically.</p>
 
@@ -258,9 +239,88 @@ The renters.rent team</p>
 <p style="font-size: 11px; color: #888;">
 This is a private message between renters.rent and you as the tenant. It is not part of the landlord-facing case correspondence.
 </p>
+HTML;
+    }
 
-</body>
-</html>
+    private function dormancyTransitionBody(): string
+    {
+        return <<<'HTML'
+<p>Hi {{tenant_name}},</p>
+
+<p>Your repair case has been marked dormant after a sustained period without activity from your side.</p>
+
+<p>Nothing is lost — a reply from you at any time within the next 90 days will pick the case straight back up and the landlord will be contacted again. Beyond 90 days the case stays on record as evidence, but you'll be invited to raise a new case if the issue is still live.</p>
+
+<p><a href="{{magic_link}}" style="display: inline-block; padding: 10px 16px; background: #2563eb; color: #fff; text-decoration: none; border-radius: 4px;">Open this case</a></p>
+
+<p>Best regards,<br>
+The renters.rent team</p>
+
+<hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;">
+
+<p style="font-size: 11px; color: #888;">
+This is a private message between renters.rent and you as the tenant. It is not part of the landlord-facing case correspondence.
+</p>
+HTML;
+    }
+
+    private function holdExpiredBody(): string
+    {
+        return <<<'HTML'
+<p>Hi {{tenant_name}},</p>
+
+<p>The hold you placed on your repair case has ended. The case is now waiting on the landlord again, and the silence clock is running.</p>
+
+<p><a href="{{magic_link}}" style="display: inline-block; padding: 10px 16px; background: #2563eb; color: #fff; text-decoration: none; border-radius: 4px;">Open this case</a></p>
+
+<p>If you need to pause again — for example because the landlord has given a fix date — you can do so from the case page.</p>
+
+<p>Best regards,<br>
+The renters.rent team</p>
+
+<hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;">
+
+<p style="font-size: 11px; color: #888;">
+This is a private message between renters.rent and you as the tenant. It is not part of the landlord-facing case correspondence.
+</p>
+HTML;
+    }
+
+    private function landlordReplyReceivedBody(): string
+    {
+        return <<<'HTML'
+<p>Hi {{tenant_name}},</p>
+
+<p>Your landlord has replied to your repair case. The reply is on the case record.</p>
+
+<p><a href="{{magic_link}}" style="display: inline-block; padding: 10px 16px; background: #2563eb; color: #fff; text-decoration: none; border-radius: 4px;">Open this case</a></p>
+
+<p>Read the reply, then choose your next step from the case page: reply with more information, pause the case while the landlord follows through, or close it if the issue is sorted.</p>
+
+<p>Best regards,<br>
+The renters.rent team</p>
+
+<hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;">
+
+<p style="font-size: 11px; color: #888;">
+This is a private message between renters.rent and you as the tenant. It is not part of the landlord-facing case correspondence.
+</p>
+HTML;
+    }
+
+    private function createCaseAuthorisationBody(): string
+    {
+        return <<<'HTML'
+<p>By opening this case you authorise renters.rent to send the escalation letters below to {{landlord_name}} in your name if they do not respond.</p>
+
+<ul>
+  <li>Notice 1 is sent right now — preview it below.</li>
+  <li>If your landlord does not respond within {{response_days}} days, notice 2 is sent automatically — and so on, up to four notices, each {{response_days}} days apart.</li>
+  <li>You will be told every time a letter goes out and can pause the case at any point from the case page.</li>
+  <li>Every letter goes out signed "{{tenant_name}}, via renters.rent"; the landlord's reply comes back to the case, not to you directly.</li>
+</ul>
+
+<p>Press <strong>Confirm and send notice 1</strong> when you are ready, or <strong>Edit</strong> to go back.</p>
 HTML;
     }
 }

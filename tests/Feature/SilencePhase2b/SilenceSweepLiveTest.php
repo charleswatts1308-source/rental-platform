@@ -185,7 +185,7 @@ it('logs transition_exhausted_intent and sends NOTHING at counter >= max', funct
 
 // ─── Tenant-side stays shadow ─────────────────────────────────────
 
-it('tenant-side verdicts stay shadow — no mail, no execution', function () {
+it('tenant-side nudge verdicts now EXECUTE in Phase 3 (live; mail queued, nudge_sent event written)', function () {
     Mail::fake();
     $contact = LandlordContact::factory()->create();
     $category = RepairCategory::factory()->create();
@@ -201,10 +201,13 @@ it('tenant-side verdicts stay shadow — no mail, no execution', function () {
 
     $this->artisan('silence:sweep')->assertSuccessful();
 
-    Mail::assertNothingQueued();
+    Mail::assertQueued(\App\Mail\Notifications\AutoEscalationTenantNotice::class);
     $row = SilenceShadowLog::query()->where('case_id', $case->id)->sole();
     expect($row->intended_action)->toBe('send_nudge');
-    expect($row->executed)->toBeFalse();
+    expect($row->executed)->toBeTrue();
+    expect($case->events()->where('event_type', 'nudge_sent')->count())->toBe(1);
+    // Evidential invariant: nudges never write a case_messages row.
+    expect($case->messages()->where('direction', \App\Enums\MessageDirection::Outbound)->count())->toBe(0);
 });
 
 // ─── Pretend forces full shadow ───────────────────────────────────

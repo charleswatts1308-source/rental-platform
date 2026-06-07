@@ -30,6 +30,7 @@ class DevCase extends Command
         {--tenant= : Tenant id or email (defaults to the first tenant)}
         {--category= : Repair category key (defaults to first active)}
         {--severity=routine : routine|serious|emergency}
+        {--description= : Tenant description text (defaults to a generic line)}
         {--landlord-email= : Landlord email (defaults to sequential landlord{N})}
         {--landlord-role=landlord : landlord|agent}
         {--count=1 : Number of cases to create}';
@@ -70,6 +71,8 @@ class DevCase extends Command
 
         $count = max(1, (int) $this->option('count'));
         $landlordEmailOpt = $this->option('landlord-email');
+        $description = $this->option('description')
+            ?? 'A repair issue at this property — placeholder description for dev tooling.';
 
         for ($i = 0; $i < $count; $i++) {
             $landlord = $this->resolveLandlordContact($landlordEmailOpt, $role, $tenant->id);
@@ -84,6 +87,7 @@ class DevCase extends Command
                 'landlord_contact_id' => $landlord->id,
                 'category_key' => $category->key,
                 'severity' => $severity,
+                'description' => $description,
                 'status' => CaseStatus::Open,
                 'current_stage' => 1,
             ]);

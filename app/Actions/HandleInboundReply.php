@@ -5,9 +5,14 @@ namespace App\Actions;
 use App\Enums\CaseStatus;
 use App\Enums\MessageDirection;
 use App\Enums\SenderRole;
-use App\Mail\Notifications\LandlordReplyReceived;
+use App\Mail\Notifications\AutoEscalationTenantNotice;
 use App\Models\CaseMessage;
+use App\Models\LetterTemplate;
+use App\Models\RepairCase;
 use App\Models\ReplyToken;
+use App\Models\Setting;
+use App\Services\LetterTemplateRenderer;
+use App\Services\MagicLinkGenerator;
 use App\Services\Silence\SilenceClock;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -47,6 +52,11 @@ class HandleInboundReply
         CaseStatus::OnHold,
         CaseStatus::Dormant,
     ];
+
+    public function __construct(
+        private LetterTemplateRenderer $renderer,
+        private MagicLinkGenerator $magicLinkGenerator,
+    ) {}
 
     public function execute(array $payload): ?CaseMessage
     {
@@ -143,9 +153,67 @@ class HandleInboundReply
             return $message;
         });
 
-        Mail::to($case->tenant->email)->queue(new LandlordReplyReceived($case));
+        $this->dispatchLandlordReplyReceivedNotice($case);
 
         return $message;
+    }
+
+    /**
+     * D12 + D9 — render the landlord_reply_received_notice template
+     * (active-row idiom: no active row → skip silently) with a fresh
+     * magic-link URL and queue via the generic AutoEscalationTenantNotice
+     * mailable shape (pre-rendered subject + body passthrough). The
+     * notification does NOT create a case_messages row — evidential
+     * invariant. This replaces the old blade-rendered
+     * LandlordReplyReceived mailable, demolished in Phase 3.
+     */
+    private function dispatchLandlordReplyReceivedNotice(RepairCase $case): void
+    {
+        $template = LetterTemplate::query()
+            ->where('type', 'tenant_notification')
+            ->where('code', 'landlord_reply_received_notice')
+            ->where('active', true)
+            ->first();
+
+        if ($template === null) {
+            return;
+        }
+
+        $case->loadMissing(['tenant', 'property', 'landlordContact']);
+
+        $magicLink = $this->magicLinkGenerator->mintUrl(
+            $case->tenant,
+            $case,
+            'landlord_reply_received',
+        );
+
+        $rendered = $this->renderer->render($template, [
+            'tenant_name' => $case->tenant->name,
+            'landlord_name' => $case->landlordContact->name ?: 'your landlord',
+            'case_reference' => $case->url_slug,
+            'property_address' => $this->propertyAddress($case),
+            'issue_description' => $case->description,
+            'response_days' => (int) Setting::get('escalation.interval_days', 14),
+            'notice_number' => $case->current_stage,
+            'magic_link' => $magicLink,
+        ]);
+
+        Mail::to($case->tenant->email)->queue(new AutoEscalationTenantNotice(
+            renderedSubject: $rendered['subject'],
+            renderedBody: $rendered['body'],
+        ));
+    }
+
+    private function propertyAddress(RepairCase $case): string
+    {
+        $p = $case->property;
+
+        return implode(', ', array_filter([
+            $p->address_line1,
+            $p->address_line2,
+            $p->city,
+            $p->postcode,
+        ]));
     }
 
     private function extractToken(string $recipient): ?string

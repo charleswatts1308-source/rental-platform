@@ -4,20 +4,20 @@ namespace App\Policies;
 
 use App\Enums\CaseStatus;
 use App\Models\RepairCase;
+use App\Models\Setting;
 use App\Models\User;
 
 /**
  * Authorisation for tenant access to repair cases. Ownership is the
  * baseline (cases.tenant_user_id === user.id); each action method
  * additionally constrains the source statuses from which the action
- * is valid, mirroring the rows in the design doc's state transition
- * table. This double-gate (ownership + state) is what backs the
- * Bootstrap action panel's @can checks and blocks invalid POSTs even
- * if the panel UI is bypassed.
+ * is valid.
  *
- * Admin-only transitions (e.g. dormant → abandoned) are intentionally
- * not modelled here — they belong to a future admin policy and would
- * fail this policy's tenant-only checks today.
+ * Post Phase 3:
+ *   - sendNext + reEngage demolished (D7 + Option A).
+ *   - reply added (D8) — availability matches the D8 table; the
+ *     dormancy revival window (D11) is checked here for Dormant
+ *     cases (read live, not snapshotted, per D0.9).
  */
 class RepairCasePolicy
 {
@@ -36,10 +36,27 @@ class RepairCasePolicy
         return true;
     }
 
-    public function sendNext(User $user, RepairCase $case): bool
+    /**
+     * D8 — tenant reply availability:
+     *   AwaitingTenantReview: yes (the original half-duplex snag)
+     *   AwaitingLandlord:     yes (add-info; restarts clock per D6)
+     *   OnHold:               yes (reply IS the resume action)
+     *   Dormant:              yes within dormancy.revival_days
+     *   Resolved / Abandoned: never
+     */
+    public function reply(User $user, RepairCase $case): bool
     {
-        return $this->ownsCase($user, $case)
-            && $case->status === CaseStatus::TenantActionRequired;
+        if (! $this->ownsCase($user, $case)) {
+            return false;
+        }
+
+        return match ($case->status) {
+            CaseStatus::AwaitingTenantReview,
+            CaseStatus::AwaitingLandlord,
+            CaseStatus::OnHold => true,
+            CaseStatus::Dormant => $this->dormantRevivalAvailable($case),
+            default => false,
+        };
     }
 
     public function hold(User $user, RepairCase $case): bool
@@ -47,7 +64,7 @@ class RepairCasePolicy
         return $this->ownsCase($user, $case)
             && in_array($case->status, [
                 CaseStatus::AwaitingTenantReview,
-                CaseStatus::TenantActionRequired,
+                CaseStatus::AwaitingLandlord,
             ], true);
     }
 
@@ -57,8 +74,8 @@ class RepairCasePolicy
             && in_array($case->status, [
                 CaseStatus::AwaitingLandlord,
                 CaseStatus::AwaitingTenantReview,
-                CaseStatus::TenantActionRequired,
                 CaseStatus::OnHold,
+                CaseStatus::Dormant,
             ], true);
     }
 
@@ -67,10 +84,15 @@ class RepairCasePolicy
         return $this->resolve($user, $case);
     }
 
-    public function reEngage(User $user, RepairCase $case): bool
+    private function dormantRevivalAvailable(RepairCase $case): bool
     {
-        return $this->ownsCase($user, $case)
-            && $case->status === CaseStatus::Dormant;
+        if ($case->dormant_at === null) {
+            return false;
+        }
+
+        $revivalDays = (int) Setting::get('dormancy.revival_days', 90);
+
+        return $case->dormant_at->copy()->addDays($revivalDays)->isFuture();
     }
 
     private function ownsCase(User $user, RepairCase $case): bool

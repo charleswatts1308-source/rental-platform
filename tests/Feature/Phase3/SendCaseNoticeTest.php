@@ -36,7 +36,13 @@ function makeOpenCase(): RepairCase
     ]);
 }
 
-function makeTenantActionRequiredCaseWithActiveToken(int $currentStage = 1): RepairCase
+/**
+ * Phase 3 — auto-escalation case shape replaces the demolished
+ * TAR-driven escalation. Status=AwaitingLandlord with an expired
+ * silence clock + active token mimics the state the sweep finds when
+ * firing send_escalation.
+ */
+function makeAwaitingLandlordCaseWithActiveToken(int $currentStage = 1): RepairCase
 {
     $contact = LandlordContact::factory()->create(['email' => 'landlord@example.com']);
     $category = RepairCategory::factory()->create();
@@ -44,8 +50,10 @@ function makeTenantActionRequiredCaseWithActiveToken(int $currentStage = 1): Rep
     $case = RepairCase::factory()->create([
         'landlord_contact_id' => $contact->id,
         'category_key' => $category->key,
-        'status' => CaseStatus::TenantActionRequired,
+        'status' => CaseStatus::AwaitingLandlord,
         'current_stage' => $currentStage,
+        'silence_clock_started_at' => now()->subDays(20),
+        'silence_settings_snapshot' => \App\Services\Silence\SilenceClock::snapshotCurrentSettings(),
     ]);
 
     ReplyToken::factory()->create([
@@ -126,32 +134,38 @@ it('writes notice_sent (via transitionTo) and token_issued (via action) on first
     expect($eventTypes)->toContain('token_issued');
 });
 
-it('does not write escalation_confirmed_by_tenant or token_superseded on first send', function () {
+it('does not write token_superseded on first send', function () {
     Mail::fake();
     $case = makeOpenCase();
 
     sendCaseNoticeAction()->execute($case);
 
     $eventTypes = $case->events()->pluck('event_type')->all();
+    // Phase 3 — escalation_confirmed_by_tenant demolished with the
+    // tenant-click branch (D7 resolved).
     expect($eventTypes)->not->toContain('escalation_confirmed_by_tenant');
     expect($eventTypes)->not->toContain('token_superseded');
 });
 
-it('on escalation: writes 5 events including stage_advanced and token_superseded', function () {
+it('on auto-escalation: writes auto_escalation_sent + token_issued + token_superseded, NOT a transition', function () {
     Mail::fake();
-    $case = makeTenantActionRequiredCaseWithActiveToken(currentStage: 1);
+    $case = makeAwaitingLandlordCaseWithActiveToken(currentStage: 1);
 
     sendCaseNoticeAction()->execute($case);
 
     $eventTypesAfter = $case->events()->orderBy('id')->pluck('event_type')->all();
-    foreach (['escalation_confirmed_by_tenant', 'notice_sent', 'token_issued', 'token_superseded', 'stage_advanced'] as $expected) {
+    foreach (['auto_escalation_sent', 'token_issued', 'token_superseded'] as $expected) {
         expect($eventTypesAfter)->toContain($expected);
     }
+    // Phase 3 — no stage_advanced (that was the tenant-click TAR
+    // exit) and no escalation_confirmed_by_tenant (demolished).
+    expect($eventTypesAfter)->not->toContain('stage_advanced');
+    expect($eventTypesAfter)->not->toContain('escalation_confirmed_by_tenant');
 });
 
-it('on escalation: supersedes the previous active token with 90-day expiry', function () {
+it('on auto-escalation: supersedes the previous active token with 90-day expiry', function () {
     Mail::fake();
-    $case = makeTenantActionRequiredCaseWithActiveToken(currentStage: 1);
+    $case = makeAwaitingLandlordCaseWithActiveToken(currentStage: 1);
     $oldToken = $case->replyTokens()->whereNull('superseded_at')->sole();
 
     Carbon::setTestNow('2026-06-01 10:00:00');
@@ -163,9 +177,9 @@ it('on escalation: supersedes the previous active token with 90-day expiry', fun
     expect($oldToken->expires_at->toDateString())->toBe('2026-08-30');
 });
 
-it('on escalation: increments current_stage and uses the new stage in the message', function () {
+it('on auto-escalation: increments current_stage and uses the new stage in the message', function () {
     Mail::fake();
-    $case = makeTenantActionRequiredCaseWithActiveToken(currentStage: 2);
+    $case = makeAwaitingLandlordCaseWithActiveToken(currentStage: 2);
 
     $message = sendCaseNoticeAction()->execute($case);
 

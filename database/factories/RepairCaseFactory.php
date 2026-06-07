@@ -28,11 +28,13 @@ class RepairCaseFactory extends Factory
             'landlord_contact_id' => LandlordContact::factory(),
             'category_key' => fn () => RepairCategory::factory()->create()->key,
             'severity' => CaseSeverity::Routine,
+            'description' => 'Sample issue description for test fixtures.',
             'status' => CaseStatus::Open,
             'current_stage' => 1,
             'hold_until' => null,
             'opened_at' => now(),
             'closed_at' => null,
+            'dormant_at' => null,
         ];
     }
 }

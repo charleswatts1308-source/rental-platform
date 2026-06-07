@@ -27,25 +27,24 @@ it('transitions to the target status and writes the canonical event', function (
 })->with([
     'open → awaiting_landlord' => [CaseStatus::Open, CaseStatus::AwaitingLandlord, 'notice_sent'],
     'awaiting_landlord → awaiting_tenant_review' => [CaseStatus::AwaitingLandlord, CaseStatus::AwaitingTenantReview, 'inbound_received'],
-    // 'awaiting_landlord → tenant_action_required' — DELETED per
-    // silence-phase-2b D0.1 #17. SweepEscalations was the only driver;
-    // silence:sweep auto-escalation now sends without transitioning.
     'awaiting_landlord → resolved' => [CaseStatus::AwaitingLandlord, CaseStatus::Resolved, 'case_resolved'],
     'awaiting_landlord → abandoned' => [CaseStatus::AwaitingLandlord, CaseStatus::Abandoned, 'case_abandoned'],
-    'awaiting_tenant_review → tenant_action_required' => [CaseStatus::AwaitingTenantReview, CaseStatus::TenantActionRequired, 'escalation_eligible'],
+    // Phase 3 D8 — tenant reply: awaiting_tenant_review → awaiting_landlord
+    'awaiting_tenant_review → awaiting_landlord (tenant_replied)' => [CaseStatus::AwaitingTenantReview, CaseStatus::AwaitingLandlord, 'tenant_replied'],
     'awaiting_tenant_review → on_hold' => [CaseStatus::AwaitingTenantReview, CaseStatus::OnHold, 'hold_set'],
     'awaiting_tenant_review → resolved' => [CaseStatus::AwaitingTenantReview, CaseStatus::Resolved, 'case_resolved'],
     'awaiting_tenant_review → abandoned' => [CaseStatus::AwaitingTenantReview, CaseStatus::Abandoned, 'case_abandoned'],
-    'tenant_action_required → awaiting_landlord' => [CaseStatus::TenantActionRequired, CaseStatus::AwaitingLandlord, 'stage_advanced'],
-    'tenant_action_required → on_hold' => [CaseStatus::TenantActionRequired, CaseStatus::OnHold, 'hold_set'],
-    'tenant_action_required → resolved' => [CaseStatus::TenantActionRequired, CaseStatus::Resolved, 'case_resolved'],
-    'tenant_action_required → abandoned' => [CaseStatus::TenantActionRequired, CaseStatus::Abandoned, 'case_abandoned'],
-    'tenant_action_required → dormant' => [CaseStatus::TenantActionRequired, CaseStatus::Dormant, 'case_dormant'],
-    'on_hold → tenant_action_required' => [CaseStatus::OnHold, CaseStatus::TenantActionRequired, 'hold_expired'],
+    // Phase 3 — dormancy from awaiting_tenant_review (silence sweep transition).
+    'awaiting_tenant_review → dormant' => [CaseStatus::AwaitingTenantReview, CaseStatus::Dormant, 'case_dormant'],
+    // Phase 3 — hold expiry absorbed: OnHold → AwaitingLandlord (with event_type_override 'hold_expired' applied by the sweep).
+    'on_hold → awaiting_landlord (tenant_replied default)' => [CaseStatus::OnHold, CaseStatus::AwaitingLandlord, 'tenant_replied'],
     'on_hold → awaiting_tenant_review' => [CaseStatus::OnHold, CaseStatus::AwaitingTenantReview, 'inbound_received'],
     'on_hold → resolved' => [CaseStatus::OnHold, CaseStatus::Resolved, 'case_resolved'],
     'on_hold → abandoned' => [CaseStatus::OnHold, CaseStatus::Abandoned, 'case_abandoned'],
-    'dormant → tenant_action_required' => [CaseStatus::Dormant, CaseStatus::TenantActionRequired, 'tenant_re_engaged'],
+    // Phase 3 D8 — dormant revival via tenant reply.
+    'dormant → awaiting_landlord (tenant_replied)' => [CaseStatus::Dormant, CaseStatus::AwaitingLandlord, 'tenant_replied'],
+    // Phase 3 D0.3 — direct resolve from dormant ("it got fixed while I was away").
+    'dormant → resolved' => [CaseStatus::Dormant, CaseStatus::Resolved, 'case_resolved'],
     'dormant → abandoned' => [CaseStatus::Dormant, CaseStatus::Abandoned, 'case_abandoned'],
 ]);
 

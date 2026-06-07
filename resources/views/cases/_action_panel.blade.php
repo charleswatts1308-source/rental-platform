@@ -1,5 +1,10 @@
 @php
     use App\Enums\CaseStatus;
+    use App\Models\Setting;
+
+    $holdMaxDays = (int) Setting::get('hold.max_days', 60);
+    $holdMaxDate = now()->addDays($holdMaxDays)->toDateString();
+    $revivalDays = (int) Setting::get('dormancy.revival_days', 90);
 @endphp
 <div class="card">
     <div class="card-body">
@@ -7,19 +12,20 @@
 
         @switch($case->status)
             @case(CaseStatus::AwaitingLandlord)
-                <p class="small mb-3">Waiting on a reply from your landlord. If they don't respond in time, the case will move to your action panel.</p>
+                <p class="small mb-3">Waiting on a reply from your landlord. You can send extra information at any time — sending will reset the response clock.</p>
                 @break
             @case(CaseStatus::AwaitingTenantReview)
-                <p class="small mb-3">Your landlord has replied. Read their message, then take an action.</p>
-                @break
-            @case(CaseStatus::TenantActionRequired)
-                <p class="small mb-3">It's your move.</p>
+                <p class="small mb-3">Your landlord has replied. Read their message, then reply with more information, pause the case, or close it.</p>
                 @break
             @case(CaseStatus::OnHold)
-                <p class="small mb-3">Paused until {{ $case->hold_until?->format('d M Y') }}.</p>
+                <p class="small mb-3">Paused until {{ $case->hold_until?->format('d M Y') }}. Replying now resumes the case immediately.</p>
                 @break
             @case(CaseStatus::Dormant)
-                <p class="small mb-3">No activity for 21+ days. Re-engage when you're ready to continue.</p>
+                @if($revivalExpired ?? false)
+                    <p class="small mb-3">This case has been dormant for more than {{ $revivalDays }} days. Replies are no longer accepted here — please raise a new case and quote the reference if the issue is still live.</p>
+                @else
+                    <p class="small mb-3">Marked dormant after a sustained period without activity. A reply within {{ $revivalDays }} days of going dormant revives the case.</p>
+                @endif
                 @break
             @case(CaseStatus::Resolved)
                 <p class="small mb-0">Marked resolved on {{ $case->closed_at?->format('d M Y') }}.</p>
@@ -29,19 +35,19 @@
                 @break
         @endswitch
 
-        @can('sendNext', $case)
-            <form method="POST" action="{{ route('cases.send-next', $case->url_slug) }}" class="mb-3">
+        @can('reply', $case)
+            <form method="POST" action="{{ route('cases.reply', $case->url_slug) }}" class="mb-3">
                 @csrf
-                <button type="submit" class="btn btn-primary w-100">Send the next letter</button>
+                <label for="reply_body" class="form-label small">Reply to your landlord</label>
+                <textarea id="reply_body" name="body" rows="4" required maxlength="10000"
+                          class="form-control form-control-sm mb-2">{{ old('body') }}</textarea>
+                <button type="submit" class="btn btn-primary w-100">Send reply</button>
             </form>
         @endcan
 
-        @can('reEngage', $case)
-            <form method="POST" action="{{ route('cases.re-engage', $case->url_slug) }}" class="mb-3">
-                @csrf
-                <button type="submit" class="btn btn-primary w-100">Re-engage this case</button>
-            </form>
-        @endcan
+        @if($case->status === CaseStatus::Dormant && ($revivalExpired ?? false))
+            <a href="{{ route('cases.create') }}" class="btn btn-outline-primary w-100 mb-3">Raise a new case</a>
+        @endif
 
         @can('hold', $case)
             <form method="POST" action="{{ route('cases.hold', $case->url_slug) }}" class="mb-3">
@@ -50,7 +56,9 @@
                 <input id="hold_until" name="hold_until" type="date"
                        class="form-control form-control-sm mb-2"
                        min="{{ now()->addDay()->toDateString() }}"
+                       max="{{ $holdMaxDate }}"
                        value="{{ old('hold_until') }}" required>
+                <p class="form-text small mb-2">You can pause for up to {{ $holdMaxDays }} days.</p>
                 <button type="submit" class="btn btn-outline-secondary w-100">Hold</button>
             </form>
         @endcan

@@ -11,7 +11,7 @@ it('permits dormant → awaiting_tenant_review (landlord activity wakes the case
         ->toBeTrue();
 });
 
-it('writes inbound_received as the canonical event when waking a dormant case', function () {
+it('writes inbound_received as the canonical event when waking a dormant case via landlord inbound', function () {
     $case = RepairCase::factory()->create(['status' => CaseStatus::Dormant]);
 
     $case->transitionTo(CaseStatus::AwaitingTenantReview);
@@ -20,13 +20,14 @@ it('writes inbound_received as the canonical event when waking a dormant case', 
     expect($case->events()->orderByDesc('id')->first()->event_type)->toBe('inbound_received');
 });
 
-it('still permits the existing dormant transitions (tenant_action_required, abandoned)', function () {
-    expect(RepairCase::isTransitionAllowed(CaseStatus::Dormant, CaseStatus::TenantActionRequired))->toBeTrue();
+it('permits the Phase 3 dormant exit transitions', function () {
+    // Phase 3 D8 — tenant reply revives the case direct to awaiting_landlord.
+    expect(RepairCase::isTransitionAllowed(CaseStatus::Dormant, CaseStatus::AwaitingLandlord))->toBeTrue();
+    // Phase 3 D0.3 — direct resolve ("it got fixed while I was away").
+    expect(RepairCase::isTransitionAllowed(CaseStatus::Dormant, CaseStatus::Resolved))->toBeTrue();
     expect(RepairCase::isTransitionAllowed(CaseStatus::Dormant, CaseStatus::Abandoned))->toBeTrue();
 });
 
-it('still rejects other dormant transitions', function () {
-    expect(RepairCase::isTransitionAllowed(CaseStatus::Dormant, CaseStatus::AwaitingLandlord))->toBeFalse();
+it('rejects on_hold from dormant — revive first then hold', function () {
     expect(RepairCase::isTransitionAllowed(CaseStatus::Dormant, CaseStatus::OnHold))->toBeFalse();
-    expect(RepairCase::isTransitionAllowed(CaseStatus::Dormant, CaseStatus::Resolved))->toBeFalse();
 });

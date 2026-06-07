@@ -1,10 +1,8 @@
 <?php
 
 use App\Enums\CaseStatus;
-use App\Mail\CaseNotice;
 use App\Models\LandlordContact;
 use App\Models\RepairCase;
-use App\Models\ReplyToken;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
@@ -15,6 +13,12 @@ beforeEach(function () {
     Mail::fake();
 });
 
+/**
+ * Phase 3 — sendNext and reEngage demolished. Hold + resolve +
+ * abandon still here; their valid-state lists are updated to the
+ * new transitions map (TAR is gone). Reply tests live in the
+ * SilencePhase3 suite.
+ */
 function tenantOwning(CaseStatus $status, array $overrides = []): array
 {
     $tenant = User::factory()->create();
@@ -28,47 +32,10 @@ function tenantOwning(CaseStatus $status, array $overrides = []): array
     return [$tenant, $case];
 }
 
-// ---------- send-next ----------
-
-it('send-next dispatches the next notice from tenant_action_required', function () {
-    [$tenant, $case] = tenantOwning(CaseStatus::TenantActionRequired, ['current_stage' => 1]);
-    ReplyToken::factory()->create([
-        'case_id' => $case->id,
-        'bound_email' => $case->landlordContact->email,
-        'superseded_at' => null,
-    ]);
-
-    $response = $this->actingAs($tenant)->post("/cases/{$case->url_slug}/send-next");
-
-    $response->assertRedirect("/cases/{$case->url_slug}");
-    $case->refresh();
-    expect($case->status)->toBe(CaseStatus::AwaitingLandlord);
-    expect($case->current_stage)->toBe(2);
-    Mail::assertQueued(CaseNotice::class);
-});
-
-it('send-next returns 403 from any state other than tenant_action_required', function () {
-    foreach ([CaseStatus::AwaitingLandlord, CaseStatus::AwaitingTenantReview, CaseStatus::OnHold, CaseStatus::Dormant, CaseStatus::Resolved, CaseStatus::Abandoned] as $status) {
-        [$tenant, $case] = tenantOwning($status);
-        $response = $this->actingAs($tenant)->post("/cases/{$case->url_slug}/send-next");
-        $response->assertForbidden();
-        expect($case->fresh()->status)->toBe($status);
-    }
-});
-
-it('send-next returns 403 when a different tenant attempts the action', function () {
-    [, $case] = tenantOwning(CaseStatus::TenantActionRequired);
-    $other = User::factory()->create();
-
-    $response = $this->actingAs($other)->post("/cases/{$case->url_slug}/send-next");
-
-    $response->assertForbidden();
-});
-
 // ---------- hold ----------
 
-it('hold pauses the case from awaiting_tenant_review and tenant_action_required', function () {
-    foreach ([CaseStatus::AwaitingTenantReview, CaseStatus::TenantActionRequired] as $status) {
+it('hold pauses the case from awaiting_tenant_review and awaiting_landlord', function () {
+    foreach ([CaseStatus::AwaitingTenantReview, CaseStatus::AwaitingLandlord] as $status) {
         [$tenant, $case] = tenantOwning($status);
         $until = now()->addDays(7)->toDateString();
 
@@ -81,8 +48,8 @@ it('hold pauses the case from awaiting_tenant_review and tenant_action_required'
     }
 });
 
-it('hold returns 403 from invalid states (e.g. awaiting_landlord, on_hold, terminals)', function () {
-    foreach ([CaseStatus::AwaitingLandlord, CaseStatus::OnHold, CaseStatus::Dormant, CaseStatus::Resolved, CaseStatus::Abandoned] as $status) {
+it('hold returns 403 from invalid states (e.g. open, on_hold, terminals, dormant)', function () {
+    foreach ([CaseStatus::Open, CaseStatus::OnHold, CaseStatus::Dormant, CaseStatus::Resolved, CaseStatus::Abandoned] as $status) {
         [$tenant, $case] = tenantOwning($status);
 
         $response = $this->actingAs($tenant)->post("/cases/{$case->url_slug}/hold", [
@@ -95,18 +62,31 @@ it('hold returns 403 from invalid states (e.g. awaiting_landlord, on_hold, termi
 });
 
 it('hold rejects a hold_until in the past or today', function () {
-    [$tenant, $case] = tenantOwning(CaseStatus::TenantActionRequired);
+    [$tenant, $case] = tenantOwning(CaseStatus::AwaitingTenantReview);
 
     $response = $this->actingAs($tenant)->post("/cases/{$case->url_slug}/hold", [
         'hold_until' => now()->subDay()->toDateString(),
     ]);
 
     $response->assertSessionHasErrors('hold_until');
-    expect($case->fresh()->status)->toBe(CaseStatus::TenantActionRequired);
+    expect($case->fresh()->status)->toBe(CaseStatus::AwaitingTenantReview);
+});
+
+it('hold rejects a hold_until beyond hold.max_days', function () {
+    [$tenant, $case] = tenantOwning(CaseStatus::AwaitingTenantReview);
+
+    // Default hold.max_days = 60.
+    $tooFar = now()->addDays(120)->toDateString();
+    $response = $this->actingAs($tenant)->post("/cases/{$case->url_slug}/hold", [
+        'hold_until' => $tooFar,
+    ]);
+
+    $response->assertSessionHasErrors('hold_until');
+    expect($case->fresh()->status)->toBe(CaseStatus::AwaitingTenantReview);
 });
 
 it('hold returns 403 when a different tenant attempts the action', function () {
-    [, $case] = tenantOwning(CaseStatus::TenantActionRequired);
+    [, $case] = tenantOwning(CaseStatus::AwaitingTenantReview);
     $other = User::factory()->create();
 
     $response = $this->actingAs($other)->post("/cases/{$case->url_slug}/hold", [
@@ -118,8 +98,8 @@ it('hold returns 403 when a different tenant attempts the action', function () {
 
 // ---------- resolve ----------
 
-it('resolve closes the case from any non-terminal active state', function () {
-    foreach ([CaseStatus::AwaitingLandlord, CaseStatus::AwaitingTenantReview, CaseStatus::TenantActionRequired, CaseStatus::OnHold] as $status) {
+it('resolve closes the case from any non-terminal active state including dormant', function () {
+    foreach ([CaseStatus::AwaitingLandlord, CaseStatus::AwaitingTenantReview, CaseStatus::OnHold, CaseStatus::Dormant] as $status) {
         [$tenant, $case] = tenantOwning($status);
 
         $response = $this->actingAs($tenant)->post("/cases/{$case->url_slug}/resolve");
@@ -131,8 +111,8 @@ it('resolve closes the case from any non-terminal active state', function () {
     }
 });
 
-it('resolve returns 403 from dormant and terminal states', function () {
-    foreach ([CaseStatus::Dormant, CaseStatus::Resolved, CaseStatus::Abandoned] as $status) {
+it('resolve returns 403 from terminal states', function () {
+    foreach ([CaseStatus::Resolved, CaseStatus::Abandoned] as $status) {
         [$tenant, $case] = tenantOwning($status);
         $response = $this->actingAs($tenant)->post("/cases/{$case->url_slug}/resolve");
         $response->assertForbidden();
@@ -160,7 +140,7 @@ it('abandon closes the case and stores reason in event meta', function () {
 });
 
 it('abandon works without a reason', function () {
-    [$tenant, $case] = tenantOwning(CaseStatus::TenantActionRequired);
+    [$tenant, $case] = tenantOwning(CaseStatus::AwaitingTenantReview);
 
     $response = $this->actingAs($tenant)->post("/cases/{$case->url_slug}/abandon");
 
@@ -168,8 +148,8 @@ it('abandon works without a reason', function () {
     expect($case->fresh()->status)->toBe(CaseStatus::Abandoned);
 });
 
-it('abandon returns 403 from dormant (admin-only) and terminal states', function () {
-    foreach ([CaseStatus::Dormant, CaseStatus::Resolved, CaseStatus::Abandoned] as $status) {
+it('abandon returns 403 from terminal states', function () {
+    foreach ([CaseStatus::Resolved, CaseStatus::Abandoned] as $status) {
         [$tenant, $case] = tenantOwning($status);
         $response = $this->actingAs($tenant)->post("/cases/{$case->url_slug}/abandon");
         $response->assertForbidden();
@@ -177,45 +157,16 @@ it('abandon returns 403 from dormant (admin-only) and terminal states', function
     }
 });
 
-// ---------- re-engage ----------
-
-it('re-engage transitions a dormant case to tenant_action_required and writes tenant_re_engaged', function () {
-    [$tenant, $case] = tenantOwning(CaseStatus::Dormant);
-
-    $response = $this->actingAs($tenant)->post("/cases/{$case->url_slug}/re-engage");
-
-    $response->assertRedirect("/cases/{$case->url_slug}");
-    $case->refresh();
-    expect($case->status)->toBe(CaseStatus::TenantActionRequired);
-    expect($case->events()->where('event_type', 'tenant_re_engaged')->count())->toBe(1);
-});
-
-it('re-engage returns 403 from any state other than dormant', function () {
-    foreach ([CaseStatus::AwaitingLandlord, CaseStatus::AwaitingTenantReview, CaseStatus::TenantActionRequired, CaseStatus::OnHold, CaseStatus::Resolved, CaseStatus::Abandoned] as $status) {
-        [$tenant, $case] = tenantOwning($status);
-        $response = $this->actingAs($tenant)->post("/cases/{$case->url_slug}/re-engage");
-        $response->assertForbidden();
-        expect($case->fresh()->status)->toBe($status);
-    }
-});
-
-it('re-engage returns 403 when a different tenant attempts the action', function () {
-    [, $case] = tenantOwning(CaseStatus::Dormant);
-    $other = User::factory()->create();
-
-    $response = $this->actingAs($other)->post("/cases/{$case->url_slug}/re-engage");
-
-    $response->assertForbidden();
-    expect($case->fresh()->status)->toBe(CaseStatus::Dormant);
-});
-
 // ---------- guest redirects ----------
 
 it('action routes redirect guests to login', function () {
-    $case = RepairCase::factory()->create(['status' => CaseStatus::TenantActionRequired]);
+    $case = RepairCase::factory()->create(['status' => CaseStatus::AwaitingLandlord]);
 
-    foreach (['send-next', 'hold', 'resolve', 'abandon', 're-engage'] as $action) {
-        $response = $this->post("/cases/{$case->url_slug}/{$action}", ['hold_until' => now()->addDay()->toDateString()]);
+    foreach (['hold', 'resolve', 'abandon', 'reply'] as $action) {
+        $response = $this->post("/cases/{$case->url_slug}/{$action}", [
+            'hold_until' => now()->addDay()->toDateString(),
+            'body' => 'placeholder reply body',
+        ]);
         $response->assertRedirect('/login');
     }
 });

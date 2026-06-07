@@ -19,8 +19,8 @@ it('sets closed_at when transitioning to resolved', function (CaseStatus $from) 
 })->with([
     [CaseStatus::AwaitingLandlord],
     [CaseStatus::AwaitingTenantReview],
-    [CaseStatus::TenantActionRequired],
     [CaseStatus::OnHold],
+    [CaseStatus::Dormant],
 ]);
 
 it('sets closed_at when transitioning to abandoned', function (CaseStatus $from) {
@@ -35,7 +35,6 @@ it('sets closed_at when transitioning to abandoned', function (CaseStatus $from)
 })->with([
     [CaseStatus::AwaitingLandlord],
     [CaseStatus::AwaitingTenantReview],
-    [CaseStatus::TenantActionRequired],
     [CaseStatus::OnHold],
     [CaseStatus::Dormant],
 ]);
@@ -59,38 +58,35 @@ it('does not clear hold_until when transitioning out of on_hold', function () {
         'hold_until' => $holdUntil,
     ]);
 
-    $case->transitionTo(CaseStatus::TenantActionRequired);
+    $case->transitionTo(CaseStatus::AwaitingLandlord);
 
     expect($case->fresh()->hold_until)->not->toBeNull();
     expect($case->fresh()->hold_until->toIso8601String())->toBe($holdUntil->toIso8601String());
 });
 
-it('increments current_stage when tenant_action_required → awaiting_landlord', function () {
+it('stamps dormant_at when transitioning to dormant', function () {
     $case = RepairCase::factory()->create([
-        'status' => CaseStatus::TenantActionRequired,
-        'current_stage' => 2,
+        'status' => CaseStatus::AwaitingTenantReview,
+        'dormant_at' => null,
+    ]);
+
+    $case->transitionTo(CaseStatus::Dormant);
+
+    expect($case->fresh()->dormant_at)->toBeInstanceOf(Carbon::class);
+});
+
+it('clears dormant_at when revived out of dormant', function () {
+    $case = RepairCase::factory()->create([
+        'status' => CaseStatus::Dormant,
+        'dormant_at' => now()->subDays(10),
     ]);
 
     $case->transitionTo(CaseStatus::AwaitingLandlord);
 
-    expect($case->fresh()->current_stage)->toBe(3);
-});
-
-it('does not increment current_stage on other transitions', function () {
-    $case = RepairCase::factory()->create([
-        'status' => CaseStatus::AwaitingLandlord,
-        'current_stage' => 2,
-    ]);
-
-    $case->transitionTo(CaseStatus::AwaitingTenantReview);
-
-    expect($case->fresh()->current_stage)->toBe(2);
+    expect($case->fresh()->dormant_at)->toBeNull();
 });
 
 it('does not set closed_at on non-terminal transitions', function () {
-    // Uses awaiting_landlord → awaiting_tenant_review post-2b
-    // (the awaiting_landlord → tenant_action_required transition was
-    // demolished alongside SweepEscalations).
     $case = RepairCase::factory()->create([
         'status' => CaseStatus::AwaitingLandlord,
         'closed_at' => null,

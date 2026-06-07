@@ -36,6 +36,8 @@ class DevReset extends Command
         'case_events',
         'reply_tokens',
         'case_messages',
+        'silence_shadow_log',
+        'magic_login_tokens',
         'cases',
         'properties',
         'landlord_contacts',

@@ -87,24 +87,10 @@ it('awaiting_tenant_review: ball with tenant — last message was inbound landlo
     expect((new SilenceClock)->ballFor($case))->toBe(BallPosition::Tenant);
 });
 
-it('tenant_action_required entered via escalation path: ball with landlord (last msg was outbound notice)', function () {
-    // Old-model SweepEscalations promotes awaiting_landlord →
-    // tenant_action_required without writing a new message. The latest
-    // case_messages row is still the outbound notice. Under the
-    // silence model that means landlord-side silence — and shadow
-    // mode correctly diverges from the old model here (the verdict
-    // for this state is "send next escalation").
-    $case = withLatestOutbound(caseInStatus(CaseStatus::TenantActionRequired));
-    expect((new SilenceClock)->ballFor($case))->toBe(BallPosition::Landlord);
-});
-
-it('tenant_action_required entered via hold-expiry path: ball with tenant (last msg was inbound reply)', function () {
-    // Old-model SweepHolds promotes on_hold → tenant_action_required.
-    // on_hold was entered from awaiting_tenant_review, so the latest
-    // message is the inbound landlord reply. Tenant-side silence.
-    $case = withLatestInbound(caseInStatus(CaseStatus::TenantActionRequired));
-    expect((new SilenceClock)->ballFor($case))->toBe(BallPosition::Tenant);
-});
+// Phase 3 — tenant_action_required state demolished (D0.3 Option A).
+// Both "TAR via escalation path" and "TAR via hold-expiry path" tests
+// dropped — the source state no longer exists. The remaining ball-
+// detection cases below cover the surviving statuses.
 
 it('quarantined inbound still flips the ball — the landlord engaged', function () {
     $case = caseInStatus(CaseStatus::AwaitingTenantReview);

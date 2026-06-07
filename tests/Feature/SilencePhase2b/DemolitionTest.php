@@ -58,11 +58,9 @@ it('the four dead stage Blade views are gone', function () {
     expect(view()->exists('emails.case-notices.stage_4_pre_action'))->toBeFalse();
 });
 
-it('the awaiting_landlord -> tenant_action_required transition is illegal', function () {
-    $case = RepairCase::factory()->create(['status' => CaseStatus::AwaitingLandlord]);
-
-    $case->transitionTo(CaseStatus::TenantActionRequired);
-})->throws(InvalidCaseTransitionException::class);
+// Phase 3 — the awaiting_landlord → tenant_action_required transition
+// test is obsolete: TenantActionRequired is itself demolished as of
+// Phase 3 D0.3 Option A. The transition can no longer be expressed.
 
 it('the cases.next_stage_eligible_at column is gone', function () {
     expect(\Illuminate\Support\Facades\Schema::hasColumn('cases', 'next_stage_eligible_at'))->toBeFalse();

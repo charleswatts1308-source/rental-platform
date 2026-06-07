@@ -82,7 +82,7 @@ it('it snapshots the current settings onto the case at inbound landlord reply', 
         'token' => 'abcdefghij1234567890',
     ]);
 
-    (new HandleInboundReply)->execute([
+    app(HandleInboundReply::class)->execute([
         'recipient' => $token->token.'@mg.renters.rent',
         'from' => 'landlord@example.com',
         'body-plain' => 'Sure, will inspect next week.',

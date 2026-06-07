@@ -143,6 +143,21 @@ class SilenceClock
      */
     public function evaluate(RepairCase $case, CarbonInterface $now): SweepVerdict
     {
+        // Hold-expiry detection precedes the no-clock veto: OnHold is a
+        // no-silence-clock state, but its OWN deadline (hold_until) is
+        // what the sweep's hold-expiry absorption (Phase 3) hangs on.
+        if ($case->status === CaseStatus::OnHold && $case->hold_until !== null && $case->hold_until->lessThanOrEqualTo($now)) {
+            return new SweepVerdict(
+                intendedAction: IntendedAction::ResumeFromHold,
+                ballWith: null,
+                silenceDays: null,
+                intendedLetterTemplate: null,
+                escalationCounterValue: null,
+                nudgeNumber: null,
+                reasoning: "hold expired (hold_until={$case->hold_until->toDateString()}); transitions to awaiting_landlord",
+            );
+        }
+
         $ball = $this->ballFor($case);
 
         if ($ball === null) {

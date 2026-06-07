@@ -31,21 +31,26 @@ class DevLifecycle extends Command
     private const ADMIN_PASSWORD = 'password';
 
     /**
-     * Spread specs: [status, tenant name, landlord role, severity].
+     * Spread specs: [status, tenant name, landlord role, severity, description].
      *
      * Tenant and landlord email addresses are config-driven (DEV_TENANT_EMAIL,
      * DEV_LANDLORD_EMAIL) so every demo case collapses onto two real
      * authorisable addresses we control — see config/dev.php.
+     *
+     * Post Phase 3:
+     *   - tenant_action_required row dropped (Option A — TAR demolished).
+     *   - description column (5th element) added per D9; dev:case passes
+     *     it through so the create-case flow's frozen
+     *     cases.description has plausible per-case content.
      */
     private const SPECS = [
-        ['open', 'Alice Adams', 'landlord', 'routine'],
-        ['awaiting_landlord', 'Bob Brennan', 'landlord', 'serious'],
-        ['awaiting_tenant_review', 'Carla Diaz', 'agent', 'routine'],
-        ['tenant_action_required', 'Derek Evans', 'landlord', 'emergency'],
-        ['on_hold', 'Fiona Grant', 'landlord', 'routine'],
-        ['resolved', 'George Hill', 'landlord', 'serious'],
-        ['abandoned', 'Hannah Ito', 'landlord', 'routine'],
-        ['dormant', 'Ian Jones', 'landlord', 'serious'],
+        ['open', 'Alice Adams', 'landlord', 'routine', 'Boiler is making a loud knocking noise overnight; no hot water this morning.'],
+        ['awaiting_landlord', 'Bob Brennan', 'landlord', 'serious', 'Damp patches spreading on the bathroom ceiling — likely a leak from upstairs.'],
+        ['awaiting_tenant_review', 'Carla Diaz', 'agent', 'routine', 'Kitchen tap drips constantly; the washer needs replacing.'],
+        ['on_hold', 'Fiona Grant', 'landlord', 'routine', 'Bedroom window won\'t close properly, draught is constant.'],
+        ['resolved', 'George Hill', 'landlord', 'serious', 'Front door lock jammed; could not secure the property last night.'],
+        ['abandoned', 'Hannah Ito', 'landlord', 'routine', 'Living room blind has snapped — privacy concern.'],
+        ['dormant', 'Ian Jones', 'landlord', 'serious', 'Mould patch in the back bedroom; visible since the autumn.'],
     ];
 
     /** --outcome values mapped to the case status they drive to. */
@@ -97,7 +102,7 @@ class DevLifecycle extends Command
         $total = count($specs);
         $rows = [];
 
-        foreach ($specs as $i => [$status, $name, $role, $severity]) {
+        foreach ($specs as $i => [$status, $name, $role, $severity, $description]) {
             $tenant = User::where('email', $tenantEmail)->first();
             if ($tenant === null) {
                 $this->callSilently('dev:user', ['--email' => $tenantEmail, '--name' => $name]);
@@ -109,6 +114,7 @@ class DevLifecycle extends Command
                 '--landlord-email' => $landlordEmail,
                 '--landlord-role' => $role,
                 '--severity' => $severity,
+                '--description' => $description,
                 '--category' => $categoryKeys[$i % count($categoryKeys)],
             ]);
             $case = RepairCase::where('tenant_user_id', $tenant->id)->latest('id')->first();
@@ -167,7 +173,7 @@ class DevLifecycle extends Command
     }
 
     /**
-     * @return array<int, array{0:string,1:string,2:string,3:string}>|null
+     * @return array<int, array{0:string,1:string,2:string,3:string,4:string}>|null
      */
     private function resolveSpecs(): ?array
     {
@@ -188,6 +194,7 @@ class DevLifecycle extends Command
             'Sample Tenant',
             'landlord',
             'serious',
+            'A repair issue at this property — placeholder description for dev tooling.',
         ]];
     }
 
@@ -216,6 +223,10 @@ class DevLifecycle extends Command
     /**
      * Drive a freshly-created Open case to the target status using the real
      * building blocks. Returns a short description of what was done.
+     *
+     * Post Phase 3 (Option A): tenant_action_required is demolished. Cases
+     * targeting abandoned/dormant transition direct from
+     * awaiting_tenant_review via the relevant canonical event.
      */
     private function driveToStatus(RepairCase $case, string $target, int $tenantId): string
     {
@@ -229,10 +240,6 @@ class DevLifecycle extends Command
             'awaiting_tenant_review' => $this->sendFirstLetter($case)
                 .', '.$this->landlordReplies($case),
 
-            'tenant_action_required' => $this->sendFirstLetter($case)
-                .', '.$this->landlordReplies($case)
-                .', '.$this->escalateFromReview($case),
-
             'on_hold' => $this->sendFirstLetter($case)
                 .', '.$this->landlordReplies($case)
                 .', '.$this->transition($case, CaseStatus::OnHold, $tenantContext + ['hold_until' => now()->addDays(14)], 'placed on hold'),
@@ -243,13 +250,11 @@ class DevLifecycle extends Command
 
             'abandoned' => $this->sendFirstLetter($case)
                 .', '.$this->landlordReplies($case)
-                .', '.$this->escalateFromReview($case)
                 .', '.$this->transition($case, CaseStatus::Abandoned, $tenantContext, 'abandoned'),
 
             'dormant' => $this->sendFirstLetter($case)
                 .', '.$this->landlordReplies($case)
-                .', '.$this->escalateFromReview($case)
-                .', '.$this->transition($case, CaseStatus::Dormant, [], 'gone dormant'),
+                .', '.$this->transition($case, CaseStatus::Dormant, ['actor_label' => 'system'], 'gone dormant'),
 
             default => 'created',
         };
@@ -267,20 +272,6 @@ class DevLifecycle extends Command
         $this->callSilently('dev:reply', ['--case' => $case->id]);
 
         return 'landlord replied';
-    }
-
-    /**
-     * Post-silence-phase-2b: the awaiting_landlord → tenant_action_required
-     * transition has been removed (SweepEscalations demolished). TAR is
-     * now reached from awaiting_tenant_review via tenant click. The
-     * dev-tooling lifecycle uses the same path so the seed data exercises
-     * the post-2b reachability rules.
-     */
-    private function escalateFromReview(RepairCase $case): string
-    {
-        $case->refresh()->transitionTo(CaseStatus::TenantActionRequired);
-
-        return 'escalated by tenant from review';
     }
 
     /**
