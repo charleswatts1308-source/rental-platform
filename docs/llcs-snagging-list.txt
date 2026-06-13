@@ -282,6 +282,9 @@ Expected:    Each SPECS row's 5th (description) column reads as a
 Status:      open — cosmetic, seed-data only.
 Fix:         Realign the description column against category_key in the
              SPECS array. No code/migration — array text only.
+Notes:       Re-observed 2026-06-13 D15 gafol live-fire (dashboard
+             "Heating and hot water" vs a damp/bathroom D9 header block).
+             Same root cause; not a D15 issue. Logged here, not duplicated.
 --------------------------------------------------------------------
 #13
 Page:        dev:age-clock gauge / operator output.
@@ -421,4 +424,24 @@ Notes:       Surfaced by real usage in the live-fire, not by a test gap.
 Fix:         Add a file input to the reply form + photo validation/staging
              in CaseController::reply, thread attachmentInputs into the
              tenant-reply SendCaseNotice call. Reuses existing helpers.
+--------------------------------------------------------------------
+#20
+Page:        D9 description header block — dark mode (authorise-preview
+             cases.authorise, and likely any dark-mode letter/mail view).
+Severity:    cosmetic — content correct, contrast only.
+Saw:         The D9 header block (property / case reference / issue) renders
+             near-invisible in dark mode: low contrast against the dark
+             background, only legible when the text is selected. Spotted on
+             the D15 authorise-preview during the 2026-06-13 gafol live-fire.
+Expected:    The header block stays legible in dark mode (explicit text
+             colour, or a background that holds contrast in both themes).
+Status:      open — cosmetic. Surfaced by D15 but the block predates it
+             (D9, Phase 3); affects every view that renders the block.
+Notes:       The block uses a fixed light-grey background with no explicit
+             text colour (LetterTemplateRenderer::buildHeaderBlock), so dark
+             mode inherits a light-on-light combination.
+Fix:         Set an explicit text colour on the header block (and/or a
+             background that survives both themes) in buildHeaderBlock.
+             Renderer change — confirm it doesn't disturb the frozen
+             evidential letter bodies (header is wrapper, not body).
 --------------------------------------------------------------------
