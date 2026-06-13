@@ -5,6 +5,8 @@ namespace App\Console\Commands;
 use App\Actions\SendCaseNotice;
 use App\Enums\BallPosition;
 use App\Enums\CaseStatus;
+use App\Enums\MessageDirection;
+use App\Enums\SenderRole;
 use App\Mail\Notifications\AutoEscalationTenantNotice;
 use App\Models\LetterTemplate;
 use App\Models\RepairCase;
@@ -585,6 +587,7 @@ class SilenceSweep extends Command
             'issue_description' => $case->description,
             'response_days' => (int) Setting::get('escalation.interval_days', 14),
             'notice_number' => $withheldNotice,
+            'last_reply_date' => $this->lastLandlordReplyDate($case),
             'magic_link' => $magicLink,
         ]);
 
@@ -651,6 +654,29 @@ class SilenceSweep extends Command
             $p->city,
             $p->postcode,
         ]));
+    }
+
+    /**
+     * D15 — the date the LANDLORD last replied, for the authorise-nudge
+     * {{last_reply_date}}. Deliberately the most recent INBOUND LANDLORD
+     * message, NOT the latest message on the case: in the thank-you path
+     * the latest message is the tenant's own outbound reply, and the line
+     * must show when the landlord last engaged. Ordered by received_at
+     * (the inbound timestamp), id as tiebreak. Empty string if none —
+     * the renderer collapses a missing whitelist value to '' rather than
+     * leaving a literal token. Format matches the app's view convention
+     * (d M Y); no date renders in any sibling template to copy from.
+     */
+    private function lastLandlordReplyDate(RepairCase $case): string
+    {
+        $lastReply = $case->messages()
+            ->where('direction', MessageDirection::Inbound)
+            ->where('sender_role', SenderRole::Landlord)
+            ->orderByDesc('received_at')
+            ->orderByDesc('id')
+            ->first();
+
+        return $lastReply?->received_at?->format('d M Y') ?? '';
     }
 
     private function resolveNow(): ?CarbonInterface

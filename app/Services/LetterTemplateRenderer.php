@@ -42,6 +42,9 @@ class LetterTemplateRenderer
         'response_days',
         'notice_number',
         'magic_link',
+        // D15 — date of the landlord's most recent inbound reply, passed by
+        // the authorise-nudge dispatch (held engaged-then-quiet case).
+        'last_reply_date',
     ];
 
     /**

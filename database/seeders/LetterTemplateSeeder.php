@@ -124,10 +124,9 @@ class LetterTemplateSeeder extends Seeder
             [
                 // D15 — wording signed off (Charlie) for gafol + pilot; NOT
                 // solicitor-gated (its sibling escalation_authorisation is).
-                // NB: {{last_reply_date}} is intentionally NOT used — that
-                // field is not passed to this nudge, and wiring it is a code
-                // change (deferred), so the body references "their last reply"
-                // without a date.
+                // {{last_reply_date}} = date of the landlord's most recent
+                // inbound reply, passed by SilenceSweep::dispatchAuthorisationNudge
+                // (NOT the latest message — that may be the tenant's own reply).
                 'code' => 'authorisation_required_nudge',
                 'description' => 'D15 — private tenant nudge fired by silence:sweep when an ENGAGED landlord has gone quiet and the next escalation notice is being WITHHELD pending tenant authorisation. Active-row idiom. Points at the authorise action (magic link).',
                 'type' => 'tenant_notification',
@@ -152,7 +151,7 @@ class LetterTemplateSeeder extends Seeder
     private function authorisationRequiredNudgeBody(): string
     {
         return <<<'HTML'
-<p>Your landlord hasn't responded on {{case_reference}} since their last reply.</p>
+<p>Your landlord hasn't responded on {{case_reference}} since their last reply on {{last_reply_date}}.</p>
 
 <p>The next notice is prepared and ready. Because your landlord has engaged with this case before, we don't send further notices automatically — it's your call whether to send the next one now.</p>
 

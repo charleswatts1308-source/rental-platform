@@ -211,6 +211,62 @@ it('does not restart the clock on an authorise-nudge — silence keeps accruing'
     expect($case->fresh()->silence_clock_started_at->equalTo($clockBefore))->toBeTrue();
 });
 
+it('the authorise-nudge shows the LANDLORD last-reply date, not a later tenant reply date', function () {
+    $tenant = User::factory()->create();
+    $contact = LandlordContact::factory()->create(['name' => 'Mr Landlord']);
+    $property = Property::factory()->create();
+    $category = RepairCategory::factory()->create();
+
+    $landlordReplyDate = Carbon::now()->subDays(25); // landlord's last inbound
+    $tenantReplyDate = Carbon::now()->subDays(15);   // tenant's later "thanks"
+
+    $case = RepairCase::factory()->create([
+        'tenant_user_id' => $tenant->id,
+        'landlord_contact_id' => $contact->id,
+        'property_id' => $property->id,
+        'category_key' => $category->key,
+        'status' => CaseStatus::AwaitingLandlord,
+        'current_stage' => 1,
+        'ball_with' => 'landlord',
+        'landlord_engaged' => true,
+        'silence_clock_started_at' => $tenantReplyDate->copy(),
+        'silence_settings_snapshot' => D15_SNAPSHOT,
+    ]);
+
+    // notice 1 (outbound system) → counter = 1
+    CaseMessage::factory()->create([
+        'case_id' => $case->id,
+        'direction' => MessageDirection::Outbound,
+        'sender_role' => SenderRole::System,
+        'stage_at_send' => 1,
+        'sent_at' => Carbon::now()->subDays(30),
+    ]);
+    // landlord reply (inbound) — the date the nudge must show
+    CaseMessage::factory()->inbound()->create([
+        'case_id' => $case->id,
+        'received_at' => $landlordReplyDate,
+    ]);
+    // tenant "thanks" reply (outbound tenant) — the LATEST message; must NOT be shown
+    CaseMessage::factory()->create([
+        'case_id' => $case->id,
+        'direction' => MessageDirection::Outbound,
+        'sender_role' => SenderRole::Tenant,
+        'stage_at_send' => null,
+        'sent_at' => $tenantReplyDate,
+    ]);
+
+    $this->artisan('silence:sweep')->assertSuccessful();
+
+    $landlordStr = $landlordReplyDate->format('d M Y');
+    $tenantStr = $tenantReplyDate->format('d M Y');
+    expect($landlordStr)->not->toBe($tenantStr); // guard the fixture
+
+    Mail::assertQueued(AutoEscalationTenantNotice::class, function ($mail) use ($landlordStr, $tenantStr) {
+        return str_contains($mail->renderedBody, $landlordStr)
+            && ! str_contains($mail->renderedBody, $tenantStr);
+    });
+});
+
 // ─── tenant authorise fires the held notice through the outbound path ───
 
 it('tenant authorise fires the withheld notice: counter ratchets, letter frozen, clock restarts', function () {
