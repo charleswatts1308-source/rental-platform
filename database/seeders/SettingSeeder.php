@@ -29,6 +29,15 @@ class SettingSeeder extends Seeder
         $defaults = [
             'escalation.interval_days' => '14',
             'escalation.max_notices' => '4',
+            // D15 note: for an engaged-then-quiet (held) case the
+            // authorise-nudge ladder only STARTS once the escalation clock
+            // expires (escalation.interval_days). So nudge.first_days is
+            // INERT for held cases while interval_days (14) > first_days (10)
+            // — the first authorise-nudge fires at the 14d gate, not at 10d.
+            // If a pilot-pacing pass ever raises nudge.first_days ABOVE
+            // escalation.interval_days, it becomes live for held cases (the
+            // first authorise-nudge would then wait for first_days). Tenant-
+            // side nudges always read nudge.first_days directly — unaffected.
             'nudge.first_days' => '10',
             'nudge.second_days' => '20',
             'nudge.dormancy_days' => '30',
