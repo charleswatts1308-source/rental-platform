@@ -121,7 +121,66 @@ class LetterTemplateSeeder extends Seeder
                 'subject' => 'You are about to send notice 1 to your landlord',
                 'body' => $this->createCaseAuthorisationBody(),
             ],
+            [
+                // D15 — wording signed off (Charlie) for gafol + pilot; NOT
+                // solicitor-gated (its sibling escalation_authorisation is).
+                // {{last_reply_date}} = date of the landlord's most recent
+                // inbound reply, passed by SilenceSweep::dispatchAuthorisationNudge
+                // (NOT the latest message — that may be the tenant's own reply).
+                'code' => 'authorisation_required_nudge',
+                'description' => 'D15 — private tenant nudge fired by silence:sweep when an ENGAGED landlord has gone quiet and the next escalation notice is being WITHHELD pending tenant authorisation. Active-row idiom. Points at the authorise action (magic link).',
+                'type' => 'tenant_notification',
+                'stage' => null,
+                'subject' => "Your landlord hasn't replied — ready to send the next notice?",
+                'body' => $this->authorisationRequiredNudgeBody(),
+            ],
+            [
+                // D15 — DRAFT WORDING. This is per-send CONSENT to send a
+                // formal legal letter in the tenant's name: SOLICITOR PASS
+                // wanted before go-live, alongside Charlie's eyes.
+                'code' => 'escalation_authorisation',
+                'description' => 'D15 — authorisation wording shown on the authorise-escalation screen (engaged-then-quiet held notice). ui_copy type: rendered on the web page, header block + envelope wrap skipped.',
+                'type' => 'ui_copy',
+                'stage' => null,
+                'subject' => 'You are about to send notice {{notice_number}} to your landlord',
+                'body' => $this->escalationAuthorisationBody(),
+            ],
         ];
+    }
+
+    private function authorisationRequiredNudgeBody(): string
+    {
+        return <<<'HTML'
+<p>Your landlord hasn't responded on {{case_reference}} since their last reply on {{last_reply_date}}.</p>
+
+<p>The next notice is prepared and ready. Because your landlord has engaged with this case before, we don't send further notices automatically — it's your call whether to send the next one now.</p>
+
+<p><a href="{{magic_link}}" style="display: inline-block; padding: 10px 16px; background: #2563eb; color: #fff; text-decoration: none; border-radius: 4px;">Review and send the next notice &rarr;</a></p>
+
+<p>If your issue has since been resolved, you can leave this here — we won't send anything unless you choose to.</p>
+
+<hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;">
+
+<p style="font-size: 11px; color: #888;">
+This is a private message between renters.rent and you as the tenant. It is not part of the landlord-facing case correspondence.
+</p>
+HTML;
+    }
+
+    private function escalationAuthorisationBody(): string
+    {
+        return <<<'HTML'
+<p>You opened this case authorising renters.rent to send escalating letters in your name if your landlord did not respond. Your landlord engaged and has since gone quiet, so the next notice is ready.</p>
+
+<ul>
+  <li>Notice {{notice_number}} is shown below — preview it as your landlord will see it.</li>
+  <li>It goes out signed "{{tenant_name}}, via renters.rent"; the landlord's reply comes back to the case, not to you directly.</li>
+  <li>Sending it restarts your landlord's {{response_days}}-day response clock and is recorded on the case as evidence.</li>
+  <li>You are in control: you can decline, pause the case, or close it at any time from the case page.</li>
+</ul>
+
+<p>Press <strong>Confirm and send notice {{notice_number}}</strong> when you are ready.</p>
+HTML;
     }
 
     private function landlordWakeupBody(): string

@@ -5,6 +5,8 @@ namespace App\Console\Commands;
 use App\Actions\SendCaseNotice;
 use App\Enums\BallPosition;
 use App\Enums\CaseStatus;
+use App\Enums\MessageDirection;
+use App\Enums\SenderRole;
 use App\Mail\Notifications\AutoEscalationTenantNotice;
 use App\Models\LetterTemplate;
 use App\Models\RepairCase;
@@ -140,6 +142,7 @@ class SilenceSweep extends Command
             'no_action' => $written->where('intended_action', 'no_action')->count(),
             'send_escalation' => $written->where('intended_action', 'send_escalation')->count(),
             'send_nudge' => $written->where('intended_action', 'send_nudge')->count(),
+            'send_authorisation_nudge' => $written->where('intended_action', 'send_authorisation_nudge')->count(),
             'transition_dormant_intent' => $written->where('intended_action', 'transition_dormant_intent')->count(),
             'transition_exhausted_intent' => $written->where('intended_action', 'transition_exhausted_intent')->count(),
             'resume_from_hold' => $written->where('intended_action', 'resume_from_hold')->count(),
@@ -180,7 +183,12 @@ class SilenceSweep extends Command
         $shouldExecute = ! $isPretend && match ($verdict->intendedAction) {
             IntendedAction::SendEscalation => $verdict->ballWith === BallPosition::Landlord,
             IntendedAction::SendNudge => $verdict->ballWith === BallPosition::Tenant,
-            IntendedAction::TransitionDormantIntent => $verdict->ballWith === BallPosition::Tenant,
+            // D15 — held authorise-nudge is landlord-ball (ruling 2).
+            IntendedAction::SendAuthorisationNudge => $verdict->ballWith === BallPosition::Landlord,
+            // Dormancy fires from the tenant-side ladder (ball=tenant) OR
+            // the D15 held-escalation tail (ball=landlord). transitionTo's
+            // edge-legality check is the real guard either way.
+            IntendedAction::TransitionDormantIntent => in_array($verdict->ballWith, [BallPosition::Tenant, BallPosition::Landlord], true),
             IntendedAction::ResumeFromHold => true,
             default => false,
         };
@@ -215,6 +223,10 @@ class SilenceSweep extends Command
                     $now, $isPretend, $pretendToday,
                 ),
                 IntendedAction::SendNudge => $this->executeNudge(
+                    $locked, $verdict, $renderer, $magicLinkGenerator,
+                    $now, $isPretend, $pretendToday,
+                ),
+                IntendedAction::SendAuthorisationNudge => $this->executeAuthorisationNudge(
                     $locked, $verdict, $renderer, $magicLinkGenerator,
                     $now, $isPretend, $pretendToday,
                 ),
@@ -357,6 +369,65 @@ class SilenceSweep extends Command
     }
 
     /**
+     * D15 — held authorise-nudge for an engaged-then-quiet landlord. The
+     * escalation is withheld; this fires a private tenant-facing nudge
+     * pointing at the authorise action, on the same cadence as ordinary
+     * nudges. Mail-only — NO case_messages row, NO ball move, the clock is
+     * NOT restarted (silence keeps accruing toward the dormancy tail).
+     * Writes an `authorisation_nudge_sent` event so the ladder dedups,
+     * distinct from the tenant-side `nudge_sent`.
+     *
+     * Race guard mirrors executeNudge: re-count under the lock.
+     *
+     * @return array{0: array<int, int>, 1: bool}
+     */
+    private function executeAuthorisationNudge(
+        RepairCase $case,
+        SweepVerdict $verdict,
+        LetterTemplateRenderer $renderer,
+        MagicLinkGenerator $magicLinkGenerator,
+        CarbonInterface $now,
+        bool $isPretend,
+        ?string $pretendToday,
+    ): array {
+        $nudgeNumber = (int) $verdict->nudgeNumber;
+        $expectedPriorCount = $nudgeNumber - 1;
+
+        $currentCount = $case->events()
+            ->where('event_type', 'authorisation_nudge_sent')
+            ->where('occurred_at', '>=', $case->silence_clock_started_at)
+            ->count();
+
+        if ($currentCount !== $expectedPriorCount) {
+            $supersededVerdict = $this->supersededVerdict(
+                $verdict,
+                "authorisation_nudge_sent count changed ({$expectedPriorCount} → {$currentCount}); concurrent sweep fired the nudge",
+            );
+            $id = $this->writeShadowRow($case->id, $supersededVerdict, $now, $isPretend, $pretendToday, executed: false);
+
+            return [[$id], false];
+        }
+
+        $withheldNotice = ($verdict->escalationCounterValue ?? 0) + 1;
+
+        $this->dispatchAuthorisationNudge($case, $withheldNotice, $renderer, $magicLinkGenerator);
+        $case->events()->create([
+            'event_type' => 'authorisation_nudge_sent',
+            'actor_label' => 'system',
+            'occurred_at' => now(),
+            'meta' => [
+                'nudge_number' => $nudgeNumber,
+                'withheld_notice' => $withheldNotice,
+                'silence_days' => $verdict->silenceDays,
+            ],
+        ]);
+
+        $id = $this->writeShadowRow($case->id, $verdict, $now, $isPretend, $pretendToday, executed: true);
+
+        return [[$id], true];
+    }
+
+    /**
      * @return array{0: array<int, int>, 1: bool}
      */
     private function executeDormancyTransition(
@@ -479,6 +550,54 @@ class SilenceSweep extends Command
     }
 
     /**
+     * D15 — render the authorise-prompt nudge (active-row idiom: no active
+     * `authorisation_required_nudge` row → skip silently) and queue it.
+     * {{notice_number}} is the WITHHELD notice (counter + 1), and the
+     * magic link lands the tenant on the case page where the authorise
+     * prompt is shown. Mail-only — no case_messages row.
+     */
+    private function dispatchAuthorisationNudge(
+        RepairCase $case,
+        int $withheldNotice,
+        LetterTemplateRenderer $renderer,
+        MagicLinkGenerator $magicLinkGenerator,
+    ): void {
+        $template = LetterTemplate::query()
+            ->where('type', 'tenant_notification')
+            ->where('code', 'authorisation_required_nudge')
+            ->where('active', true)
+            ->first();
+        if ($template === null) {
+            return;
+        }
+
+        $case->loadMissing(['tenant', 'property', 'landlordContact']);
+
+        $magicLink = $magicLinkGenerator->mintUrl(
+            $case->tenant,
+            $case,
+            'escalation_authorisation',
+        );
+
+        $rendered = $renderer->render($template, [
+            'tenant_name' => $case->tenant->name,
+            'landlord_name' => $case->landlordContact->name ?: 'your landlord',
+            'case_reference' => $case->url_slug,
+            'property_address' => $this->propertyAddress($case),
+            'issue_description' => $case->description,
+            'response_days' => (int) Setting::get('escalation.interval_days', 14),
+            'notice_number' => $withheldNotice,
+            'last_reply_date' => $this->lastLandlordReplyDate($case),
+            'magic_link' => $magicLink,
+        ]);
+
+        Mail::to($case->tenant->email)->queue(new AutoEscalationTenantNotice(
+            renderedSubject: $rendered['subject'],
+            renderedBody: $rendered['body'],
+        ));
+    }
+
+    /**
      * Active-row idiom — render an active tenant_notification template
      * and queue. Skip silently if no active row.
      */
@@ -535,6 +654,29 @@ class SilenceSweep extends Command
             $p->city,
             $p->postcode,
         ]));
+    }
+
+    /**
+     * D15 — the date the LANDLORD last replied, for the authorise-nudge
+     * {{last_reply_date}}. Deliberately the most recent INBOUND LANDLORD
+     * message, NOT the latest message on the case: in the thank-you path
+     * the latest message is the tenant's own outbound reply, and the line
+     * must show when the landlord last engaged. Ordered by received_at
+     * (the inbound timestamp), id as tiebreak. Empty string if none —
+     * the renderer collapses a missing whitelist value to '' rather than
+     * leaving a literal token. Format matches the app's view convention
+     * (d M Y); no date renders in any sibling template to copy from.
+     */
+    private function lastLandlordReplyDate(RepairCase $case): string
+    {
+        $lastReply = $case->messages()
+            ->where('direction', MessageDirection::Inbound)
+            ->where('sender_role', SenderRole::Landlord)
+            ->orderByDesc('received_at')
+            ->orderByDesc('id')
+            ->first();
+
+        return $lastReply?->received_at?->format('d M Y') ?? '';
     }
 
     private function resolveNow(): ?CarbonInterface

@@ -53,6 +53,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/cases/preview/confirm', [CaseController::class, 'confirm'])->name('cases.confirm');
     Route::get('/cases/{slug}', [CaseController::class, 'show'])->name('cases.show');
     Route::post('/cases/{slug}/reply', [CaseController::class, 'reply'])->name('cases.reply');
+    // D15 — engagement-gated escalation: tenant authorises a withheld notice.
+    Route::get('/cases/{slug}/authorise', [CaseController::class, 'escalationPreview'])->name('cases.escalate.preview');
+    Route::post('/cases/{slug}/authorise', [CaseController::class, 'escalationAuthorise'])->name('cases.escalate.authorise');
     Route::post('/cases/{slug}/hold', [CaseController::class, 'hold'])->name('cases.hold');
     Route::post('/cases/{slug}/resolve', [CaseController::class, 'resolve'])->name('cases.resolve');
     Route::post('/cases/{slug}/abandon', [CaseController::class, 'abandon'])->name('cases.abandon');

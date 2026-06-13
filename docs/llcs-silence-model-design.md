@@ -21,7 +21,7 @@ content — not the landlord's, not the tenant's.
 
 ---
 
-## 2. Decisions (D1–D13, all agreed)
+## 2. Decisions (D1–D13, all agreed; D15 added post-Phase-3)
 
 ### D1 — A "stage" is a severity level, not a ladder rung
 
@@ -150,6 +150,12 @@ new material to respond to, and a tenant who wants the clock to run simply
 stays quiet. One rule, no special cases.
 
 ### D7 — RESOLVED: escalation is silence-only; no tenant-initiated escalation
+
+> **Partially superseded by D15** (engagement-gated escalation). D7's
+> ban on a free-standing tenant escalation trigger still holds; D15
+> introduces a *gated authorisation* of a machine-prepared notice, and
+> only for the engaged-then-quiet landlord class. Read D7 together with
+> D15.
 
 A landlord who replies — even unhelpfully ("not my problem") — has
 engaged; silence detection correctly does not fire. A dispute about the
@@ -291,6 +297,100 @@ templates are the published wording; the case record is complete.
 Phase 3 build consequence: the create-case flow gains the preview +
 confirm step (today it fires notice 1 immediately with no preview).
 The authorisation copy is content (template/data), not code.
+
+### D15 — Engagement-gated escalation (lands before Phase 4)
+
+**Origin: a live-harm gap found after Phase 3.** A tenant reply is
+uniform (D6/D8): every reply → `awaiting_landlord`, clock restarts. So
+a "thanks, all sorted" reply from `awaiting_tenant_review` lands in
+`awaiting_landlord`, restarts the landlord clock, and after the
+escalation interval of (entirely expected) landlord silence the sweep
+fires a real, evidential escalation letter at a landlord on a case the
+tenant treats as closed. The tenant caused a wrongful escalation by an
+ordinary, well-meant action. This harm exists **only** where the
+landlord has engaged — a "thanks" presupposes something to thank them
+for.
+
+**Supersedes D7, partially and on new grounds.** D7 banned a
+free-standing tenant escalation trigger ("send next notice"), and its
+rationale stands: the platform cannot judge reply quality, so it must
+not offer a button meaning "I judged this reply inadequate." D15's
+authorise action is **not** that button. It is a **gated authorisation
+of a notice the machine has already prepared**, surfaced only when the
+machine itself determines an escalation is due (landlord silence past
+the interval, counter below max) **and** the landlord has engaged.
+The tenant does not author or judge anything; they consent to a send
+the platform would otherwise have made automatically. The thank-you
+harm post-dated D7's reasoning and is the new ground. D7 keeps
+governing the never-engaged case (full automation) and the
+substance-of-a-reply dispute (record + signpost, never pressure).
+
+**The two-class model.** A new one-way fact governs whether escalation
+auto-fires: *has this landlord ever replied on this case?*
+
+| Class | Escalation behaviour | Tenant posture | Legitimacy |
+|---|---|---|---|
+| **Never-engaged** | FULLY AUTOMATIC, exactly as today | NOTIFIED on every auto-send (informational; D0.6 notify-on-send, already built — no action, no button, no `case_messages` row, no ball move, no clock) | The D13 create-case authorisation is standing consent to pursue a silent landlord |
+| **Engaged-then-quiet** | TENANT-AUTHORISED — the sweep WITHHOLDS the send and surfaces the prepared notice for the tenant to authorise (reusing the D13 preview/authorise pattern) | ASKED — nudged to authorise; if they never do, the case falls to dormancy (below) | The platform does not chase harder than the tenant's will; the tenant had an opening to spend energy and declined to authorise |
+
+Posture maps to who carries the energy: machine acts for you → it
+**tells** you; your will should govern → it **asks** you. This also
+closes D7's other open case — the engaged-but-*refusing* landlord is an
+engaged landlord, so tenant-gated re-push is his home too.
+
+**Ruling 1 — what counts as "engaged".** ANY token-resolved inbound
+flips the flag, *including* a quarantined / from-address-mismatch
+message. A generous definition fails SAFE (more cases become
+tenant-gated, fewer auto-escalate — the platform under-pursues); a
+stingy definition fails harmful (an engaged case wrongly reads
+never-engaged and fires a letter that should have been gated). No
+auto-responder / out-of-office / bounce detection at pilot. A spam
+reply carrying a resolvable token wrongly marks engaged → switches off
+auto-pursuit → the tenant need only authorise: the tolerable failure.
+The flag flips on the same condition that already flips the
+ball/clock in the inbound handler; it is idempotent and never resets.
+
+**Ruling 2 — the held case stays landlord-ball.** An engaged-then-quiet
+held case is *genuinely* landlord-ball: the last message is the
+tenant's own outbound reply, so the message-direction rule correctly
+reports the ball with the landlord. We do **not** force it to
+tenant-ball — doing so would make the ball rule lie and corrupt the
+message-direction invariant the whole model trusts. Consequently the
+authorise-nudge ladder for the held case is **new landlord-ball logic**,
+not a reuse of the tenant-ball nudge path; and the unauthorised tail
+needs **one new `awaiting_landlord → dormant` transition edge**.
+Dormant is the existing state and the **D11 revival window applies
+unchanged** — only the edge into it is new. (Design originally
+under-costed this as reuse; it is new tail logic, built cleanly as
+such.)
+
+**No new `CaseStatus`.** "Tenant authorisation required" is a derived
+condition (`landlord_engaged` true + clock expired + counter < max + no
+newer inbound), computed from the same silence verdict the sweep uses —
+no stored state, no new sweep-exclusion wiring. The case sits in
+`awaiting_landlord` throughout.
+
+**Counter / evidential invariants untouched.** Engagement is independent
+of the D3 ratchet (counter = escalation letters sent; engaged = inbounds
+received). Authorisation fires the *existing* auto-escalation send path,
+which ratchets the counter and freezes the letter in `case_messages` as
+before. The held state writes no escalation row.
+
+**Backfill caveat (record only; moot at pilot).** Default-false means an
+un-backfilled *engaged* case would read never-engaged and auto-escalate
+— the **harmful** direction (no worse than today's behaviour, but not
+benign; the earlier "safe" framing was wrong). At pilot, `migrate:fresh`
+from files means every case is created with the flag and flipped by the
+inbound handler, so there is nothing to backfill. If live cases ever
+existed, the flag is derivable:
+`landlord_engaged = EXISTS(case_messages WHERE direction=inbound AND
+sender_role=landlord)` (any inbound, per Ruling 1).
+
+**Sequencing.** D15 lands **before** Phase 4 (`escalation_exhausted`),
+which waits behind it. Out of scope and explicitly not folded in:
+success-recording (the separate "satisfied case → dormant rather than
+resolved" question), Phase 4, content/intent analysis of email text,
+and snags #12–19.
 
 ---
 

@@ -55,8 +55,11 @@
                         <dt class="col-5">Opened</dt>
                         <dd class="col-7">{{ $case->opened_at?->format('d M Y') }}</dd>
 
-                        @if($case->silence_clock_started_at && $case->ball_with === 'landlord' && isset($case->silence_settings_snapshot['escalation.interval_days']))
-                            <dt class="col-5">Next escalation</dt>
+                        {{-- D15: an engaged-then-quiet held case shows the authorise
+                             prompt instead of an auto-escalation date that will never
+                             fire on its own. (Adjacent to snag #15; scoped, not a fix.) --}}
+                        @if($case->silence_clock_started_at && $case->ball_with === 'landlord' && isset($case->silence_settings_snapshot['escalation.interval_days']) && !($authorisationPending ?? false))
+                            <dt class="col-5">{{ ($case->landlord_engaged ?? false) ? 'Next notice (with your go-ahead)' : 'Next escalation' }}</dt>
                             <dd class="col-7">{{ $case->silence_clock_started_at->copy()->addDays((int) $case->silence_settings_snapshot['escalation.interval_days'])->format('d M Y') }}</dd>
                         @endif
 
