@@ -124,6 +124,15 @@ class HandleInboundReply
             $case->silence_clock_started_at = now();
             $case->silence_settings_snapshot = SilenceClock::snapshotCurrentSettings();
 
+            // D15 — engagement flag (ruling 1). ANY token-resolved inbound
+            // marks the landlord as having engaged, INCLUDING a quarantined
+            // (from-address-mismatch) message: a generous definition fails
+            // safe — a wrongly-engaged case becomes tenant-gated and
+            // under-pursues, never over-pursues. One-way: set true, never
+            // reset. Idempotent on a second inbound. Persisted by the
+            // transitionTo()/save() below (no extra write).
+            $case->landlord_engaged = true;
+
             $eventType = $quarantineReason !== null ? 'inbound_quarantined' : 'inbound_received';
 
             if (in_array($case->status, self::STATES_THAT_TRANSITION, true)) {

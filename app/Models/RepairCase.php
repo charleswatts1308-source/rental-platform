@@ -53,6 +53,7 @@ class RepairCase extends Model
         'closed_at',
         'dormant_at',
         'ball_with',
+        'landlord_engaged',
         'silence_clock_started_at',
         'silence_settings_snapshot',
     ];
@@ -67,6 +68,7 @@ class RepairCase extends Model
             'opened_at' => 'datetime',
             'closed_at' => 'datetime',
             'dormant_at' => 'datetime',
+            'landlord_engaged' => 'boolean',
             'silence_clock_started_at' => 'datetime',
             'silence_settings_snapshot' => 'array',
         ];
@@ -137,6 +139,15 @@ class RepairCase extends Model
      * - Dormant cases revive via tenant reply within dormancy.revival_days
      *   (D11) — same `tenant_replied` event; the revival window is checked
      *   by the policy gate, not the state machine.
+     *
+     * Post D15 (engagement-gated escalation):
+     * - awaiting_landlord gains a `dormant` edge. An engaged-then-quiet
+     *   landlord case withholds escalation (silence:sweep returns
+     *   SendAuthorisationNudge instead of SendEscalation); the held case
+     *   is landlord-ball throughout (ruling 2). If the tenant never
+     *   authorises, the authorise-nudge ladder walks and the case
+     *   transitions awaiting_landlord -> dormant. landlord_engaged is a
+     *   one-way flag set in HandleInboundReply, never reset.
      */
     private const TRANSITIONS = [
         'open' => [
@@ -147,6 +158,14 @@ class RepairCase extends Model
             'on_hold' => 'hold_set',
             'resolved' => 'case_resolved',
             'abandoned' => 'case_abandoned',
+            // D15 — engagement-gated escalation. An engaged-then-quiet
+            // case withholds escalation for tenant authorisation; if the
+            // tenant never authorises, the held case walks the
+            // authorise-nudge ladder and goes dormant from here (the
+            // case is landlord-ball throughout, per D15 ruling 2). This
+            // edge is the unauthorised tail; D11 revival applies as for
+            // any dormant case.
+            'dormant' => 'case_dormant',
         ],
         'awaiting_tenant_review' => [
             'awaiting_landlord' => 'tenant_replied',

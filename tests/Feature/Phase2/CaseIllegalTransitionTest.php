@@ -19,7 +19,9 @@ it('throws InvalidCaseTransitionException for illegal transitions', function (
     'open → resolved (skip stages)' => [CaseStatus::Open, CaseStatus::Resolved],
     'open → on_hold (no notice yet)' => [CaseStatus::Open, CaseStatus::OnHold],
     'open → dormant' => [CaseStatus::Open, CaseStatus::Dormant],
-    'awaiting_landlord → dormant (dormancy only from review)' => [CaseStatus::AwaitingLandlord, CaseStatus::Dormant],
+    // NB: awaiting_landlord → dormant WAS illegal pre-D15; it is now the
+    // legal unauthorised-tail edge for engagement-gated escalation. See the
+    // positive assertion below and tests/Feature/D15.
     'on_hold → dormant (hold pauses the silence clock)' => [CaseStatus::OnHold, CaseStatus::Dormant],
     'dormant → on_hold (revive first, then hold)' => [CaseStatus::Dormant, CaseStatus::OnHold],
     'resolved → awaiting_landlord (terminal)' => [CaseStatus::Resolved, CaseStatus::AwaitingLandlord],
@@ -27,6 +29,10 @@ it('throws InvalidCaseTransitionException for illegal transitions', function (
     'abandoned → awaiting_landlord (terminal)' => [CaseStatus::Abandoned, CaseStatus::AwaitingLandlord],
     'abandoned → resolved (terminal)' => [CaseStatus::Abandoned, CaseStatus::Resolved],
 ]);
+
+it('allows awaiting_landlord → dormant (D15 engagement-gated unauthorised tail)', function () {
+    expect(RepairCase::isTransitionAllowed(CaseStatus::AwaitingLandlord, CaseStatus::Dormant))->toBeTrue();
+});
 
 it('does not change status when an illegal transition is attempted', function () {
     $case = RepairCase::factory()->create(['status' => CaseStatus::Open]);

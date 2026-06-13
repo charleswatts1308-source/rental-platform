@@ -35,6 +35,16 @@
                 @break
         @endswitch
 
+        @if($authorisationPending ?? false)
+            <div class="alert alert-warning small mb-3">
+                Your landlord engaged and then went quiet. We won't send the next
+                formal notice without your say-so — review it and send when you're ready.
+            </div>
+            <a href="{{ route('cases.escalate.preview', $case->url_slug) }}" class="btn btn-primary w-100 mb-3">
+                Review &amp; send the next notice
+            </a>
+        @endif
+
         @can('reply', $case)
             <form method="POST" action="{{ route('cases.reply', $case->url_slug) }}" class="mb-3">
                 @csrf

@@ -13,6 +13,7 @@ use App\Models\RepairCase;
 use App\Models\RepairCategory;
 use App\Models\Setting;
 use App\Services\LetterTemplateRenderer;
+use App\Services\Silence\SilenceClock;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -47,6 +48,7 @@ class CaseController extends Controller
     public function __construct(
         private SendCaseNotice $sendCaseNotice,
         private LetterTemplateRenderer $renderer,
+        private SilenceClock $silenceClock,
     ) {}
 
     public function index(Request $request): View
@@ -90,6 +92,10 @@ class CaseController extends Controller
             'messages' => $messages,
             'quarantined' => $quarantined,
             'revivalExpired' => $this->dormantRevivalExpired($case),
+            // D15 — derived "tenant authorisation required" condition for
+            // an engaged-then-quiet held escalation. Single source of truth
+            // (SilenceClock), not a stored state (D0.3).
+            'authorisationPending' => $this->silenceClock->authorisationPending($case, now()),
         ]);
     }
 
@@ -121,6 +127,70 @@ class CaseController extends Controller
         return redirect()
             ->route('cases.show', $case->url_slug)
             ->with('success', 'Reply sent to your landlord.');
+    }
+
+    /**
+     * D15 — preview the withheld escalation notice before authorising it.
+     * Reuses the D13 preview pattern, but against the EXISTING case (no
+     * session staging): renders the next escalation notice the sweep has
+     * withheld, plus the escalation_authorisation ui_copy. The policy gate
+     * (authoriseEscalation) confirms the case is genuinely in the
+     * engaged-then-quiet held condition before anything renders.
+     */
+    public function escalationPreview(string $slug): View|RedirectResponse
+    {
+        $case = $this->findCaseOrFail($slug);
+        $this->authorize('authoriseEscalation', $case);
+
+        $case->load(['property', 'landlordContact', 'tenant']);
+
+        $noticeNumber = $this->silenceClock->escalationCounter($case) + 1;
+        $template = LetterTemplate::forEscalation($noticeNumber);
+        $authorisationTemplate = LetterTemplate::query()
+            ->where('type', 'ui_copy')
+            ->where('code', 'escalation_authorisation')
+            ->where('active', true)
+            ->first();
+
+        $vars = [
+            'tenant_name' => $case->tenant->name,
+            'landlord_name' => $case->landlordContact->name ?: 'Sir or Madam',
+            'case_reference' => $case->url_slug,
+            'property_address' => $this->formatAddress($case->property),
+            'issue_description' => $case->description,
+            'response_days' => (int) Setting::get('escalation.interval_days', 14),
+            'notice_number' => $noticeNumber,
+            'deadline_date' => null,
+        ];
+
+        return view('cases.authorise', [
+            'case' => $case,
+            'noticeNumber' => $noticeNumber,
+            'renderedLetter' => $template ? $this->renderer->render($template, $vars) : null,
+            'renderedAuthorisation' => $authorisationTemplate
+                ? $this->renderer->render($authorisationTemplate, $vars)
+                : null,
+        ]);
+    }
+
+    /**
+     * D15 — fire the withheld escalation notice. The case is in
+     * awaiting_landlord, so SendCaseNotice takes its $isAutoEscalation
+     * branch: this is the IDENTICAL send the sweep would have auto-fired
+     * for a never-engaged landlord — counter ratchets (D3), the letter is
+     * frozen in case_messages, the landlord clock restarts. No new send
+     * path. The policy gate re-confirms the held condition.
+     */
+    public function escalationAuthorise(Request $request, string $slug): RedirectResponse
+    {
+        $case = $this->findCaseOrFail($slug);
+        $this->authorize('authoriseEscalation', $case);
+
+        $this->sendCaseNotice->execute($case, actorUserId: $request->user()->id);
+
+        return redirect()
+            ->route('cases.show', $case->url_slug)
+            ->with('success', 'The next notice has been sent to your landlord.');
     }
 
     public function hold(Request $request, string $slug): RedirectResponse

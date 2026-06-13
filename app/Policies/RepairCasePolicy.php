@@ -6,6 +6,7 @@ use App\Enums\CaseStatus;
 use App\Models\RepairCase;
 use App\Models\Setting;
 use App\Models\User;
+use App\Services\Silence\SilenceClock;
 
 /**
  * Authorisation for tenant access to repair cases. Ownership is the
@@ -21,6 +22,10 @@ use App\Models\User;
  */
 class RepairCasePolicy
 {
+    public function __construct(
+        private SilenceClock $silenceClock,
+    ) {}
+
     public function viewAny(User $user): bool
     {
         return true;
@@ -57,6 +62,18 @@ class RepairCasePolicy
             CaseStatus::Dormant => $this->dormantRevivalAvailable($case),
             default => false,
         };
+    }
+
+    /**
+     * D15 — tenant authorises a withheld escalation notice. Available only
+     * when the case is in the engaged-then-quiet held condition, derived
+     * live from SilenceClock (the same facts the sweep's held-escalation
+     * branch keys off). Ownership is the baseline.
+     */
+    public function authoriseEscalation(User $user, RepairCase $case): bool
+    {
+        return $this->ownsCase($user, $case)
+            && $this->silenceClock->authorisationPending($case, now());
     }
 
     public function hold(User $user, RepairCase $case): bool

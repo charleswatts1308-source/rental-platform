@@ -230,6 +230,16 @@ class SilenceClock
             );
         }
 
+        // D15 — engagement-gated escalation. The clock has expired and an
+        // escalation is due, but if the landlord has ever engaged on this
+        // case we do NOT auto-send: withhold and surface the prepared
+        // notice for tenant authorisation (ruling 2 — the case stays
+        // landlord-ball). Never-engaged falls through to the unchanged
+        // SendEscalation path below.
+        if ($case->landlord_engaged) {
+            return $this->heldEscalationVerdict($case, $silenceDays, $snapshot, $counter);
+        }
+
         $nextNoticeNumber = $counter + 1;
         $template = LetterTemplate::forEscalation($nextNoticeNumber);
 
@@ -367,6 +377,154 @@ class SilenceClock
             ->where('event_type', 'nudge_sent')
             ->where('occurred_at', '>=', $case->silence_clock_started_at)
             ->count();
+    }
+
+    /**
+     * D15 — held-escalation verdict for an engaged-then-quiet landlord.
+     *
+     * Reached only from landlordSideVerdict when the escalation clock has
+     * expired (silenceDays >= interval), the counter is below max, AND the
+     * landlord has engaged. The escalation is WITHHELD; instead the case
+     * walks an authorise-nudge ladder that mirrors the tenant-side nudge
+     * ladder (D2's explained-recoverable-sequence promise), but:
+     *   - it is landlord-ball throughout (ruling 2) — ballWith=Landlord;
+     *   - it counts `authorisation_nudge_sent` events, not `nudge_sent`,
+     *     so it never collides with the tenant-side ladder;
+     *   - if the tenant never authorises, it transitions
+     *     awaiting_landlord -> dormant (the new D15 edge), not the
+     *     tenant-side awaiting_tenant_review -> dormant edge. D11 revival
+     *     applies as for any dormant case.
+     *
+     * The nudge cadence reuses the existing nudge.* settings (D0.8 — no
+     * new settings rows). Because this branch is entered only at
+     * silenceDays >= interval, the first authorise-nudge fires as soon as
+     * the case is held (the >= first-day threshold is already satisfied);
+     * the second follows nudge.second_days; dormancy at nudge.dormancy_days
+     * once both authorise-nudges have gone out.
+     *
+     * @param  array<string, int>  $snapshot
+     */
+    private function heldEscalationVerdict(RepairCase $case, int $silenceDays, array $snapshot, int $counter): SweepVerdict
+    {
+        $first = (int) ($snapshot['nudge.first_days'] ?? 10);
+        $second = (int) ($snapshot['nudge.second_days'] ?? 20);
+        $dormancy = (int) ($snapshot['nudge.dormancy_days'] ?? 30);
+
+        $nudgesSent = $this->authorisationNudgesSentSinceClockStart($case);
+
+        // Unauthorised tail: both authorise-nudges sent AND silence past
+        // the dormancy threshold → dormant (awaiting_landlord -> dormant).
+        if ($silenceDays >= $dormancy && $nudgesSent >= 2) {
+            return new SweepVerdict(
+                intendedAction: IntendedAction::TransitionDormantIntent,
+                ballWith: BallPosition::Landlord,
+                silenceDays: $silenceDays,
+                intendedLetterTemplate: null,
+                escalationCounterValue: $counter,
+                nudgeNumber: null,
+                reasoning: "engaged-quiet held escalation unauthorised; silence {$silenceDays} >= dormancy={$dormancy}; authorise-nudge ladder walked (count={$nudgesSent}); would transition awaiting_landlord -> dormant",
+            );
+        }
+
+        $nextNudgeNumber = $nudgesSent + 1;
+
+        if ($nextNudgeNumber > 2) {
+            // Both authorise-nudges sent but silence < dormancy — wait.
+            return new SweepVerdict(
+                intendedAction: IntendedAction::NoAction,
+                ballWith: BallPosition::Landlord,
+                silenceDays: $silenceDays,
+                intendedLetterTemplate: null,
+                escalationCounterValue: $counter,
+                nudgeNumber: null,
+                reasoning: "engaged-quiet; escalation withheld; authorise-nudge ladder walked (count={$nudgesSent}); awaiting dormancy threshold ({$dormancy})",
+            );
+        }
+
+        $requiredSilence = $nextNudgeNumber === 1 ? $first : $second;
+        if ($silenceDays < $requiredSilence) {
+            return new SweepVerdict(
+                intendedAction: IntendedAction::NoAction,
+                ballWith: BallPosition::Landlord,
+                silenceDays: $silenceDays,
+                intendedLetterTemplate: null,
+                escalationCounterValue: $counter,
+                nudgeNumber: null,
+                reasoning: "engaged-quiet; escalation withheld; next authorise-nudge {$nextNudgeNumber} needs silence >= {$requiredSilence} ({$silenceDays} so far)",
+            );
+        }
+
+        // The withheld notice (for shadow-log identification + so the
+        // authorise screen can render it). Counter is NOT incremented —
+        // the D3 ratchet advances only when the tenant authorises and the
+        // real send fires through SendCaseNotice.
+        $template = LetterTemplate::forEscalation($counter + 1);
+
+        return new SweepVerdict(
+            intendedAction: IntendedAction::SendAuthorisationNudge,
+            ballWith: BallPosition::Landlord,
+            silenceDays: $silenceDays,
+            intendedLetterTemplate: $template,
+            escalationCounterValue: $counter,
+            nudgeNumber: $nextNudgeNumber,
+            reasoning: "engaged-quiet; escalation withheld for tenant authorisation; authorise-nudge {$nextNudgeNumber} (count={$nudgesSent}); silence {$silenceDays} >= {$requiredSilence}; withheld notice N=".($counter + 1),
+        );
+    }
+
+    /**
+     * Count `authorisation_nudge_sent` events since the current silence
+     * clock started — the held-escalation analogue of
+     * nudgesSentSinceClockStart. Resets implicitly on any clock restart
+     * (e.g. when the tenant authorises and the escalation send restarts
+     * the landlord clock).
+     */
+    private function authorisationNudgesSentSinceClockStart(RepairCase $case): int
+    {
+        if ($case->silence_clock_started_at === null) {
+            return 0;
+        }
+
+        return $case->events()
+            ->where('event_type', 'authorisation_nudge_sent')
+            ->where('occurred_at', '>=', $case->silence_clock_started_at)
+            ->count();
+    }
+
+    /**
+     * D15 — the derived "tenant authorisation required" condition, used by
+     * the case page (to show the authorise prompt) and the policy (to gate
+     * the authorise action). Single source of truth: the same facts the
+     * sweep's held-escalation branch keys off.
+     *
+     * True when: status awaiting_landlord, landlord engaged, ball with the
+     * landlord, clock started, the escalation clock has expired, and the
+     * ladder is not exhausted. NOT a stored state (D0.3) — recomputed each
+     * read. `now` is injected (no Carbon::now() in the decision path).
+     */
+    public function authorisationPending(RepairCase $case, CarbonInterface $now): bool
+    {
+        if ($case->status !== CaseStatus::AwaitingLandlord || ! $case->landlord_engaged) {
+            return false;
+        }
+
+        if ($this->ballFor($case) !== BallPosition::Landlord) {
+            return false;
+        }
+
+        if ($case->silence_clock_started_at === null || empty($case->silence_settings_snapshot)) {
+            return false;
+        }
+
+        $snapshot = $case->silence_settings_snapshot;
+        $interval = (int) ($snapshot['escalation.interval_days'] ?? 14);
+        $maxNotices = (int) ($snapshot['escalation.max_notices'] ?? 4);
+
+        $silenceDays = (int) floor($case->silence_clock_started_at->diffInRealSeconds($now, absolute: false) / 86400);
+        if ($silenceDays < $interval) {
+            return false;
+        }
+
+        return $this->escalationCounter($case) < $maxNotices;
     }
 
     private function buildNudgeVerdict(int $silenceDays, int $nudgeNumber, string $reasoning): SweepVerdict

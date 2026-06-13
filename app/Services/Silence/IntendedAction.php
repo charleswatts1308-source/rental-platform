@@ -16,6 +16,14 @@ enum IntendedAction: string
     case SendEscalation = 'send_escalation';
     case SendNudge = 'send_nudge';
 
+    // D15 — engagement-gated escalation. An engaged-then-quiet landlord
+    // case WITHHOLDS the escalation send and surfaces the prepared notice
+    // for tenant authorisation. This verdict means: do not auto-send;
+    // instead fire a tenant-facing authorise-nudge pointing at the
+    // authorise action. Landlord-ball throughout (ruling 2). Mail-only,
+    // never a case_messages row (same evidential invariant as nudges).
+    case SendAuthorisationNudge = 'send_authorisation_nudge';
+
     // Phase 4 builds the escalation_exhausted state. Until then the
     // shadow sweep logs the intent as a marker — never transitions.
     case TransitionExhaustedIntent = 'transition_exhausted_intent';
