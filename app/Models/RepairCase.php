@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\CaseSeverity;
 use App\Enums\CaseStatus;
+use App\Enums\ExhaustedStance;
 use App\Exceptions\InvalidCaseTransitionException;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -54,6 +55,7 @@ class RepairCase extends Model
         'dormant_at',
         'ball_with',
         'landlord_engaged',
+        'exhausted_stance',
         'silence_clock_started_at',
         'silence_settings_snapshot',
     ];
@@ -69,6 +71,7 @@ class RepairCase extends Model
             'closed_at' => 'datetime',
             'dormant_at' => 'datetime',
             'landlord_engaged' => 'boolean',
+            'exhausted_stance' => ExhaustedStance::class,
             'silence_clock_started_at' => 'datetime',
             'silence_settings_snapshot' => 'array',
         ];
@@ -148,6 +151,21 @@ class RepairCase extends Model
      *   authorises, the authorise-nudge ladder walks and the case
      *   transitions awaiting_landlord -> dormant. landlord_engaged is a
      *   one-way flag set in HandleInboundReply, never reset.
+     *
+     * Post D14 (Phase 4 — escalation_exhausted; design doc D5):
+     * - awaiting_landlord gains an `escalation_exhausted` edge. A
+     *   NEVER-ENGAGED landlord who ignores the full ladder (counter >=
+     *   max_notices, clock expired) is promoted from the long-shadowed
+     *   transition_exhausted_intent to this terminal. Only never-engaged
+     *   cases reach it — an engaged case is tenant-gated below max (D15)
+     *   and goes dormant instead.
+     * - escalation_exhausted is allow-reply (D5): a tenant web reply
+     *   revives to awaiting_landlord (tenant_replied); a landlord email
+     *   reply revives to awaiting_tenant_review (inbound_received, via
+     *   HandleInboundReply, which flips landlord_engaged true). Both
+     *   mirror dormant's revival split. The tenant may also still close
+     *   the case (resolved / abandoned). No revival window (unlike
+     *   dormancy) — a reply revives whenever it lands.
      */
     private const TRANSITIONS = [
         'open' => [
@@ -166,6 +184,9 @@ class RepairCase extends Model
             // edge is the unauthorised tail; D11 revival applies as for
             // any dormant case.
             'dormant' => 'case_dormant',
+            // D14 — never-engaged ladder exhaustion (design doc D5). The
+            // sweep fires the landlord closer then promotes the case here.
+            'escalation_exhausted' => 'case_exhausted',
         ],
         'awaiting_tenant_review' => [
             'awaiting_landlord' => 'tenant_replied',
@@ -185,6 +206,17 @@ class RepairCase extends Model
         'dormant' => [
             // Revival within dormancy.revival_days; the window check is in
             // the policy gate.
+            'awaiting_landlord' => 'tenant_replied',
+            'awaiting_tenant_review' => 'inbound_received',
+            'resolved' => 'case_resolved',
+            'abandoned' => 'case_abandoned',
+        ],
+        'escalation_exhausted' => [
+            // D14 allow-reply (design doc D5), mirroring dormant's split:
+            // tenant web reply revives the active correspondence; landlord
+            // email reply (via HandleInboundReply) revives to review and
+            // flips landlord_engaged true. No revival window. The tenant
+            // may still deliberately close the case.
             'awaiting_landlord' => 'tenant_replied',
             'awaiting_tenant_review' => 'inbound_received',
             'resolved' => 'case_resolved',

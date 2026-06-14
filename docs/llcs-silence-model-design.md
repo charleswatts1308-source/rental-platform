@@ -21,7 +21,8 @@ content — not the landlord's, not the tenant's.
 
 ---
 
-## 2. Decisions (D1–D13, all agreed; D15 added post-Phase-3)
+## 2. Decisions (D1–D13, all agreed; D15 added post-Phase-3; D14 = the
+Phase-4 build of D5 — see the D5 implementation note)
 
 ### D1 — A "stage" is a severity level, not a ladder rung
 
@@ -142,6 +143,52 @@ Content (data, deferred permanently — edit rows, not code):
   auto-filing. Signpost state only: here is your evidence, here is the
   door.
 
+**Implementation note — Phase 4 / D14 (built 2026-06-14).** D5 is the
+authoritative spec; the Phase-4 build ("D14") implements it and pins the
+details D5 left open. Nothing below contradicts D5 — it extends it.
+
+- **Reachable only by the never-engaged path.** D15 made escalation
+  tenant-gated for *engaged* landlords (withheld → authorise-nudge →
+  dormant), so an engaged case never climbs to `max_notices`. Exhaustion
+  is therefore a **never-engaged terminal** only. The verdict's
+  `counter >= max_notices` check sits above the D15 engagement branch in
+  `SilenceClock`; that ordering is benign because an engaged case cannot
+  reach `counter >= max`, and a guard test locks the invariant.
+- **The landlord closer fires (D5's send-point, made real).** On the
+  transition, `SendExhaustionCloser` renders + sends the active
+  `exhaustion_landlord` row (`exhaustion_landlord_closer`) with
+  `stage_at_send = NULL` — a real, frozen `case_messages` row that does
+  **not** count toward the ladder (D3 predicate excludes NULL-stage). It is
+  **one-shot**: skipped if a closer already exists on the case, so a
+  tenant-web revival that later re-exhausts does not re-fire it. This is
+  the binding reading of "the clock stops permanently — no further
+  automatic letters, ever."
+- **"Clock stops permanently" reconciled with allow-reply.** A reply
+  restarts the clock, but the D3 ratchet (counter never resets) keeps
+  `counter >= max`, so the verdict can only ever re-exhaust — never emit
+  another escalation letter. Letters stop; the timestamp may move.
+- **Allow-reply revives on both edges (mirroring dormancy's split).** A
+  **tenant** web reply → `awaiting_landlord` (`tenant_replied`); a
+  **landlord** email reply → `awaiting_tenant_review` (`inbound_received`,
+  via `HandleInboundReply`). The landlord edge is mandatory — without it
+  the webhook would record the inbound but strand the case sweep-inert with
+  the ball wrongly on the tenant. **No revival window** (unlike dormancy):
+  a reply revives whenever it lands.
+- **Engagement-flag reconciliation with D15.** A landlord email revival
+  flips `landlord_engaged` true (a genuine landlord inbound, same rule as
+  everywhere), so the revived case is thereafter D15-gated rather than
+  auto-escalating. A tenant reply does not touch the flag.
+- **Tenant stance (cosmetic).** `cases.exhausted_stance`
+  (null | abandoned | unresolved) is a displayed label only — read by the
+  UI and by **nothing** in the sweep/verdict/clock/state-machine. The
+  tenant is never forced to choose. The tenant may still deliberately close
+  the case (resolved / abandoned).
+- **Signposting.** A members-wall page (`members.escalation-routes`, auth,
+  not in public nav), stubbed; real wording solicitor-deferred. Reached
+  from the exhausted case page and the tenant exhaustion notice. The closer
+  + tenant notice + signposting wording are **solicitor-gated for
+  production**.
+
 ### D6 — Tenant follow-up restarts the clock
 
 The clock is always *time since the latest tenant message*. A tenant
@@ -187,7 +234,7 @@ state:
 | on_hold | Yes | Reply IS the resume action |
 | dormant | Yes, within `dormancy.revival_days` | Beyond the window the page offers "raise a new case" instead (D11) |
 | resolved / abandoned | Never | Deliberate endings stay ended; recurrence = new case, which may reference the old by quoting its reference |
-| escalation_exhausted | Deferred to Phase 4 | Expected: message-on-record, clock stays permanently stopped (D5) |
+| escalation_exhausted | Yes (D14, no window) | Allow-reply revives (D5/D14): tenant reply → awaiting_landlord; landlord email → awaiting_tenant_review. Clock restarts but the D3 ratchet bars any further escalation letter. |
 
 Every tenant reply transitions the case to (or keeps it in)
 `awaiting_landlord`: ball to landlord, clock restarts (D6). Replies

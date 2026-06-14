@@ -59,12 +59,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/cases/{slug}/hold', [CaseController::class, 'hold'])->name('cases.hold');
     Route::post('/cases/{slug}/resolve', [CaseController::class, 'resolve'])->name('cases.resolve');
     Route::post('/cases/{slug}/abandon', [CaseController::class, 'abandon'])->name('cases.abandon');
+    // D14 — set the cosmetic exhausted_stance label (escalation_exhausted only).
+    Route::post('/cases/{slug}/stance', [CaseController::class, 'setStance'])->name('cases.stance');
 
     // Auth-only member pages
     Route::prefix('members')->name('members.')->group(function () {
         Route::get('/tenantandlandlord', fn() => view('members.tenantandlandlord'))->name('tenantandlandlord');
         Route::get('/thought-experiment', fn() => view('members.thought-experiment'))->name('thought-experiment');
         Route::get('/equity-conversation', fn() => view('members.equity-conversation'))->name('equity-conversation');
+        // D14 — signposting page reached from the exhausted case + notice.
+        // Members-wall (auth+verified), deliberately NOT in public nav.
+        // Content is a solicitor-deferred stub.
+        Route::get('/escalation-routes', fn() => view('members.escalation-routes'))->name('escalation-routes');
     });
 });
 

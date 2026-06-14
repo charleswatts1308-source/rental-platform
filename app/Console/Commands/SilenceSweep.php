@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Actions\SendCaseNotice;
+use App\Actions\SendExhaustionCloser;
 use App\Enums\BallPosition;
 use App\Enums\CaseStatus;
 use App\Enums\MessageDirection;
@@ -87,6 +88,7 @@ class SilenceSweep extends Command
     public function handle(
         SilenceClock $clock,
         SendCaseNotice $sendCaseNotice,
+        SendExhaustionCloser $sendExhaustionCloser,
         LetterTemplateRenderer $renderer,
         MagicLinkGenerator $magicLinkGenerator,
     ): int {
@@ -103,6 +105,8 @@ class SilenceSweep extends Command
                 CaseStatus::Resolved,
                 CaseStatus::Abandoned,
                 CaseStatus::Dormant,
+                // D14 — terminal, sweep-inert at every stance value.
+                CaseStatus::EscalationExhausted,
             ])
             ->get();
 
@@ -116,6 +120,7 @@ class SilenceSweep extends Command
                     $case,
                     $clock,
                     $sendCaseNotice,
+                    $sendExhaustionCloser,
                     $renderer,
                     $magicLinkGenerator,
                     $now,
@@ -172,6 +177,7 @@ class SilenceSweep extends Command
         RepairCase $case,
         SilenceClock $clock,
         SendCaseNotice $sendCaseNotice,
+        SendExhaustionCloser $sendExhaustionCloser,
         LetterTemplateRenderer $renderer,
         MagicLinkGenerator $magicLinkGenerator,
         CarbonInterface $now,
@@ -189,6 +195,9 @@ class SilenceSweep extends Command
             // the D15 held-escalation tail (ball=landlord). transitionTo's
             // edge-legality check is the real guard either way.
             IntendedAction::TransitionDormantIntent => in_array($verdict->ballWith, [BallPosition::Tenant, BallPosition::Landlord], true),
+            // D14 — never-engaged ladder exhaustion is landlord-ball; this
+            // promotes the long-shadowed intent to a real transition.
+            IntendedAction::TransitionExhaustedIntent => $verdict->ballWith === BallPosition::Landlord,
             IntendedAction::ResumeFromHold => true,
             default => false,
         };
@@ -200,7 +209,7 @@ class SilenceSweep extends Command
         }
 
         return DB::transaction(function () use (
-            $case, $sendCaseNotice, $renderer, $magicLinkGenerator,
+            $case, $sendCaseNotice, $sendExhaustionCloser, $renderer, $magicLinkGenerator,
             $now, $isPretend, $pretendToday, $verdict
         ) {
             $locked = RepairCase::query()->lockForUpdate()->find($case->id);
@@ -232,6 +241,10 @@ class SilenceSweep extends Command
                 ),
                 IntendedAction::TransitionDormantIntent => $this->executeDormancyTransition(
                     $locked, $verdict, $renderer, $magicLinkGenerator,
+                    $now, $isPretend, $pretendToday,
+                ),
+                IntendedAction::TransitionExhaustedIntent => $this->executeExhaustionTransition(
+                    $locked, $verdict, $sendExhaustionCloser, $renderer, $magicLinkGenerator,
                     $now, $isPretend, $pretendToday,
                 ),
                 IntendedAction::ResumeFromHold => $this->executeResumeFromHold(
@@ -455,6 +468,74 @@ class SilenceSweep extends Command
         $id = $this->writeShadowRow($case->id, $verdict, $now, $isPretend, $pretendToday, executed: true);
 
         return [[$id], true];
+    }
+
+    /**
+     * D14 (Phase 4, design doc D5) — promote the long-shadowed
+     * transition_exhausted_intent to a real transition into the
+     * escalation_exhausted terminal, for a NEVER-ENGAGED landlord who
+     * ignored the full ladder.
+     *
+     * On the transition:
+     *   1. Fire the landlord closer (SendExhaustionCloser, active-row idiom)
+     *      — the last, strongest evidential letter + the landlord's final
+     *      chance to engage. ONE-SHOT (D5 / ruling 2's binding invariant
+     *      "no further automatic letters, ever"): skipped if a closer was
+     *      already sent on this case, so a tenant-web revival that later
+     *      re-exhausts does NOT re-fire it. stage_at_send=NULL → the counter
+     *      is untouched.
+     *   2. transitionTo(EscalationExhausted) — clock stops permanently.
+     *   3. Queue the tenant exhaustion notice (reuses the existing
+     *      tenant_exhaustion_notice row; active-row idiom). It links the
+     *      tenant to the case page and on to the signposting page.
+     *
+     * @return array{0: array<int, int>, 1: bool}
+     */
+    private function executeExhaustionTransition(
+        RepairCase $case,
+        SweepVerdict $verdict,
+        SendExhaustionCloser $sendExhaustionCloser,
+        LetterTemplateRenderer $renderer,
+        MagicLinkGenerator $magicLinkGenerator,
+        CarbonInterface $now,
+        bool $isPretend,
+        ?string $pretendToday,
+    ): array {
+        if (! $this->exhaustionCloserAlreadySent($case)) {
+            $sendExhaustionCloser->execute($case);
+        }
+
+        $case->transitionTo(CaseStatus::EscalationExhausted, [
+            'actor_label' => 'system',
+            'meta' => ['silence_days' => $verdict->silenceDays, 'counter' => $verdict->escalationCounterValue],
+        ]);
+        $this->dispatchTenantNotification(
+            $case->fresh(),
+            'tenant_exhaustion_notice',
+            'escalation_exhausted',
+            null,
+            $renderer,
+            $magicLinkGenerator,
+        );
+
+        $id = $this->writeShadowRow($case->id, $verdict, $now, $isPretend, $pretendToday, executed: true);
+
+        return [[$id], true];
+    }
+
+    /**
+     * D14 one-shot guard. The closer is the single outbound SYSTEM row with
+     * stage_at_send=NULL (escalation rungs carry a non-null stage; tenant
+     * replies are sender_role=tenant). If one exists, the closer has already
+     * fired and must not fire again on a re-exhaustion.
+     */
+    private function exhaustionCloserAlreadySent(RepairCase $case): bool
+    {
+        return $case->messages()
+            ->where('direction', MessageDirection::Outbound)
+            ->where('sender_role', SenderRole::System)
+            ->whereNull('stage_at_send')
+            ->exists();
     }
 
     /**

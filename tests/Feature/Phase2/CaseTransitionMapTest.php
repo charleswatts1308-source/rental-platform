@@ -29,6 +29,13 @@ it('permits every transition listed in the design doc', function (CaseStatus $fr
     // Phase 3 D0.3 — "it got fixed while I was away" must work directly.
     'dormant → resolved' => [CaseStatus::Dormant, CaseStatus::Resolved],
     'dormant → abandoned' => [CaseStatus::Dormant, CaseStatus::Abandoned],
+    // D14 — never-engaged ladder exhaustion (design doc D5).
+    'awaiting_landlord → escalation_exhausted' => [CaseStatus::AwaitingLandlord, CaseStatus::EscalationExhausted],
+    // D14 allow-reply revival, mirroring dormant's split.
+    'escalation_exhausted → awaiting_landlord (tenant revival)' => [CaseStatus::EscalationExhausted, CaseStatus::AwaitingLandlord],
+    'escalation_exhausted → awaiting_tenant_review (landlord email revival)' => [CaseStatus::EscalationExhausted, CaseStatus::AwaitingTenantReview],
+    'escalation_exhausted → resolved' => [CaseStatus::EscalationExhausted, CaseStatus::Resolved],
+    'escalation_exhausted → abandoned' => [CaseStatus::EscalationExhausted, CaseStatus::Abandoned],
 ]);
 
 it('rejects same-status no-op transitions', function (CaseStatus $status) {
@@ -41,6 +48,7 @@ it('rejects same-status no-op transitions', function (CaseStatus $status) {
     [CaseStatus::Dormant],
     [CaseStatus::Resolved],
     [CaseStatus::Abandoned],
+    [CaseStatus::EscalationExhausted],
 ]);
 
 it('rejects all transitions out of terminal statuses', function (CaseStatus $terminal, CaseStatus $to) {

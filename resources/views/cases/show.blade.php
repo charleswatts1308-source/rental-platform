@@ -41,6 +41,10 @@
                     <h2 class="h6 text-muted text-uppercase">Status</h2>
                     <p class="h4 mb-2">
                         <span class="badge bg-info text-dark">{{ str_replace('_', ' ', $case->status->value) }}</span>
+                        {{-- D14 — tenant's cosmetic framing of an exhausted case. --}}
+                        @if($case->exhausted_stance)
+                            <span class="badge bg-secondary">{{ $case->exhausted_stance->label() }}</span>
+                        @endif
                     </p>
                     <dl class="row mb-0 small">
                         <dt class="col-5">Stage</dt>
@@ -58,7 +62,10 @@
                         {{-- D15: an engaged-then-quiet held case shows the authorise
                              prompt instead of an auto-escalation date that will never
                              fire on its own. (Adjacent to snag #15; scoped, not a fix.) --}}
-                        @if($case->silence_clock_started_at && $case->ball_with === 'landlord' && isset($case->silence_settings_snapshot['escalation.interval_days']) && !($authorisationPending ?? false))
+                        {{-- D14: an exhausted case is terminal — suppress the projected
+                             "next escalation" date, which would otherwise show a phantom
+                             future date that never fires (the clock has stopped). --}}
+                        @if($case->silence_clock_started_at && $case->ball_with === 'landlord' && isset($case->silence_settings_snapshot['escalation.interval_days']) && !($authorisationPending ?? false) && $case->status->value !== 'escalation_exhausted')
                             <dt class="col-5">{{ ($case->landlord_engaged ?? false) ? 'Next notice (with your go-ahead)' : 'Next escalation' }}</dt>
                             <dd class="col-7">{{ $case->silence_clock_started_at->copy()->addDays((int) $case->silence_settings_snapshot['escalation.interval_days'])->format('d M Y') }}</dd>
                         @endif

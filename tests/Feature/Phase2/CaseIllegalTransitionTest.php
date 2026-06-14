@@ -28,6 +28,12 @@ it('throws InvalidCaseTransitionException for illegal transitions', function (
     'resolved → open (terminal)' => [CaseStatus::Resolved, CaseStatus::Open],
     'abandoned → awaiting_landlord (terminal)' => [CaseStatus::Abandoned, CaseStatus::AwaitingLandlord],
     'abandoned → resolved (terminal)' => [CaseStatus::Abandoned, CaseStatus::Resolved],
+    // D14 — escalation_exhausted is allow-reply + closeable, but NOT a free
+    // door: only the four legal out-edges exist; on_hold / re-escalation are
+    // not among them.
+    'escalation_exhausted → on_hold (no re-pausing a closed ladder)' => [CaseStatus::EscalationExhausted, CaseStatus::OnHold],
+    'escalation_exhausted → open' => [CaseStatus::EscalationExhausted, CaseStatus::Open],
+    'escalation_exhausted → escalation_exhausted (self)' => [CaseStatus::EscalationExhausted, CaseStatus::EscalationExhausted],
 ]);
 
 it('allows awaiting_landlord → dormant (D15 engagement-gated unauthorised tail)', function () {

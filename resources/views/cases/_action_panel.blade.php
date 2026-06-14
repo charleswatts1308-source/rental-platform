@@ -1,5 +1,6 @@
 @php
     use App\Enums\CaseStatus;
+    use App\Enums\ExhaustedStance;
     use App\Models\Setting;
 
     $holdMaxDays = (int) Setting::get('hold.max_days', 60);
@@ -26,6 +27,10 @@
                 @else
                     <p class="small mb-3">Marked dormant after a sustained period without activity. A reply within {{ $revivalDays }} days of going dormant revives the case.</p>
                 @endif
+                @break
+            @case(CaseStatus::EscalationExhausted)
+                <p class="small mb-3">The automated escalation route has run its course — your landlord did not respond to the full sequence of notices. The clock has stopped; we won't send anything further on our own. A reply from you reopens the conversation, and a late reply from your landlord still revives the case.</p>
+                <a href="{{ route('members.escalation-routes') }}" class="btn btn-outline-primary btn-sm w-100 mb-3">See your options from here</a>
                 @break
             @case(CaseStatus::Resolved)
                 <p class="small mb-0">Marked resolved on {{ $case->closed_at?->format('d M Y') }}.</p>
@@ -97,6 +102,22 @@
                     </button>
                 </form>
             </details>
+        @endcan
+
+        {{-- D14 — cosmetic stance. Label only: it changes nothing about the
+             case mechanically. Optional; the tenant can leave it unset. --}}
+        @can('setStance', $case)
+            <form method="POST" action="{{ route('cases.stance', $case->url_slug) }}" class="mt-3 pt-3 border-top">
+                @csrf
+                <label for="stance" class="form-label small">How do you see this case? <span class="text-muted">(optional, just for your records)</span></label>
+                <select id="stance" name="stance" class="form-select form-select-sm mb-2">
+                    <option value="" @selected($case->exhausted_stance === null)>Not set</option>
+                    @foreach(ExhaustedStance::cases() as $stance)
+                        <option value="{{ $stance->value }}" @selected($case->exhausted_stance === $stance)>{{ $stance->label() }}</option>
+                    @endforeach
+                </select>
+                <button type="submit" class="btn btn-outline-secondary btn-sm w-100">Save</button>
+            </form>
         @endcan
     </div>
 </div>
