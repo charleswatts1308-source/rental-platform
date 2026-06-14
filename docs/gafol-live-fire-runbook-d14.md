@@ -14,9 +14,22 @@ of `d15-engagement-gating`). D14 adds two purely-additive migrations
 
 **Seeded knobs that drive the day-math (report them, don't guess):**
 `escalation.interval_days = 14`, `escalation.max_notices = 4`.
-So a never-engaged case fires notices 2, 3, 4 on successive expiries, and
-the **5th** expiry (counter already 4) is the tipping point into
-`escalation_exhausted`.
+The exhaustion gate in the verdict is `counter >= max_notices` — it fires
+when the counter **reaches 4**, not when a 5th send would exceed it. Case 2
+starts at **counter=1** (notice 1 sent at setup, not an expiry), so the
+counter at each sweep is the off-by-one to watch:
+
+| Age+sweep | counter at sweep | action | counter after |
+|---|---|---|---|
+| step 2 | 1 | SEND notice 2 | 2 |
+| step 3 | 2 | SEND notice 3 | 3 |
+| step 4 | 3 | SEND notice 4 | 4 |
+| step 5 | 4 | **TRANSITION** (no send) | 4 |
+
+So **three** expiries SEND (notices 2, 3, 4) and the **4th** expiry
+TRANSITIONS into `escalation_exhausted`. Walk in knowing the counter at
+each rung — if a sweep reports a counter you don't expect from this table,
+stop and recount before proceeding.
 
 **Mail ground truth (carried from D15 live-fire):**
 - **Mailgun log is the source of truth**, not the inbox.
