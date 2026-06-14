@@ -445,3 +445,54 @@ Fix:         Set an explicit text colour on the header block (and/or a
              Renderer change — confirm it doesn't disturb the frozen
              evidential letter bodies (header is wrapper, not body).
 --------------------------------------------------------------------
+#21 — exhausted-case "abandon" collision (UI confusion)
+Exhausted page shows two controls that both say "abandon": the cosmetic
+stance dropdown ("Abandoned" value, label-only, writes exhausted_stance)
+and the real "Abandon this case" terminal action (transitions to
+abandoned, stamps closed_at). Tenant can't tell them apart. Machine is
+correct — both work as built; they just collide on the word.
+
+RULING (reverses D14 cosmetic-only): converge on CC's model —
+- drop "Abandoned" from the cosmetic stance dropdown
+- keep the real "Abandon this case" as the genuine terminal close
+- keep "Unresolved" as cosmetic, stays escalation_exhausted, revivable
+- protect: revival via the Unresolved path must survive (a reply always
+  revives the not-given-up tenant)
+Update D14 in the design doc to match (cosmetic stance = unresolved only;
+abandoned is a real terminal close per D5).
+
+Also note: "Next escalation" date reappears on the abandoned card
+(absent correctly on exhausted) — minor, fold into the same pass.
+#21
+Page:        Exhausted case page action panel (cases._action_panel,
+             status=escalation_exhausted). Surfaced on the 2026-06-14 gafol
+             D14 live-fire.
+Severity:    UX confusion — machine behaviour is CORRECT; no data harm.
+Saw:         The exhausted page exposes TWO controls that both say "abandon"
+             with different meanings: (1) the generic terminal "Abandon this
+             case" action (transitions to status=abandoned, stamps closed_at;
+             deliberate, per design doc D5 "tenant can still close"), and
+             (2) the cosmetic exhausted_stance selector whose values include
+             "Abandoned" (label only — leaves the case in escalation_exhausted,
+             no state change). A tenant picked (1) intending (2): the case
+             closed when they meant only to label it.
+Expected:    A tenant framing the outcome as "abandoned" should not be able
+             to confuse that with truly closing the case.
+Status:      open — carries a DESIGN QUESTION for Charlie. Two coherent fixes:
+             (a) keep stance cosmetic as ruled, but disambiguate the labels/
+                 placement so the two "abandon"s cannot be confused; or
+             (b) adopt the "Abandon truly closes the case; Unresolved = stay
+                 exhausted (revivable)" model — cleaner UX, but REVERSES the
+                 D14 cosmetic ruling and loses the abandoned-but-revivable
+                 state (a later landlord reply would not revive an abandoned
+                 case; recurrence = new case, the standard D8 terminal rule).
+Notes:       exhausted_stance IS wired (CaseController::setStance, POST
+             cases.stance, policy setStance; covered by a passing test). The
+             collision is the issue, not a missing build. Both controls are
+             individually to-spec. My read (CC): (b) is the better UX but is
+             Charlie's call since it reverses the cosmetic ruling; I'd protect
+             revival via the Unresolved path either way.
+Fix:         Per Charlie's ruling — either disambiguate (a) or rebuild to (b)
+             (drop "Abandoned" from the stance enum/selector, keep the real
+             abandon action, reword the stance prompt as a private note).
+--------------------------------------------------------------------
