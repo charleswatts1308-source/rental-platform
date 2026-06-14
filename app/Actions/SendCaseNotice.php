@@ -252,12 +252,14 @@ class SendCaseNotice
                 CaseStatus::AwaitingLandlord,
                 CaseStatus::OnHold,
                 CaseStatus::Dormant,
+                // D14 — a tenant reply revives an exhausted case.
+                CaseStatus::EscalationExhausted,
             ];
             if (! in_array($case->status, $allowed, true)) {
                 throw new LogicException(
                     'SendCaseNotice tenant-reply branch can only run from '
-                    .'AwaitingTenantReview, AwaitingLandlord, OnHold, or Dormant; '
-                    .'case is in '.$case->status->value
+                    .'AwaitingTenantReview, AwaitingLandlord, OnHold, Dormant, '
+                    .'or EscalationExhausted; case is in '.$case->status->value
                 );
             }
 

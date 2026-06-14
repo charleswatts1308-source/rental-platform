@@ -51,6 +51,13 @@ class HandleInboundReply
         CaseStatus::AwaitingLandlord,
         CaseStatus::OnHold,
         CaseStatus::Dormant,
+        // D14 — a late landlord reply revives an exhausted case to review
+        // (the "final chance to engage" landing). landlord_engaged flips
+        // true below, so the revived case is thereafter D15-gated rather
+        // than auto-escalating. Without this the inbound would record but
+        // not transition, stranding the case sweep-inert with the ball
+        // wrongly on the tenant.
+        CaseStatus::EscalationExhausted,
     ];
 
     public function __construct(

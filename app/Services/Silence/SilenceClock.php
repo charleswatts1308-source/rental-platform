@@ -63,6 +63,10 @@ class SilenceClock
         CaseStatus::Resolved,
         CaseStatus::Abandoned,
         CaseStatus::Dormant,
+        // D14 — terminal: the clock stops permanently at ladder exhaustion.
+        // No further automatic letters (the D3 ratchet at counter >= max
+        // guarantees this even if allow-reply later restarts the clock).
+        CaseStatus::EscalationExhausted,
     ];
 
     /**

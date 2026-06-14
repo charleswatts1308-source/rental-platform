@@ -171,16 +171,25 @@ it('does NOT write a case_messages row for the tenant notification (ruling-d inv
 
 // ─── Exhaustion (counter >= max_notices) ──────────────────────────
 
-it('logs transition_exhausted_intent and sends NOTHING at counter >= max', function () {
+// Superseded by D14 (Phase 4): the exhausted intent is no longer log-only —
+// it is promoted to a real transition into escalation_exhausted, firing the
+// landlord closer + tenant notice. (Never-engaged path; the 2b helper leaves
+// landlord_engaged false.) The full D14 behaviour is covered in
+// tests/Feature/Phase4/EscalationExhaustedTest.php; this asserts the
+// promotion is live from the 2b engine's vantage point.
+it('promotes transition_exhausted_intent to a real transition at counter >= max (D14)', function () {
     Mail::fake();
     $case = landlordSideExpiredCase(lettersAlreadySent: 4);
 
     $this->artisan('silence:sweep')->assertSuccessful();
 
-    Mail::assertNothingQueued();
+    Mail::assertQueued(CaseNotice::class);                 // landlord closer
+    Mail::assertQueued(AutoEscalationTenantNotice::class); // tenant exhaustion notice
+    expect($case->fresh()->status)->toBe(CaseStatus::EscalationExhausted);
+
     $row = SilenceShadowLog::query()->where('case_id', $case->id)->sole();
     expect($row->intended_action)->toBe('transition_exhausted_intent');
-    expect($row->executed)->toBeFalse();
+    expect($row->executed)->toBeTrue();
 });
 
 // ─── Tenant-side stays shadow ─────────────────────────────────────

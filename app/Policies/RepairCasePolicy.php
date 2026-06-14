@@ -60,8 +60,23 @@ class RepairCasePolicy
             CaseStatus::AwaitingLandlord,
             CaseStatus::OnHold => true,
             CaseStatus::Dormant => $this->dormantRevivalAvailable($case),
+            // D14 — allow-reply revives an exhausted case to awaiting_landlord.
+            // No revival window (unlike dormancy): a reply revives whenever
+            // it lands.
+            CaseStatus::EscalationExhausted => true,
             default => false,
         };
+    }
+
+    /**
+     * D14 — set the cosmetic exhausted_stance label. Available only on an
+     * escalation_exhausted case; ownership is the baseline. The action sets
+     * a display label and nothing mechanical (see CaseController::setStance).
+     */
+    public function setStance(User $user, RepairCase $case): bool
+    {
+        return $this->ownsCase($user, $case)
+            && $case->status === CaseStatus::EscalationExhausted;
     }
 
     /**
@@ -93,6 +108,9 @@ class RepairCasePolicy
                 CaseStatus::AwaitingTenantReview,
                 CaseStatus::OnHold,
                 CaseStatus::Dormant,
+                // D14 — the tenant may still deliberately close an exhausted
+                // case (design doc D5).
+                CaseStatus::EscalationExhausted,
             ], true);
     }
 

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Actions\SendCaseNotice;
 use App\Enums\CaseSeverity;
 use App\Enums\CaseStatus;
+use App\Enums\ExhaustedStance;
 use App\Enums\LandlordContactRole;
 use App\Models\LandlordContact;
 use App\Models\LetterTemplate;
@@ -256,6 +257,31 @@ class CaseController extends Controller
         return redirect()
             ->route('cases.show', $case->url_slug)
             ->with('success', 'Case marked abandoned.');
+    }
+
+    /**
+     * D14 — set the cosmetic exhausted_stance label on an escalation_exhausted
+     * case. This writes a display label and NOTHING mechanical: it does not
+     * transitionTo, touch the clock, the ball, or any sweep input. An empty
+     * submission clears the label back to unset (the tenant is never forced
+     * to choose). The booted updating guard only fires on a dirty status, so
+     * this plain column write passes through untouched.
+     */
+    public function setStance(Request $request, string $slug): RedirectResponse
+    {
+        $case = $this->findCaseOrFail($slug);
+        $this->authorize('setStance', $case);
+
+        $validated = $request->validate([
+            'stance' => ['nullable', Rule::enum(ExhaustedStance::class)],
+        ]);
+
+        $case->exhausted_stance = $validated['stance'] ?? null;
+        $case->save();
+
+        return redirect()
+            ->route('cases.show', $case->url_slug)
+            ->with('success', 'Your view on this case has been saved.');
     }
 
     private function findCaseOrFail(string $slug): RepairCase

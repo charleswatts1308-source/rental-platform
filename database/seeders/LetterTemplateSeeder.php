@@ -66,16 +66,25 @@ class LetterTemplateSeeder extends Seeder
                 'body' => $this->tenantNudgeBody(),
             ],
             [
+                // D14 — fired by SilenceSweep::executeExhaustionTransition via
+                // SendExhaustionCloser on the transition into escalation_exhausted
+                // (design doc D5). Active-row idiom: present → send; absent → skip.
+                // Landlord-facing legal letter → SOLICITOR-GATED for production
+                // (draft fine for gafol live-fire), alongside the letter wording.
                 'code' => 'exhaustion_landlord_closer',
-                'description' => 'One-shot landlord closer at escalation_exhausted — sober, signals the matter has moved past private correspondence.',
+                'description' => 'D14 — one-shot landlord closer fired on the escalation_exhausted transition (design doc D5). Sober; signals the matter has moved past private correspondence. stage_at_send=NULL so it never counts toward the ladder. SOLICITOR-GATED.',
                 'type' => 'exhaustion_landlord',
                 'stage' => null,
                 'subject' => 'Repair issue at {{property_address}} — case {{case_reference}}: closing correspondence',
                 'body' => $this->exhaustionLandlordBody(),
             ],
             [
+                // D14 — fired by SilenceSweep::executeExhaustionTransition on the
+                // transition into escalation_exhausted. Pre-existing row, reused
+                // (not duplicated). Active-row idiom. SOLICITOR-GATED for
+                // production wording, alongside the closer + signposting page.
                 'code' => 'tenant_exhaustion_notice',
-                'description' => 'Tenant notification when the escalation ladder is exhausted — explains the state and points to the case page for next steps.',
+                'description' => 'D14 — tenant notification on the escalation_exhausted transition. Explains the ladder is complete and sends the tenant to the case page, where the signposting (members.escalation-routes) link lives. SOLICITOR-GATED.',
                 'type' => 'tenant_notification',
                 'stage' => null,
                 'subject' => 'Your repair case {{case_reference}} — the escalation process has run its course',
