@@ -21,8 +21,14 @@ class User extends Authenticatable implements MustVerifyEmail
         'name',
         'email',
         'password',
-        'is_admin',
     ];
+
+    /**
+     * `is_admin` is deliberately NOT mass-assignable — it is a privilege
+     * boundary. Set it explicitly (e.g. `$user->forceFill(['is_admin' =>
+     * true])->save()`), never via `create()`/`fill()` on request data.
+     * Tests/factories may still set it: factory creation runs unguarded.
+     */
 
     /**
      * The attributes that should be hidden for serialization.

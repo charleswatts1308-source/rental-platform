@@ -90,10 +90,11 @@ class DevReset extends Command
             'name' => 'Admin',
             'email' => $email,
             'password' => Hash::make($this->option('password')),
-            'is_admin' => true,
         ]);
-        // email_verified_at is not mass-assignable; set it directly so the
-        // admin clears the `verified` middleware on the admin routes.
+        // is_admin is not mass-assignable (privilege boundary); set it
+        // directly. Same for email_verified_at, so the admin clears the
+        // `verified` middleware on the admin routes.
+        $admin->forceFill(['is_admin' => true])->save();
         $admin->markEmailAsVerified();
 
         $this->line("admin_created={$email}");
