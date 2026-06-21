@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\TemplateController;
 use App\Http\Controllers\CaseController;
 use App\Http\Controllers\ContactMessageController;
@@ -100,6 +101,10 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     Route::get('/templates/{letterTemplate}/edit', [TemplateController::class, 'edit'])->name('templates.edit');
     Route::post('/templates/{letterTemplate}/preview', [TemplateController::class, 'preview'])->name('templates.preview');
     Route::put('/templates/{letterTemplate}', [TemplateController::class, 'update'])->name('templates.update');
+
+    // D16 / Surface B — settings editor (values only; no create/delete).
+    Route::get('/settings', [SettingController::class, 'index'])->name('settings.index');
+    Route::put('/settings', [SettingController::class, 'update'])->name('settings.update');
 });
 
 Route::post('/webhooks/mailgun/inbound', MailgunInboundController::class)

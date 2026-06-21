@@ -223,6 +223,7 @@
                                 <li><a class="dropdown-item" href="{{ route('admin.page-views') }}">Page Views</a></li>
                                 <li><a class="dropdown-item" href="{{ route('admin.contact-messages') }}">Contact Messages</a></li>
                                 <li><a class="dropdown-item" href="{{ route('admin.templates.index') }}">Letter Templates</a></li>
+                                <li><a class="dropdown-item" href="{{ route('admin.settings.index') }}">Settings</a></li>
                             </ul>
                         </li>
                         @endif

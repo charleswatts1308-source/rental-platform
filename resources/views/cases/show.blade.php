@@ -48,7 +48,8 @@
                     </p>
                     <dl class="row mb-0 small">
                         <dt class="col-5">Stage</dt>
-                        <dd class="col-7">{{ $case->current_stage }} of 4</dd>
+                        {{-- #16 — denominator reads the live ladder length, not a literal 4. --}}
+                        <dd class="col-7">{{ $case->current_stage }} of {{ \App\Models\Setting::get('escalation.max_notices', 4) }}</dd>
 
                         <dt class="col-5">Severity</dt>
                         <dd class="col-7">{{ ucfirst($case->severity->value) }}</dd>
