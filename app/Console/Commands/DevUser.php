@@ -55,8 +55,8 @@ class DevUser extends Command
                 'name' => $name,
                 'email' => $address,
                 'password' => Hash::make($this->option('password')),
-                'is_admin' => false,
             ]);
+            // is_admin defaults to false at the column — no need to set it.
             // email_verified_at is not mass-assignable; set it directly so the
             // tenant clears the `verified` middleware.
             $user->markEmailAsVerified();

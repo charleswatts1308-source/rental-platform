@@ -85,7 +85,8 @@ Route::prefix('members')->name('members.')->group(function () {
     Route::get('/renter-rights-explained', fn() => view('members.renter-rights-explained'))->name('renter-rights-explained');
 });
 
-// Admin routes (user ID 1 only)
+// Admin routes — gated by the `admin` middleware (User::is_admin boolean).
+// No id or environment check; access is purely the is_admin column.
 Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/users', [AdminController::class, 'users'])->name('users');
     Route::get('/page-views', [AdminController::class, 'pageViews'])->name('page-views');
