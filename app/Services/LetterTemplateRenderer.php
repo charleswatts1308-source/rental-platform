@@ -135,8 +135,11 @@ HTML;
         $reference = (string) ($vars['case_reference'] ?? '');
         $description = (string) ($vars['issue_description'] ?? '');
 
+        // #20 — explicit text colour so the block stays legible in dark mode
+        // (the light-grey background otherwise inherits light-on-light text in
+        // dark-themed mail clients and the Surface A preview).
         return <<<HTML
-<div style="background: #f4f4f4; border-left: 4px solid #888; padding: 12px 16px; margin-bottom: 20px; font-size: 13px;">
+<div style="background: #f4f4f4; color: #222; border-left: 4px solid #888; padding: 12px 16px; margin-bottom: 20px; font-size: 13px;">
   <div><strong>Property:</strong> {$address}</div>
   <div><strong>Case reference:</strong> {$reference}</div>
   <div style="margin-top: 8px;"><strong>Issue:</strong> {$description}</div>

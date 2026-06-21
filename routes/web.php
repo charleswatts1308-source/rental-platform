@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\Admin\TemplateController;
 use App\Http\Controllers\CaseController;
 use App\Http\Controllers\ContactMessageController;
 use App\Http\Controllers\ProfileController;
@@ -93,6 +94,12 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     Route::get('/contact-messages', [AdminController::class, 'contactMessages'])->name('contact-messages');
     Route::get('/contact-messages/{contactMessage}', [AdminController::class, 'contactMessageShow'])->name('contact-messages.show');
     Route::post('/contact-messages/{contactMessage}/reply', [AdminController::class, 'contactMessageReply'])->name('contact-messages.reply');
+
+    // D16 / Surface A — letter template editor (edit -> preview -> confirm).
+    Route::get('/templates', [TemplateController::class, 'index'])->name('templates.index');
+    Route::get('/templates/{letterTemplate}/edit', [TemplateController::class, 'edit'])->name('templates.edit');
+    Route::post('/templates/{letterTemplate}/preview', [TemplateController::class, 'preview'])->name('templates.preview');
+    Route::put('/templates/{letterTemplate}', [TemplateController::class, 'update'])->name('templates.update');
 });
 
 Route::post('/webhooks/mailgun/inbound', MailgunInboundController::class)
