@@ -17,7 +17,9 @@ it('creates a valid repair case via factory', function () {
 
     expect($case->id)->toBeInt();
     expect($case->url_slug)->toBeString();
-    expect(strlen($case->url_slug))->toBe(12);
+    // D16 #4 — references are now 6 chars from the read-aloud-safe alphabet
+    // (A–Z + 2–9, no I/O/0/1). Stronger than the old length-only check.
+    expect($case->url_slug)->toMatch('/^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{6}$/');
     expect($case->status)->toBe(CaseStatus::Open);
     expect($case->severity)->toBe(CaseSeverity::Routine);
     expect($case->current_stage)->toBe(1);

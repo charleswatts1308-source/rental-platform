@@ -1,6 +1,9 @@
 <?php
 
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\Admin\CaseOversightController;
+use App\Http\Controllers\Admin\SettingController;
+use App\Http\Controllers\Admin\TemplateController;
 use App\Http\Controllers\CaseController;
 use App\Http\Controllers\ContactMessageController;
 use App\Http\Controllers\ProfileController;
@@ -93,6 +96,20 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     Route::get('/contact-messages', [AdminController::class, 'contactMessages'])->name('contact-messages');
     Route::get('/contact-messages/{contactMessage}', [AdminController::class, 'contactMessageShow'])->name('contact-messages.show');
     Route::post('/contact-messages/{contactMessage}/reply', [AdminController::class, 'contactMessageReply'])->name('contact-messages.reply');
+
+    // D16 / Surface A — letter template editor (edit -> preview -> confirm).
+    Route::get('/templates', [TemplateController::class, 'index'])->name('templates.index');
+    Route::get('/templates/{letterTemplate}/edit', [TemplateController::class, 'edit'])->name('templates.edit');
+    Route::post('/templates/{letterTemplate}/preview', [TemplateController::class, 'preview'])->name('templates.preview');
+    Route::put('/templates/{letterTemplate}', [TemplateController::class, 'update'])->name('templates.update');
+
+    // D16 / Surface B — settings editor (values only; no create/delete).
+    Route::get('/settings', [SettingController::class, 'index'])->name('settings.index');
+    Route::put('/settings', [SettingController::class, 'update'])->name('settings.update');
+
+    // D16 / Surface C — read-only case oversight (no actions; view only).
+    Route::get('/cases', [CaseOversightController::class, 'index'])->name('cases.index');
+    Route::get('/cases/{case}', [CaseOversightController::class, 'show'])->name('cases.show');
 });
 
 Route::post('/webhooks/mailgun/inbound', MailgunInboundController::class)

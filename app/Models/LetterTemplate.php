@@ -30,6 +30,13 @@ class LetterTemplate extends Model
         return $this->hasMany(CaseMessage::class);
     }
 
+    /** D16 / A1 — append-only version trail of wording edits. */
+    public function changeHistory(): HasMany
+    {
+        return $this->hasMany(LetterTextChangeHistory::class)
+            ->orderByDesc('version');
+    }
+
     /**
      * D1 fallback lookup: pick the active escalation template for notice
      * number N, falling back to the active stage=NULL row if no per-stage

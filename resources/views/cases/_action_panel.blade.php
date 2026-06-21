@@ -1,6 +1,5 @@
 @php
     use App\Enums\CaseStatus;
-    use App\Enums\ExhaustedStance;
     use App\Models\Setting;
 
     $holdMaxDays = (int) Setting::get('hold.max_days', 60);
@@ -104,20 +103,11 @@
             </details>
         @endcan
 
-        {{-- D14 — cosmetic stance. Label only: it changes nothing about the
-             case mechanically. Optional; the tenant can leave it unset. --}}
-        @can('setStance', $case)
-            <form method="POST" action="{{ route('cases.stance', $case->url_slug) }}" class="mt-3 pt-3 border-top">
-                @csrf
-                <label for="stance" class="form-label small">How do you see this case? <span class="text-muted">(optional, just for your records)</span></label>
-                <select id="stance" name="stance" class="form-select form-select-sm mb-2">
-                    <option value="" @selected($case->exhausted_stance === null)>Not set</option>
-                    @foreach(ExhaustedStance::cases() as $stance)
-                        <option value="{{ $stance->value }}" @selected($case->exhausted_stance === $stance)>{{ $stance->label() }}</option>
-                    @endforeach
-                </select>
-                <button type="submit" class="btn btn-outline-secondary btn-sm w-100">Save</button>
-            </form>
-        @endcan
+        {{-- #21 (D16, Option C) — the cosmetic stance dropdown is removed: it
+             collided with the mechanical "Abandon this case" action above (two
+             controls both reading as "abandon"). D14 is otherwise unchanged —
+             an exhausted case stays revivable and closable. The ExhaustedStance
+             enum and the setStance action remain in the codebase, dormant (no
+             UI), pending a future disposition. --}}
     </div>
 </div>

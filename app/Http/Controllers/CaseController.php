@@ -15,6 +15,7 @@ use App\Models\RepairCategory;
 use App\Models\Setting;
 use App\Services\LetterTemplateRenderer;
 use App\Services\Silence\SilenceClock;
+use App\Support\CaseReference;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -507,7 +508,7 @@ class CaseController extends Controller
     private function mintSlug(): string
     {
         do {
-            $slug = Str::random(12);
+            $slug = CaseReference::generate();
         } while (RepairCase::where('url_slug', $slug)->exists());
 
         return $slug;

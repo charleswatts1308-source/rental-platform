@@ -43,6 +43,12 @@ class SettingSeeder extends Seeder
             'nudge.dormancy_days' => '30',
             'dormancy.revival_days' => '90',
             'hold.max_days' => '60',
+            // B2 (D16) — "Applies to In-flight cases". Ships OFF ('0'): an
+            // interval change reaches NEW cases only; in-flight cases keep the
+            // snapshot frozen at their clock start. When '1', SilenceClock
+            // evaluates against current settings so changes reach in-flight
+            // cases at the next sweep. Read live; never snapshotted.
+            'escalation.apply_inflight' => '0',
         ];
 
         foreach ($defaults as $key => $value) {

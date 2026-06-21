@@ -92,6 +92,17 @@ class SilenceClock
     }
 
     /**
+     * B2 — global "apply interval changes to in-flight cases" flag.
+     * Ships off (in-flight cases stay on their clock-start snapshot).
+     * Deliberately NOT a SNAPSHOT_KEY: read live at evaluate time, never
+     * frozen onto a case.
+     */
+    public static function applyInflight(): bool
+    {
+        return (bool) (int) Setting::get('escalation.apply_inflight', 0);
+    }
+
+    /**
      * Resolve ball position via the pure message-direction rule.
      *
      * Returns null when the case is in a no-clock status, or when no
@@ -194,7 +205,16 @@ class SilenceClock
         }
 
         $silenceDays = (int) floor($case->silence_clock_started_at->diffInRealSeconds($now, absolute: false) / 86400);
-        $snapshot = $case->silence_settings_snapshot;
+
+        // B2 — thresholds source. Default (flag off) reads the per-case
+        // snapshot frozen at clock start, so an interval change does NOT reach
+        // an in-flight case: each case runs its whole life under one set of
+        // intervals (clean observability). When escalation.apply_inflight is
+        // on, read current settings instead, so a changed interval reaches
+        // in-flight cases at the next sweep.
+        $snapshot = self::applyInflight()
+            ? self::snapshotCurrentSettings()
+            : $case->silence_settings_snapshot;
 
         return $ball === BallPosition::Landlord
             ? $this->landlordSideVerdict($case, $silenceDays, $snapshot)
