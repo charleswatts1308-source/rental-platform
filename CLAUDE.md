@@ -35,5 +35,8 @@ Standing rules. Project history and current-phase state live in `docs/`.
 ## Time
 - Time is an **injected parameter** through any sweep/clock/decision code (`CarbonInterface $now`). No `Carbon::setTestNow` in production code. No flag-branching on pretend / test modes — the same code path serves real, pretend, and test invocations.
 
+## Migrations
+- The test suite runs SQLite in-memory (`phpunit.xml`); dev/prod run MariaDB. SQLite cannot show MariaDB-specific schema behaviour — notably the implicit `ON UPDATE CURRENT_TIMESTAMP` trap (#18). Therefore: any migration that creates or alters a table gets a **manual MariaDB check before merge** — migrate against dev MariaDB, `SHOW CREATE TABLE` to confirm the built schema matches intent (plain `datetime` with no trailing `ON UPDATE`; indexes, FKs, defaults, and column types as intended), then rollback clean. **Green tests prove logic, not MariaDB schema.**
+
 ## Tests
 - **No weakened assertions, ever** — rewrites assert at least as strongly. D0 disposition list is the reference; deltas go in the implementation report.
