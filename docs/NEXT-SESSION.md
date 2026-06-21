@@ -6,10 +6,12 @@ index says which to trust and which to ignore so you don't re-derive
 state from a superseded doc.
 
 **Last updated:** 2026-06-21 (Phase 5 / D16 Admin/Config UI merged).
-**Parked state:** `main = 0174664`; Phase 5 merge commit `cf2f5c9`
-(`--no-ff`). Tag triplet on this phase: `pre-d16` (§0 base) →
-`pre-d16-phase5` (surfaces base) → `post-d16-phase5` (merged). Suite
-**535 passing / 2226 assertions** (was 485 at the D14 close).
+**Parked state:** `origin/main` synced (pushed this session). Phase 5
+code at tag `post-d16-phase5` = `cf2f5c9` (the `--no-ff` merge), with the
+§0 and housekeeping doc commits on top. Tag triplet — all on origin:
+`pre-d16` (§0 base) → `pre-d16-phase5` (surfaces base) →
+`post-d16-phase5` (merged). Suite **535 passing / 2226 assertions**
+(was 485 at the D14 close).
 
 **Phase 5 (D16 Admin/Config UI) — BUILT AND MERGED.** § 0
 admin-security hardening (`is_admin` out of `$fillable` + regression
@@ -25,8 +27,49 @@ short reference format (6-char, A–Z+2–9 minus I/O/0/1), and snags
 indexes + FKs correct; clean migrate/rollback).
 
 **The silence/email cycle remains complete** and the admin/config layer
-now sits on top of it. Nothing is blocked. Next substantive work is the
-**pre-flip path** or the **remaining snag batch** (see chooser below).
+now sits on top of it. Nothing is blocked. **Next session is directed:
+deploy → DNS flip → family trial** (section below); the remaining snag
+batch is the alternative if the flip is deferred.
+
+---
+
+## Next session — deploy, DNS flip, family trial
+
+The destination: get current `main` onto dotrent, flip renters.rent DNS
+to it, and begin a live family trial. The Mailgun round-trip is already
+proven on dotrent (outbound via `mg.renters.rent` + an Outlook reply
+round-tripped through the inbound webhook), so the flip is mostly
+mechanical, not a first run.
+
+1. ~~Push main to origin.~~ **Done this session** — `origin/main` is
+   synced at the post-D16 state and the three tags are pushed. Start
+   from a deploy of current `origin/main`.
+2. Confirm current `main` is deployed on dotrent.net.
+3. Flip DNS: renters.rent → the dotrent install. Windows renters.rent
+   is EOL.
+4. Update the Mailgun inbound route to
+   `https://renters.rent/webhooks/mailgun/inbound`. This is the one
+   config edit a flip can leave stale — outbound keeps working
+   regardless, so a missed inbound route only surfaces when a landlord
+   reply silently fails to land. Don't skip it.
+5. Confirm ONE inbound round-trip on the live renters.rent route
+   post-flip — a "the flip didn't break it" check, since the path is
+   already proven on dotrent, not a first run.
+6. Begin the family trial. Use the new Surface B settings editor to set
+   short intervals for observable pacing — that's what Phase 5 built it
+   for. The B2 "Applies to In-flight cases" flag stays **Off**, so
+   shortened intervals apply cleanly to new cases. gafol.rent stays
+   permanent staging.
+
+**Note:** solicitor letter-wording sign-off is deliberately **NOT**
+gating the family trial — the trial tests functional accuracy (does the
+machine escalate/revive/close correctly), not legal wording, and the
+recipients are the family's own landlords. Charlie's call, 21 Jun 2026.
+(`pre-flip-checklist.md` still carries the sign-off as a condition for a
+wider/public launch.)
+
+**Alternative if the flip is deferred:** the remaining snag batch (#7,
+#8, #12, #13, #17, #18, #19).
 
 ---
 
@@ -48,15 +91,12 @@ now sits on top of it. Nothing is blocked. Next substantive work is the
    `d16-cc-brief.md`, and merge commit `cf2f5c9`. For "what shipped in
    Phase 5," read § D16 + that commit.
 
-Then **one** of these by chosen path:
-- **Pre-flip path** — the production (renters.rent) cutover. Conditions:
-  the Phase-3 three (dotrent real inbound round-trip on the promoted
-  domain, create-case attachment over prod Mailgun, cases-empty check)
-  PLUS the D15 `escalation_authorisation` sign-off PLUS the D14
-  exhaustion-wording sign-off (closer + tenant notice + signposting).
-  Governed by **docs/pre-flip-checklist.md**.
-- **Snag batch** — **docs/llcs-snagging-list.txt**. Open after Phase 5:
-  **#7, #8, #12, #13, #17, #18, #19** (see below).
+Then **execute the Next session sequence above** (deploy → flip →
+family trial). Cutover conditions live in **docs/pre-flip-checklist.md**
+— but note the family-trial carve-out above: solicitor wording sign-off
+gates a wider/public launch, **not** the family trial. The **snag batch**
+(**docs/llcs-snagging-list.txt**: #7, #8, #12, #13, #17, #18, #19) is the
+alternative if the flip is deferred.
 
 That's the minimum to pick up cold. (Phase 5 is no longer a "next"
 option — it's done.)
