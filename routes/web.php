@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\Admin\CaseOversightController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\TemplateController;
 use App\Http\Controllers\CaseController;
@@ -105,6 +106,10 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     // D16 / Surface B — settings editor (values only; no create/delete).
     Route::get('/settings', [SettingController::class, 'index'])->name('settings.index');
     Route::put('/settings', [SettingController::class, 'update'])->name('settings.update');
+
+    // D16 / Surface C — read-only case oversight (no actions; view only).
+    Route::get('/cases', [CaseOversightController::class, 'index'])->name('cases.index');
+    Route::get('/cases/{case}', [CaseOversightController::class, 'show'])->name('cases.show');
 });
 
 Route::post('/webhooks/mailgun/inbound', MailgunInboundController::class)

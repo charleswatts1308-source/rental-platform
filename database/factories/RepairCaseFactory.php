@@ -9,8 +9,8 @@ use App\Models\Property;
 use App\Models\RepairCase;
 use App\Models\RepairCategory;
 use App\Models\User;
+use App\Support\CaseReference;
 use Illuminate\Database\Eloquent\Factories\Factory;
-use Illuminate\Support\Str;
 
 /**
  * @extends Factory<RepairCase>
@@ -22,7 +22,7 @@ class RepairCaseFactory extends Factory
     public function definition(): array
     {
         return [
-            'url_slug' => Str::random(12),
+            'url_slug' => CaseReference::generate(),
             'tenant_user_id' => User::factory(),
             'property_id' => Property::factory(),
             'landlord_contact_id' => LandlordContact::factory(),

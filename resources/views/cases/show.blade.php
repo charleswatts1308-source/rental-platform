@@ -60,18 +60,21 @@
                         <dt class="col-5">Opened</dt>
                         <dd class="col-7">{{ $case->opened_at?->format('d M Y') }}</dd>
 
-                        {{-- D15: an engaged-then-quiet held case shows the authorise
-                             prompt instead of an auto-escalation date that will never
-                             fire on its own. (Adjacent to snag #15; scoped, not a fix.) --}}
-                        {{-- D14: an exhausted case is terminal — suppress the projected
-                             "next escalation" date, which would otherwise show a phantom
-                             future date that never fires (the clock has stopped). --}}
-                        @if($case->silence_clock_started_at && $case->ball_with === 'landlord' && isset($case->silence_settings_snapshot['escalation.interval_days']) && !($authorisationPending ?? false) && $case->status->value !== 'escalation_exhausted')
+                        {{-- #14 / #15 / #21-tail — shared state-aware-display predicate
+                             on the model. showsNextEscalation() is true only while the
+                             landlord clock is actively counting down (suppressed on
+                             on_hold, dormant, closed, and exhausted). The D15
+                             authorisation-pending case shows the authorise prompt
+                             instead of a date that will not fire on its own. --}}
+                        @if($case->showsNextEscalation() && !($authorisationPending ?? false))
                             <dt class="col-5">{{ ($case->landlord_engaged ?? false) ? 'Next notice (with your go-ahead)' : 'Next escalation' }}</dt>
-                            <dd class="col-7">{{ $case->silence_clock_started_at->copy()->addDays((int) $case->silence_settings_snapshot['escalation.interval_days'])->format('d M Y') }}</dd>
+                            <dd class="col-7">{{ $case->nextEscalationDate()->format('d M Y') }}</dd>
                         @endif
 
-                        @if($case->hold_until)
+                        {{-- #15 — hold_until shows only while actually on hold; after
+                             the sweep releases it the column persists as history but
+                             must not read as an active pause. --}}
+                        @if($case->showsHoldUntil())
                             <dt class="col-5">Hold until</dt>
                             <dd class="col-7">{{ $case->hold_until->format('d M Y') }}</dd>
                         @endif

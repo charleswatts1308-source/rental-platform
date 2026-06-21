@@ -118,6 +118,66 @@ class RepairCase extends Model
     }
 
     /**
+     * The two fully-terminal statuses: closed for good, no transitions out
+     * (see TRANSITIONS — both map to []). escalation_exhausted is NOT here:
+     * it is revivable + closable (D14). Used by the state-aware display
+     * predicate, never to gate a transition (transitionTo owns that).
+     */
+    public function isClosed(): bool
+    {
+        return in_array($this->status, [
+            CaseStatus::Resolved,
+            CaseStatus::Abandoned,
+        ], true);
+    }
+
+    /**
+     * State-aware display predicate (#14 / #15 / #21-tail). Single source of
+     * truth for case-card display rules, shared by the tenant case page and
+     * the admin oversight view so the two can never drift.
+     *
+     * "Next escalation" is meaningful only while the landlord clock is
+     * actively counting down: status awaiting_landlord, ball with landlord,
+     * a clock-start, and a known interval. This suppresses it on on_hold
+     * (#14, paused), on tenant-ball / dormant, and on every closed/exhausted
+     * state (#21-tail). The D15 authorisation-pending refinement is ANDed in
+     * by the tenant view (it owns that view-only flag).
+     */
+    public function showsNextEscalation(): bool
+    {
+        return $this->status === CaseStatus::AwaitingLandlord
+            && $this->ball_with === 'landlord'
+            && $this->silence_clock_started_at !== null
+            && isset($this->silence_settings_snapshot['escalation.interval_days']);
+    }
+
+    /**
+     * The projected next-escalation date, or null when not applicable.
+     * Reads the per-case snapshot interval — the value actually governing
+     * this case (B2: in-flight cases keep their clock-start snapshot).
+     */
+    public function nextEscalationDate(): ?\Carbon\CarbonInterface
+    {
+        if (! $this->showsNextEscalation()) {
+            return null;
+        }
+
+        return $this->silence_clock_started_at
+            ->copy()
+            ->addDays((int) $this->silence_settings_snapshot['escalation.interval_days']);
+    }
+
+    /**
+     * hold_until is a live pause only while the case is actually on_hold
+     * (#15) — after the sweep releases the hold the column is kept as a
+     * historical record but must not display as an active pause.
+     */
+    public function showsHoldUntil(): bool
+    {
+        return $this->status === CaseStatus::OnHold && $this->hold_until !== null;
+    }
+
+    /**
      * Permitted status transitions: from-status => [to-status => primary-event-type].
      * Any (from, to) pair not present here is illegal and rejected by transitionTo().
      * The event_type is the canonical status-change marker for that transition;
