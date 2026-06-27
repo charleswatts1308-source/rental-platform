@@ -4,10 +4,10 @@ Human-readable mirror of what is deployed where. The DB `migrations`
 table is the source of truth; this file is reconciled against
 `php artisan migrate:status` at each deploy (CLAUDE.md "Deployment ledger").
 
-**Reconcile status:** git tips verified (27 Jun 2026). **gafol DB
-reconciled and at `main`** (Phase A green, 27 Jun 2026). **dotrent DB
-reconciled** via `migrate:status` (pre-silence, stops at
-`2026_05_24_160000`) — promotion pending (Phase B).
+**Reconcile status:** git tips verified (27 Jun 2026). **gafol** at
+`main` (Phase A green) and **dotrent** at `main` (Phase B green) — both
+reconciled 27 Jun 2026. Staging-at-or-ahead holds. Remaining: the DNS
+flip (Phase C) + prod retirement.
 
 ---
 
@@ -42,17 +42,31 @@ reconciled** via `migrate:status` (pre-silence, stops at
     dormant, on hold, resolved, open).
 - Last verified: 27 Jun 2026.
 
-## dotrent — flip target for renters.rent
-- Git tip / code: `2722ba4` (**pre-silence-model**), deployed via Plesk
-  Laravel Toolkit (no `.git` in docroot).
-- DB: **pre-silence**, last migration `2026_05_24_160000`. The silence
-  model is NOT present. (Reconciled via `migrate:status`, 27 Jun 2026.)
-- May 2026 live-fire proved the **Mailgun round-trip only**, on this
-  pre-silence schema — not the silence model.
-- Behind `main` by: 59 commits.
-- **Promotion method: `migrate:fresh` from main's migration files**
-  (June ruling: fresh from files, NOT a DB copy). WIPES the DB — safe,
-  pre-silence test data only. See `dotrent-deploy-plan.md` Phase B.
+## dotrent — production candidate (dotrent.net) — ✅ AT MAIN (Phase B green)
+- Box: dotrent.net, the production candidate for the renters.rent flip.
+  DB `ukrenter_dotrent_db` on mysql01. Deploy mechanism: **Plesk Laravel
+  Toolkit** (no `.git` in docroot).
+- Now at: **`main` / `859827b`** — code via Toolkit, then
+  `migrate:fresh --force` (clean rebuild from files, per the June ruling
+  — NOT incremental).
+- Migrations: **all 35 Ran, batch 1** (fresh build). The full silence
+  model + D14/D15/D16 are on dotrent for the first time.
+- Schema verified (Migrations rule): `cases` and `case_messages` both
+  checked via `information_schema` — every timestamp column has **blank
+  extra**, NO implicit `ON UPDATE CURRENT_TIMESTAMP`. **#18-clean.**
+- Seed: `RepairCategorySeeder` (11) + `LetterTemplateSeeder` (11) +
+  `SettingSeeder` (8, `apply_inflight=0`) run **explicitly by class**.
+  NO `DatabaseSeeder`, NO Faker Test User, **empty cases table** — clean
+  production-candidate shape.
+- Admin: `admin@renters.rent`, id 1, `is_admin=1`, `email_verified_at`
+  set; created with verification handled (the gafol `markEmailAsVerified`
+  trap avoided). **Future-rebuild note:** admin = the `is_admin` flag,
+  set manually post-create; the old "ID 13" rule is retired/stale.
+- Surfaces validated against production MariaDB: **A** (11 templates),
+  **B** (settings, B2=No), **C** (empty, clean).
+- Last verified: 27 Jun 2026.
+- Next: Phase C — DNS flip renters.rent → dotrent, Mailgun inbound route
+  update, one live round-trip, then record prod retirement.
 
 ## prod — renters.rent (Windows, EOL)
 - Git tip: UNKNOWN (not reconciled this session). Demo mode; still
