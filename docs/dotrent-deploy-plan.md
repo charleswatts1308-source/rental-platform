@@ -32,37 +32,40 @@ in `environment-state.md`.
 1. **gafol:** `php artisan migrate:status` — confirm it's at the D14/
    pre-D16 set; the only thing pending against `main` should be the 2
    D16 tables.
-2. **dotrent:** `php artisan migrate:status` — the decisive read. This
-   determines Phase B's path (see branches below). Do NOT assume 17.
-3. **dotrent:** `SHOW CREATE TABLE cases;` and
-   `SHOW CREATE TABLE case_messages;` — check for:
-   - manual columns/indexes hand-added during the Mailgun round-trip
-     testing (drift), and
-   - any stray `ON UPDATE CURRENT_TIMESTAMP` on `updated_at` (#18).
-4. **dotrent:** confirm `rentals` / old `file_attachments` state — these
-   still exist on the old boxes until the `2026_05_24` drop migration,
-   which is OUTSIDE this deploy range (predates `2722ba4`). Note their
-   state; do not action them here.
+2. **dotrent:** `php artisan migrate:status` — **RESOLVED this session.**
+   dotrent's DB stops at `2026_05_24_160000` (pre-silence). The silence
+   model was never deployed here; the May 2026 live-fire proved the
+   Mailgun plumbing on this pre-silence schema, not the silence machine.
+   This makes dotrent's promotion a clean `migrate:fresh` rebuild from
+   main's migration files (June ruling: *fresh from files, NOT a DB copy*)
+   — see Phase B. The branch-prediction below is therefore settled.
+3. **dotrent:** `SHOW CREATE TABLE cases / case_messages` drift check —
+   **no longer a pre-deploy gate.** `migrate:fresh` discards dotrent's
+   existing schema entirely, so any drift from the May testing is wiped,
+   not migrated over. The #18 verification moves to a SINGLE post-fresh
+   `SHOW CREATE TABLE` in Phase B (the rebuilt tables are what matter).
+4. **dotrent:** `rentals` / old `file_attachments` — **handled by the
+   rebuild.** `migrate:fresh` runs main's full migration set, which
+   includes `2026_05_24_160000` (drop `rentals` + recreate
+   `file_attachments` standalone). After fresh, `rentals` is gone and
+   `file_attachments` is the new standalone table — no manual action.
 5. **Write findings back into `docs/environment-state.md`** — replace the
    UNRECONCILED rows for gafol and dotrent with the actual migrate:status
-   set + the drift/`#18` findings. This is the ledger doing its job.
+   set. (dotrent's row is reconciled below as of this session; gafol's
+   `migrate:status` is still to run at Phase A.)
 
-### STEP 0 branches — dotrent's migrate:status decides Phase B
+### STEP 0 branches — SETTLED (dotrent is pre-silence)
 
-The "17" elsewhere is a **git-diff count**, not a confirmed pending
-count. dotrent ran a D14 live-fire, so its DB may already carry most of
-the silence range. The real number is whatever migrate:status reports:
+This was an open question when the plan was drafted: would dotrent's
+status show an incremental delta (the "17" git-diff count was never a
+confirmed *pending* count). **It is now settled.** dotrent's DB stops at
+`2026_05_24_160000` — pre-silence, the silence model wholly absent. There
+is no partial silence schema to reconcile and no incremental run to size.
 
-- **Branch 1 — only D15/D16 pending** (live-fire DB ran the rest):
-  small clean delta. **Likely**, given the live-fire history. Phase B
-  runs just those.
-- **Branch 2 — full silence range pending** (DB was reset since
-  live-fire): the 17-migration path. Phase B runs the lot, with the #18
-  check carrying its full weight (11 ALTERs on `cases`/`case_messages`).
-- **Branch 3 — jumbled / partial** (some ran, some didn't, order
-  unclear): **STOP.** Do not run anything. Reconcile dotrent's DB to a
-  known state first, then re-enter Step 0. A half-applied silence schema
-  is the worst case and must not be migrated over.
+The promotion method is therefore **`migrate:fresh` from main's migration
+files** — rebuild the schema clean in one pass — *not* an incremental run
+of any subset of the 17. The earlier branch logic (only-D15/D16 / full-
+range / jumbled→STOP) assumed an incremental path and no longer applies.
 
 ---
 
@@ -89,25 +92,42 @@ Gate to Phase B: gafol green, ledger updated.
 
 ---
 
-## PHASE B — dotrent → main
+## PHASE B — dotrent → main (clean rebuild via migrate:fresh)
 
-Run ONLY the genuinely-pending migrations identified in Step 0 — the
-branch result, not the git-diff "17".
+dotrent is pre-silence (Step 0). Its promotion is a **clean schema
+rebuild from main's migration files**, NOT an incremental run of the
+17-migration range. Per the June ruling: *migrate:fresh from files, NOT
+a DB copy.*
 
-1. **#18 dev-MariaDB check first.** For every ALTER in the pending set
-   (the `cases` / `case_messages` add-column, drop-column, and status-
-   enum migrations), migrate against **dev MariaDB**, `SHOW CREATE TABLE`
-   to confirm plain `datetime` with no trailing `ON UPDATE`, indexes/FKs/
-   defaults/types as intended, then rollback clean. CREATE TABLE
-   migrations get the same confirmation. Green SQLite tests prove logic,
-   not schema (CLAUDE.md Migrations rule).
-2. Deploy current `main` to dotrent (fast-forward — clean ancestor).
-3. Run the pending migrations (`migrate --force` via the Plesk Laravel
-   Toolkit). Set is whatever Step 0 / Phase B-branch confirmed.
-4. Smoke-check the install on dotrent: app boots, admin surfaces load,
+⚠️ **`migrate:fresh` WIPES dotrent's database.** This is intended and
+safe: dotrent holds pre-silence *test* data only — no real users, no
+real cases. The May live-fire proved Mailgun plumbing, nothing that
+needs preserving. Call this out so nobody runs it surprised: the DB is
+dropped and rebuilt empty, then reseeded.
+
+1. **Deploy main's code to dotrent** via the **Plesk Laravel Toolkit**,
+   NOT `git pull` — there is no `.git` in the docroot. Get main's files
+   (incl. all migration files + seeders) onto the box.
+2. **`php artisan migrate:fresh --force`** — drops every table and
+   rebuilds the schema clean from main's migration files in one pass.
+   Because it's a fresh build, the final `cases` / `case_messages`
+   tables are created directly (no sequence of ALTERs over a legacy
+   shape).
+3. **Reseed** — `db:seed --force` (LetterTemplateSeeder, SettingSeeder,
+   and any other production-required seeders) so the rebuilt DB has its
+   templates + settings.
+4. **#18 verification — a SINGLE post-fresh check.** `SHOW CREATE TABLE
+   cases;` and `SHOW CREATE TABLE case_messages;` on the rebuilt schema,
+   confirming plain `datetime` with no trailing `ON UPDATE`, and
+   indexes/FKs/defaults/types as intended. This replaces the 11 per-ALTER
+   checks — a fresh build creates the final tables in one pass, so one
+   verification of the result suffices. Green SQLite tests prove logic,
+   not MariaDB schema (CLAUDE.md Migrations rule).
+5. Smoke-check the install on dotrent: app boots, admin surfaces load,
    a case can be created (the create-case preview/confirm flow).
-5. **Ledger:** record dotrent's deploy in `environment-state.md` — commit
-   (`main`), date, migration set actually applied, what was verified.
+6. **Ledger:** record dotrent's deploy in `environment-state.md` — commit
+   (`main`), date, "migrate:fresh from files" as the method, and what was
+   verified (the post-fresh `SHOW CREATE TABLE` result).
 
 Gate to Phase C: dotrent green, ledger updated. NOTE: Mailgun on dotrent
 (preprod) is `mg.renters.rent`, both directions (CLAUDE.md Mail rule) —
@@ -143,9 +163,11 @@ the round-trip is already proven here, so Phase C's check is a
 
 ## Summary of gates
 
-- **Step 0** must come back clean/branchable (Branch 1 or 2) — Branch 3
-  STOPS the deploy.
-- **Phase A** before Phase B — gafol takes the Phase 5 migrations first.
-- **#18 dev-MariaDB check** before any ALTER runs on dotrent.
+- **Step 0** — dotrent SETTLED (pre-silence → migrate:fresh). gafol's
+  `migrate:status` still runs at Phase A.
+- **Phase A** before Phase B — gafol takes the 2 D16 migrations first.
+- **dotrent = migrate:fresh from files** (clean rebuild, WIPES the DB —
+  safe, pre-silence test data only), then reseed, then a **single
+  post-fresh `SHOW CREATE TABLE`** #18 check — not 11 per-ALTER checks.
 - Every phase ends by **writing the ledger** — a deploy isn't done until
   `environment-state.md` says it happened.

@@ -4,8 +4,10 @@ Human-readable mirror of what is deployed where. The DB `migrations`
 table is the source of truth; this file is reconciled against
 `php artisan migrate:status` at each deploy (CLAUDE.md "Deployment ledger").
 
-**Reconcile status:** git tips below are verified (this session, 27 Jun
-2026). DB migration sets are UNRECONCILED — no `migrate:status` seen yet.
+**Reconcile status:** git tips verified (this session, 27 Jun 2026).
+**dotrent DB reconciled** this session via `migrate:status` (pre-silence,
+stops at `2026_05_24_160000`). **gafol DB** still UNRECONCILED on
+migrations — runs at Phase A of the deploy plan.
 
 ---
 
@@ -15,18 +17,22 @@ table is the source of truth; this file is reconciled against
 
 ## gafol — permanent staging (ukrenters.rent / HUK)
 - Git tip: `df3b48f` — **D14-complete, pre-D16** (no Phase 5 admin surfaces).
-- Behind `main` by: 17 commits; schema-wise only 2 migrations
+- DB: at **D14/D15** — missing only the 2 D16 admin tables
   (`letter_text_change_history`, `settings_change_hist`).
-- DB migration set: UNRECONCILED — run `migrate:status` at next deploy.
+- Behind `main` by: 17 commits; schema-wise just those 2 migrations.
+- DB migration set: UNRECONCILED — run `migrate:status` at Phase A.
 
 ## dotrent — flip target for renters.rent
-- Git tip: `2722ba4` — **pre-silence-model** (entire silence/email model absent).
-- Behind `main` by: 59 commits; 17 migrations (6 CREATE, 11 ALTER on
-  `cases`/`case_messages` — #18 ON UPDATE risk applies).
-- DB migration set: UNRECONCILED. Pre-deploy checks outstanding:
-  migrate:status clean (no half-applied silence migrations),
-  `SHOW CREATE TABLE cases / case_messages` for manual drift +
-  stray ON UPDATE, `rentals`/old `file_attachments` state.
+- Git tip / code: `2722ba4` (**pre-silence-model**), deployed via Plesk
+  Laravel Toolkit (no `.git` in docroot).
+- DB: **pre-silence**, last migration `2026_05_24_160000`. The silence
+  model is NOT present. (Reconciled via `migrate:status`, 27 Jun 2026.)
+- May 2026 live-fire proved the **Mailgun round-trip only**, on this
+  pre-silence schema — not the silence model.
+- Behind `main` by: 59 commits.
+- **Promotion method: `migrate:fresh` from main's migration files**
+  (June ruling: fresh from files, NOT a DB copy). WIPES the DB — safe,
+  pre-silence test data only. See `dotrent-deploy-plan.md` Phase B.
 
 ## prod — renters.rent (Windows, EOL)
 - Git tip: UNKNOWN (not reconciled this session). Demo mode; still
