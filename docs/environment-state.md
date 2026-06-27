@@ -15,12 +15,15 @@ migrations — runs at Phase A of the deploy plan.
 - Local `main`: `db095df` (docs: User Guides). 1 commit ahead of origin.
 - `origin/main`: `6cb0d9e`. Tags: `post-d16-phase5` = `cf2f5c9`.
 
-## gafol — permanent staging (ukrenters.rent / HUK)
+## gafol — permanent staging (gafol.rent)
 - Git tip: `df3b48f` — **D14-complete, pre-D16** (no Phase 5 admin surfaces).
 - DB: at **D14/D15** — missing only the 2 D16 admin tables
   (`letter_text_change_history`, `settings_change_hist`).
 - Behind `main` by: 17 commits; schema-wise just those 2 migrations.
 - DB migration set: UNRECONCILED — run `migrate:status` at Phase A.
+- Plesk Git repo `laravel_093fde` tracks the **`main`** branch (verified
+  27 Jun 2026); deploy via Plesk Pull/Deploy, migrations run separately
+  via Laravel Toolkit (`migrate --force`).
 
 ## dotrent — flip target for renters.rent
 - Git tip / code: `2722ba4` (**pre-silence-model**), deployed via Plesk
