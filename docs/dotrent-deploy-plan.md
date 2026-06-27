@@ -147,13 +147,23 @@ the round-trip is already proven here, so Phase C's check is a
    fails to land. Do not skip it.
 3. Confirm **one inbound round-trip** on the live renters.rent route
    post-flip — the "flip didn't break it" check.
-4. Begin the family trial: use Surface B to set short intervals for
+4. **Front door stays LOCKED for the trial.** dotrent runs with
+   `REGISTRATION_OPEN_TO_ALL=false` + `REGISTRATION_ALLOWLIST=<family
+   emails>` (private-beta gate, merged to main this session). Only
+   allowlisted family register; a stranger cannot create an account or
+   trigger any outbound letter. See the dotrent ledger entry for the two
+   required `.env` keys.
+5. Begin the family trial: use Surface B to set short intervals for
    observable pacing; keep the B2 "Applies to In-flight cases" flag
    **Off** so shortened intervals apply cleanly to new cases. gafol stays
    permanent staging. (Solicitor wording sign-off does NOT gate the
    family trial — Charlie's call, 21 Jun; it gates a wider/public launch.
    See `pre-flip-checklist.md`.)
-5. **Ledger — prod retirement:** once the flip completes and prod is
+6. **Go-live switch (the ONLY one):** when ready to open beyond the
+   family, set `REGISTRATION_OPEN_TO_ALL=true` in dotrent's `.env` +
+   `php artisan config:cache`. No other config change. (Public launch
+   still gated by the solicitor wording sign-off per `pre-flip-checklist`.)
+7. **Ledger — prod retirement:** once the flip completes and prod is
    confirmed dark, record the flip as prod's LAST event in
    `environment-state.md` ("retired, DNS flipped to dotrent, <date>"),
    then strike the prod entry. The ledger shrinks to three (gafol,

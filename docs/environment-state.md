@@ -62,6 +62,15 @@ flip (Phase C) + prod retirement.
   set; created with verification handled (the gafol `markEmailAsVerified`
   trap avoided). **Future-rebuild note:** admin = the `is_admin` flag,
   set manually post-create; the old "ID 13" rule is retired/stale.
+- **Registration — REQUIRED `.env` keys (set in Plesk; a rebuild must
+  re-add them — code defaults to false so a rebuild fails SAFE-CLOSED,
+  but the allowlist would be EMPTY until re-added):**
+  - `REGISTRATION_OPEN_TO_ALL=false` — the front door stays locked; this
+    flipping to `true` (+ `php artisan config:cache`) is the single
+    go-live switch.
+  - `REGISTRATION_ALLOWLIST=<family emails, comma-separated>` — who may
+    register during the locked beta. Empty = nobody can register.
+  - After editing either: `php artisan config:cache` (prod caches config).
 - Surfaces validated against production MariaDB: **A** (11 templates),
   **B** (settings, B2=No), **C** (empty, clean).
 - Last verified: 27 Jun 2026.
