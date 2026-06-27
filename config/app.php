@@ -81,6 +81,30 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Registration Controls (two independent switches)
+    |--------------------------------------------------------------------------
+    |
+    | registration_open_to_all — the beta on/off switch. This and ONLY this
+    | decides whether the site is open to everyone. Default false (private
+    | beta). Setting it true is the single go-live switch; the allowlist is
+    | then ignored.
+    |
+    | registration_allowlist — comma-separated emails permitted to register
+    | DURING beta only. It has NO power over the on/off state: editing it,
+    | including emptying it, never opens or closes the beta. An empty list in
+    | beta just means "nobody invited yet" — the site stays in beta.
+    |
+    | The real gate is the server-side check in RegisteredUserController::
+    | store(); these are only the configuration inputs.
+    |
+    */
+
+    'registration_open_to_all' => (bool) env('REGISTRATION_OPEN_TO_ALL', false),
+
+    'registration_allowlist' => env('REGISTRATION_ALLOWLIST', ''),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Locale Configuration
     |--------------------------------------------------------------------------
     |
