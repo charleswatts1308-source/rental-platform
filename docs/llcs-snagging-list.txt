@@ -496,3 +496,25 @@ Fix:         Per Charlie's ruling — either disambiguate (a) or rebuild to (b)
              (drop "Abandoned" from the stance enum/selector, keep the real
              abandon action, reword the stance prompt as a private note).
 --------------------------------------------------------------------
+#22
+Page:        Admin UI — repair_categories has no editor (Surfaces A/B exist,
+             categories don't). Surfaced 2026-06-27 during dotrent
+             production-candidate build.
+Severity:    minor — capability gap, NOT a defect. Non-blocking.
+Saw:         The D16 admin layer ships Surface A (letter templates) and
+             Surface B (settings), but repair_categories has no admin screen:
+             add / rename / reorder / retire is phpMyAdmin-only.
+Expected:    A "Surface D"-style read/write admin editor for repair categories
+             (label, sort_order, active, requires_description), mirroring the
+             Surface A/B pattern.
+Status:      open — deferred, not in D16 scope. Non-blocking: categories are
+             static reference data, seeded (11 rows via RepairCategorySeeder),
+             and the create-case dropdown reads them correctly.
+Notes:       Candidate for a future admin addition alongside the deferred
+             letter_templates.active toggle (NEXT-SESSION "New deferred items").
+             Both are admin-surface gaps over load-bearing reference/config
+             data that currently live in phpMyAdmin only.
+Fix:         Add a categories admin surface (CRUD over repair_categories,
+             active-toggle + sort_order reorder), following the Surface A/B
+             controller + view pattern. Future phase, TBD.
+--------------------------------------------------------------------
