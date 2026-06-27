@@ -10,6 +10,14 @@
                 <h4 class="mb-0">Create Your Account</h4>
             </div>
             <div class="card-body p-4">
+                @unless(config('app.registration_open_to_all'))
+                    <p class="text-muted small mb-4">
+                        renters.rent is currently in a private beta. Registration
+                        is invite-only — please use the email address your
+                        invitation was sent to.
+                    </p>
+                @endunless
+
                 <form method="POST" action="{{ route('register') }}">
                     @csrf
 
