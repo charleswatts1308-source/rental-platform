@@ -38,5 +38,10 @@ Standing rules. Project history and current-phase state live in `docs/`.
 ## Migrations
 - The test suite runs SQLite in-memory (`phpunit.xml`); dev/prod run MariaDB. SQLite cannot show MariaDB-specific schema behaviour — notably the implicit `ON UPDATE CURRENT_TIMESTAMP` trap (#18). Therefore: any migration that creates or alters a table gets a **manual MariaDB check before merge** — migrate against dev MariaDB, `SHOW CREATE TABLE` to confirm the built schema matches intent (plain `datetime` with no trailing `ON UPDATE`; indexes, FKs, defaults, and column types as intended), then rollback clean. **Green tests prove logic, not MariaDB schema.**
 
+## Deployment ledger
+- Every deploy to a long-lived environment (gafol, dotrent, prod) updates `docs/environment-state.md` as its **last step**: the commit/tag landed, the date, the migration set applied, and what was verified. A deploy isn't done until the ledger says it happened.
+- The database's own `migrations` table is the **source of truth** for what ran where; the ledger is its human-readable mirror, **reconciled against `php artisan migrate:status`** at each deploy.
+- Two long-lived environments at different commits is the condition that makes this non-optional.
+
 ## Tests
 - **No weakened assertions, ever** — rewrites assert at least as strongly. D0 disposition list is the reference; deltas go in the implementation report.
