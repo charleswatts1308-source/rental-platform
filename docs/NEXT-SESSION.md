@@ -1,188 +1,161 @@
 # NEXT-SESSION — start here
 
 Living entry point for a fresh session. Stable filename; keep it
-current. The `docs/` folder has ~28 files and many are stale — this
+current. The `docs/` folder has many files and many are stale — this
 index says which to trust and which to ignore so you don't re-derive
 state from a superseded doc.
 
-**Last updated:** 2026-06-21 (Phase 5 / D16 Admin/Config UI merged).
-**Parked state:** `origin/main` synced (pushed this session). Phase 5
-code at tag `post-d16-phase5` = `cf2f5c9` (the `--no-ff` merge), with the
-§0 and housekeeping doc commits on top. Tag triplet — all on origin:
-`pre-d16` (§0 base) → `pre-d16-phase5` (surfaces base) →
-`post-d16-phase5` (merged). Suite **535 passing / 2226 assertions**
-(was 485 at the D14 close).
-
-**Phase 5 (D16 Admin/Config UI) — BUILT AND MERGED.** § 0
-admin-security hardening (`is_admin` out of `$fillable` + regression
-test) **plus** the three surfaces: **A** template editor (version
-history `letter_text_change_history`, live-whitelist token validation,
-mandatory preview), **B** settings editor (range-reject, the
-`escalation.apply_inflight` flag shipping **Off**, audit log
-`settings_change_hist`), **C** read-only case oversight + `case_events`
-trail. Also folded in: the shared state-aware **display predicate**
-(`showsNextEscalation`/`showsHoldUntil` on `RepairCase`), the **#4**
-short reference format (6-char, A–Z+2–9 minus I/O/0/1), and snags
-**#16/#20/#21**. MariaDB schema verified on dev (no #18 ON UPDATE trap;
-indexes + FKs correct; clean migrate/rollback).
-
-**The silence/email cycle remains complete** and the admin/config layer
-now sits on top of it. Nothing is blocked. **Next session is directed:
-deploy → DNS flip → family trial** (section below); the remaining snag
-batch is the alternative if the flip is deferred.
+**Last updated:** 2026-06-28 (deploy Phases A+B green; registration gate
+merged). **origin/main = `b165114`** (synced). Suite **539 passing /
+2239 assertions**.
 
 ---
 
-## Next session — deploy, DNS flip, family trial
+## Parked state — read this first
 
-The destination: get current `main` onto dotrent, flip renters.rent DNS
-to it, and begin a live family trial. The Mailgun round-trip is already
-proven on dotrent (outbound via `mg.renters.rent` + an Outlook reply
-round-tripped through the inbound webhook), so the flip is mostly
-mechanical, not a first run.
+The silence/email model (Phases 1–5, D1–D16) is complete and merged.
+This session deployed it outward and locked the front door:
 
-1. ~~Push main to origin.~~ **Done this session** — `origin/main` is
-   synced at the post-D16 state and the three tags are pushed. Start
-   from a deploy of current `origin/main`.
-2. Confirm current `main` is deployed on dotrent.net.
-3. Flip DNS: renters.rent → the dotrent install. Windows renters.rent
-   is EOL.
-4. Update the Mailgun inbound route to
-   `https://renters.rent/webhooks/mailgun/inbound`. This is the one
-   config edit a flip can leave stale — outbound keeps working
-   regardless, so a missed inbound route only surfaces when a landlord
-   reply silently fails to land. Don't skip it.
-5. Confirm ONE inbound round-trip on the live renters.rent route
-   post-flip — a "the flip didn't break it" check, since the path is
-   already proven on dotrent, not a first run.
-6. Begin the family trial. Use the new Surface B settings editor to set
-   short intervals for observable pacing — that's what Phase 5 built it
-   for. The B2 "Applies to In-flight cases" flag stays **Off**, so
-   shortened intervals apply cleanly to new cases. gafol.rent stays
-   permanent staging.
+- **gafol (staging) and dotrent (production candidate) are BOTH deployed
+  at `main`/`859827b`** — Phase A and Phase B of the deploy plan are
+  GREEN. dotrent was a clean `migrate:fresh` rebuild (all 35 migrations,
+  #18-clean, production-candidate seed shape: real categories/templates/
+  settings, NO Faker user, empty cases). Full details in the ledger.
+- **The private-beta registration gate is merged to `main` (`15ec602`,
+  tag `pre-registration-lock` = `a63ac4a`)** — but it landed AFTER the
+  gafol/dotrent deploys, so **the boxes at `859827b` do NOT yet have it.**
+  Current `main` is `b165114`.
 
-**Note:** solicitor letter-wording sign-off is deliberately **NOT**
-gating the family trial — the trial tests functional accuracy (does the
-machine escalate/revive/close correctly), not legal wording, and the
-recipients are the family's own landlords. Charlie's call, 21 Jun 2026.
-(`pre-flip-checklist.md` still carries the sign-off as a condition for a
-wider/public launch.)
+**⚠️ State drift to resolve first (next session):** gafol/dotrent are at
+`859827b`; `main` is `b165114`. The gap is the registration gate (code
+only — **NO new migrations** since the Phase A/B deploys) + docs. The
+registration `.env` keys do nothing until that code is on the box.
 
-**Alternative if the flip is deferred:** the remaining snag batch (#7,
-#8, #12, #13, #17, #18, #19).
+**Authoritative records for current state:**
+- **docs/environment-state.md** — the deployment ledger (what's deployed
+  where; per the new CLAUDE.md Deployment-ledger rule).
+- **docs/dotrent-deploy-plan.md** — the phased deploy (A done, B done,
+  C = DNS flip remaining).
+
+---
+
+## Next session — finish the cutover (Phase C)
+
+All remaining steps need LIVE access (Plesk / DNS / Mailgun) — the
+human-in-the-loop drives, Claude guides.
+
+1. **Bring gafol + dotrent up to current `main` (`b165114`).** Code only,
+   no migrations. gafol: Plesk Git pull (tracks `main`). dotrent: Plesk
+   Laravel Toolkit (no `.git` in docroot). This puts the registration
+   gate on the boxes so the `.env` keys take effect.
+2. **Set registration `.env` keys** (then `php artisan config:cache` on
+   each — prod caches config):
+   - gafol: `REGISTRATION_OPEN_TO_ALL=true` (open for dev).
+   - dotrent: `REGISTRATION_OPEN_TO_ALL=false` +
+     `REGISTRATION_ALLOWLIST=<family emails>` (locked beta).
+   - The two dotrent keys are recorded in the ledger's dotrent entry.
+3. **Phase C — DNS flip:** renters.rent → the dotrent install (Windows
+   renters.rent is EOL).
+4. **Update the Mailgun inbound route** →
+   `https://renters.rent/webhooks/mailgun/inbound`. The one edit a flip
+   silently leaves stale — outbound keeps working, so a missed inbound
+   route only shows when a landlord reply fails to land. Don't skip it.
+5. **Confirm ONE inbound round-trip** on the live renters.rent route —
+   "the flip didn't break it" (the path is already proven on dotrent).
+6. **Begin the family trial:** Surface B to set short intervals for
+   observable pacing; B2 "Applies to In-flight cases" stays **Off**.
+   gafol stays permanent staging.
+7. **Ledger — prod retirement:** once the flip completes and prod is
+   confirmed dark, record the flip as prod's LAST event in
+   environment-state.md, then strike the prod entry (ledger → three).
+8. **Go-live switch (LATER, the only one):** open beyond family by
+   setting dotrent `REGISTRATION_OPEN_TO_ALL=true` + `config:cache`.
+   (Public launch still gated by solicitor wording sign-off — see
+   `pre-flip-checklist.md`.)
+
+**Note:** solicitor letter-wording sign-off does NOT gate the family
+trial (functional accuracy, family's own landlords — Charlie's call,
+21 Jun 2026). It gates a wider/public launch.
 
 ---
 
 ## Read in this order (the live set)
 
-1. **/CLAUDE.md** (repo root) — working agreements. Standing rules.
-   (Now also carries a **Migrations** rule: tests run SQLite, dev/prod
-   run MariaDB → any table create/alter gets a manual MariaDB
-   `SHOW CREATE TABLE` check before merge.)
-2. **docs/llcs-silence-model-design.md** — AUTHORITATIVE design.
-   Wins over any brief, and is the tie-breaker if two docs disagree.
-   Now carries **D1–D16** (D16 = Phase 5 Admin/Config UI, incl. the
-   #21 Option C ruling — abandon-collision resolved, D14 revival
-   preserved).
-3. **Latest close-out** — the newest phase narrative is the D14
-   write-up `d14-escalation-exhausted-writeup-Sun-2026-06-14-0539pm.md`
-   (with the D15 close-out before it). **Phase 5 (D16) has no separate
-   close-out doc** — its record is the design doc § D16, the brief
-   `d16-cc-brief.md`, and merge commit `cf2f5c9`. For "what shipped in
-   Phase 5," read § D16 + that commit.
+1. **/CLAUDE.md** (repo root) — working agreements. Now carries the
+   **Migrations** rule (manual MariaDB `SHOW CREATE TABLE` before merge)
+   AND the **Deployment-ledger** rule (every long-lived deploy updates
+   environment-state.md as its last step, reconciled vs `migrate:status`).
+2. **docs/environment-state.md** — the deployment ledger. Current truth
+   of what's deployed where (gafol + dotrent at `859827b`; main at
+   `b165114`).
+3. **docs/dotrent-deploy-plan.md** — phased cutover (A+B done, C = flip).
+4. **docs/llcs-silence-model-design.md** — AUTHORITATIVE design (D1–D16).
+   Wins over any brief; tie-breaker if two docs disagree.
+5. **docs/User Guides/** — plain-English + technical dispatch-sequence
+   references (which letter fires when), and the CC automation
+   orientation (read-at-leisure).
 
-Then **execute the Next session sequence above** (deploy → flip →
-family trial). Cutover conditions live in **docs/pre-flip-checklist.md**
-— but note the family-trial carve-out above: solicitor wording sign-off
-gates a wider/public launch, **not** the family trial. The **snag batch**
-(**docs/llcs-snagging-list.txt**: #7, #8, #12, #13, #17, #18, #19) is the
-alternative if the flip is deferred.
-
-That's the minimum to pick up cold. (Phase 5 is no longer a "next"
-option — it's done.)
+Then execute the Phase C sequence above.
 
 ---
 
-## Snags — post-Phase-5 status
+## Snags — open
 
-**Resolved by Phase 5 (D16):** #4 (reference format), #14 + #15
-(display predicate), #16 (live `max_notices` denominator), #20 (D9
-dark-mode header), #21 (abandon-collision → Option C).
+`docs/llcs-snagging-list.txt`: **#7, #8, #12, #13, #17, #18, #19, #22.**
+New this session: **#22** (no admin UI for repair_categories — phpMyAdmin
+only; candidate for a future "Surface D" alongside the deferred
+`letter_templates.active` toggle).
 
-**Still open:** #7 (create-case landlord lookup/auto-fill), #8
-(delivery-status webhooks — its own pre-flip evidential-hardening
-phase, NOT an admin panel), #12 (seed-data realism), #13 (age-clock
-gauge label), #17 (`dev:reset` schema-guard for partial migrate),
-#18 (implicit `ON UPDATE CURRENT_TIMESTAMP` trap — the four
-pre-existing tables; Phase 5's two new tables were built clear of it),
-#19 (attachments on tenant replies).
+Resolved by Phase 5 (D16): #4, #14, #15, #16, #20, #21.
 
-**New deferred items surfaced this session (named gaps, not built):**
-- **`letter_templates.active` toggle** — deferred, stays phpMyAdmin-only.
-  `active` is load-bearing on the sweep (`forEscalation` /
-  `firstActiveOfType`); deactivating mid-escalation has undesigned
-  in-flight semantics. Candidate for the post-#8 machine-state-UI
-  ruling. (Recorded in design doc § D16 "Explicitly NOT Phase 5".)
-- **`ExhaustedStance` enum + `setStance` action** — left dormant in the
-  codebase (no UI) after the #21 Option C dropdown removal. Future
-  disposition deferred; reversed nothing on the backend.
+Deferred named gaps (not built): `letter_templates.active` toggle,
+`ExhaustedStance` enum/`setStance` (dormant, no UI). Both candidates for
+a post-#8 machine-state / Surface-D admin pass.
 
 ---
 
-## Doc status map (best-effort — design doc + latest close-out win)
-
-This classification is by era/filename and what recent sessions
-touched. It is NOT infallible. When in doubt, trust the AUTHORITATIVE
-design doc and the newest close-out over anything below.
+## Doc status map (design doc + ledger win when in doubt)
 
 **LIVE — trust these:**
-- `CLAUDE.md` (root) — working agreements (now incl. the Migrations rule).
+- `CLAUDE.md` — working agreements (Migrations + Deployment-ledger rules).
+- `environment-state.md` — deployment ledger (current).
+- `dotrent-deploy-plan.md` — cutover plan (current).
 - `llcs-silence-model-design.md` — authoritative design (D1–D16).
-- `d14-escalation-exhausted-writeup-Sun-2026-06-14-0539pm.md` — latest
-  phase close-out (D14; D15 narrative in the prior write-up).
-- `llcs-snagging-list.txt` — open snags #7, #8, #12, #13, #17, #18, #19.
-- `pre-flip-checklist.md` — governs the production cutover; the Phase-3
-  three PLUS the D15 `escalation_authorisation` PLUS the D14
-  exhaustion-wording sign-off live here in spirit.
+- `llcs-snagging-list.txt` — open snags (above).
+- `pre-flip-checklist.md` — production cutover conditions (wider/public
+  launch sign-offs).
+- `User Guides/` — dispatch-sequence refs + automation orientation.
 
-**HISTORICAL — accurate for their phase, do NOT lead with them:**
-- `d16-cc-brief.md` — Phase 5 build brief (folded into design doc § D16).
-- `d14-...` / `d15-...` briefs, reports, runbooks, and the D15 close-out
-  write-up — earlier phases.
-- `silence-phase-3-writeup-...`, `cc-brief-silence-phase-3.md`,
-  `gafol-live-fire-runbook-3.md`, and the phase-1/2a/2b briefs +
-  runbooks + write-ups — earlier phases.
+**HISTORICAL — accurate for their phase, don't lead with them:**
+- `d16-cc-brief.md`, the D14/D15 briefs/reports/runbooks/write-ups, the
+  phase-1/2a/2b/3 briefs + runbooks + write-ups.
 
-**ARCHIVE — pre-silence-model LLCS era; ignore for current work:**
-- `LLCS Version 1/`, `LLCS old docs 3 May 1150/` (whole folders).
-- `landlord-contact-service-design.md`,
-  `landlord-contact-service-implementation-plan.md` — original LLCS
-  design, predates the silence-model rewrite.
+**ARCHIVE — pre-silence-model; ignore for current work:**
+- `LLCS Version 1/`, `LLCS old docs 3 May 1150/`,
+  `landlord-contact-service-*.md`.
 
-**VERIFY before relying on — not re-confirmed recently:**
-- `phase-3-design-d13-addendum.md`, `phase-3-design-doc-update.md` —
-  likely folded into the design doc; treat the design doc as canonical.
-- `phase-8-design-notes.md` — forward/speculative; not current scope.
-- `deploy-checklist.md` — older/general; the LIVE cutover doc is
-  `pre-flip-checklist.md`.
-- `huk-laravel-site-install-recipe.md`, `chats/*`,
-  `state-summary-2026-05.md`, `session-writeup-*` — env-specific /
-  dated session records; historical.
+**VERIFY before relying on:**
+- `phase-3-design-*.md` (likely folded into design doc),
+  `phase-8-design-notes.md` (speculative), `deploy-checklist.md` (older;
+  the live cutover doc is `dotrent-deploy-plan.md` + `pre-flip-checklist`),
+  `huk-*`, `chats/*`, `state-summary-2026-05.md`, `session-writeup-*`.
 
 ---
 
 ## Branches
 
-Merged and retained-but-deletable (kept for solicitor sign-off +
-dotrent deploy): `d14-escalation-exhausted`, `d15-engagement-gating`,
-`d16-admin-config-ui`, `d16-admin-security`. Delete once the pre-flip
-sign-offs land.
+Merged, retained-but-deletable: `registration-lock` (this session),
+`d14-escalation-exhausted`, `d15-engagement-gating`, `d16-admin-config-ui`,
+`d16-admin-security`. Delete once cutover sign-offs land.
+
+Tags: `pre-registration-lock` (`a63ac4a`), `post-d16-phase5` (`cf2f5c9`),
+`pre-d16-phase5`, `pre-d16` — all on origin.
 
 ---
 
 ## Maintenance rule
 
-When a phase closes: move its brief/report/runbook to HISTORICAL in
-the map above, repoint step 3 / the parked-state block to the new
-state, and prune resolved snags. Keep this file to one screen — it's a
-router, not a record.
+When a phase closes: move its brief/report/runbook to HISTORICAL, repoint
+the parked-state block, prune resolved snags. Keep this file to one
+screen — it's a router, not a record. On any deploy, the LAST step is
+writing environment-state.md (CLAUDE.md Deployment-ledger rule).
