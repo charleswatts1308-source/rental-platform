@@ -6,69 +6,62 @@ index says which to trust and which to ignore so you don't re-derive
 state from a superseded doc.
 
 **Last updated:** 2026-06-28 (deploy Phases A+B green; registration gate
-merged). **origin/main = `b165114`** (synced). Suite **539 passing /
-2239 assertions**.
+deployed + verified on both boxes). **origin/main = `b165114`**. Suite
+**539 passing / 2239 assertions**. Only Phase C (DNS flip) remains.
 
 ---
 
 ## Parked state — read this first
 
 The silence/email model (Phases 1–5, D1–D16) is complete and merged.
-This session deployed it outward and locked the front door:
+This session deployed it outward and locked the front door — **all of
+that is now DONE**:
 
-- **gafol (staging) and dotrent (production candidate) are BOTH deployed
-  at `main`/`859827b`** — Phase A and Phase B of the deploy plan are
-  GREEN. dotrent was a clean `migrate:fresh` rebuild (all 35 migrations,
-  #18-clean, production-candidate seed shape: real categories/templates/
-  settings, NO Faker user, empty cases). Full details in the ledger.
-- **The private-beta registration gate is merged to `main` (`15ec602`,
-  tag `pre-registration-lock` = `a63ac4a`)** — but it landed AFTER the
-  gafol/dotrent deploys, so **the boxes at `859827b` do NOT yet have it.**
-  Current `main` is `b165114`.
+- **gafol (staging) and dotrent (production candidate) are both on
+  current `main`** — Phase A + Phase B GREEN. dotrent was a clean
+  `migrate:fresh` rebuild (all 35 migrations, #18-clean, production-
+  candidate seed shape: real categories/templates/settings, NO Faker
+  user, empty cases).
+- **The private-beta registration gate is built, merged, DEPLOYED, and
+  VERIFIED on both boxes** (`15ec602`, tag `pre-registration-lock` =
+  `a63ac4a`). gafol `REGISTRATION_OPEN_TO_ALL=true` (open path verified).
+  dotrent `REGISTRATION_OPEN_TO_ALL=false` + `REGISTRATION_ALLOWLIST=<2
+  family emails>` — **lock verified working live.**
 
-**⚠️ State drift to resolve first (next session):** gafol/dotrent are at
-`859827b`; `main` is `b165114`. The gap is the registration gate (code
-only — **NO new migrations** since the Phase A/B deploys) + docs. The
-registration `.env` keys do nothing until that code is on the box.
+So the box is fully live and tested on dotrent with the front door
+locked. **The ONLY work left is Phase C (the DNS flip) + the deliberate
+later go-live switch.**
 
 **Authoritative records for current state:**
 - **docs/environment-state.md** — the deployment ledger (what's deployed
-  where; per the new CLAUDE.md Deployment-ledger rule).
+  where; per the CLAUDE.md Deployment-ledger rule).
 - **docs/dotrent-deploy-plan.md** — the phased deploy (A done, B done,
   C = DNS flip remaining).
 
 ---
 
-## Next session — finish the cutover (Phase C)
+## Next session — Phase C (the DNS flip)
 
-All remaining steps need LIVE access (Plesk / DNS / Mailgun) — the
-human-in-the-loop drives, Claude guides.
+Deploy + registration lock are DONE (see parked state). All remaining
+steps need LIVE access (DNS / Mailgun) — the human-in-the-loop drives,
+Claude guides.
 
-1. **Bring gafol + dotrent up to current `main` (`b165114`).** Code only,
-   no migrations. gafol: Plesk Git pull (tracks `main`). dotrent: Plesk
-   Laravel Toolkit (no `.git` in docroot). This puts the registration
-   gate on the boxes so the `.env` keys take effect.
-2. **Set registration `.env` keys** (then `php artisan config:cache` on
-   each — prod caches config):
-   - gafol: `REGISTRATION_OPEN_TO_ALL=true` (open for dev).
-   - dotrent: `REGISTRATION_OPEN_TO_ALL=false` +
-     `REGISTRATION_ALLOWLIST=<family emails>` (locked beta).
-   - The two dotrent keys are recorded in the ledger's dotrent entry.
-3. **Phase C — DNS flip:** renters.rent → the dotrent install (Windows
-   renters.rent is EOL).
-4. **Update the Mailgun inbound route** →
+1. **DNS flip:** renters.rent → the dotrent install (Windows renters.rent
+   is EOL).
+2. **Update the Mailgun inbound route** →
    `https://renters.rent/webhooks/mailgun/inbound`. The one edit a flip
    silently leaves stale — outbound keeps working, so a missed inbound
    route only shows when a landlord reply fails to land. Don't skip it.
-5. **Confirm ONE inbound round-trip** on the live renters.rent route —
+3. **Confirm ONE inbound round-trip** on the live renters.rent route —
    "the flip didn't break it" (the path is already proven on dotrent).
-6. **Begin the family trial:** Surface B to set short intervals for
+4. **Begin the family trial:** Surface B to set short intervals for
    observable pacing; B2 "Applies to In-flight cases" stays **Off**.
-   gafol stays permanent staging.
-7. **Ledger — prod retirement:** once the flip completes and prod is
+   gafol stays permanent staging. The front door stays locked (dotrent
+   `OPEN_TO_ALL=false`); only the 2 allowlisted family emails register.
+5. **Ledger — prod retirement:** once the flip completes and prod is
    confirmed dark, record the flip as prod's LAST event in
    environment-state.md, then strike the prod entry (ledger → three).
-8. **Go-live switch (LATER, the only one):** open beyond family by
+6. **Go-live switch (LATER, the only one):** open beyond family by
    setting dotrent `REGISTRATION_OPEN_TO_ALL=true` + `config:cache`.
    (Public launch still gated by solicitor wording sign-off — see
    `pre-flip-checklist.md`.)

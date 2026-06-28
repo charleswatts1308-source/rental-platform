@@ -4,25 +4,33 @@ Human-readable mirror of what is deployed where. The DB `migrations`
 table is the source of truth; this file is reconciled against
 `php artisan migrate:status` at each deploy (CLAUDE.md "Deployment ledger").
 
-**Reconcile status:** git tips verified (27 Jun 2026). **gafol** at
-`main` (Phase A green) and **dotrent** at `main` (Phase B green) — both
-reconciled 27 Jun 2026. Staging-at-or-ahead holds. Remaining: the DNS
-flip (Phase C) + prod retirement.
+**Reconcile status:** git tips verified (27 Jun 2026). **gafol** and
+**dotrent** both at current `main` with the **registration gate deployed
+and verified live** (27 Jun 2026). Staging-at-or-ahead holds. Remaining:
+the DNS flip (Phase C) + prod retirement only.
 
 ---
 
 ## main (working line)
-- `origin/main`: `859827b` (pushed 27 Jun 2026). Tags: `post-d16-phase5`
-  = `cf2f5c9`.
-- Local `main`: ahead by the gafol-naming + this Phase-A-green ledger
-  commit (push held per the Git rule until asked).
+- `origin/main`: `b165114` (pushed 27 Jun 2026) — includes the merged
+  registration gate (`15ec602`). Tags on origin: `pre-registration-lock`
+  = `a63ac4a`, `post-d16-phase5` = `cf2f5c9`.
+- Local `main`: may be 1 ahead (NEXT-SESSION / ledger doc commits) until
+  pushed (push held per the Git rule until asked).
 
 ## gafol — permanent staging (gafol.rent) — ✅ AT MAIN (Phase A green)
 - Box: gafol.rent is the staging domain. DB `ukrenter_gafol_db` on
   mysql01. (The stale "ukrenters.rent / HUK" label was wrong —
   ukrenters.rent was a separate earlier site scheduled for deletion.)
-- Now at: **`main` / `859827b`** — deployed via Plesk Git pull + composer
-  install. Plesk repo `laravel_093fde` tracks the `main` branch.
+- Now at: **current `main`** (incl. the registration gate `15ec602`) —
+  deployed via Plesk Git pull + composer install + `config:cache`. Plesk
+  repo `laravel_093fde` tracks the `main` branch. (Phase A was `859827b`;
+  re-pulled to carry the reg gate, 27 Jun 2026 — code only, no new
+  migrations since Phase A.)
+- **Registration: OPEN.** `.env` `REGISTRATION_OPEN_TO_ALL=true`. Open
+  path verified working (the gate didn't break it); the verification
+  email hit the Mailgun **sandbox** authorised-recipient limit — expected
+  per the Mail rule (staging = sandbox, outbound only), not a gate issue.
 - Migrations: the D14/D15 set was already Ran; the **2 D16 admin
   migrations ran clean** this session —
   `2026_06_21_100000_create_letter_text_change_history_table`,
@@ -46,9 +54,11 @@ flip (Phase C) + prod retirement.
 - Box: dotrent.net, the production candidate for the renters.rent flip.
   DB `ukrenter_dotrent_db` on mysql01. Deploy mechanism: **Plesk Laravel
   Toolkit** (no `.git` in docroot).
-- Now at: **`main` / `859827b`** — code via Toolkit, then
-  `migrate:fresh --force` (clean rebuild from files, per the June ruling
-  — NOT incremental).
+- Now at: **current `main`** (incl. the registration gate `15ec602`) —
+  code via Toolkit + composer install + `config:cache`. (Phase B build
+  was `859827b` via `migrate:fresh --force`, clean rebuild from files per
+  the June ruling; re-deployed to carry the reg gate, 27 Jun 2026 — code
+  only, no new migrations since the fresh build.)
 - Migrations: **all 35 Ran, batch 1** (fresh build). The full silence
   model + D14/D15/D16 are on dotrent for the first time.
 - Schema verified (Migrations rule): `cases` and `case_messages` both
@@ -62,15 +72,14 @@ flip (Phase C) + prod retirement.
   set; created with verification handled (the gafol `markEmailAsVerified`
   trap avoided). **Future-rebuild note:** admin = the `is_admin` flag,
   set manually post-create; the old "ID 13" rule is retired/stale.
-- **Registration — REQUIRED `.env` keys (set in Plesk; a rebuild must
-  re-add them — code defaults to false so a rebuild fails SAFE-CLOSED,
-  but the allowlist would be EMPTY until re-added):**
-  - `REGISTRATION_OPEN_TO_ALL=false` — the front door stays locked; this
-    flipping to `true` (+ `php artisan config:cache`) is the single
-    go-live switch.
-  - `REGISTRATION_ALLOWLIST=<family emails, comma-separated>` — who may
-    register during the locked beta. Empty = nobody can register.
-  - After editing either: `php artisan config:cache` (prod caches config).
+- **Registration: LOCKED and VERIFIED.** `.env` set in Plesk:
+  `REGISTRATION_OPEN_TO_ALL=false` + `REGISTRATION_ALLOWLIST=<2 real
+  family emails>`; `config:cache` run. Lock verified working live
+  (27 Jun 2026). **Required `.env` keys — a rebuild must re-add them:**
+  code defaults `OPEN_TO_ALL` to false so a rebuild fails SAFE-CLOSED,
+  but the allowlist would be EMPTY (nobody registers) until re-added.
+  - **Go-live switch (the ONLY one, deliberate later step):** flip
+    `REGISTRATION_OPEN_TO_ALL=true` + `php artisan config:cache`.
 - Surfaces validated against production MariaDB: **A** (11 templates),
   **B** (settings, B2=No), **C** (empty, clean).
 - Last verified: 27 Jun 2026.
