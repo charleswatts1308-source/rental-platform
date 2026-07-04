@@ -9,7 +9,8 @@ state from a superseded doc.
 FRESH sibling site + DNS cut over to the Linux box tonight — NOT a DNS
 flip onto dotrent; dotrent retired once renters.rent is proven). Deploy
 Phases A+B (gafol+dotrent at `main`) + registration gate remain DONE.
-**origin/main = `b165114`**. Suite **539 passing / 2239 assertions**.
+**origin/main = `cef9875`** (docs-only ahead of code tip `b165114`).
+Suite **539 passing / 2239 assertions**.
 
 ---
 
@@ -64,6 +65,13 @@ renters.rent is proven.
   (ns1/2/3 — NOT Plesk DNS). renters.rent now resolves to the sibling
   site; the old Windows box is superseded.
 
+**⚠️ DO-NOW (security, independent of the cutover):** rotate the Mailgun
+credentials — `MAILGUN_SECRET` + `MAILGUN_WEBHOOK_SIGNING_KEY` were
+exposed in a transcript on 4 Jul 2026. Rotate in the Mailgun dashboard →
+update the renters.rent (and dotrent) `.env` → `config:clear`. Signing-key
+exposure weakens inbound-webhook authenticity until rotated. Recorded in
+the ledger (dotrent entry).
+
 **Remaining (needs LIVE access — human drives, Claude guides):**
 1. **SSL:** Let's Encrypt (apex + www) once the domain resolves; then TLS
    1.0/1.1 disable + HSTS (checklist B6/B7).
@@ -102,7 +110,7 @@ trial (functional accuracy, family's own landlords — Charlie's call,
    environment-state.md as its last step, reconciled vs `migrate:status`).
 2. **docs/environment-state.md** — the deployment ledger. Current truth
    of what's deployed where (gafol + dotrent at `859827b`; main at
-   `b165114`).
+   `cef9875` — code tip `b165114` + the docs reconciliation).
 3. **docs/dotrent-deploy-plan.md** — Phases A/B deploy history; Phase C
    (flip) SUPERSEDED. Current build runs off the sibling-site recipe.
 3b. **docs/huk-laravel-site-install-recipe.md** — the fresh sibling-site
