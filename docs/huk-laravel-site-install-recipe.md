@@ -214,9 +214,58 @@ STEP 9 — GENERATE APP_KEY
 STEP 10 — RUN MIGRATIONS
 ========================
 
+[ ] BEFORE migrating, CONFIRM you are on the intended NEW database:
+    Artisan tab → run: db:show   (or: config:show database)
+    Verify the database name is EXACTLY the one created in Step 4
+    (e.g. ukrenter_renters_db) — NOT an old/near-identically-named DB.
+    The copied-.env trap (Step 8) plus HUK's near-identical names
+    (e.g. ukrenters_rent vs ukrenter_renters_db) can leave you
+    inspecting or operating the WRONG database. Migrating or cleaning the
+    wrong DB is silent and destructive. One character's difference.
 [ ] Laravel Toolkit → Artisan tab → run: migrate --force
 [ ] Verify 18+ migrations run cleanly (no errors)
 [ ] Verify the schema in phpMyAdmin if you want extra certainty
+
+
+STEP 10b — CREATE ADMIN USER (PRODUCTION ONLY)
+==============================================
+
+On staging/preprod the admin is seeded by dev:reset / dev:lifecycle
+(see Step 14). Those dev:* commands REFUSE to run on APP_ENV=production
+(gated to local/staging/preprod), so a PRODUCTION build must create the
+admin by hand. Do it here — migrations (Step 10) and APP_KEY (Step 9)
+must already be done.
+
+Two user columns are deliberately NOT mass-assignable (privilege/security
+boundaries), so a plain create() cannot set them — they must be set
+explicitly, or you get the trap hit on gafol/dotrent:
+
+  - is_admin          — admin access IS this flag (AdminMiddleware checks
+                        Auth::user()?->is_admin). The old "ID 13" rule is
+                        retired/stale.
+  - email_verified_at — without it the admin cannot clear the `verified`
+                        middleware on the admin routes and is locked out
+                        behind the email-verification wall.
+
+[ ] Laravel Toolkit → Artisan tab → Tinker. Use ONE strong password,
+    straight to 1Password — DO NOT paste it into any chat, log, or ticket:
+
+    $u = App\Models\User::create([
+        'name' => 'Admin',
+        'email' => 'admin@renters.rent',
+        'password' => Illuminate\Support\Facades\Hash::make('<STRONG-PASSWORD>'),
+    ]);
+    $u->forceFill(['is_admin' => true])->save();
+    $u->markEmailAsVerified();
+
+    (This is exactly what dev:reset does — forceFill(is_admin) +
+    markEmailAsVerified — minus the table wipe.)
+
+[ ] Verify in Tinker:
+    App\Models\User::first()->only(['id','email','is_admin','email_verified_at'])
+    Expect is_admin => 1 (true) and a non-null email_verified_at.
+[ ] Log in at https://<domain> as admin@renters.rent and confirm the admin
+    area loads — proves both the flag and the verification took.
 
 
 STEP 11 — ARTISAN FINAL TASKS
@@ -317,6 +366,18 @@ COMMON GOTCHAS
   e.g. you ask for "dotrent_db" and get "ukrenter_dotrent_db" (because
   the subscription is under ukrenters). Note the full final name.
 
+- **NEVER run bare `db:seed` (or `migrate --seed`) on production.** The
+  default DatabaseSeeder creates a `Test User` (test@example.com) via
+  factory. On production seed ONLY the reference seeders by class:
+  `db:seed --class=RepairCategorySeeder` (and LetterTemplate, Setting).
+
+- **Near-identical DB names are a real trap.** `ukrenters_rent` (an old
+  dead database) vs `ukrenter_renters_db` (the live renters.rent DB)
+  differ by one/two characters. A phpMyAdmin session or copied-.env left
+  pointing at the wrong one makes cleanup/inspection hit a dead database
+  while the real one looks untouched (or vice versa). Always confirm the
+  DB name (Step 10 check) before any SHOW CREATE, cleanup, or migrate.
+
 - **composer install vs composer install --no-dev**: use WITH dev deps for
   staging/preprod (so dev:lifecycle and tooling work). Use --no-dev for
   production (smaller footprint, no test dependencies).
@@ -406,5 +467,12 @@ v2 (May 27, 2026) — corrected to customer-portal DNS after comparing
 v3 (Jun 06, 2026) — composer-after-deploy gotcha (Faker stripped on
                     gafol); sandbox authorized-recipient verification;
                     sandbox→Gmail delivery degradation + reconciliation
-                    method; DEV_*_EMAIL added to Step 8.                    
+                    method; DEV_*_EMAIL added to Step 8.
+
+v4 (Jul 04, 2026) — added Step 10b (create admin user on PRODUCTION by
+                    hand: dev:reset refuses on production; is_admin and
+                    email_verified_at are not mass-assignable — set via
+                    forceFill + markEmailAsVerified or the admin is locked
+                    out behind email verification). Written during the
+                    fresh renters.rent production sibling build.
 

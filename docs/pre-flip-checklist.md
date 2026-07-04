@@ -50,10 +50,17 @@ Items are grouped by kind. Order within groups is not significance.
       File Manager before saving; verify aliveness next day via
       silence:shadow-report rows. (Gap discovered on gafol Sat
       2026-06-06 — gafol had never had one.)
-- [ ] **B2. config/services.php fallback for inbound domain.** Add
-      `env('MAILGUN_INBOUND_DOMAIN', 'mg.renters.rent')` — the known
-      footgun: no default means a missing env var fails at runtime in
-      the Reply-To path.
+- [x] **B2. Inbound-domain configuration — satisfied by fail-loud
+      guard, not by a default.** `config/services.php` reads
+      `env('MAILGUN_INBOUND_DOMAIN')` with NO default, by design.
+      `CaseNotice` throws `RuntimeException` + logs
+      `'[LLCS] CaseNotice aborted'` if the value is blank, so a missing
+      var aborts the send loudly rather than silently using the wrong
+      domain. **REQUIREMENT:** every environment's `.env` MUST set
+      `MAILGUN_INBOUND_DOMAIN` explicitly (and
+      `MAILGUN_CASES_FROM_ADDRESS`, its sibling, same pattern). Do NOT
+      add a default — that would reintroduce the silent-wrong-domain
+      footgun this design prevents.
 - [ ] **B3. dotrent .env final values.** APP_ENV=production,
       APP_URL=https://renters.rent (at flip), MAILGUN_DOMAIN=
       mg.renters.rent, MAILGUN_INBOUND_DOMAIN=mg.renters.rent,

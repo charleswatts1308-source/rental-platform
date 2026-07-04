@@ -5,66 +5,88 @@ current. The `docs/` folder has many files and many are stale — this
 index says which to trust and which to ignore so you don't re-derive
 state from a superseded doc.
 
-**Last updated:** 2026-06-28 (deploy Phases A+B green; registration gate
-deployed + verified on both boxes). **origin/main = `b165114`**. Suite
-**539 passing / 2239 assertions**. Only Phase C (DNS flip) remains.
+**Last updated:** 2026-07-04 (plan changed: renters.rent built as its own
+FRESH sibling site + DNS cut over to the Linux box tonight — NOT a DNS
+flip onto dotrent; dotrent retired once renters.rent is proven). Deploy
+Phases A+B (gafol+dotrent at `main`) + registration gate remain DONE.
+**origin/main = `b165114`**. Suite **539 passing / 2239 assertions**.
 
 ---
 
 ## Parked state — read this first
 
-The silence/email model (Phases 1–5, D1–D16) is complete and merged.
-This session deployed it outward and locked the front door — **all of
-that is now DONE**:
+The silence/email model (Phases 1–5, D1–D16) is complete and merged, and
+deployed + proven on gafol + dotrent with the registration gate — **all
+of that is DONE**:
 
-- **gafol (staging) and dotrent (production candidate) are both on
-  current `main`** — Phase A + Phase B GREEN. dotrent was a clean
-  `migrate:fresh` rebuild (all 35 migrations, #18-clean, production-
-  candidate seed shape: real categories/templates/settings, NO Faker
+- **gafol (staging) and dotrent are both on current `main`** — Phase A +
+  Phase B GREEN. dotrent was a clean `migrate:fresh` rebuild (all 35
+  migrations, #18-clean; real categories/templates/settings, NO Faker
   user, empty cases).
 - **The private-beta registration gate is built, merged, DEPLOYED, and
   VERIFIED on both boxes** (`15ec602`, tag `pre-registration-lock` =
-  `a63ac4a`). gafol `REGISTRATION_OPEN_TO_ALL=true` (open path verified).
-  dotrent `REGISTRATION_OPEN_TO_ALL=false` + `REGISTRATION_ALLOWLIST=<2
-  family emails>` — **lock verified working live.**
+  `a63ac4a`).
 
-So the box is fully live and tested on dotrent with the front door
-locked. **The ONLY work left is Phase C (the DNS flip) + the deliberate
-later go-live switch.**
+**The go-live plan has CHANGED.** Instead of flipping renters.rent DNS
+onto dotrent, renters.rent is being built as its OWN fresh sibling site
+on the Linux subscription (own DB, production config), and dotrent is
+retired once renters.rent is proven. **Tonight (4 Jul 2026):** the
+renters.rent sibling was built (DB `ukrenter_renters_db` clean, admin
+created via recipe Step 10b) and its DNS A-records were cut over to the
+Linux box (`217.194.210.16`) via the HUK customer portal (ns1/2/3).
+Remaining: SSL, scheduler heartbeat, Mailgun inbound route, registration
+lock, one round-trip verify, then retire the old boxes. See the next
+section.
 
 **Authoritative records for current state:**
-- **docs/environment-state.md** — the deployment ledger (what's deployed
-  where; per the CLAUDE.md Deployment-ledger rule).
-- **docs/dotrent-deploy-plan.md** — the phased deploy (A done, B done,
-  C = DNS flip remaining).
+- **docs/environment-state.md** — the deployment ledger; the renters.rent
+  (IN PROGRESS) entry is current build state.
+- **docs/huk-laravel-site-install-recipe.md** — the fresh sibling build.
+- **docs/pre-flip-checklist.md** — cutover hard gates + smoke sequence.
+- **docs/dotrent-deploy-plan.md** — Phases A/B history only; Phase C
+  SUPERSEDED.
 
 ---
 
-## Next session — Phase C (the DNS flip)
+## Next session — renters.rent sibling build: finish the cutover
 
-Deploy + registration lock are DONE (see parked state). All remaining
-steps need LIVE access (DNS / Mailgun) — the human-in-the-loop drives,
-Claude guides.
+**Plan changed** (4 Jul 2026): renters.rent is built as its own FRESH
+sibling site, NOT flipped onto dotrent. dotrent is retired once
+renters.rent is proven.
 
-1. **DNS flip:** renters.rent → the dotrent install (Windows renters.rent
-   is EOL).
-2. **Update the Mailgun inbound route** →
-   `https://renters.rent/webhooks/mailgun/inbound`. The one edit a flip
-   silently leaves stale — outbound keeps working, so a missed inbound
-   route only shows when a landlord reply fails to land. Don't skip it.
-3. **Confirm ONE inbound round-trip** on the live renters.rent route —
-   "the flip didn't break it" (the path is already proven on dotrent).
-4. **Begin the family trial:** Surface B to set short intervals for
-   observable pacing; B2 "Applies to In-flight cases" stays **Off**.
-   gafol stays permanent staging. The front door stays locked (dotrent
-   `OPEN_TO_ALL=false`); only the 2 allowlisted family emails register.
-5. **Ledger — prod retirement:** once the flip completes and prod is
-   confirmed dark, record the flip as prod's LAST event in
-   environment-state.md, then strike the prod entry (ledger → three).
-6. **Go-live switch (LATER, the only one):** open beyond family by
-   setting dotrent `REGISTRATION_OPEN_TO_ALL=true` + `config:cache`.
-   (Public launch still gated by solicitor wording sign-off — see
-   `pre-flip-checklist.md`.)
+**DONE tonight (4 Jul 2026) — completed history:**
+- renters.rent built fresh on the Linux subscription (own site alongside
+  dotrent.net + gafol.rent), DB `ukrenter_renters_db` clean (35
+  migrations batch 1, cases=0, users=1 admin), reference tables seeded,
+  admin created (recipe Step 10b, production tinker path).
+- **DNS cut over:** renters.rent A records (apex + www) pointed at the
+  Linux Plesk server `217.194.210.16` via the HUK customer-portal DNS
+  (ns1/2/3 — NOT Plesk DNS). renters.rent now resolves to the sibling
+  site; the old Windows box is superseded.
+
+**Remaining (needs LIVE access — human drives, Claude guides):**
+1. **SSL:** Let's Encrypt (apex + www) once the domain resolves; then TLS
+   1.0/1.1 disable + HSTS (checklist B6/B7).
+2. **Scheduler heartbeat:** Plesk cron `schedule:run` every minute —
+   without it NO sweep runs and escalations never fire (checklist B1).
+3. **Mailgun inbound route** →
+   `https://renters.rent/webhooks/mailgun/inbound` (checklist B5).
+   Outbound works regardless, so a missed route only shows when a
+   landlord reply fails to land. Don't skip it.
+4. **Confirm ONE inbound round-trip** on the live renters.rent route.
+5. **Registration lock:** set `REGISTRATION_OPEN_TO_ALL=false` +
+   `REGISTRATION_ALLOWLIST=<family emails>` in renters.rent `.env` +
+   `config:cache`. Front door locked to allowlisted family only.
+6. **Begin the family trial:** Surface B short intervals for observable
+   pacing; B2 "Applies to In-flight cases" stays **Off**. gafol stays
+   permanent staging.
+7. **Ledger — retire the old boxes:** confirm the Windows prod box dark
+   and record its retirement; retire dotrent once renters.rent is proven.
+   End state: three live entries — gafol, renters.rent, main.
+8. **Go-live switch (LATER, the only one):** open beyond family by setting
+   renters.rent `REGISTRATION_OPEN_TO_ALL=true` + `config:cache`. Public
+   launch still gated by solicitor wording sign-off — see
+   `pre-flip-checklist.md`.
 
 **Note:** solicitor letter-wording sign-off does NOT gate the family
 trial (functional accuracy, family's own landlords — Charlie's call,
@@ -81,14 +103,17 @@ trial (functional accuracy, family's own landlords — Charlie's call,
 2. **docs/environment-state.md** — the deployment ledger. Current truth
    of what's deployed where (gafol + dotrent at `859827b`; main at
    `b165114`).
-3. **docs/dotrent-deploy-plan.md** — phased cutover (A+B done, C = flip).
+3. **docs/dotrent-deploy-plan.md** — Phases A/B deploy history; Phase C
+   (flip) SUPERSEDED. Current build runs off the sibling-site recipe.
+3b. **docs/huk-laravel-site-install-recipe.md** — the fresh sibling-site
+   build (incl. Step 10b admin creation on production).
 4. **docs/llcs-silence-model-design.md** — AUTHORITATIVE design (D1–D16).
    Wins over any brief; tie-breaker if two docs disagree.
 5. **docs/User Guides/** — plain-English + technical dispatch-sequence
    references (which letter fires when), and the CC automation
    orientation (read-at-leisure).
 
-Then execute the Phase C sequence above.
+Then execute the renters.rent cutover sequence above.
 
 ---
 
@@ -112,7 +137,10 @@ a post-#8 machine-state / Surface-D admin pass.
 **LIVE — trust these:**
 - `CLAUDE.md` — working agreements (Migrations + Deployment-ledger rules).
 - `environment-state.md` — deployment ledger (current).
-- `dotrent-deploy-plan.md` — cutover plan (current).
+- `huk-laravel-site-install-recipe.md` — the fresh sibling-site build
+  (current cutover build doc).
+- `dotrent-deploy-plan.md` — Phases A/B deploy HISTORY only; **Phase C
+  (flip) SUPERSEDED** by the sibling build.
 - `llcs-silence-model-design.md` — authoritative design (D1–D16).
 - `llcs-snagging-list.txt` — open snags (above).
 - `pre-flip-checklist.md` — production cutover conditions (wider/public

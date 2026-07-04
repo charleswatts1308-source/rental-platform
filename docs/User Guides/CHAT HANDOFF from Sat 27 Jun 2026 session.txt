@@ -1,0 +1,25 @@
+
+CHAT HANDOFF — renters.rent, picking up from 27 Jun 2026 session
+
+LIVE STATE (authoritative copy is in repo: NEXT-SESSION, 
+environment-state.md, dotrent-deploy-plan.md on origin/main):
+- Both boxes (gafol, dotrent) deployed to main (859827b) and validated.
+- dotrent fully rebuilt via migrate:fresh, seeded (categories/templates/
+  settings, NO faker cases), admin@renters.rent (id1, verified).
+- Registration gate BUILT + MERGED + DEPLOYED + VERIFIED on both boxes.
+  gafol OPEN_TO_ALL=true; dotrent OPEN_TO_ALL=false + 2-email allowlist.
+- Deployment ledger established + reconciled this session.
+
+NEXT REAL WORK: Phase C — DNS flip renters.rent → dotrent, Mailgun
+inbound route → live URL, one round-trip, record prod retirement in
+ledger. Go-live = flip dotrent OPEN_TO_ALL=true (deliberate later step).
+
+OPEN THREAD WITH CHAT-CLAUDE (not yet on disk):
+- Drafted a CLAUDE.md "long-session protocol" rule (context-rot defence:
+  decompose-first, checkpoint at ~60%, watch degradation tells, gap-
+  analysis on drift, state-on-disk). NOT yet added to CLAUDE.md — review
+  and possibly tighten first.
+- Deferred idea still open: skills for relay sequences + hooks for the
+  two safety rules ("hold push", "manual MariaDB check"). In memory.
+- Was discussing whether to automate the chat→CC loop-closing (the gap
+  that left CC unaware of the deploy until I spotted it).

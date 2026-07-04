@@ -1,7 +1,17 @@
-# dotrent deploy plan — current main onto dotrent, then DNS flip
+# dotrent deploy plan — main onto gafol + dotrent (DONE); Phase C SUPERSEDED
 
-Goal: get current `main` onto dotrent, flip renters.rent DNS to it,
-begin the family trial. Sequenced so staging (gafol) meets the Phase 5
+> **STATUS (4 Jul 2026):** Phases A + B are DONE — gafol and dotrent both
+> reached `main` (retained below as accurate deploy history). **Phase C
+> (DNS flip onto dotrent) is SUPERSEDED.** renters.rent is now built as
+> its own FRESH sibling site (Git deploy from `main`, own DB
+> `ukrenter_renters_db`, DNS cut over to the Linux box 4 Jul 2026);
+> dotrent is retired once renters.rent is proven — there is no DNS flip
+> onto dotrent. The live cutover is tracked in `environment-state.md`
+> (renters.rent entry), `huk-laravel-site-install-recipe.md`, and
+> `pre-flip-checklist.md`.
+
+Goal (as originally drafted — Phases A/B only): get current `main` onto
+dotrent and gafol, sequenced so staging (gafol) meets the Phase 5
 migrations against MariaDB *before* dotrent does, and so dotrent's real
 pending-migration set drives the run — not a git-diff assumption.
 
@@ -136,42 +146,37 @@ the round-trip is already proven here, so Phase C's check is a
 
 ---
 
-## PHASE C — DNS flip + prod retirement
+## PHASE C — SUPERSEDED (was: DNS flip + prod retirement)
 
-1. Flip DNS: renters.rent → the dotrent install. (Windows renters.rent
-   is EOL.)
-2. Update the Mailgun **inbound route** to
-   `https://renters.rent/webhooks/mailgun/inbound`. This is the one edit
-   a flip can leave stale — outbound keeps working regardless, so a
-   missed inbound route only surfaces when a landlord reply silently
-   fails to land. Do not skip it.
-3. Confirm **one inbound round-trip** on the live renters.rent route
-   post-flip — the "flip didn't break it" check.
-4. **Front door stays LOCKED for the trial.** dotrent runs with
-   `REGISTRATION_OPEN_TO_ALL=false` + `REGISTRATION_ALLOWLIST=<family
-   emails>` (private-beta gate, merged to main this session). Only
-   allowlisted family register; a stranger cannot create an account or
-   trigger any outbound letter. See the dotrent ledger entry for the two
-   required `.env` keys.
-5. Begin the family trial: use Surface B to set short intervals for
-   observable pacing; keep the B2 "Applies to In-flight cases" flag
-   **Off** so shortened intervals apply cleanly to new cases. gafol stays
-   permanent staging. (Solicitor wording sign-off does NOT gate the
-   family trial — Charlie's call, 21 Jun; it gates a wider/public launch.
-   See `pre-flip-checklist.md`.)
-6. **Go-live switch (the ONLY one):** when ready to open beyond the
-   family, set `REGISTRATION_OPEN_TO_ALL=true` in dotrent's `.env` +
-   `php artisan config:cache`. No other config change. (Public launch
-   still gated by the solicitor wording sign-off per `pre-flip-checklist`.)
-7. **Ledger — prod retirement:** once the flip completes and prod is
-   confirmed dark, record the flip as prod's LAST event in
-   `environment-state.md` ("retired, DNS flipped to dotrent, <date>"),
-   then strike the prod entry. The ledger shrinks to three (gafol,
-   dotrent, main); the retirement is recorded before removal.
+**This phase no longer applies.** The plan changed from "flip
+renters.rent DNS onto the dotrent install" to "build renters.rent as its
+own fresh sibling site, then retire dotrent." A purpose-built production
+install (own DB, production `.env`, `--no-dev`) is cleaner than
+repurposing a preprod box.
+
+The live cutover work — DNS, SSL, scheduler heartbeat, Mailgun inbound
+route, registration-gate `.env`, family trial, go-live switch — is now
+carried by:
+- `huk-laravel-site-install-recipe.md` — the fresh sibling build (incl.
+  Step 10b admin creation on production).
+- `pre-flip-checklist.md` — hard gates + at-cutover smoke sequence.
+- `environment-state.md` — the renters.rent (IN PROGRESS) entry + the
+  Windows-prod and dotrent retirement triggers.
+
+The family-trial / registration-lock / go-live-switch substance from the
+old Phase C still holds — it now attaches to the renters.rent sibling
+site, not to dotrent (front door locked via
+`REGISTRATION_OPEN_TO_ALL=false` + `REGISTRATION_ALLOWLIST=<family
+emails>`; go-live = set `true` + `config:cache`; public launch still
+gated by solicitor wording sign-off). See the checklist + ledger.
 
 ---
 
 ## Summary of gates
+
+> Applies to Phases A/B (DONE). Phase C is SUPERSEDED — see the banner at
+> the top; the live cutover now runs off the sibling-build recipe +
+> pre-flip-checklist + ledger.
 
 - **Step 0** — dotrent SETTLED (pre-silence → migrate:fresh). gafol's
   `migrate:status` still runs at Phase A.

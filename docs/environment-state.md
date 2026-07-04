@@ -80,21 +80,88 @@ the DNS flip (Phase C) + prod retirement only.
   but the allowlist would be EMPTY (nobody registers) until re-added.
   - **Go-live switch (the ONLY one, deliberate later step):** flip
     `REGISTRATION_OPEN_TO_ALL=true` + `php artisan config:cache`.
+- **Mail config — B2 CLOSED (Sat 2026-07-04):** dotrent live `.env`
+  confirmed to set `MAILGUN_INBOUND_DOMAIN` (= `mg.renters.rent`) and
+  `MAILGUN_CASES_FROM_ADDRESS` (= `preprod@mg.renters.rent`). Verified
+  via `config:show services.mailgun` on the box. Fail-loud `CaseNotice`
+  guard therefore satisfied; **B3 firmed up.** (Secrets not recorded
+  here by policy.)
+- **ACTION — rotate Mailgun credentials (do now, 2026-07-04):**
+  `config:show` printed `MAILGUN_SECRET` + `MAILGUN_WEBHOOK_SIGNING_KEY`
+  in full in a chat session on 2026-07-04. These are live production
+  credentials now in a transcript. Rotate both in the Mailgun dashboard,
+  update dotrent `.env`, `config:clear`. Independent of the flip — do not
+  defer to go-live. Signing-key exposure specifically weakens
+  inbound-webhook authenticity until rotated.
+- **DECISION PENDING — from-address wording:** `cases_from_address`
+  currently reads `preprod@mg.renters.rent` — cosmetic (the From address
+  landlords/tenants see). Decide whether to switch to a public-facing
+  address (e.g. `cases@` or `notices@`) before real landlords see
+  outbound mail.
 - Surfaces validated against production MariaDB: **A** (11 templates),
   **B** (settings, B2=No), **C** (empty, clean).
 - Last verified: 27 Jun 2026.
-- Next: Phase C — DNS flip renters.rent → dotrent, Mailgun inbound route
-  update, one live round-trip, then record prod retirement.
+- Next: retirement, NOT a flip. The "DNS flip renters.rent → dotrent"
+  plan is SUPERSEDED — renters.rent is being built as its own fresh
+  sibling site (see the renters.rent entry). dotrent remains preprod /
+  proven dry-run and is retired once renters.rent is proven live.
 
 ## prod — renters.rent (Windows, EOL)
-- Git tip: UNKNOWN (not reconciled this session). Demo mode; still
-  serving live renters.rent until the DNS flip.
+- Git tip: UNKNOWN (not reconciled this session). Demo mode. **DNS for
+  renters.rent was cut over to the new Linux sibling (`217.194.210.16`) on
+  4 Jul 2026** — this box stops being authoritative for renters.rent as
+  propagation completes.
 - DB: `rentals` + old `file_attachments` still present until the
   `2026_05_24` drop migration runs (per project memory).
-- **Retirement trigger:** when the DNS flip completes and prod is
-  confirmed dark, record the flip as prod's LAST event here
-  ("retired, DNS flipped to dotrent, <date>") and THEN strike this
-  entry. The retirement is recorded before removal — so we can prove
-  when the old box stopped being authoritative — and the ledger then
-  shrinks to three (gafol, dotrent, main) rather than carrying a
-  zombie fourth entry.
+- **Retirement trigger:** the new renters.rent sibling site (see its
+  entry) replaces this Windows box — DNS for renters.rent points at the
+  new Linux sibling install, NOT at dotrent (cut over 4 Jul 2026). When
+  renters.rent is proven live and this box is confirmed dark, record that
+  as prod's LAST event here ("retired, replaced by renters.rent sibling
+  build, <date>") and THEN strike this entry. Recorded before removal, so
+  we can prove when the old box stopped being authoritative. End state
+  once BOTH this box AND dotrent are retired: three live entries — gafol
+  (staging), renters.rent (production), and main.
+
+## renters.rent — production (NEW sibling build) — ⏳ IN PROGRESS
+- Box: renters.rent, a NEW site on the LX (`ukrenters.rent`) Linux
+  subscription — its own folder alongside `dotrent.net` and `gafol.rent`.
+  Built FRESH from the rental-platform repo (Git deploy, `main`) rather
+  than by flipping DNS onto the dotrent install. `dotrent.net` to be
+  retired once renters.rent is proven. (This supersedes the earlier
+  "flip renters.rent → dotrent" plan in `dotrent-deploy-plan.md`.)
+- DB: **`ukrenter_renters_db`** (created this session) — **CLEAN:** 35
+  migrations all batch 1, `cases=0`, `users=1` (admin), reference tables
+  seeded (`RepairCategorySeeder` / `LetterTemplateSeeder` /
+  `SettingSeeder`, by class). No test data, no old `rentals` schema. NOT
+  to be confused with the dead `ukrenters_rent` (see below).
+- Admin: created via recipe **Step 10b** (production tinker path, since
+  `dev:reset` refuses on `APP_ENV=production`): `is_admin=1` +
+  `email_verified_at` set via `forceFill` + `markEmailAsVerified`.
+- **DNS — CUT OVER (4 Jul 2026):** renters.rent A records (apex + www)
+  pointed at the Linux Plesk server **`217.194.210.16`** via the HUK
+  customer-portal DNS (ns1/2/3 — NOT Plesk DNS). renters.rent now
+  resolves to the new sibling site; the old Windows box is superseded
+  (see the prod retirement trigger).
+- **NOT yet done (hardening + cutover tail):** SSL (Let's Encrypt
+  apex+www + TLS 1.0/1.1 disable + HSTS), scheduler heartbeat
+  (`schedule:run` cron — without it NO sweep runs, escalations never
+  fire), Mailgun inbound route → live renters.rent URL, registration-gate
+  `.env` keys (`OPEN_TO_ALL`/`ALLOWLIST`), one inbound round-trip verify.
+  See `pre-flip-checklist.md`.
+- Status: **build clean; cutover/hardening pending. IN PROGRESS.**
+- Last verified: 4 Jul 2026.
+
+## Dead database — ukrenters_rent (DELETE AFTER go-live)
+- `ukrenters_rent` is an OLD leftover database, NOT used by any live
+  site. Holds stale May test data (a manual test case to a personal
+  Outlook address, `user_id=1`) + the old `rentals` schema.
+- **Naming trap:** one/two characters from the LIVE renters DB
+  `ukrenter_renters_db`. Do NOT confuse them. `ukrenters_rent` = dead;
+  `ukrenter_renters_db` = live renters.rent (35 migrations, clean).
+- On 2026-07-04 a phpMyAdmin session was left pointed at this dead DB
+  during `SHOW CREATE` / cleanup / migration-count checks — the cause of
+  a false "test data arrived in the build" scare. The live DB was clean
+  throughout; the repo is clean (no seeder/migration/fixture creates that
+  data). Nothing real was touched.
+- **Action:** delete AFTER go-live. No destructive DB ops during cutover.
