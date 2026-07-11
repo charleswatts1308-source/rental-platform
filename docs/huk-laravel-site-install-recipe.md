@@ -205,9 +205,10 @@ Save.
 
 [ ] DUPLICATE-KEY CHECK (easy, painful trap — hit it twice now).
     Pasting a full .env and then adding edited lines can leave TWO lines
-    for the same key. Laravel uses the FIRST occurrence and SILENTLY
-    ignores every later one — so your edit has no effect, and (the nasty
-    part) config:clear does NOT fix it: it is not a cache. After saving,
+    for the same key. Within one .env file Laravel uses the LAST occurrence
+    and silently ignores the earlier ones (verified against phpdotenv 5.6)
+    — so an edit above a stale line has no effect, and (the nasty part)
+    config:clear does NOT fix it: it is not a cache. After saving,
     in the Toolkit shell / SSH run:
         grep -oE '^[A-Z_][A-Z0-9_]*=' .env | sort | uniq -d
     Any key it prints is duplicated → delete the stale line so each key
@@ -215,7 +216,7 @@ Save.
         php artisan config:show <the-key>       (e.g. app.registration_allowlist)
     (Cost a full debugging session on 11 Jul 2026: the registration
     allowlist admitted only the old 2 of 4 emails because a stale
-    REGISTRATION_ALLOWLIST line sat above the edited one.)
+    REGISTRATION_ALLOWLIST line sat below the edited one (last-wins).)
 
 STEP 9 — GENERATE APP_KEY
 =========================
@@ -376,8 +377,9 @@ COMMON GOTCHAS
 - **After ANY .env change, run config:clear** (the Laravel Toolkit .env
   editor sometimes does this automatically, sometimes doesn't). If a value
   STILL won't change after config:clear, it is NOT a cache — check for a
-  duplicate KEY= line (Laravel uses the first, ignores the rest):
-  `grep -oE '^[A-Z_][A-Z0-9_]*=' .env | sort | uniq -d`. See Step 8.
+  duplicate KEY= line (within one file Laravel uses the LAST, ignores
+  earlier ones): `grep -oE '^[A-Z_][A-Z0-9_]*=' .env | sort | uniq -d`.
+  See Step 8.
 
 - **HUK's subscription prefix is added to database name AND username** —
   e.g. you ask for "dotrent_db" and get "ukrenter_dotrent_db" (because
