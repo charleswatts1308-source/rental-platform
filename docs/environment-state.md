@@ -12,11 +12,14 @@ the DNS flip (Phase C) + prod retirement only.
 ---
 
 ## main (working line)
-- `origin/main`: `b165114` (pushed 27 Jun 2026) — includes the merged
-  registration gate (`15ec602`). Tags on origin: `pre-registration-lock`
-  = `a63ac4a`, `post-d16-phase5` = `cf2f5c9`.
-- Local `main`: may be 1 ahead (NEXT-SESSION / ledger doc commits) until
-  pushed (push held per the Git rule until asked).
+- `origin/main`: `0e0a4e0` (pushed 11 Jul 2026) — code tip `b165114` +
+  the merged registration gate (`15ec602`), docs commits, and the 11 Jul
+  content rework (`66ff6fe` + `0e0a4e0`: About Us + How It Works collapsed
+  to single pages; The Law / The PRS / The Longer Term / Landlord Contact
+  Service / Know Your Landlord archived to the dev-only content-archive).
+  Tags on origin: `pre-registration-lock` = `a63ac4a`, `post-d16-phase5`
+  = `cf2f5c9`.
+- Local `main`: in sync with `origin/main` (pushed 11 Jul 2026).
 
 ## gafol — permanent staging (gafol.rent) — ✅ AT MAIN (Phase A green)
 - Box: gafol.rent is the staging domain. DB `ukrenter_gafol_db` on
@@ -48,7 +51,13 @@ the DNS flip (Phase C) + prod retirement only.
   - **C** (case oversight) — read-only, renders the 8 D14 live-fire cases
     across the full state spread (awaiting tenant review, abandoned,
     dormant, on hold, resolved, open).
-- Last verified: 27 Jun 2026.
+- **Content deploy (11 Jul 2026):** pulled `main` → `0e0a4e0`;
+  `route:clear` + `view:clear`. **Content-only, NO migrations.** Verified:
+  `/about` new repair-notice copy; `/members/how-it-works` single
+  four-section page; old `/members/repair-notices` +
+  `/members/know-your-landlord` → 404; `/content-archive` → 404
+  (local-only gate holds on staging).
+- Last verified: 11 Jul 2026.
 
 ## dotrent — production candidate (dotrent.net) — ✅ AT MAIN (Phase B green)
 - Box: dotrent.net, the production candidate for the renters.rent flip.
@@ -150,7 +159,15 @@ the DNS flip (Phase C) + prod retirement only.
   `.env` keys (`OPEN_TO_ALL`/`ALLOWLIST`), one inbound round-trip verify.
   See `pre-flip-checklist.md`.
 - Status: **build clean; cutover/hardening pending. IN PROGRESS.**
-- Last verified: 4 Jul 2026.
+- **Content deploy (11 Jul 2026):** pulled `main` → `0e0a4e0`;
+  `route:clear` + `view:clear`. **Content-only, NO migrations.** Verified:
+  `/about` new repair-notice copy; `/members/how-it-works` single
+  four-section page; old `/members/repair-notices` +
+  `/members/know-your-landlord` → 404; `/content-archive` → 404
+  (local-only gate holds on production). Hardening tail (SSL, scheduler
+  heartbeat, Mailgun inbound, reg-gate `.env`) still pending — unaffected
+  by this content deploy.
+- Last verified: 11 Jul 2026.
 
 ## Dead database — ukrenters_rent (DELETE AFTER go-live)
 - `ukrenters_rent` is an OLD leftover database, NOT used by any live
