@@ -19,7 +19,11 @@ the DNS flip (Phase C) + prod retirement only.
   Service / Know Your Landlord archived to the dev-only content-archive).
   Tags on origin: `pre-registration-lock` = `a63ac4a`, `post-d16-phase5`
   = `cf2f5c9`.
-- Local `main`: in sync with `origin/main` (pushed 11 Jul 2026).
+- Local `main`: ahead of `origin/main` (unpushed) — carries the 11 Jul
+  ledger commits, the 3 PWA app icons (`a6517a6`), and the PWA wiring
+  merged via `--no-ff` (merge `cd29c0d`; branch `feature/pwa-wiring` also
+  pushed to origin). Push held per the Git rule until asked. renters.rent
+  (prod) does NOT yet carry the PWA.
 
 ## gafol — permanent staging (gafol.rent) — ✅ AT MAIN (Phase A green)
 - Box: gafol.rent is the staging domain. DB `ukrenter_gafol_db` on
@@ -57,6 +61,14 @@ the DNS flip (Phase C) + prod retirement only.
   four-section page; old `/members/repair-notices` +
   `/members/know-your-landlord` → 404; `/content-archive` → 404
   (local-only gate holds on staging).
+- **PWA deploy + install test (11 Jul 2026):** gafol temporarily switched
+  to deploy `feature/pwa-wiring` (3 app icons + manifest + service worker
+  + offline page + `<head>` wiring); `route:clear` + `view:clear`.
+  **Installable PWA verified on a real iPhone over HTTPS** — adds to home
+  screen painlessly, launches standalone, offline page renders. Branch
+  then merged to `main` (`--no-ff`, merge `cd29c0d`). **TODO: switch
+  gafol's Plesk repo back to `main` and pull** so staging tracks the main
+  line again (main now carries the PWA).
 - Last verified: 11 Jul 2026.
 
 ## dotrent — production candidate (dotrent.net) — ✅ AT MAIN (Phase B green)
