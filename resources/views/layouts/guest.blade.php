@@ -9,6 +9,8 @@
 
         <!-- Bootstrap CSS - Bootswatch Spacelab Theme -->
         <link href="https://cdn.jsdelivr.net/npm/bootswatch@5.3.0/dist/spacelab/bootstrap.min.css" rel="stylesheet">
+
+        @include('partials.pwa')
     </head>
     <body class="bg-light">
         <div class="min-vh-100 d-flex flex-column justify-content-center align-items-center pt-4">

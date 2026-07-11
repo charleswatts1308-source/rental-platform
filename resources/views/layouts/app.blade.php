@@ -89,6 +89,8 @@
             }
         }
     </style>
+
+    @include('partials.pwa')
 </head>
 <body>
     <!-- Header -->

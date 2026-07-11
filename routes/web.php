@@ -15,6 +15,9 @@ Route::get('/about', function () {
     return view('about');
 });
 
+// PWA offline fallback — served by the service worker when a navigation fails.
+Route::get('/offline', fn() => view('offline'))->name('offline');
+
 Route::get('/privacy', function () {
     return view('privacy');
 });
