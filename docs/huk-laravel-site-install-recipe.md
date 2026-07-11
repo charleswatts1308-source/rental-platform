@@ -203,6 +203,20 @@ Save.
     since commit ede2cbb (real, sandbox-authorized addresses; the
     Gmail plus-addresses). Staging/preprod only.
 
+[ ] DUPLICATE-KEY CHECK (easy, painful trap — hit it twice now).
+    Pasting a full .env and then adding edited lines can leave TWO lines
+    for the same key. Laravel uses the FIRST occurrence and SILENTLY
+    ignores every later one — so your edit has no effect, and (the nasty
+    part) config:clear does NOT fix it: it is not a cache. After saving,
+    in the Toolkit shell / SSH run:
+        grep -oE '^[A-Z_][A-Z0-9_]*=' .env | sort | uniq -d
+    Any key it prints is duplicated → delete the stale line so each key
+    appears exactly ONCE. Then prove a value the app actually reads:
+        php artisan config:show <the-key>       (e.g. app.registration_allowlist)
+    (Cost a full debugging session on 11 Jul 2026: the registration
+    allowlist admitted only the old 2 of 4 emails because a stale
+    REGISTRATION_ALLOWLIST line sat above the edited one.)
+
 STEP 9 — GENERATE APP_KEY
 =========================
 
@@ -360,7 +374,10 @@ COMMON GOTCHAS
   path" or "Failed opening required" 500 errors, Step 6 is the fix.
 
 - **After ANY .env change, run config:clear** (the Laravel Toolkit .env
-  editor sometimes does this automatically, sometimes doesn't).
+  editor sometimes does this automatically, sometimes doesn't). If a value
+  STILL won't change after config:clear, it is NOT a cache — check for a
+  duplicate KEY= line (Laravel uses the first, ignores the rest):
+  `grep -oE '^[A-Z_][A-Z0-9_]*=' .env | sort | uniq -d`. See Step 8.
 
 - **HUK's subscription prefix is added to database name AND username** —
   e.g. you ask for "dotrent_db" and get "ukrenter_dotrent_db" (because
