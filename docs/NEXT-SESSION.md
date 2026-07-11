@@ -9,8 +9,9 @@ state from a superseded doc.
 FRESH sibling site + DNS cut over to the Linux box tonight — NOT a DNS
 flip onto dotrent; dotrent retired once renters.rent is proven). Deploy
 Phases A+B (gafol+dotrent at `main`) + registration gate remain DONE.
-**origin/main = `cef9875`** (docs-only ahead of code tip `b165114`).
-Suite **539 passing / 2239 assertions**.
+**origin/main = current docs tip** (docs-only commits ahead of code tip
+`b165114` — code unchanged). Suite **539 passing / 2239 assertions**.
+Open: renters.rent verification-email not sending (see LIVE ISSUE below).
 
 ---
 
@@ -71,6 +72,23 @@ exposed in a transcript on 4 Jul 2026. Rotate in the Mailgun dashboard →
 update the renters.rent (and dotrent) `.env` → `config:clear`. Signing-key
 exposure weakens inbound-webhook authenticity until rotated. Recorded in
 the ledger (dotrent entry).
+
+**🐞 LIVE ISSUE (renters.rent registration — 4 Jul):** registration
+succeeds but NO verification email is sent and NOTHING is logged (no
+Mailgun attempt, no Laravel mail error). **App wiring is CONFIRMED GOOD —
+do NOT re-diagnose the code:** `User implements MustVerifyEmail`,
+`RegisteredUserController` dispatches `event(new Registered($user))`, all
+verify-email routes present, Breeze verification enabled, no listener
+override. So the fault is DOWNSTREAM in the renters.rent mail/env layer.
+Next diagnostics (not yet done):
+- check `.env` `MAIL_MAILER` — suspect `array`/null → silent discard,
+  which matches "no send, no log";
+- confirm `storage/logs` is writable (recipe Step 6 perms — otherwise a
+  real mail error is thrown then lost);
+- one-line proof on the box: `php artisan tinker` →
+  `App\Models\User::first()->sendEmailVerificationNotification();` and
+  watch for an exception / log line (isolates mail transport from the
+  registration flow).
 
 **Remaining (needs LIVE access — human drives, Claude guides):**
 1. **SSL:** Let's Encrypt (apex + www) once the domain resolves; then TLS
