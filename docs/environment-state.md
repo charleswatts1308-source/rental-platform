@@ -152,8 +152,10 @@ the DNS flip (Phase C) + prod retirement only.
   customer-portal DNS (ns1/2/3 — NOT Plesk DNS). renters.rent now
   resolves to the new sibling site; the old Windows box is superseded
   (see the prod retirement trigger).
-- **NOT yet done (hardening + cutover tail):** SSL (Let's Encrypt
-  apex+www + TLS 1.0/1.1 disable + HSTS), scheduler heartbeat
+- **SSL — DONE (11 Jul 2026):** cert installed; `https://renters.rent/`
+  serves live over HTTPS (confirmed by external fetch of `/about`). TLS
+  1.0/1.1 disable + HSTS not separately confirmed here.
+- **NOT yet done (hardening + cutover tail):** scheduler heartbeat
   (`schedule:run` cron — without it NO sweep runs, escalations never
   fire), Mailgun inbound route → live renters.rent URL, registration-gate
   `.env` keys (`OPEN_TO_ALL`/`ALLOWLIST`), one inbound round-trip verify.
@@ -164,9 +166,10 @@ the DNS flip (Phase C) + prod retirement only.
   `/about` new repair-notice copy; `/members/how-it-works` single
   four-section page; old `/members/repair-notices` +
   `/members/know-your-landlord` → 404; `/content-archive` → 404
-  (local-only gate holds on production). Hardening tail (SSL, scheduler
-  heartbeat, Mailgun inbound, reg-gate `.env`) still pending — unaffected
-  by this content deploy.
+  (local-only gate holds on production). Prod confirmed serving the new
+  content live over HTTPS (external `/about` fetch, 11 Jul 2026).
+  Remaining hardening tail (scheduler heartbeat, Mailgun inbound, reg-gate
+  `.env`) still pending — unaffected by this content deploy.
 - Last verified: 11 Jul 2026.
 
 ## Dead database — ukrenters_rent (DELETE AFTER go-live)
