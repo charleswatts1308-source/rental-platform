@@ -3,22 +3,17 @@
 @section('title', 'About Us')
 
 @section('content')
-<h1 class="mb-4">About Renters</h1>
+<h1 class="mb-4">About renters.rent</h1>
 
-<p>I'm Elboud Dnomaid, a semi-retired software developer, with thirty years specialising in databases.</p>
+<p class="lead">renters.rent is a repair-notice service. It does one thing: it sends
+your landlord a proper, formal notice that a repair is needed, gives them a fair
+period to respond, and keeps a dated record of what follows.</p>
 
-<p>In my younger years I was a renter, then owner, then landlord. Now I have children who are renters. I've seen both sides.</p>
-<hr>
-<p>For the last two years I've watched the conditions for this platform gradually evolve.
-    The Renters Rights Act and its abolition of Section 21 combined with the internet is a truly explosive combination.
-    Add in the growing frustration of a generation priced out of ownership, and it's even more so.</p>
-<hr>
-<p>I'm not a campaign group. I have no funding, no investors, no agenda beyond the platform itself.</p>
-<p>I've built the platform, and I'll maintain it and develop the services you need as you ask for them.</p>
+<p>That's the whole service. It doesn't chase, advise, or take sides in a dispute.
+It runs a clear procedure and leaves you holding the record of it.</p>
 
-<p>What you achieve with the platform is entirely up to you.</p>
-<p>Make the most of it and turn the tables on our feudal system of private renting.</p>
-
-<p>Your rental money is yours to give and theirs to earn.</p>
-
+<p>The idea is simple. A repair asked for properly, in writing, on a timescale —
+with every step dated — is harder to ignore than a phone call or a text. If your
+landlord acts, good. If they don't, you have a documented trail showing you
+followed the correct steps and gave fair notice.</p>
 @endsection

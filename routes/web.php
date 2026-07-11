@@ -76,8 +76,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 // Public member pages
 Route::prefix('members')->name('members.')->group(function () {
-    Route::get('/know-your-landlord', fn() => view('members.know-your-landlord'))->name('know-your-landlord');
-    Route::get('/repair-notices', fn() => view('members.repair-notices'))->name('repair-notices');
+    // How It Works — single public page (The Process + Whoever You Are +
+    // Whatever Property + Where This Can Lead as stacked sections).
+    Route::get('/how-it-works', fn() => view('members.how-it-works'))->name('how-it-works');
 });
 
 // Content archive — dev box only. Retired pages live under

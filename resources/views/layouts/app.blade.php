@@ -161,14 +161,8 @@
                             <a class="nav-link text-dark" href="{{ route('contact.create') }}">Contact Us</a>
                         </li>
 
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle text-dark" href="#" id="howItWorksDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                How It Works
-                            </a>
-                            <ul class="dropdown-menu" aria-labelledby="howItWorksDropdown">
-                                <li><a class="dropdown-item" href="{{ route('members.repair-notices') }}">Landlord Contact Service</a></li>
-                                <li><a class="dropdown-item" href="{{ route('members.know-your-landlord') }}">Know Your Landlord</a></li>
-                            </ul>
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" href="{{ route('members.how-it-works') }}">How It Works</a>
                         </li>
 
                         <li class="nav-item dropdown">
