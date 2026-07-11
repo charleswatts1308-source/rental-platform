@@ -67,9 +67,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Auth-only member pages
     Route::prefix('members')->name('members.')->group(function () {
-        Route::get('/tenantandlandlord', fn() => view('members.tenantandlandlord'))->name('tenantandlandlord');
-        Route::get('/thought-experiment', fn() => view('members.thought-experiment'))->name('thought-experiment');
-        Route::get('/equity-conversation', fn() => view('members.equity-conversation'))->name('equity-conversation');
         // D14 — signposting page reached from the exhausted case + notice.
         // Members-wall (auth+verified), deliberately NOT in public nav.
         // Content is a solicitor-deferred stub.
@@ -79,14 +76,31 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 // Public member pages
 Route::prefix('members')->name('members.')->group(function () {
-    Route::get('/renters-rights-act', fn() => view('members.renters-rights-act'))->name('renters-rights-act');
     Route::get('/know-your-landlord', fn() => view('members.know-your-landlord'))->name('know-your-landlord');
-    Route::get('/landlord-database', fn() => view('members.landlord-database'))->name('landlord-database');
     Route::get('/repair-notices', fn() => view('members.repair-notices'))->name('repair-notices');
-    Route::get('/scale-of-prs', fn() => view('members.scale-of-prs'))->name('scale-of-prs');
-    Route::get('/property-types', fn() => view('members.property-types'))->name('property-types');
-    Route::get('/renter-rights-explained', fn() => view('members.renter-rights-explained'))->name('renter-rights-explained');
 });
+
+// Content archive — dev box only. Retired pages live under
+// resources/views/content-archive/. This single catch-all makes any Blade
+// view dropped into that folder instantly runnable at
+// /content-archive/<filename>, with an index listing all of them. Gated to
+// `local`, so production never exposes these pages.
+if (app()->environment('local')) {
+    Route::get('/content-archive', function () {
+        $pages = collect(\Illuminate\Support\Facades\File::files(resource_path('views/content-archive')))
+            ->map(fn ($f) => str_replace('.blade.php', '', $f->getFilename()))
+            ->sort()
+            ->values();
+
+        return view('content-archive-index', ['pages' => $pages]);
+    })->name('content-archive.index');
+
+    Route::get('/content-archive/{page}', function (string $page) {
+        abort_unless(view()->exists("content-archive.$page"), 404);
+
+        return view("content-archive.$page");
+    })->where('page', '[A-Za-z0-9\-_]+')->name('content-archive.show');
+}
 
 // Admin routes — gated by the `admin` middleware (User::is_admin boolean).
 // No id or environment check; access is purely the is_admin column.

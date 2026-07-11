@@ -181,38 +181,6 @@
                             </ul>
                         </li>
 
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle text-dark" href="#" id="theLawDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                The Law
-                            </a>
-                            <ul class="dropdown-menu" aria-labelledby="theLawDropdown">
-                                <li><a class="dropdown-item" href="{{ route('members.renters-rights-act') }}">Renters' Rights Act</a></li>
-                                <li><a class="dropdown-item" href="{{ route('members.renter-rights-explained') }}">Renter Rights Explained</a></li>
-                                <li><a class="dropdown-item" href="{{ route('members.landlord-database') }}">Landlord Database</a></li>
-                            </ul>
-                        </li>
-
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle text-dark" href="#" id="thePrsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                The PRS
-                            </a>
-                            <ul class="dropdown-menu" aria-labelledby="thePrsDropdown">
-                                <li><a class="dropdown-item" href="{{ route('members.scale-of-prs') }}">Scale of PRS</a></li>
-                                <li><a class="dropdown-item" href="{{ route('members.property-types') }}">Property Types</a></li>
-                            </ul>
-                        </li>
-
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle text-dark" href="#" id="longerTermDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                The Longer Term
-                            </a>
-                            <ul class="dropdown-menu" aria-labelledby="longerTermDropdown">
-                                <li><a class="dropdown-item" href="{{ route('members.tenantandlandlord') }}">Tenant and Landlord</a></li>
-                                <li><a class="dropdown-item" href="{{ route('members.equity-conversation') }}">Equity Conversation</a></li>
-                                <li><a class="dropdown-item" href="{{ route('members.thought-experiment') }}">Thought Experiment</a></li>
-                            </ul>
-                        </li>
-
                         @if(Auth::user()?->is_admin)
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle text-dark" href="#" id="adminDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
