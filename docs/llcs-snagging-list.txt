@@ -518,3 +518,28 @@ Fix:         Add a categories admin surface (CRUD over repair_categories,
              active-toggle + sort_order reorder), following the Surface A/B
              controller + view pattern. Future phase, TBD.
 --------------------------------------------------------------------
+#23
+Page:        SECURITY — Mailgun credentials exposed in a transcript
+             (4 Jul 2026). Not a UI snag; parked here as a pre-live to-do.
+Severity:    functional — SECURITY. Do before serious live running.
+Saw:         `config:show services.mailgun` printed MAILGUN_SECRET and
+             MAILGUN_WEBHOOK_SIGNING_KEY in full into a chat transcript on
+             4 Jul 2026. These are LIVE production credentials. Still not
+             rotated as of 13 Jul (9 days).
+Expected:    Both keys rotated; no live credential sitting in a transcript.
+Status:      open — the ONLY outstanding item on renters.rent. Everything
+             else in the hardening tail is closed and proven (cron, outbound,
+             inbound, SSL, registration gate).
+Notes:       Matters MORE now than it did on 4 Jul, not less: Mailgun inbound
+             is live on renters.rent and carrying real landlord replies. The
+             signing key is precisely what proves an inbound webhook genuinely
+             came from Mailgun — while it's exposed, inbound authenticity is
+             weakened and a forged reply cannot be ruled out on evidence.
+             Affects BOTH renters.rent and dotrent (shared mg.renters.rent).
+Fix:         Rotate MAILGUN_SECRET + MAILGUN_WEBHOOK_SIGNING_KEY in the
+             Mailgun dashboard; update the .env on renters.rent AND dotrent;
+             `php artisan config:cache`. Check for duplicate KEY= lines while
+             in the .env (last one wins — the trap that broke the allowlist).
+             Then send one test letter + one landlord reply to confirm both
+             directions still work. ~10 minutes.
+--------------------------------------------------------------------
