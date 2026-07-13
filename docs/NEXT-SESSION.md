@@ -58,10 +58,9 @@ rungs drift by one sweep (escalation 2 lands Thu, not Wed). Designed
 behaviour, not a defect — harmless at the real 14-day interval.
 
 **Then, to open the family trial:**
-1. **Confirm the front door is locked:** `REGISTRATION_OPEN_TO_ALL=false`
-   + `REGISTRATION_ALLOWLIST=<family emails>` on renters.rent, then
-   `config:cache`. The allowlist is known working; `OPEN_TO_ALL`'s value
-   is **not yet verified**. Check for duplicate keys while you're in there.
+1. ~~Confirm the front door is locked.~~ **DONE (13 Jul):**
+   `registration_open_to_all` = **false**, allowlist populated with 5
+   family addresses (verified via `config:show app` on the box).
 2. **Restore prod pacing:** put Surface B back to real intervals once the
    ladder test passes. B2 "Applies to in-flight cases" stays **Off**.
 3. **Begin the family trial.** gafol stays permanent staging.

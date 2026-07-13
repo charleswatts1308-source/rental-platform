@@ -181,11 +181,16 @@ the DNS flip (Phase C) + prod retirement only.
     (`SendCaseNotice`), so this proves the mail chain but NOT the cron.
   - **Mailgun inbound route — LIVE and PROVEN** with real landlord replies
     landing back on cases. Round-trip closed.
-  - **Registration allowlist — WORKING.** Earlier failure root-caused to
-    **duplicate `.env` keys** (within one file Laravel takes the LAST
-    `KEY=`, silently ignoring earlier ones) — same trap now written into
-    the install recipe, Step 8. This also retires the 4 Jul
-    "verification email sends nothing, logs nothing" LIVE ISSUE.
+  - **Registration gate — LOCKED and VERIFIED (13 Jul).** `config:show app`
+    on the prod box: `registration_open_to_all` = **false**,
+    `registration_allowlist` populated with **5 family addresses** (not
+    recorded here — PII, same policy as the dotrent entry). Front door is
+    shut to the public; only allowlisted addresses can register.
+    The earlier allowlist failure was root-caused to **duplicate `.env`
+    keys** (within one file Laravel takes the LAST `KEY=`, silently
+    ignoring earlier ones) — same trap now written into the install
+    recipe, Step 8. This also retires the 4 Jul "verification email sends
+    nothing, logs nothing" LIVE ISSUE.
 - **Escalation ladder — UNDER TEST (in flight, 13 Jul).** Case 3 on prod,
   Surface B set to `escalation.interval_days=1` / `escalation.max_notices=2`
   and snapshotted onto the case (shadow log confirms `0/1 days`, not the
@@ -197,13 +202,11 @@ the DNS flip (Phase C) + prod retirement only.
   beat AFTER the sweep timestamp, later rungs drift one sweep. Expected as
   designed; not a defect.
 - **Still open (not blocking the trial):**
-  - **UNCONFIRMED: `REGISTRATION_OPEN_TO_ALL`** — the allowlist works, so
-    the gate keys are present, but the value of `OPEN_TO_ALL` on prod is
-    not verified here. Front door must be **false** for the family trial.
   - **UNCONFIRMED: Mailgun credential rotation** — `MAILGUN_SECRET` +
     `MAILGUN_WEBHOOK_SIGNING_KEY` were exposed in a transcript on 4 Jul and
     have not been recorded as rotated. Signing-key exposure weakens
-    inbound-webhook authenticity until done.
+    inbound-webhook authenticity until done. **Now matters more, not less:
+    inbound is live and carrying real landlord replies.**
 - Status: **LIVE. Build clean, hardening green, escalation ladder under
   test.** Cron + outbound + inbound all proven on the real box.
 - **Content deploy (11 Jul 2026):** pulled `main` → `0e0a4e0`;
