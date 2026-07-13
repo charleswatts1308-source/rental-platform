@@ -66,10 +66,11 @@ the DNS flip (Phase C) + prod retirement only.
   + offline page + `<head>` wiring); `route:clear` + `view:clear`.
   **Installable PWA verified on a real iPhone over HTTPS** — adds to home
   screen painlessly, launches standalone, offline page renders. Branch
-  then merged to `main` (`--no-ff`, merge `cd29c0d`). **TODO: switch
-  gafol's Plesk repo back to `main` and pull** so staging tracks the main
-  line again (main now carries the PWA).
-- Last verified: 11 Jul 2026.
+  then merged to `main` (`--no-ff`, merge `cd29c0d`). **Plesk repo switched
+  back to `main` — CONFIRMED 13 Jul 2026.** Staging tracks the main line
+  again and sits at the same commit as prod (`133a103`). Staging-at-or-
+  ahead holds; the stage-then-prod discipline has been kept throughout.
+- Last verified: 13 Jul 2026.
 
 ## dotrent — production candidate (dotrent.net) — ✅ AT MAIN (Phase B green)
 - Box: dotrent.net, the production candidate for the renters.rent flip.
