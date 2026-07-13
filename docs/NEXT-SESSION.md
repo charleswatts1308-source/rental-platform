@@ -65,17 +65,16 @@ behaviour, not a defect — harmless at the real 14-day interval.
    ladder test passes. B2 "Applies to in-flight cases" stays **Off**.
 3. **Begin the family trial.** gafol stays permanent staging.
 
-**⚠️ STILL OPEN (security):** rotate the Mailgun credentials —
-`MAILGUN_SECRET` + `MAILGUN_WEBHOOK_SIGNING_KEY` were exposed in a
-transcript on 4 Jul 2026 and are **not recorded as rotated**. Rotate in
-the Mailgun dashboard → update the renters.rent (and dotrent) `.env` →
-`config:clear`. Signing-key exposure weakens inbound-webhook authenticity
-until done.
+**⚠️ THE ONLY OUTSTANDING ITEM ON PROD — snag #23: rotate the Mailgun
+credentials.** `MAILGUN_SECRET` + `MAILGUN_WEBHOOK_SIGNING_KEY` were
+exposed in a transcript on 4 Jul 2026 and are still live. Full Fix line is
+in `llcs-snagging-list.txt` #23 (~10 min, covers renters.rent AND dotrent).
+Do it **before serious live running** — inbound is now live and carrying
+real landlord replies, and the signing key is what proves a webhook
+genuinely came from Mailgun. For an evidential record, that's the leak
+that matters most.
 
 **Housekeeping:**
-- **gafol branch:** it was temporarily pointed at `feature/pwa-wiring` for
-  the iPhone install test. Confirm its Plesk repo is back on `main` and
-  pulled, so staging tracks the main line.
 - **Retire the old boxes:** confirm the Windows prod box is dark and record
   its retirement; retire dotrent once renters.rent is proven. End state:
   three live ledger entries — gafol, renters.rent, main.
@@ -83,6 +82,8 @@ until done.
   renters.rent `REGISTRATION_OPEN_TO_ALL=true` + `config:cache`. Public
   launch still gated by solicitor wording sign-off — see
   `pre-flip-checklist.md`.
+- ~~gafol branch back on `main`~~ — **DONE 13 Jul.** gafol and prod are
+  level at `133a103`. Stage-then-prod discipline has been kept throughout.
 
 **Note:** solicitor letter-wording sign-off does NOT gate the family
 trial (functional accuracy, family's own landlords — Charlie's call,
@@ -96,9 +97,10 @@ trial (functional accuracy, family's own landlords — Charlie's call,
    **Migrations** rule (manual MariaDB `SHOW CREATE TABLE` before merge)
    AND the **Deployment-ledger** rule (every long-lived deploy updates
    environment-state.md as its last step, reconciled vs `migrate:status`).
-2. **docs/environment-state.md** — the deployment ledger. Current truth
-   of what's deployed where (gafol + dotrent at `859827b`; main at
-   `cef9875` — code tip `b165114` + the docs reconciliation).
+2. **docs/environment-state.md** — the deployment ledger. Current truth of
+   what's deployed where: **gafol + renters.rent both at `133a103`**
+   (code-current); dotrent awaiting retirement; `main` carries docs-only
+   commits ahead.
 3. **docs/dotrent-deploy-plan.md** — Phases A/B deploy history; Phase C
    (flip) SUPERSEDED. Current build runs off the sibling-site recipe.
 3b. **docs/huk-laravel-site-install-recipe.md** — the fresh sibling-site
@@ -109,16 +111,20 @@ trial (functional accuracy, family's own landlords — Charlie's call,
    references (which letter fires when), and the CC automation
    orientation (read-at-leisure).
 
-Then execute the renters.rent cutover sequence above.
+Then pick up the escalation test above.
 
 ---
 
 ## Snags — open
 
-`docs/llcs-snagging-list.txt`: **#7, #8, #12, #13, #17, #18, #19, #22.**
-New this session: **#22** (no admin UI for repair_categories — phpMyAdmin
-only; candidate for a future "Surface D" alongside the deferred
-`letter_templates.active` toggle).
+`docs/llcs-snagging-list.txt`: **#7, #8, #12, #13, #17, #18, #19, #22, #23.**
+
+**#23 is the priority** — rotate the exposed Mailgun credentials. It's a
+security item, not a UI snag, and it's the only outstanding item on prod.
+The snagging list is where the **pre-live-running to-do list gets built
+from**, so read the whole file before serious live running, not just #23.
+
+New this session (13 Jul): **#23**.
 
 Resolved by Phase 5 (D16): #4, #14, #15, #16, #20, #21.
 
