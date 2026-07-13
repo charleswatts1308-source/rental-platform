@@ -144,7 +144,7 @@ the DNS flip (Phase C) + prod retirement only.
   once BOTH this box AND dotrent are retired: three live entries — gafol
   (staging), renters.rent (production), and main.
 
-## renters.rent — production (NEW sibling build) — ⏳ IN PROGRESS
+## renters.rent — production (NEW sibling build) — ✅ LIVE (hardening green)
 - Box: renters.rent, a NEW site on the LX (`ukrenters.rent`) Linux
   subscription — its own folder alongside `dotrent.net` and `gafol.rent`.
   Built FRESH from the rental-platform repo (Git deploy, `main`) rather
@@ -167,12 +167,45 @@ the DNS flip (Phase C) + prod retirement only.
 - **SSL — DONE (11 Jul 2026):** cert installed; `https://renters.rent/`
   serves live over HTTPS (confirmed by external fetch of `/about`). TLS
   1.0/1.1 disable + HSTS not separately confirmed here.
-- **NOT yet done (hardening + cutover tail):** scheduler heartbeat
-  (`schedule:run` cron — without it NO sweep runs, escalations never
-  fire), Mailgun inbound route → live renters.rent URL, registration-gate
-  `.env` keys (`OPEN_TO_ALL`/`ALLOWLIST`), one inbound round-trip verify.
-  See `pre-flip-checklist.md`.
-- Status: **build clean; cutover/hardening pending. IN PROGRESS.**
+- **Now at: `133a103`** (13 Jul 2026) — carries the PWA merge (`cd29c0d`)
+  and the 11 Jul content rework. Only two DOCS-ONLY commits sit ahead on
+  `origin/main` (`95f5745`, `1cb35cd` — the `.env` dupe-key recipe note),
+  so prod is **code-current**. **PWA live and tested on prod.**
+- **HARDENING TAIL — CLOSED (13 Jul 2026).** All four items proven live:
+  - **Scheduler heartbeat — CONFIRMED RUNNING.** Evidence: `silence_shadow_log`
+    rows stamped `2026-07-13 06:15:02`, one per non-terminal case. The Plesk
+    cron fires `schedule:run`, `silence:sweep` evaluates. This was the last
+    untested link — without it no sweep runs and escalations never fire.
+  - **Outbound mail — PROVEN.** Landlord letter 1 dispatched from prod
+    (Sun 12 Jul, evening) and delivered. Sent inline by the web request
+    (`SendCaseNotice`), so this proves the mail chain but NOT the cron.
+  - **Mailgun inbound route — LIVE and PROVEN** with real landlord replies
+    landing back on cases. Round-trip closed.
+  - **Registration allowlist — WORKING.** Earlier failure root-caused to
+    **duplicate `.env` keys** (within one file Laravel takes the LAST
+    `KEY=`, silently ignoring earlier ones) — same trap now written into
+    the install recipe, Step 8. This also retires the 4 Jul
+    "verification email sends nothing, logs nothing" LIVE ISSUE.
+- **Escalation ladder — UNDER TEST (in flight, 13 Jul).** Case 3 on prod,
+  Surface B set to `escalation.interval_days=1` / `escalation.max_notices=2`
+  and snapshotted onto the case (shadow log confirms `0/1 days`, not the
+  14-day default — the settings change landed BEFORE clock start, which is
+  what B2-off requires). Letter 1 out Sun evening; first escalation due at
+  the **06:15 sweep on Tue 14 Jul**. Note the sweep is a daily batch and
+  silence is floored to whole days, so a 1-day interval fires ~34h after
+  the letter, not 24h — and because each sent letter restarts the clock a
+  beat AFTER the sweep timestamp, later rungs drift one sweep. Expected as
+  designed; not a defect.
+- **Still open (not blocking the trial):**
+  - **UNCONFIRMED: `REGISTRATION_OPEN_TO_ALL`** — the allowlist works, so
+    the gate keys are present, but the value of `OPEN_TO_ALL` on prod is
+    not verified here. Front door must be **false** for the family trial.
+  - **UNCONFIRMED: Mailgun credential rotation** — `MAILGUN_SECRET` +
+    `MAILGUN_WEBHOOK_SIGNING_KEY` were exposed in a transcript on 4 Jul and
+    have not been recorded as rotated. Signing-key exposure weakens
+    inbound-webhook authenticity until done.
+- Status: **LIVE. Build clean, hardening green, escalation ladder under
+  test.** Cron + outbound + inbound all proven on the real box.
 - **Content deploy (11 Jul 2026):** pulled `main` → `0e0a4e0`;
   `route:clear` + `view:clear`. **Content-only, NO migrations.** Verified:
   `/about` new repair-notice copy; `/members/how-it-works` single
@@ -180,9 +213,9 @@ the DNS flip (Phase C) + prod retirement only.
   `/members/know-your-landlord` → 404; `/content-archive` → 404
   (local-only gate holds on production). Prod confirmed serving the new
   content live over HTTPS (external `/about` fetch, 11 Jul 2026).
-  Remaining hardening tail (scheduler heartbeat, Mailgun inbound, reg-gate
-  `.env`) still pending — unaffected by this content deploy.
-- Last verified: 11 Jul 2026.
+  (The hardening tail referenced here was subsequently CLOSED — see the
+  13 Jul entries above.)
+- Last verified: 13 Jul 2026.
 
 ## Dead database — ukrenters_rent (DELETE AFTER go-live)
 - `ukrenters_rent` is an OLD leftover database, NOT used by any live

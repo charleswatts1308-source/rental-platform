@@ -5,114 +5,85 @@ current. The `docs/` folder has many files and many are stale — this
 index says which to trust and which to ignore so you don't re-derive
 state from a superseded doc.
 
-**Last updated:** 2026-07-04 (plan changed: renters.rent built as its own
-FRESH sibling site + DNS cut over to the Linux box tonight — NOT a DNS
-flip onto dotrent; dotrent retired once renters.rent is proven). Deploy
-Phases A+B (gafol+dotrent at `main`) + registration gate remain DONE.
-**origin/main = current docs tip** (docs-only commits ahead of code tip
-`b165114` — code unchanged). Suite **539 passing / 2239 assertions**.
-Open: renters.rent verification-email not sending (see LIVE ISSUE below).
+**Last updated:** 2026-07-13. **renters.rent is LIVE and the hardening
+tail is CLOSED** — cron, outbound mail and Mailgun inbound are all proven
+on the real box. Prod is at `133a103` (**code-current**: carries the PWA
+and the content rework; only two docs-only commits sit ahead on
+`origin/main`). The escalation ladder is **under test in flight** on prod.
+Suite **539 passing / 2239 assertions**.
 
 ---
 
 ## Parked state — read this first
 
-The silence/email model (Phases 1–5, D1–D16) is complete and merged, and
-deployed + proven on gafol + dotrent with the registration gate — **all
-of that is DONE**:
+The silence/email model (Phases 1–5, D1–D16) is complete, merged, and
+**now running live on renters.rent**. The 4 Jul cutover is finished:
 
-- **gafol (staging) and dotrent are both on current `main`** — Phase A +
-  Phase B GREEN. dotrent was a clean `migrate:fresh` rebuild (all 35
-  migrations, #18-clean; real categories/templates/settings, NO Faker
-  user, empty cases).
-- **The private-beta registration gate is built, merged, DEPLOYED, and
-  VERIFIED on both boxes** (`15ec602`, tag `pre-registration-lock` =
-  `a63ac4a`).
+- **renters.rent (production)** — fresh sibling site on the Linux box,
+  DNS cut over, SSL live, clean DB (`ukrenter_renters_db`). **Scheduler
+  heartbeat confirmed running** (shadow-log rows at `06:15:02`),
+  **outbound proven** (landlord letter delivered), **Mailgun inbound
+  proven** (real landlord replies landing on cases). PWA + content rework
+  live and tested.
+- **gafol** — permanent staging. **dotrent** — preprod, awaiting retirement.
+- The private-beta **registration gate** is built, merged and deployed.
 
-**The go-live plan has CHANGED.** Instead of flipping renters.rent DNS
-onto dotrent, renters.rent is being built as its OWN fresh sibling site
-on the Linux subscription (own DB, production config), and dotrent is
-retired once renters.rent is proven. **Tonight (4 Jul 2026):** the
-renters.rent sibling was built (DB `ukrenter_renters_db` clean, admin
-created via recipe Step 10b) and its DNS A-records were cut over to the
-Linux box (`217.194.210.16`) via the HUK customer portal (ns1/2/3).
-Remaining: SSL, scheduler heartbeat, Mailgun inbound route, registration
-lock, one round-trip verify, then retire the old boxes. See the next
-section.
+**The 4 Jul "verification email sends nothing, logs nothing" LIVE ISSUE is
+RESOLVED** — root cause was **duplicate `.env` keys** (within one file
+Laravel takes the LAST `KEY=` and silently ignores earlier ones). Same
+trap now baked into the install recipe, Step 8. Do not re-diagnose it.
 
-**Authoritative records for current state:**
-- **docs/environment-state.md** — the deployment ledger; the renters.rent
-  (IN PROGRESS) entry is current build state.
-- **docs/huk-laravel-site-install-recipe.md** — the fresh sibling build.
-- **docs/pre-flip-checklist.md** — cutover hard gates + smoke sequence.
-- **docs/dotrent-deploy-plan.md** — Phases A/B history only; Phase C
-  SUPERSEDED.
+**Authoritative record for current state: docs/environment-state.md** (the
+deployment ledger). Supporting: `huk-laravel-site-install-recipe.md` (the
+sibling build), `pre-flip-checklist.md` (wider/public-launch gates),
+`dotrent-deploy-plan.md` (Phases A/B history only; Phase C SUPERSEDED).
 
 ---
 
-## Next session — renters.rent sibling build: finish the cutover
+## Next session — finish the escalation test, then open the family trial
 
-**Plan changed** (4 Jul 2026): renters.rent is built as its own FRESH
-sibling site, NOT flipped onto dotrent. dotrent is retired once
-renters.rent is proven.
+**IN FLIGHT — the escalation ladder on prod (case 3).** Surface B set to
+`escalation.interval_days=1` / `escalation.max_notices=2`, correctly
+snapshotted onto the case (shadow log reads `0/1 days`, not the 14-day
+default). Landlord letter 1 went out Sun 12 Jul evening; **first
+escalation due at the 06:15 sweep on Tue 14 Jul.** Check
+`silence_shadow_log` for `send_escalation` / `executed=1` plus the letter
+in the landlord's inbox.
 
-**DONE tonight (4 Jul 2026) — completed history:**
-- renters.rent built fresh on the Linux subscription (own site alongside
-  dotrent.net + gafol.rent), DB `ukrenter_renters_db` clean (35
-  migrations batch 1, cases=0, users=1 admin), reference tables seeded,
-  admin created (recipe Step 10b, production tinker path).
-- **DNS cut over:** renters.rent A records (apex + www) pointed at the
-  Linux Plesk server `217.194.210.16` via the HUK customer-portal DNS
-  (ns1/2/3 — NOT Plesk DNS). renters.rent now resolves to the sibling
-  site; the old Windows box is superseded.
+*Read the clock correctly before calling anything broken:* the sweep is a
+**daily 06:15 batch**, and silence is floored to **whole days** — so a
+1-day interval fires ~34h after the letter, not 24h. And because each sent
+letter restarts the clock a beat *after* the sweep's own timestamp, later
+rungs drift by one sweep (escalation 2 lands Thu, not Wed). Designed
+behaviour, not a defect — harmless at the real 14-day interval.
 
-**⚠️ DO-NOW (security, independent of the cutover):** rotate the Mailgun
-credentials — `MAILGUN_SECRET` + `MAILGUN_WEBHOOK_SIGNING_KEY` were
-exposed in a transcript on 4 Jul 2026. Rotate in the Mailgun dashboard →
-update the renters.rent (and dotrent) `.env` → `config:clear`. Signing-key
-exposure weakens inbound-webhook authenticity until rotated. Recorded in
-the ledger (dotrent entry).
+**Then, to open the family trial:**
+1. **Confirm the front door is locked:** `REGISTRATION_OPEN_TO_ALL=false`
+   + `REGISTRATION_ALLOWLIST=<family emails>` on renters.rent, then
+   `config:cache`. The allowlist is known working; `OPEN_TO_ALL`'s value
+   is **not yet verified**. Check for duplicate keys while you're in there.
+2. **Restore prod pacing:** put Surface B back to real intervals once the
+   ladder test passes. B2 "Applies to in-flight cases" stays **Off**.
+3. **Begin the family trial.** gafol stays permanent staging.
 
-**🐞 LIVE ISSUE (renters.rent registration — 4 Jul):** registration
-succeeds but NO verification email is sent and NOTHING is logged (no
-Mailgun attempt, no Laravel mail error). **App wiring is CONFIRMED GOOD —
-do NOT re-diagnose the code:** `User implements MustVerifyEmail`,
-`RegisteredUserController` dispatches `event(new Registered($user))`, all
-verify-email routes present, Breeze verification enabled, no listener
-override. So the fault is DOWNSTREAM in the renters.rent mail/env layer.
-Next diagnostics (not yet done):
-- check `.env` `MAIL_MAILER` — suspect `array`/null → silent discard,
-  which matches "no send, no log";
-- confirm `storage/logs` is writable (recipe Step 6 perms — otherwise a
-  real mail error is thrown then lost);
-- one-line proof on the box: `php artisan tinker` →
-  `App\Models\User::first()->sendEmailVerificationNotification();` and
-  watch for an exception / log line (isolates mail transport from the
-  registration flow).
+**⚠️ STILL OPEN (security):** rotate the Mailgun credentials —
+`MAILGUN_SECRET` + `MAILGUN_WEBHOOK_SIGNING_KEY` were exposed in a
+transcript on 4 Jul 2026 and are **not recorded as rotated**. Rotate in
+the Mailgun dashboard → update the renters.rent (and dotrent) `.env` →
+`config:clear`. Signing-key exposure weakens inbound-webhook authenticity
+until done.
 
-**Remaining (needs LIVE access — human drives, Claude guides):**
-1. **SSL:** Let's Encrypt (apex + www) once the domain resolves; then TLS
-   1.0/1.1 disable + HSTS (checklist B6/B7).
-2. **Scheduler heartbeat:** Plesk cron `schedule:run` every minute —
-   without it NO sweep runs and escalations never fire (checklist B1).
-3. **Mailgun inbound route** →
-   `https://renters.rent/webhooks/mailgun/inbound` (checklist B5).
-   Outbound works regardless, so a missed route only shows when a
-   landlord reply fails to land. Don't skip it.
-4. **Confirm ONE inbound round-trip** on the live renters.rent route.
-5. **Registration lock:** set `REGISTRATION_OPEN_TO_ALL=false` +
-   `REGISTRATION_ALLOWLIST=<family emails>` in renters.rent `.env` +
-   `config:cache`. Front door locked to allowlisted family only.
-6. **Begin the family trial:** Surface B short intervals for observable
-   pacing; B2 "Applies to In-flight cases" stays **Off**. gafol stays
-   permanent staging.
-7. **Ledger — retire the old boxes:** confirm the Windows prod box dark
-   and record its retirement; retire dotrent once renters.rent is proven.
-   End state: three live entries — gafol, renters.rent, main.
-8. **Go-live switch (LATER, the only one):** open beyond family by setting
-   renters.rent `REGISTRATION_OPEN_TO_ALL=true` + `config:cache`. Public
-   launch still gated by solicitor wording sign-off — see
-   `pre-flip-checklist.md`.
+**Housekeeping:**
+- **gafol branch:** it was temporarily pointed at `feature/pwa-wiring` for
+  the iPhone install test. Confirm its Plesk repo is back on `main` and
+  pulled, so staging tracks the main line.
+- **Retire the old boxes:** confirm the Windows prod box is dark and record
+  its retirement; retire dotrent once renters.rent is proven. End state:
+  three live ledger entries — gafol, renters.rent, main.
+- **Go-live switch (LATER, the only one):** open beyond family by setting
+  renters.rent `REGISTRATION_OPEN_TO_ALL=true` + `config:cache`. Public
+  launch still gated by solicitor wording sign-off — see
+  `pre-flip-checklist.md`.
 
 **Note:** solicitor letter-wording sign-off does NOT gate the family
 trial (functional accuracy, family's own landlords — Charlie's call,
