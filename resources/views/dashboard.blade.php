@@ -64,28 +64,6 @@
         </div>
     @endif
 
-    {{-- At-a-glance counts, each a way in to the relevant page. --}}
-    <div class="row g-3 mb-4">
-        <div class="col-md-6">
-            <div class="card h-100">
-                <div class="card-body">
-                    <h2 class="h6 text-muted">Your properties</h2>
-                    <p class="display-6 mb-2">{{ $propertyCount }}</p>
-                    <a href="{{ route('properties.index') }}">View your properties</a>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-6">
-            <div class="card h-100">
-                <div class="card-body">
-                    <h2 class="h6 text-muted">Your repair cases</h2>
-                    <p class="display-6 mb-2">{{ $cases->count() }}</p>
-                    <a href="{{ route('cases.index') }}">View your repair cases</a>
-                </div>
-            </div>
-        </div>
-    </div>
-
     @if($cases->count() > 0)
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h2 class="h5 mb-0">Recent repair cases</h2>
@@ -106,7 +84,10 @@
                 <tbody>
                     @foreach($cases->take(5) as $case)
                         <tr>
-                            <td><a href="{{ route('cases.show', $case->url_slug) }}"><code>{{ $case->url_slug }}</code></a></td>
+                            {{-- fs-6 lifts the reference off Bootstrap's default
+                                 0.875em <code> size — it's the primary way into a
+                                 case, so it shouldn't read as fine print. --}}
+                            <td><a href="{{ route('cases.show', $case->url_slug) }}"><code class="fs-6">{{ $case->url_slug }}</code></a></td>
                             <td>
                                 {{ $case->property->address_line1 }},
                                 <span class="text-muted">{{ $case->property->postcode }}</span>

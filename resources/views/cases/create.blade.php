@@ -49,9 +49,12 @@
             @if($properties->count() === 1)
                 @php($property = $properties->first())
                 <div class="col-md-12">
-                    <p class="form-label mb-1">Property</p>
+                    {{-- Label and address on one line to save vertical space on
+                         mobile; the address wraps as a unit if the screen is
+                         too narrow, with "Change" trailing it. --}}
                     <p class="mb-0">
-                        {{ $property->address_line1 }}@if($property->address_line2), {{ $property->address_line2 }}@endif, {{ $property->city }}, {{ $property->postcode }}
+                        <span class="text-muted">Property:</span>
+                        <span class="fw-semibold">{{ $property->address_line1 }}@if($property->address_line2), {{ $property->address_line2 }}@endif, {{ $property->city }}, {{ $property->postcode }}</span>
                         <a href="{{ route('properties.index') }}" class="small ms-2">Change</a>
                     </p>
                     <input type="hidden" name="property_id" value="{{ $property->id }}">
