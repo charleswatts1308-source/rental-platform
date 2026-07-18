@@ -38,17 +38,37 @@
         <form method="POST" action="{{ route('cases.store') }}" enctype="multipart/form-data" class="row g-3">
             @csrf
 
-            <div class="col-md-12">
-                <label for="property_id" class="form-label">Property</label>
-                <select id="property_id" name="property_id" class="form-select @error('property_id') is-invalid @enderror" required>
-                    <option value="">— select a property —</option>
-                    @foreach($properties as $property)
-                        <option value="{{ $property->id }}" @selected(old('property_id') == $property->id)>
-                            {{ $property->address_line1 }}@if($property->address_line2), {{ $property->address_line2 }}@endif, {{ $property->postcode }}
-                        </option>
-                    @endforeach
-                </select>
-            </div>
+            {{-- One property is the norm and will be for most users — a tenant
+                 rents one home. Asking them to "select" from a list of one is
+                 pointless friction, especially arriving straight from having
+                 just registered it. So: confirm it on a line, submit it hidden.
+                 Ownership is enforced server-side by the property_id exists
+                 rule (scoped to registered_by_user_id), so the hidden input is
+                 not a trust boundary. The select returns for 2+ properties —
+                 e.g. a tenant who has moved and stayed on the platform. --}}
+            @if($properties->count() === 1)
+                @php($property = $properties->first())
+                <div class="col-md-12">
+                    <p class="form-label mb-1">Property</p>
+                    <p class="mb-0">
+                        {{ $property->address_line1 }}@if($property->address_line2), {{ $property->address_line2 }}@endif, {{ $property->city }}, {{ $property->postcode }}
+                        <a href="{{ route('properties.index') }}" class="small ms-2">Change</a>
+                    </p>
+                    <input type="hidden" name="property_id" value="{{ $property->id }}">
+                </div>
+            @else
+                <div class="col-md-12">
+                    <label for="property_id" class="form-label">Property</label>
+                    <select id="property_id" name="property_id" class="form-select @error('property_id') is-invalid @enderror" required>
+                        <option value="">— select a property —</option>
+                        @foreach($properties as $property)
+                            <option value="{{ $property->id }}" @selected(old('property_id') == $property->id)>
+                                {{ $property->address_line1 }}@if($property->address_line2), {{ $property->address_line2 }}@endif, {{ $property->postcode }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+            @endif
 
             <div class="col-md-8">
                 <label for="category_key" class="form-label">Repair category</label>
