@@ -75,7 +75,7 @@
                              the sweep releases it the column persists as history but
                              must not read as an active pause. --}}
                         @if($case->showsHoldUntil())
-                            <dt class="col-5">Hold until</dt>
+                            <dt class="col-5">Paused until</dt>
                             <dd class="col-7">{{ $case->hold_until->format('d M Y') }}</dd>
                         @endif
 

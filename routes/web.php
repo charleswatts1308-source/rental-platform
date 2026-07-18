@@ -26,8 +26,10 @@ Route::get('/cookies', function () {
     return view('cookies');
 });
 
+// welcome-3 (the "Erin" homepage) retired 18 Jul 2026 — archived at
+// /content-archive/homepage-erin-18-july-2026.
 Route::get('/', function () {
-    return view('welcome-3');
+    return view('welcome-4');
 });
 
 // Dashboard is the post-verification landing page and the site's hub: it
@@ -110,9 +112,37 @@ Route::prefix('members')->name('members.')->group(function () {
 // `local`, so production never exposes these pages.
 if (app()->environment('local')) {
     Route::get('/content-archive', function () {
+        // Newest first — the archive is a reference shelf and the page you
+        // just retired belongs at the top.
+        //
+        // Date preference: the trailing date in the filename (the naming
+        // convention, e.g. about-us-11-july-2026) BEATS file mtime, because
+        // mtime records when the content was last EDITED, not when it was
+        // retired. Archiving copies preserve the original timestamp, so
+        // pages written in April and archived in July were sorting as April.
+        // Filename dates also survive a fresh git clone, which rewrites every
+        // mtime. Undated legacy pages fall back to mtime and settle wherever
+        // they land — fine for a reference shelf.
         $pages = collect(\Illuminate\Support\Facades\File::files(resource_path('views/content-archive')))
-            ->map(fn ($f) => str_replace('.blade.php', '', $f->getFilename()))
-            ->sort()
+            ->map(function ($f) {
+                $name = str_replace('.blade.php', '', $f->getFilename());
+
+                $dated = null;
+                if (preg_match('/-(\d{1,2}-[a-z]+-\d{4})$/i', $name, $m)) {
+                    // strtotime handles "11-july-2026" once the hyphens go.
+                    $parsed = strtotime(str_replace('-', ' ', $m[1]));
+                    $dated = $parsed ? \Carbon\Carbon::createFromTimestamp($parsed) : null;
+                }
+
+                return [
+                    'name' => $name,
+                    'date' => $dated ?? \Carbon\Carbon::createFromTimestamp($f->getMTime()),
+                    // Distinguishes "retired on this date" from "last edited
+                    // on this date" in the listing — an mtime row is a guess.
+                    'dated' => $dated !== null,
+                ];
+            })
+            ->sortByDesc('date')
             ->values();
 
         return view('content-archive-index', ['pages' => $pages]);

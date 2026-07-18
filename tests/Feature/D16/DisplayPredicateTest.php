@@ -94,7 +94,7 @@ it('tenant case page hides Next escalation on on_hold (#14)', function () {
     $this->actingAs($tenant)->get("/cases/{$case->url_slug}")
         ->assertOk()
         ->assertDontSee('Next escalation')
-        ->assertSee('Hold until');
+        ->assertSee('Paused until');
 });
 
 it('tenant case page hides stale hold_until once released (#15)', function () {
@@ -110,7 +110,7 @@ it('tenant case page hides stale hold_until once released (#15)', function () {
     $this->actingAs($tenant)->get("/cases/{$case->url_slug}")
         ->assertOk()
         ->assertSee('Next escalation')
-        ->assertDontSee('Hold until');
+        ->assertDontSee('Paused until');
 });
 
 // ---- gap 1: engaged label wording (the visible D15 payoff) ------------
