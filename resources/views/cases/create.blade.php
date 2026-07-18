@@ -7,8 +7,14 @@
     <h1 class="mb-4">Raise a repair case</h1>
 
     @if($properties->count() === 0)
+        {{-- Was a dead end: the warning stated the blocker but gave no way out,
+             leaving the user to find the properties page from the nav themselves. --}}
         <div class="alert alert-warning">
-            You need to register a property before you can raise a repair case. Once your property is on file, return here to send your first notice.
+            <p>
+                You need to register a property before you can raise a repair case.
+                A case is always raised against a property, so we need that on file first.
+            </p>
+            <a href="{{ route('properties.create') }}" class="btn btn-primary">Register your property</a>
         </div>
     @else
         @if($errors->any())

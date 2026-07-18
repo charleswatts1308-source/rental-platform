@@ -30,8 +30,27 @@ Route::get('/', function () {
     return view('welcome-3');
 });
 
-Route::get('/dashboard', function () {
-    return view('dashboard');
+// Dashboard is the post-verification landing page and the site's hub: it
+// carries the "what do I do next" signposting a new tenant needs, since the
+// property-then-case ordering is otherwise left to be inferred.
+Route::get('/dashboard', function (\Illuminate\Http\Request $request) {
+    $userId = $request->user()->id;
+
+    $propertyCount = \App\Models\Property::where('registered_by_user_id', $userId)->count();
+
+    $cases = \App\Models\RepairCase::query()
+        ->where('tenant_user_id', $userId)
+        ->with(['property', 'category'])
+        ->orderByDesc('opened_at')
+        ->get();
+
+    return view('dashboard', [
+        'propertyCount' => $propertyCount,
+        'cases' => $cases,
+        // Cases where the ball is with the tenant — these are the ones the
+        // user must act on, so they lead the page.
+        'needsAttention' => $cases->where('status', \App\Enums\CaseStatus::AwaitingTenantReview),
+    ]);
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware(['auth', 'verified'])->group(function () {
