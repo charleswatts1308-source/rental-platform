@@ -547,8 +547,11 @@ Fix:         Rotate MAILGUN_SECRET + MAILGUN_WEBHOOK_SIGNING_KEY in the
 Page:        Case — no way to correct the landlord email after the first
              letter has been sent. Surfaced 2026-07-18 walking the new-user
              journey cold.
-Severity:    functional — HIGH LIKELIHOOD, SILENT FAILURE. Strong candidate
-             to fix before the family trial.
+Severity:    minor — convenience. Recoverable today (abandon + re-raise).
+             NOT a confidentiality issue: a repair notice is a name, an
+             address and "the boiler is broken". A letter reaching the wrong
+             mailbox is mildly awkward, not a breach. Mistyped email is an
+             everyday hazard every service lives with.
 Saw:         The landlord contact is a property of the CASE
              (cases.landlord_contact_id), not of the property. It is captured
              once on the create-case form. Before sending, the D13 preview
@@ -557,16 +560,15 @@ Saw:         The landlord contact is a property of the CASE
              the only recovery is to abandon the case and raise a new one,
              losing the case reference and the record.
 Expected:    A way to correct the landlord email on an existing case, so a
-             typo doesn't cost the tenant the case.
+             typo costs a correction rather than the whole case.
 Status:      open — snagged 18 Jul, decision deferred (not built tonight).
-Notes:       Why this matters more than it looks: a typo'd landlord address
-             fails SILENTLY. The letter goes to a plausible-but-wrong
-             address (or a stranger), nobody replies, and the silence model
-             then does exactly what it should — chases an escalation ladder
-             at a party who never received anything. Weeks of "working
-             correctly" against the wrong recipient. It is also the single
-             most likely user error in the whole flow.
-             Second-order: LandlordContact is a GLOBAL table deduplicated by
+             SEE #25: the reason a typo currently goes unnoticed is the
+             absence of delivery-failure detection, not the absence of an
+             edit button. Fix #25 first — it makes the typo VISIBLE, at
+             which point this becomes the ordinary convenience fix it
+             should be. Building this one alone would let a tenant correct
+             a mistake they still have no way of knowing they made.
+Notes:       Second-order: LandlordContact is a GLOBAL table deduplicated by
              email (CaseController::resolveLandlordContact, no user scoping),
              so a typo also creates a junk global contact row.
              EVIDENTIALLY SAFE TO FIX — checked: every outbound row stamps
@@ -587,4 +589,51 @@ Fix:         Add a "correct landlord email" action on the case that (a)
              recipient has not yet been given the chance to respond, but
              that touches the D3 no-reset ratchet and needs a design ruling
              against llcs-silence-model-design.md before building.
+--------------------------------------------------------------------
+#25
+Page:        Mail delivery — a letter that never arrives is indistinguishable
+             from a letter that was ignored. Surfaced 2026-07-18 while
+             assessing #24.
+Severity:    functional — HIGH. Goes to the core claim of the product.
+             Strong candidate to fix before real landlords are involved.
+Saw:         Only Mailgun's INBOUND route is consumed
+             (routes/web.php:152 → MailgunInboundController). Mailgun's
+             delivery-event webhooks — permanent_fail (hard bounce),
+             temporary_fail, complained, unsubscribed — are not consumed at
+             all. Nothing in the app ever learns that an outbound letter
+             failed to deliver. The case_messages row is written, sent_at is
+             stamped, the silence clock starts, and the ladder proceeds.
+Expected:    A hard bounce marks the case as UNDELIVERED and tells the
+             tenant. Silence should mean "delivered and not answered", never
+             "never arrived".
+Status:      open — snagged 18 Jul.
+Notes:       This is the one that matters, and it is NOT really about typos.
+             The silence model's entire claim is that it can say "your
+             landlord was served on the 12th and has not responded in 14
+             days." With no bounce handling it will say exactly that, with
+             full confidence, when the letter hard-bounced and NOBODY was
+             ever served. The tenant is left holding a meticulous dated
+             record of having notified no one — which is precisely the
+             artefact they would be relying on in a dispute.
+             A typo (#24) is only the most likely CAUSE. The same silent
+             failure hits a landlord who changes agent, a full mailbox, an
+             expired domain, or a spam block — all of which happen to
+             tenants who typed everything correctly. So this cannot be
+             fixed by being careful at data entry.
+             Note the asymmetry with the inbound path, which is carefully
+             built (signature verification, token resolution, quarantine).
+             Outbound delivery is currently assumed to succeed.
+Fix:         Add a Mailgun delivery-event webhook route alongside the inbound
+             one, reusing the existing verify.mailgun.signature middleware.
+             Match events to case_messages via mailgun_message_id (already
+             stored on the row — the join is available). On permanent_fail:
+             flag the message/case as undelivered, notify the tenant that the
+             letter did not reach the landlord and the address may be wrong
+             (links to #24's correction action), and decide whether the
+             silence clock should be SUSPENDED rather than left running —
+             counting silence against an address that bounced is counting
+             nothing. That last part is a design decision and should be ruled
+             on against llcs-silence-model-design.md, which currently assumes
+             delivery. Also requires configuring the webhook in the Mailgun
+             dashboard for both renters.rent and dotrent.
 --------------------------------------------------------------------
