@@ -34,6 +34,32 @@ it('points a user with a property at raising their first case', function () {
         ->assertDontSee('Start here');
 });
 
+it('carries a user straight to raise-a-case after their FIRST property', function () {
+    $user = User::factory()->create(['email_verified_at' => now()]);
+
+    $this->actingAs($user)
+        ->post(route('properties.store'), [
+            'address_line1' => '1 Test Street',
+            'city' => 'Leeds',
+            'postcode' => 'LS1 1AA',
+        ])
+        ->assertRedirect(route('cases.create'))
+        ->assertSessionHas('success');
+});
+
+it('keeps a user on the properties list for a SUBSEQUENT property', function () {
+    $user = User::factory()->create(['email_verified_at' => now()]);
+    Property::factory()->create(['registered_by_user_id' => $user->id]);
+
+    $this->actingAs($user)
+        ->post(route('properties.store'), [
+            'address_line1' => '2 Test Street',
+            'city' => 'Leeds',
+            'postcode' => 'LS2 2BB',
+        ])
+        ->assertRedirect(route('properties.index'));
+});
+
 it('requires auth and verification', function () {
     $this->get(route('dashboard'))->assertRedirect(route('login'));
 

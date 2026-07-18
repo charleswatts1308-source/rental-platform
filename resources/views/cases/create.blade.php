@@ -6,6 +6,13 @@
 <div class="container py-4">
     <h1 class="mb-4">Raise a repair case</h1>
 
+    @if(session('success'))
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            {{ session('success') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    @endif
+
     @if($properties->count() === 0)
         {{-- Was a dead end: the warning stated the blocker but gave no way out,
              leaving the user to find the properties page from the nav themselves. --}}
