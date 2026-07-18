@@ -543,3 +543,48 @@ Fix:         Rotate MAILGUN_SECRET + MAILGUN_WEBHOOK_SIGNING_KEY in the
              Then send one test letter + one landlord reply to confirm both
              directions still work. ~10 minutes.
 --------------------------------------------------------------------
+#24
+Page:        Case — no way to correct the landlord email after the first
+             letter has been sent. Surfaced 2026-07-18 walking the new-user
+             journey cold.
+Severity:    functional — HIGH LIKELIHOOD, SILENT FAILURE. Strong candidate
+             to fix before the family trial.
+Saw:         The landlord contact is a property of the CASE
+             (cases.landlord_contact_id), not of the property. It is captured
+             once on the create-case form. Before sending, the D13 preview
+             step allows an edit; AFTER sending there is no edit route on a
+             case at all. A mistyped landlord email is therefore permanent:
+             the only recovery is to abandon the case and raise a new one,
+             losing the case reference and the record.
+Expected:    A way to correct the landlord email on an existing case, so a
+             typo doesn't cost the tenant the case.
+Status:      open — snagged 18 Jul, decision deferred (not built tonight).
+Notes:       Why this matters more than it looks: a typo'd landlord address
+             fails SILENTLY. The letter goes to a plausible-but-wrong
+             address (or a stranger), nobody replies, and the silence model
+             then does exactly what it should — chases an escalation ladder
+             at a party who never received anything. Weeks of "working
+             correctly" against the wrong recipient. It is also the single
+             most likely user error in the whole flow.
+             Second-order: LandlordContact is a GLOBAL table deduplicated by
+             email (CaseController::resolveLandlordContact, no user scoping),
+             so a typo also creates a junk global contact row.
+             EVIDENTIALLY SAFE TO FIX — checked: every outbound row stamps
+             to_address_raw at send time (SendCaseNotice.php:116) alongside
+             the frozen body_raw/subject. Sent letters are therefore
+             self-contained, so repointing the case's landlord_contact_id
+             changes only where FUTURE letters go and does NOT rewrite the
+             record of what was already sent. (Had to_address_raw not been
+             populated, this would be unfixable without falsifying evidence.)
+Fix:         Add a "correct landlord email" action on the case that (a)
+             repoints landlord_contact_id via the existing
+             resolveLandlordContact path, (b) leaves ALL existing
+             case_messages rows untouched, and (c) writes a case event
+             recording the correction (from → to, when, by whom) so the
+             record shows the correction rather than silently changing.
+             Consider also whether the escalation counter / silence clock
+             should reset on correction — arguably yes, since the new
+             recipient has not yet been given the chance to respond, but
+             that touches the D3 no-reset ratchet and needs a design ruling
+             against llcs-silence-model-design.md before building.
+--------------------------------------------------------------------
