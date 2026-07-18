@@ -5,7 +5,7 @@ current. The `docs/` folder has many files and many are stale — this
 index says which to trust and which to ignore so you don't re-derive
 state from a superseded doc.
 
-**Last updated:** 2026-07-13. **renters.rent is LIVE and the hardening
+**Last updated:** 2026-07-18. **renters.rent is LIVE and the hardening
 tail is CLOSED** — cron, outbound mail and Mailgun inbound are all proven
 on the real box. Prod is at `133a103` (**code-current**: carries the PWA
 and the content rework; only two docs-only commits sit ahead on
@@ -40,15 +40,42 @@ sibling build), `pre-flip-checklist.md` (wider/public-launch gates),
 
 ---
 
+## ⚠ UNMERGED WORK — `feature/onboarding-nav` (18 Jul)
+
+**12 commits, suite green at 547 / 2265, NOT merged, NOT on any box.**
+An onboarding + content pass done while walking the new-user journey cold.
+Decide whether to merge before anything else — it is the front door the
+family testers will meet.
+
+- **Dashboard** was a static "Welcome back!" box with no links; now a real
+  hub (next-action card, cases needing attention, recent cases). It had
+  ZERO test coverage before this — the green suite said nothing about it.
+- **Nav:** "Dashboard" promoted to the main navbar (previously reachable
+  only via the dropdown labelled with your own email address); "Your
+  Tenancy" → "Properties & Cases", wrapped in `@auth`.
+- **Dead ends fixed:** raise-a-case with no property now links to the
+  property form; first property redirects straight to raise-a-case.
+- **Single property** is confirmed on a line, not a one-option dropdown.
+- **Pause/Hold vocabulary** unified tenant-facing (internals unchanged).
+- **New home page** (`welcome-4`); the "Erin" version is archived at
+  `/content-archive/homepage-erin-18-july-2026`. **On trial for a few
+  days — user is living with it before deciding.**
+- **About page** restructured into sections with a CTA.
+- **Content archive** now sorts newest-first, preferring the date in the
+  filename over mtime; undated pages marked "(file date)".
+
+---
+
 ## Next session — finish the escalation test, then open the family trial
 
 **IN FLIGHT — the escalation ladder on prod (case 3).** Surface B set to
 `escalation.interval_days=1` / `escalation.max_notices=2`, correctly
 snapshotted onto the case (shadow log reads `0/1 days`, not the 14-day
 default). Landlord letter 1 went out Sun 12 Jul evening; **first
-escalation due at the 06:15 sweep on Tue 14 Jul.** Check
+escalation was due at the 06:15 sweep on Tue 14 Jul.** Check
 `silence_shadow_log` for `send_escalation` / `executed=1` plus the letter
-in the landlord's inbox.
+in the landlord's inbox. **Result not yet recorded here — confirm it and
+write the outcome into the ledger.**
 
 *Read the clock correctly before calling anything broken:* the sweep is a
 **daily 06:15 batch**, and silence is floored to **whole days** — so a
@@ -117,14 +144,27 @@ Then pick up the escalation test above.
 
 ## Snags — open
 
-`docs/llcs-snagging-list.txt`: **#7, #8, #12, #13, #17, #18, #19, #22, #23.**
+`docs/llcs-snagging-list.txt`: **#7, #8, #12, #13, #17, #18, #19, #22, #23,
+#24, #25, #26.**
 
-**#23 is the priority** — rotate the exposed Mailgun credentials. It's a
-security item, not a UI snag, and it's the only outstanding item on prod.
 The snagging list is where the **pre-live-running to-do list gets built
-from**, so read the whole file before serious live running, not just #23.
+from**, so read the whole file before serious live running.
 
-New this session (13 Jul): **#23**.
+**Two priorities:**
+- **#23** — rotate the exposed Mailgun credentials. Security, and still the
+  oldest open item.
+- **#25** — **no delivery-failure detection.** A bounced letter and an
+  ignored letter are indistinguishable to the system, so the product will
+  state "served on the 12th, no response in 14 days" with full confidence
+  when nobody was ever served. Goes to the core claim. Roughly a day of
+  plumbing, but the DESIGN questions come first — see
+  `docs/delivery-failure-design-question.md`, written to be readable
+  without repo access and **awaiting an outside review**.
+
+New this session (18 Jul): **#24** (can't correct a landlord email after
+send — minor, and dependent on #25), **#25** (above), **#26**
+(copy-anchored view assertions rot silently — a label rename left an
+`assertDontSee` passing vacuously against a string no longer in the app).
 
 Resolved by Phase 5 (D16): #4, #14, #15, #16, #20, #21.
 
