@@ -10,7 +10,8 @@ tail is CLOSED** — cron, outbound mail and Mailgun inbound are all proven
 on the real box. Prod is at `133a103` (**code-current**: carries the PWA
 and the content rework; only two docs-only commits sit ahead on
 `origin/main`). The escalation ladder is **under test in flight** on prod.
-Suite **539 passing / 2239 assertions**.
+Suite **539 passing / 2239 assertions on `main`**; **547 / 2265 on the
+unmerged `feature/onboarding-nav`** (see below).
 
 ---
 
@@ -185,6 +186,10 @@ a post-#8 machine-state / Surface-D admin pass.
   (flip) SUPERSEDED** by the sibling build.
 - `llcs-silence-model-design.md` — authoritative design (D1–D16).
 - `llcs-snagging-list.txt` — open snags (above).
+- `delivery-failure-design-question.md` — **standalone brief for outside
+  review** (snags #24/#25). Written to be readable without repo access;
+  poses the open rulings rather than answering them. **Awaiting a verdict —
+  do not build #25 before it lands.**
 - `pre-flip-checklist.md` — production cutover conditions (wider/public
   launch sign-offs).
 - `User Guides/` — dispatch-sequence refs + automation orientation.
@@ -207,7 +212,12 @@ a post-#8 machine-state / Surface-D admin pass.
 
 ## Branches
 
-Merged, retained-but-deletable: `registration-lock` (this session),
+**LIVE / UNMERGED: `feature/onboarding-nav`** — 14 commits, 18 Jul, suite
+green at 547/2265. The onboarding + content pass described at the top of
+this file. Not merged, not deployed anywhere. **This is the one open
+decision.**
+
+Merged, retained-but-deletable: `registration-lock`,
 `d14-escalation-exhausted`, `d15-engagement-gating`, `d16-admin-config-ui`,
 `d16-admin-security`. Delete once cutover sign-offs land.
 
