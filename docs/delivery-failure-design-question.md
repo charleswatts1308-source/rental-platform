@@ -69,24 +69,31 @@ So "be careful entering the email" is not a fix.
 
 ### What a fix would actually require
 
-Mailgun makes the *detection* easy — it reads the SMTP failure and fires
-a webhook, and the existing signature-verification middleware is
-reusable. But the correlation is not currently possible:
+Mailgun makes the detection easy — it reads the SMTP failure and fires a
+webhook, and the existing signature-verification middleware is reusable.
+Correlating that event back to the right letter is also easy: the
+mailable is constructed with the message row itself, and Laravel's
+Envelope supports metadata which the Mailgun transport maps to Mailgun
+custom variables, returned on every delivery event. That is one line
+beside the tagging line already present.
 
-- `case_messages` has a `mailgun_message_id` column, but it is populated
-  **only on inbound rows**. Outbound letters never record theirs.
-- So there is presently no way to match a delivery event back to the
-  letter it refers to. Capturing the ID at send time (via Laravel's
-  `MessageSent` event, writing back to the row after dispatch) is a
-  prerequisite — and it is a change to the send path, the most
-  evidentially sensitive code in the system.
+So the plumbing is roughly a day: the metadata line, a migration adding
+delivery-status columns, a delivery-event webhook controller mirroring
+the existing inbound one, a route, and tests. Then a few more hours to
+notify the tenant and surface "undelivered" on the case — with one hard
+constraint: **that notification must be mail-only and must not create a
+message row**, because outbound system rows with a stage marker ARE the
+escalation counter, and adding one would inflate the ladder.
 
-**And it would not close the gap completely.** A hard bounce means the
-address does not exist, and that is catchable. But a typo that lands on
-a *real* mailbox belonging to someone else delivers cleanly, and Mailgun
+**But it would not close the gap completely.** A hard bounce means the
+address does not exist, and that is catchable. A typo that lands on a
+*real* mailbox belonging to someone else delivers cleanly, and Mailgun
 correctly reports success. Bounce handling catches "went nowhere"; it
 cannot catch "went somewhere wrong". Any claim the product makes about
-delivery has to be honest about that limit.
+delivery has to stay honest about that limit.
+
+The code, in other words, is not the expensive part. The rulings below
+are.
 
 ## Question 1 — what should the silence clock do on a hard bounce?
 

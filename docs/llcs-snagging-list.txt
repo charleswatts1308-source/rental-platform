@@ -623,29 +623,55 @@ Notes:       This is the one that matters, and it is NOT really about typos.
              Note the asymmetry with the inbound path, which is carefully
              built (signature verification, token resolution, quarantine).
              Outbound delivery is currently assumed to succeed.
-Fix:         PREREQUISITE — capture the outbound Mailgun message id at send
-             time. case_messages HAS a mailgun_message_id column but it is
-             populated ONLY on inbound rows (HandleInboundReply.php:114);
-             outbound letters never record theirs, so today there is NO way
-             to correlate a delivery event back to the letter it refers to.
-             Needs a MessageSent listener writing the id back after dispatch
-             — a change to the send path, the most evidentially sensitive
-             code in the system, so treat carefully.
-             LIMIT — this catches "went nowhere", NOT "went somewhere wrong".
+Fix:         LIMIT (state this in any tenant-facing wording) — bounce
+             handling catches "went NOWHERE", not "went SOMEWHERE WRONG".
              A hard bounce is detectable; a typo landing on a real mailbox
              belonging to a stranger delivers cleanly and Mailgun correctly
-             reports success. Bounce handling narrows the gap, it does not
-             close it.
-             Then: add a Mailgun delivery-event webhook route alongside the
-             inbound one, reusing the existing verify.mailgun.signature
-             middleware. On permanent_fail:
-             flag the message/case as undelivered, notify the tenant that the
-             letter did not reach the landlord and the address may be wrong
-             (links to #24's correction action), and decide whether the
-             silence clock should be SUSPENDED rather than left running —
-             counting silence against an address that bounced is counting
-             nothing. That last part is a design decision and should be ruled
-             on against llcs-silence-model-design.md, which currently assumes
-             delivery. Also requires configuring the webhook in the Mailgun
-             dashboard for both renters.rent and dotrent.
+             reports success. This narrows the gap, it does not close it.
+
+             CORRELATION IS EASY — verified 18 Jul. Earlier notes on this
+             snag claimed outbound message ids would have to be captured
+             first (via a MessageSent listener, touching the send path).
+             That was WRONG and is retracted. CaseNotice is constructed with
+             the CaseMessage itself ($this->message), and Laravel's Envelope
+             supports metadata which Symfony's Mailgun transport maps to
+             Mailgun 'v:' custom variables (MailgunApiTransport.php:131).
+             Mailgun returns those on every delivery event as
+             'user-variables'. So correlation is ONE LINE in the existing
+             envelope, beside the tags: line already there:
+                 metadata: ['case_message_id' => $this->message->id],
+             No listener, no message-id capture, no change to send logic.
+
+             Then, roughly a day of plumbing:
+             1. The envelope metadata line (above).
+             2. Migration: delivery status columns on case_messages
+                (status + failed_at + failure detail). MANUAL MariaDB
+                SHOW CREATE TABLE check before merge — the #18 rule.
+             3. Delivery-event webhook controller — mirrors the existing
+                inbound controller closely; reuse verify.mailgun.signature.
+             4. Route alongside the inbound one.
+             5. Tests.
+             Then a few more hours: notify the tenant, and surface
+             "undelivered" on the case.
+
+             ⚠ INVARIANT — the tenant notification MUST be mail-only and
+             MUST NOT create a case_messages row. Outbound system rows with
+             a non-null stage_at_send ARE the escalation counter; adding one
+             inflates the ladder. This is the single thing here that could
+             quietly break the product.
+
+             Also: configure the webhook in the Mailgun dashboard for BOTH
+             renters.rent and dotrent, and prove it live with a deliberate
+             send to a dead address — it cannot be fully verified locally.
+
+             UNBOUNDED PART — the design questions, which is why the outside
+             review comes first: should a hard bounce SUSPEND the silence
+             clock (counting silence against a bounced address is counting
+             nothing)? Do bounced letters count toward the escalation
+             counter? What happens if the tenant never acts? All touch the
+             D3 no-reset ratchet and the deliberate removal of
+             tenant-attention dependency. Rule against
+             llcs-silence-model-design.md — which currently assumes
+             delivery — before building. See
+             docs/delivery-failure-design-question.md.
 --------------------------------------------------------------------
