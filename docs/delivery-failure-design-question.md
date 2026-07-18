@@ -29,9 +29,9 @@ So the load-bearing claim is:
   mailable reads those verbatim — it never re-renders. What was sent can
   never retrospectively change.
 - **Each outbound row also stamps `to_address_raw`** — the recipient at
-  the moment of sending — plus `sent_at` and Mailgun's
-  `mailgun_message_id`. So a sent letter is **self-contained**: the row
-  records where it went, independent of any later state.
+  the moment of sending — plus `sent_at`. So a sent letter is
+  **self-contained**: the row records where it went, independent of any
+  later state.
 - **The escalation counter is derived, never stored, never reset.**
   It is a COUNT of outbound system rows with a non-null stage marker.
   This "ratchet" is deliberate: the ladder cannot be rewound.
@@ -67,9 +67,26 @@ changed letting agent, a full mailbox, an expired domain, or a spam
 block — all of which happen to tenants who typed everything correctly.
 So "be careful entering the email" is not a fix.
 
-The mechanism for a fix already exists: `mailgun_message_id` is stored
-on every outbound row, so delivery events can be matched back to the
-exact letter, and the signature-verification middleware is reusable.
+### What a fix would actually require
+
+Mailgun makes the *detection* easy — it reads the SMTP failure and fires
+a webhook, and the existing signature-verification middleware is
+reusable. But the correlation is not currently possible:
+
+- `case_messages` has a `mailgun_message_id` column, but it is populated
+  **only on inbound rows**. Outbound letters never record theirs.
+- So there is presently no way to match a delivery event back to the
+  letter it refers to. Capturing the ID at send time (via Laravel's
+  `MessageSent` event, writing back to the row after dispatch) is a
+  prerequisite — and it is a change to the send path, the most
+  evidentially sensitive code in the system.
+
+**And it would not close the gap completely.** A hard bounce means the
+address does not exist, and that is catchable. But a typo that lands on
+a *real* mailbox belonging to someone else delivers cleanly, and Mailgun
+correctly reports success. Bounce handling catches "went nowhere"; it
+cannot catch "went somewhere wrong". Any claim the product makes about
+delivery has to be honest about that limit.
 
 ## Question 1 — what should the silence clock do on a hard bounce?
 

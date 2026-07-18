@@ -623,10 +623,22 @@ Notes:       This is the one that matters, and it is NOT really about typos.
              Note the asymmetry with the inbound path, which is carefully
              built (signature verification, token resolution, quarantine).
              Outbound delivery is currently assumed to succeed.
-Fix:         Add a Mailgun delivery-event webhook route alongside the inbound
-             one, reusing the existing verify.mailgun.signature middleware.
-             Match events to case_messages via mailgun_message_id (already
-             stored on the row — the join is available). On permanent_fail:
+Fix:         PREREQUISITE — capture the outbound Mailgun message id at send
+             time. case_messages HAS a mailgun_message_id column but it is
+             populated ONLY on inbound rows (HandleInboundReply.php:114);
+             outbound letters never record theirs, so today there is NO way
+             to correlate a delivery event back to the letter it refers to.
+             Needs a MessageSent listener writing the id back after dispatch
+             — a change to the send path, the most evidentially sensitive
+             code in the system, so treat carefully.
+             LIMIT — this catches "went nowhere", NOT "went somewhere wrong".
+             A hard bounce is detectable; a typo landing on a real mailbox
+             belonging to a stranger delivers cleanly and Mailgun correctly
+             reports success. Bounce handling narrows the gap, it does not
+             close it.
+             Then: add a Mailgun delivery-event webhook route alongside the
+             inbound one, reusing the existing verify.mailgun.signature
+             middleware. On permanent_fail:
              flag the message/case as undelivered, notify the tenant that the
              letter did not reach the landlord and the address may be wrong
              (links to #24's correction action), and decide whether the
