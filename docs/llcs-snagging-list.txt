@@ -675,3 +675,57 @@ Fix:         LIMIT (state this in any tenant-facing wording) — bounce
              delivery — before building. See
              docs/delivery-failure-design-question.md.
 --------------------------------------------------------------------
+#26
+Page:        Test suite — view-level assertions anchored on UI copy are
+             fragile, and assertDontSee ones rot SILENTLY. Surfaced
+             2026-07-18 by a one-word label rename.
+Severity:    minor — test-quality / false-confidence. No user impact.
+             Worth a deliberate pass, not urgent.
+Saw:         Renaming the case-page label "Hold until" -> "Paused until"
+             touched two assertions in D16/DisplayPredicateTest:
+               - assertSee('Hold until')      -> FAILED loudly. Correct.
+               - assertDontSee('Hold until')  -> KEPT PASSING, vacuously.
+             The second was asserting the absence of a string that no longer
+             existed anywhere in the app. It would have carried on green even
+             if the behaviour it guards (#15 — stale hold_until must not show
+             once the hold is released) regressed completely. A green suite
+             reported this as fine.
+Expected:    An assertion that stops being meaningful should fail, not pass.
+Status:      open — snagged 18 Jul. Both assertions repointed at the live
+             label that same day, so the pair is load-bearing again; this
+             snag is about the GENERAL pattern, not that instance.
+Notes:       The real issue is ALTITUDE, not tests-vs-no-tests. The same
+             behaviour is already tested at model level
+             (DisplayPredicateTest.php:68 calls showsHoldUntil() directly):
+             that test pins the logic, costs nothing to maintain and cannot
+             rot. The view-level pair buys one extra thing — proof the
+             template actually USES the predicate rather than rendering
+             hold_until unconditionally — but pays for it in copy-fragility
+             plus the silent-decay hazard above.
+             A test's value is what it tells you when it fails. One of these
+             said "you renamed a label" (near-zero information); the other
+             said nothing when it should have shouted. Neither was earning
+             its keep at that altitude.
+             SCOPE: 22 assertDontSee assertions across 8 Feature test files
+             (D16/CaseOversightTest 4, D16/DisplayPredicateTest 10,
+             D16/ExhaustedStanceUiTest 1, Phase6/CaseCreateTest 2,
+             Phase6/CaseIndexTest 1, Phase6/CaseShowTest 1,
+             Phase65/PropertyIndexTest 1, DashboardOnboardingTest 2).
+             Not all are copy-anchored and not all are at risk — the count is
+             the search space, not the defect count.
+Fix:         Audit the assertDontSee assertions above. For each, ask whether
+             the string it names still exists ANYWHERE in the app; if not,
+             the assertion is already vacuous. Then per case either:
+             (a) DELETE it where the behaviour is already covered by a
+                 model/predicate-level test — the logic stays pinned and the
+                 fragile duplicate goes; or
+             (b) RE-ANCHOR it to something stable — a data-testid on the
+                 element, or the rendered VALUE (e.g. the date) rather than
+                 the label — so copy can change freely while the wiring stays
+                 tested.
+             Avoid the state this snag describes: keeping fragile assertions
+             AND trusting them.
+             Cheap partial win: a CI check that greps each assertDontSee
+             string literal and fails if it appears nowhere in
+             resources/views — catches vacuous assertions automatically.
+--------------------------------------------------------------------
