@@ -123,6 +123,10 @@
                     </svg>
                 </a>
 
+                @unless(app()->environment('production'))
+                    <span class="badge bg-warning text-dark ms-2 align-self-center text-lowercase">{{ request()->getHost() }}</span>
+                @endunless
+
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent"
                         aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
