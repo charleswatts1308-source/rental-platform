@@ -543,3 +543,189 @@ Fix:         Rotate MAILGUN_SECRET + MAILGUN_WEBHOOK_SIGNING_KEY in the
              Then send one test letter + one landlord reply to confirm both
              directions still work. ~10 minutes.
 --------------------------------------------------------------------
+#24
+Page:        Case — no way to correct the landlord email after the first
+             letter has been sent. Surfaced 2026-07-18 walking the new-user
+             journey cold.
+Severity:    minor — convenience. Recoverable today (abandon + re-raise).
+             NOT a confidentiality issue: a repair notice is a name, an
+             address and "the boiler is broken". A letter reaching the wrong
+             mailbox is mildly awkward, not a breach. Mistyped email is an
+             everyday hazard every service lives with.
+Saw:         The landlord contact is a property of the CASE
+             (cases.landlord_contact_id), not of the property. It is captured
+             once on the create-case form. Before sending, the D13 preview
+             step allows an edit; AFTER sending there is no edit route on a
+             case at all. A mistyped landlord email is therefore permanent:
+             the only recovery is to abandon the case and raise a new one,
+             losing the case reference and the record.
+Expected:    A way to correct the landlord email on an existing case, so a
+             typo costs a correction rather than the whole case.
+Status:      open — snagged 18 Jul, decision deferred (not built tonight).
+             SEE #25: the reason a typo currently goes unnoticed is the
+             absence of delivery-failure detection, not the absence of an
+             edit button. Fix #25 first — it makes the typo VISIBLE, at
+             which point this becomes the ordinary convenience fix it
+             should be. Building this one alone would let a tenant correct
+             a mistake they still have no way of knowing they made.
+Notes:       Second-order: LandlordContact is a GLOBAL table deduplicated by
+             email (CaseController::resolveLandlordContact, no user scoping),
+             so a typo also creates a junk global contact row.
+             EVIDENTIALLY SAFE TO FIX — checked: every outbound row stamps
+             to_address_raw at send time (SendCaseNotice.php:116) alongside
+             the frozen body_raw/subject. Sent letters are therefore
+             self-contained, so repointing the case's landlord_contact_id
+             changes only where FUTURE letters go and does NOT rewrite the
+             record of what was already sent. (Had to_address_raw not been
+             populated, this would be unfixable without falsifying evidence.)
+Fix:         Add a "correct landlord email" action on the case that (a)
+             repoints landlord_contact_id via the existing
+             resolveLandlordContact path, (b) leaves ALL existing
+             case_messages rows untouched, and (c) writes a case event
+             recording the correction (from → to, when, by whom) so the
+             record shows the correction rather than silently changing.
+             Consider also whether the escalation counter / silence clock
+             should reset on correction — arguably yes, since the new
+             recipient has not yet been given the chance to respond, but
+             that touches the D3 no-reset ratchet and needs a design ruling
+             against llcs-silence-model-design.md before building.
+--------------------------------------------------------------------
+#25
+Page:        Mail delivery — a letter that never arrives is indistinguishable
+             from a letter that was ignored. Surfaced 2026-07-18 while
+             assessing #24.
+Severity:    functional — HIGH. Goes to the core claim of the product.
+             Strong candidate to fix before real landlords are involved.
+Saw:         Only Mailgun's INBOUND route is consumed
+             (routes/web.php:152 → MailgunInboundController). Mailgun's
+             delivery-event webhooks — permanent_fail (hard bounce),
+             temporary_fail, complained, unsubscribed — are not consumed at
+             all. Nothing in the app ever learns that an outbound letter
+             failed to deliver. The case_messages row is written, sent_at is
+             stamped, the silence clock starts, and the ladder proceeds.
+Expected:    A hard bounce marks the case as UNDELIVERED and tells the
+             tenant. Silence should mean "delivered and not answered", never
+             "never arrived".
+Status:      open — snagged 18 Jul.
+Notes:       This is the one that matters, and it is NOT really about typos.
+             The silence model's entire claim is that it can say "your
+             landlord was served on the 12th and has not responded in 14
+             days." With no bounce handling it will say exactly that, with
+             full confidence, when the letter hard-bounced and NOBODY was
+             ever served. The tenant is left holding a meticulous dated
+             record of having notified no one — which is precisely the
+             artefact they would be relying on in a dispute.
+             A typo (#24) is only the most likely CAUSE. The same silent
+             failure hits a landlord who changes agent, a full mailbox, an
+             expired domain, or a spam block — all of which happen to
+             tenants who typed everything correctly. So this cannot be
+             fixed by being careful at data entry.
+             Note the asymmetry with the inbound path, which is carefully
+             built (signature verification, token resolution, quarantine).
+             Outbound delivery is currently assumed to succeed.
+Fix:         LIMIT (state this in any tenant-facing wording) — bounce
+             handling catches "went NOWHERE", not "went SOMEWHERE WRONG".
+             A hard bounce is detectable; a typo landing on a real mailbox
+             belonging to a stranger delivers cleanly and Mailgun correctly
+             reports success. This narrows the gap, it does not close it.
+
+             CORRELATION IS EASY — verified 18 Jul. Earlier notes on this
+             snag claimed outbound message ids would have to be captured
+             first (via a MessageSent listener, touching the send path).
+             That was WRONG and is retracted. CaseNotice is constructed with
+             the CaseMessage itself ($this->message), and Laravel's Envelope
+             supports metadata which Symfony's Mailgun transport maps to
+             Mailgun 'v:' custom variables (MailgunApiTransport.php:131).
+             Mailgun returns those on every delivery event as
+             'user-variables'. So correlation is ONE LINE in the existing
+             envelope, beside the tags: line already there:
+                 metadata: ['case_message_id' => $this->message->id],
+             No listener, no message-id capture, no change to send logic.
+
+             Then, roughly a day of plumbing:
+             1. The envelope metadata line (above).
+             2. Migration: delivery status columns on case_messages
+                (status + failed_at + failure detail). MANUAL MariaDB
+                SHOW CREATE TABLE check before merge — the #18 rule.
+             3. Delivery-event webhook controller — mirrors the existing
+                inbound controller closely; reuse verify.mailgun.signature.
+             4. Route alongside the inbound one.
+             5. Tests.
+             Then a few more hours: notify the tenant, and surface
+             "undelivered" on the case.
+
+             ⚠ INVARIANT — the tenant notification MUST be mail-only and
+             MUST NOT create a case_messages row. Outbound system rows with
+             a non-null stage_at_send ARE the escalation counter; adding one
+             inflates the ladder. This is the single thing here that could
+             quietly break the product.
+
+             Also: configure the webhook in the Mailgun dashboard for BOTH
+             renters.rent and dotrent, and prove it live with a deliberate
+             send to a dead address — it cannot be fully verified locally.
+
+             UNBOUNDED PART — the design questions, which is why the outside
+             review comes first: should a hard bounce SUSPEND the silence
+             clock (counting silence against a bounced address is counting
+             nothing)? Do bounced letters count toward the escalation
+             counter? What happens if the tenant never acts? All touch the
+             D3 no-reset ratchet and the deliberate removal of
+             tenant-attention dependency. Rule against
+             llcs-silence-model-design.md — which currently assumes
+             delivery — before building. See
+             docs/delivery-failure-design-question.md.
+--------------------------------------------------------------------
+#26
+Page:        Test suite — view-level assertions anchored on UI copy are
+             fragile, and assertDontSee ones rot SILENTLY. Surfaced
+             2026-07-18 by a one-word label rename.
+Severity:    minor — test-quality / false-confidence. No user impact.
+             Worth a deliberate pass, not urgent.
+Saw:         Renaming the case-page label "Hold until" -> "Paused until"
+             touched two assertions in D16/DisplayPredicateTest:
+               - assertSee('Hold until')      -> FAILED loudly. Correct.
+               - assertDontSee('Hold until')  -> KEPT PASSING, vacuously.
+             The second was asserting the absence of a string that no longer
+             existed anywhere in the app. It would have carried on green even
+             if the behaviour it guards (#15 — stale hold_until must not show
+             once the hold is released) regressed completely. A green suite
+             reported this as fine.
+Expected:    An assertion that stops being meaningful should fail, not pass.
+Status:      open — snagged 18 Jul. Both assertions repointed at the live
+             label that same day, so the pair is load-bearing again; this
+             snag is about the GENERAL pattern, not that instance.
+Notes:       The real issue is ALTITUDE, not tests-vs-no-tests. The same
+             behaviour is already tested at model level
+             (DisplayPredicateTest.php:68 calls showsHoldUntil() directly):
+             that test pins the logic, costs nothing to maintain and cannot
+             rot. The view-level pair buys one extra thing — proof the
+             template actually USES the predicate rather than rendering
+             hold_until unconditionally — but pays for it in copy-fragility
+             plus the silent-decay hazard above.
+             A test's value is what it tells you when it fails. One of these
+             said "you renamed a label" (near-zero information); the other
+             said nothing when it should have shouted. Neither was earning
+             its keep at that altitude.
+             SCOPE: 22 assertDontSee assertions across 8 Feature test files
+             (D16/CaseOversightTest 4, D16/DisplayPredicateTest 10,
+             D16/ExhaustedStanceUiTest 1, Phase6/CaseCreateTest 2,
+             Phase6/CaseIndexTest 1, Phase6/CaseShowTest 1,
+             Phase65/PropertyIndexTest 1, DashboardOnboardingTest 2).
+             Not all are copy-anchored and not all are at risk — the count is
+             the search space, not the defect count.
+Fix:         Audit the assertDontSee assertions above. For each, ask whether
+             the string it names still exists ANYWHERE in the app; if not,
+             the assertion is already vacuous. Then per case either:
+             (a) DELETE it where the behaviour is already covered by a
+                 model/predicate-level test — the logic stays pinned and the
+                 fragile duplicate goes; or
+             (b) RE-ANCHOR it to something stable — a data-testid on the
+                 element, or the rendered VALUE (e.g. the date) rather than
+                 the label — so copy can change freely while the wiring stays
+                 tested.
+             Avoid the state this snag describes: keeping fragile assertions
+             AND trusting them.
+             Cheap partial win: a CI check that greps each assertDontSee
+             string literal and fails if it appears nowhere in
+             resources/views — catches vacuous assertions automatically.
+--------------------------------------------------------------------

@@ -73,7 +73,10 @@
                        max="{{ $holdMaxDate }}"
                        value="{{ old('hold_until') }}" required>
                 <p class="form-text small mb-2">You can pause for up to {{ $holdMaxDays }} days.</p>
-                <button type="submit" class="btn btn-outline-secondary w-100">Hold</button>
+                {{-- "Pause", not "Hold": the internal vocabulary is hold
+                     (cases.hold, hold_until, OnHold) but every tenant-facing
+                     string here says pause. Only the button was leaking it. --}}
+                <button type="submit" class="btn btn-outline-secondary w-100">Pause case</button>
             </form>
         @endcan
 

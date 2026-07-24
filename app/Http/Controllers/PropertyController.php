@@ -50,6 +50,10 @@ class PropertyController extends Controller
 
         $validated = $this->validatePayload($request);
 
+        // Was this their first? Checked BEFORE the insert, since the answer
+        // decides where we send them next.
+        $isFirstProperty = ! Property::where('registered_by_user_id', $request->user()->id)->exists();
+
         Property::create([
             'address_line1' => $validated['address_line1'],
             'address_line2' => $validated['address_line2'] ?? null,
@@ -57,6 +61,15 @@ class PropertyController extends Controller
             'postcode' => $this->normalisePostcode($validated['postcode']),
             'registered_by_user_id' => $request->user()->id,
         ]);
+
+        // First property means the user is mid-onboarding — registering it is
+        // a step toward raising a case, not the goal — so carry them straight
+        // on. A later property is property management, so stay on the list.
+        if ($isFirstProperty) {
+            return redirect()
+                ->route('cases.create')
+                ->with('success', 'Property registered. Now you can raise your first repair case.');
+        }
 
         return redirect()
             ->route('properties.index')

@@ -37,7 +37,7 @@
                 <tbody>
                     @foreach($cases as $case)
                         <tr>
-                            <td><a href="{{ route('cases.show', $case->url_slug) }}"><code>{{ $case->url_slug }}</code></a></td>
+                            <td><a href="{{ route('cases.show', $case->url_slug) }}"><code class="fs-6">{{ $case->url_slug }}</code></a></td>
                             <td>
                                 {{ $case->property->address_line1 }},
                                 <span class="text-muted">{{ $case->property->postcode }}</span>

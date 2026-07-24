@@ -18,7 +18,11 @@
 
     @if($properties->count() === 0)
         <div class="alert alert-secondary">
-            You haven't registered any properties yet. Register the property you rent to start a repair case against it.
+            <p>
+                You haven't registered any properties yet. Register the property you rent —
+                then you can raise a repair case against it.
+            </p>
+            <a href="{{ route('properties.create') }}" class="btn btn-primary">Register your property</a>
         </div>
     @else
         <div class="table-responsive">

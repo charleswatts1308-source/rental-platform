@@ -6,9 +6,22 @@
 <div class="container py-4">
     <h1 class="mb-4">Raise a repair case</h1>
 
+    @if(session('success'))
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            {{ session('success') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    @endif
+
     @if($properties->count() === 0)
+        {{-- Was a dead end: the warning stated the blocker but gave no way out,
+             leaving the user to find the properties page from the nav themselves. --}}
         <div class="alert alert-warning">
-            You need to register a property before you can raise a repair case. Once your property is on file, return here to send your first notice.
+            <p>
+                You need to register a property before you can raise a repair case.
+                A case is always raised against a property, so we need that on file first.
+            </p>
+            <a href="{{ route('properties.create') }}" class="btn btn-primary">Register your property</a>
         </div>
     @else
         @if($errors->any())
@@ -25,17 +38,40 @@
         <form method="POST" action="{{ route('cases.store') }}" enctype="multipart/form-data" class="row g-3">
             @csrf
 
-            <div class="col-md-12">
-                <label for="property_id" class="form-label">Property</label>
-                <select id="property_id" name="property_id" class="form-select @error('property_id') is-invalid @enderror" required>
-                    <option value="">— select a property —</option>
-                    @foreach($properties as $property)
-                        <option value="{{ $property->id }}" @selected(old('property_id') == $property->id)>
-                            {{ $property->address_line1 }}@if($property->address_line2), {{ $property->address_line2 }}@endif, {{ $property->postcode }}
-                        </option>
-                    @endforeach
-                </select>
-            </div>
+            {{-- One property is the norm and will be for most users — a tenant
+                 rents one home. Asking them to "select" from a list of one is
+                 pointless friction, especially arriving straight from having
+                 just registered it. So: confirm it on a line, submit it hidden.
+                 Ownership is enforced server-side by the property_id exists
+                 rule (scoped to registered_by_user_id), so the hidden input is
+                 not a trust boundary. The select returns for 2+ properties —
+                 e.g. a tenant who has moved and stayed on the platform. --}}
+            @if($properties->count() === 1)
+                @php($property = $properties->first())
+                <div class="col-md-12">
+                    {{-- Label and address on one line to save vertical space on
+                         mobile; the address wraps as a unit if the screen is
+                         too narrow, with "Change" trailing it. --}}
+                    <p class="mb-0">
+                        <span class="text-muted">Property:</span>
+                        <span class="fw-semibold">{{ $property->address_line1 }}@if($property->address_line2), {{ $property->address_line2 }}@endif, {{ $property->city }}, {{ $property->postcode }}</span>
+                        <a href="{{ route('properties.index') }}" class="small ms-2">Change</a>
+                    </p>
+                    <input type="hidden" name="property_id" value="{{ $property->id }}">
+                </div>
+            @else
+                <div class="col-md-12">
+                    <label for="property_id" class="form-label">Property</label>
+                    <select id="property_id" name="property_id" class="form-select @error('property_id') is-invalid @enderror" required>
+                        <option value="">— select a property —</option>
+                        @foreach($properties as $property)
+                            <option value="{{ $property->id }}" @selected(old('property_id') == $property->id)>
+                                {{ $property->address_line1 }}@if($property->address_line2), {{ $property->address_line2 }}@endif, {{ $property->postcode }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+            @endif
 
             <div class="col-md-8">
                 <label for="category_key" class="form-label">Repair category</label>

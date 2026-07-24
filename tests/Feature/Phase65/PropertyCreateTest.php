@@ -37,7 +37,11 @@ it('stores a property with registered_by_user_id set to the authenticated user',
 
     $response = $this->actingAs($user)->post('/properties', validPropertyPayload());
 
-    $response->assertRedirect('/properties');
+    // First property for this user, so the onboarding redirect carries them
+    // on to raise a case rather than back to the list. Subsequent properties
+    // still land on /properties — both branches covered in
+    // tests/Feature/DashboardOnboardingTest.php.
+    $response->assertRedirect('/cases/create');
     expect(Property::count())->toBe(1);
 
     $property = Property::firstOrFail();
@@ -77,7 +81,8 @@ it('accepts a valid UK postcode without a space', function () {
 
     $response = $this->actingAs($user)->post('/properties', validPropertyPayload(['postcode' => 'EC1A1BB']));
 
-    $response->assertRedirect('/properties');
+    // First property → onboarding redirect (see the storage test above).
+    $response->assertRedirect('/cases/create');
     expect(Property::firstOrFail()->postcode)->toBe('EC1A 1BB');
 });
 
