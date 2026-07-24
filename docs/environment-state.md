@@ -70,7 +70,17 @@ the DNS flip (Phase C) + prod retirement only.
   back to `main` — CONFIRMED 13 Jul 2026.** Staging tracks the main line
   again and sits at the same commit as prod (`133a103`). Staging-at-or-
   ahead holds; the stage-then-prod discipline has been kept throughout.
-- Last verified: 13 Jul 2026.
+- **Onboarding + content deploy (24 Jul 2026):** pulled `main` → merge
+  `b92b907` (`feature/onboarding-nav` via `--no-ff`; onboarding hub +
+  dashboard rework, About/home content refresh, and the non-prod hostname
+  badge). Plesk Git pull + `config:cache` (+ `view:clear`). **Code-only,
+  NO new migrations.** Suite green pre-merge (547 passed, 2265 assertions).
+  Verified: yellow `gafol.rent` badge renders next to the logo (server-
+  side from the Host header, so it shows in the installed PWA with no
+  address bar) — confirms "am I on gafol?" at a glance. Prod renders no
+  badge (`@unless(app()->environment('production'))`). Staging-at-or-ahead
+  of prod still holds.
+- Last verified: 24 Jul 2026.
 
 ## dotrent — production candidate (dotrent.net) — ✅ AT MAIN (Phase B green)
 - Box: dotrent.net, the production candidate for the renters.rent flip.
