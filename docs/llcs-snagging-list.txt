@@ -798,3 +798,25 @@ Fix:         Add config key app.dev_default_email => env('DEV_DEFAULT_EMAIL')
              Then set DEV_DEFAULT_EMAIL in local (and gafol) .env only.
              Prod has no such var -> field stays blank there.
 --------------------------------------------------------------------
+#29
+Page:        Login — the "Members Only" redirect banner is unnecessary and a
+             bit intimidating, especially when reached from the verify link.
+             Surfaced 2026-07-25.
+Severity:    trivial — tone / UX polish. No functional defect.
+Saw:         auth/login.blade.php:14-19 shows a yellow alert-warning reading
+             "Members Only / We reserve these pages for members, so please
+             login or register" whenever session has 'url.intended' — i.e.
+             any redirect-to-login from a guarded page. The verify-email
+             bounce (see #27) is exactly that case, so a user clicking their
+             own verification link is met with a WARNING-styled gate message.
+Expected:    A calm, welcoming prompt (or nothing) — the warning colour +
+             "Members Only" framing reads as a rebuke for what is a normal
+             "please sign in to continue" moment.
+Status:      open — snagged 25 Jul. Related to #27 (the redirect that
+             triggers it). Fixing #27 removes this banner from the verify
+             path specifically; this snag is the broader tone issue.
+Fix:         Soften it: drop "Members Only", switch alert-warning -> a
+             neutral alert-info/light, and reword to something like "Please
+             sign in to continue." Optionally suppress it entirely on the
+             verify path once #27 lands. Copy-only + class change; no logic.
+--------------------------------------------------------------------
