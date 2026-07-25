@@ -729,3 +729,47 @@ Fix:         Audit the assertDontSee assertions above. For each, ask whether
              string literal and fails if it appears nowhere in
              resources/views — catches vacuous assertions automatically.
 --------------------------------------------------------------------
+#27
+Page:        Email verification — clicking the verify link in a browser with
+             no session bounces the user to /login instead of just verifying
+             them. Surfaced 2026-07-25 in normal use.
+Severity:    minor — friction, not a defect. Verification still completes
+             after the extra login. Bites cross-browser flows most.
+Saw:         Register in Chrome (session lives in Chrome). Outlook opens the
+             verification email in Edge, which has no session. The verify
+             route sits behind `auth` middleware (routes/auth.php:38), so Edge
+             — a guest — is redirected to /login before the controller runs.
+             The user is asked to "say who they are" even though the signed
+             link already carries their id + hash and identifies them.
+Expected:    A signed verification link clicked from the user's own inbox
+             should verify AND log them in, landing them on the dashboard in
+             whatever browser opened it — no login step.
+Status:      open — snagged 25 Jul. Deferred deliberately (discussed, chose
+             not to build yet). Present-day workaround: copy the link out of
+             Outlook and paste it into Chrome, where the session already
+             exists.
+Notes:       Two things are conflated in the current UX: (1) VERIFYING the
+             email (the link does this alone, no session needed) and (2)
+             starting a browser SESSION (why the login prompt appears). The
+             prompt is about the session, not doubt about the link.
+             Half-built already: VerifyEmailController.php:34-57 has a
+             "if not logged in, validate signature and Auth::login" branch,
+             but it is unreachable — the `auth` middleware bounces guests
+             first, and the route's EmailVerificationRequest assumes an
+             authenticated user (its authorize() dereferences $this->user()),
+             so it would error for a guest even past the middleware.
+             Security note: this converts the emailed link into something that
+             grants a session on possession. Acceptable for a private beta —
+             the route already has `signed`, single-use (used_at), and
+             `throttle:6,1`. Reconsider posture before opening registration
+             wide / at prod scale, where forwarded-inbox risk grows.
+Fix:         Move verify-email/{id}/{hash} out of the `auth` group so a guest
+             click reaches the controller's existing login branch, AND change
+             the action off EmailVerificationRequest (whose authorize()
+             needs a logged-in user) to a plain Request — the branch already
+             does its own findOrFail + hasValidSignature; keep `signed` +
+             `throttle` on the route. Add a test for the guest/cross-browser
+             path (verify while logged out -> marked verified + session
+             started + lands on dashboard). Keep the already-logged-in path
+             intact.
+--------------------------------------------------------------------
