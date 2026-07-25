@@ -773,3 +773,28 @@ Fix:         Move verify-email/{id}/{hash} out of the `auth` group so a guest
              started + lands on dashboard). Keep the already-logged-in path
              intact.
 --------------------------------------------------------------------
+#28
+Page:        Login + Register forms — the email field is blank on every fresh
+             load, so it must be retyped each time. Nice-to-have: default it
+             on non-prod for testing. Surfaced 2026-07-25.
+Severity:    trivial — dev-convenience only. No user-facing defect.
+Saw:         Both auth/login.blade.php (email input ~line 35) and
+             auth/register.blade.php (~line 38) use value="{{ old('email') }}",
+             which only repopulates after a failed submit — a fresh form is
+             empty. Repeated test logins/registrations mean retyping the same
+             address every time.
+Expected:    On non-production boxes (local + gafol), the email field
+             pre-fills with a configured test address; prod stays blank and a
+             failed submit still shows whatever was typed.
+Status:      open — snagged 25 Jul. Deferred. Applies to BOTH forms.
+Notes:       Do NOT hardcode a personal email into the blades — it would ship
+             to prod and into GitHub. Drive it from an env var so it stays out
+             of git (.env is gitignored) and off prod.
+Fix:         Add config key app.dev_default_email => env('DEV_DEFAULT_EMAIL')
+             (via config, NOT raw env(), because gafol runs config:cache).
+             In both forms use:
+               value="{{ old('email', app()->environment('production')
+                        ? null : config('app.dev_default_email')) }}"
+             Then set DEV_DEFAULT_EMAIL in local (and gafol) .env only.
+             Prod has no such var -> field stays blank there.
+--------------------------------------------------------------------
