@@ -561,7 +561,18 @@ Saw:         The landlord contact is a property of the CASE
              losing the case reference and the record.
 Expected:    A way to correct the landlord email on an existing case, so a
              typo costs a correction rather than the whole case.
-Status:      open — snagged 18 Jul, decision deferred (not built tonight).
+Status:      open — snagged 18 Jul; PROMOTED 27 Jul from convenience to a
+             data-design item after being hit in real use (a live landlord
+             email needed correcting). Now the presenting symptom of a
+             deeper modelling gap: the landlord contact hangs off the CASE
+             and the property has no landlord link at all.
+             => See docs/landlord-contact-model-gap.md for the full design
+             direction (property-owned, versioned contact with change
+             history; retire the global email-keyed landlord_contacts;
+             ~5-6 focused days; D0-first, reconcile with the silence-model
+             design doc). That note SUPERSEDES the narrow "add an edit
+             button" fix sketched below — the edit path falls out of the
+             property-owned contact for free.
              SEE #25: the reason a typo currently goes unnoticed is the
              absence of delivery-failure detection, not the absence of an
              edit button. Fix #25 first — it makes the typo VISIBLE, at
