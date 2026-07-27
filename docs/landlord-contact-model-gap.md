@@ -158,21 +158,29 @@ the current version.
 Rough total: **~5–6 focused days** (a couple of weeks part-time). The test
 surface and the edit UI dominate; the schema itself is straightforward.
 
-## Open question — may a case OVERRIDE the property's contact?
+## Decision — one contact per property, no per-case override (Model A)
 
-Not yet decided. It is part ergonomics, part sensible data design:
+**Resolved 2026-07-27.** A property has exactly ONE landlord contact at a
+time, versioned over time (the `superseded_at IS NULL` row is current). A
+case inherits the property's current contact and CANNOT override it.
 
-- A property may have more than one legitimate contact at once — e.g. a
-  managing **agent** vs the **owner** (there is already a `role` enum) —
-  so a given case might need to go to a different contact than the
-  property's default.
-- If cases can override, the case→contact link is not strictly "the
-  property's current version"; the model must allow a case-specific
-  contact version too.
-- If cases cannot override, the property's current contact is
-  authoritative and simpler, at the cost of flexibility.
+**Rationale (the guiding principle):** the contact address on the tenancy
+agreement is the **legally-required service address**. The platform's job
+is to serve notice to that one correct address; how the recipient
+circulates it internally (agent to owner, staffer to staffer) is the
+recipient's concern, not something we model. So there is no need for
+concurrent agent-vs-owner contacts or a per-case override — there is one
+correct address, and it is the one on the agreement.
 
-To be resolved before D0 is finalised. See the follow-up discussion.
+This kills the Model B alternative (multiple concurrent contacts per
+property, by role). If a genuine need for concurrent recipients ever
+appears, it stays an ADDITIVE change later, because each case already
+records the exact contact row it used — but it is explicitly out of scope
+now and not expected.
+
+Consequence for the schema above: `role` is retained as descriptive
+metadata (agent / owner / etc.) but is NOT a selector — it never
+determines routing. Routing is always "the property's current contact".
 
 ## Sequencing note (from #24)
 
