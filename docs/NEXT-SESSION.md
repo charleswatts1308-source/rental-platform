@@ -5,13 +5,22 @@ current. The `docs/` folder has many files and many are stale — this
 index says which to trust and which to ignore so you don't re-derive
 state from a superseded doc.
 
-**Last updated:** 2026-07-18. **renters.rent is LIVE and the hardening
-tail is CLOSED** — cron, outbound mail and Mailgun inbound are all proven
-on the real box. Prod is at `133a103` (**code-current**: carries the PWA
-and the content rework; only two docs-only commits sit ahead on
-`origin/main`). The escalation ladder is **under test in flight** on prod.
-Suite **539 passing / 2239 assertions on `main`**; **547 / 2265 on the
-unmerged `feature/onboarding-nav`** (see below).
+**Last updated:** 2026-07-27. **renters.rent is LIVE.** The onboarding +
+content pass (`feature/onboarding-nav`) is now **MERGED to `main`
+(`b92b907`) and deployed to gafol** (24 Jul, code-only, no migrations) —
+it is no longer an open decision. A **non-prod hostname badge** shipped
+with it: shows the domain (e.g. `gafol.rent`) on any non-production box so
+you can tell at a glance you're not on prod — renders nothing on prod.
+
+**Current in-progress branch: `feature/admin-unverified-users`** — a UI
+usability pass (27 Jul), 8 commits, **pushed to origin, unmerged, not on
+any box.** See its own section below. Its main output is a **design note
+for the landlord-contact model** — a strong D0 candidate.
+
+⚠ *Carried over from 18 Jul and NOT re-verified this session — check the
+ledger / box before trusting: the prod commit, the in-flight
+escalation-ladder test, and snag #23 (Mailgun rotation). They may already
+be actioned; the sections below are as they stood on 18 Jul.*
 
 ---
 
@@ -41,29 +50,46 @@ sibling build), `pre-flip-checklist.md` (wider/public-launch gates),
 
 ---
 
-## ⚠ UNMERGED WORK — `feature/onboarding-nav` (18 Jul)
+## ✅ MERGED since — `feature/onboarding-nav` (was the open decision)
 
-**12 commits, suite green at 547 / 2265, NOT merged, NOT on any box.**
-An onboarding + content pass done while walking the new-user journey cold.
-Decide whether to merge before anything else — it is the front door the
-family testers will meet.
+**Merged to `main` (`b92b907`, `--no-ff`) and deployed to gafol 24 Jul,
+code-only.** The onboarding + content pass: dashboard turned into a real
+hub, Dashboard in the main navbar, dead-ends fixed, new home page
+(`welcome-4`, Erin version archived at
+`/content-archive/homepage-erin-18-july-2026`), About restructured,
+content archive sorts newest-first. All live on gafol now. Ledger updated.
 
-- **Dashboard** was a static "Welcome back!" box with no links; now a real
-  hub (next-action card, cases needing attention, recent cases). It had
-  ZERO test coverage before this — the green suite said nothing about it.
-- **Nav:** "Dashboard" promoted to the main navbar (previously reachable
-  only via the dropdown labelled with your own email address); "Your
-  Tenancy" → "Properties & Cases", wrapped in `@auth`.
-- **Dead ends fixed:** raise-a-case with no property now links to the
-  property form; first property redirects straight to raise-a-case.
-- **Single property** is confirmed on a line, not a one-option dropdown.
-- **Pause/Hold vocabulary** unified tenant-facing (internals unchanged).
-- **New home page** (`welcome-4`); the "Erin" version is archived at
-  `/content-archive/homepage-erin-18-july-2026`. **On trial for a few
-  days — user is living with it before deciding.**
-- **About page** restructured into sections with a CTA.
-- **Content archive** now sorts newest-first, preferring the date in the
-  filename over mtime; undated pages marked "(file date)".
+## ⚠ UNMERGED WORK — `feature/admin-unverified-users` (27 Jul)
+
+**8 commits, pushed to origin, NOT merged, NOT on any box.** A UI
+usability session (views + docs only; suite unaffected, last green at
+547/2265). Merge to `main` + deploy to gafol when happy.
+
+- **Admin users page:** unverified users now listed under their own
+  heading (previously counted but never shown); the verified table gained
+  a "Verified On" timestamp.
+- **Nav:** the "Properties & Cases" dropdown split into two top-level items
+  **Properties** and **Cases**; nav labels no longer wrap mid-label on
+  desktop (`white-space: nowrap`).
+- **Dashboard:** green "Welcome — and thanks for registering!" banner on
+  the post-verification landing (`?verified=1`).
+- **Snags #27, #28, #29** added (see snags section).
+
+### ⭐ Main output — landlord-contact model design note (D0 candidate)
+
+`docs/landlord-contact-model-gap.md` (decision recorded 27 Jul). The
+landlord contact hangs off the **case** via a global email-keyed table;
+the **property has no landlord link**, so a mistyped landlord email can't
+be corrected (snag #24 — **hit for real this session**). Agreed direction:
+**property-owned, versioned contact with change-history; retire
+`landlord_contacts`; ONE address per property** (the tenancy-agreement
+service address is the legally-required item — the recipient circulates it
+internally as they please), **no per-case override.** Integrity checked
+**safe** — all evidential data is frozen at send/receipt (`to_address_raw`,
+`bound_email`, `from_address_raw`), so relocating the live email rewrites
+no past facts. **~5–6 focused days, D0-first, reconcile with the
+silence-model design doc.** Sequencing: #25 (delivery-failure detection)
+makes a typo *visible* and should come first.
 
 ---
 
@@ -126,9 +152,10 @@ trial (functional accuracy, family's own landlords — Charlie's call,
    AND the **Deployment-ledger** rule (every long-lived deploy updates
    environment-state.md as its last step, reconciled vs `migrate:status`).
 2. **docs/environment-state.md** — the deployment ledger. Current truth of
-   what's deployed where: **gafol + renters.rent both at `133a103`**
-   (code-current); dotrent awaiting retirement; `main` carries docs-only
-   commits ahead.
+   what's deployed where: **gafol at `b92b907`** (24 Jul, onboarding +
+   badge); renters.rent per the ledger entry; dotrent awaiting retirement.
+   `main` has advanced past docs-only (onboarding merge);
+   `feature/admin-unverified-users` sits ahead of `main`, pushed, unmerged.
 3. **docs/dotrent-deploy-plan.md** — Phases A/B deploy history; Phase C
    (flip) SUPERSEDED. Current build runs off the sibling-site recipe.
 3b. **docs/huk-laravel-site-install-recipe.md** — the fresh sibling-site
@@ -146,7 +173,7 @@ Then pick up the escalation test above.
 ## Snags — open
 
 `docs/llcs-snagging-list.txt`: **#7, #8, #12, #13, #17, #18, #19, #22, #23,
-#24, #25, #26.**
+#24, #25, #26, #27, #28, #29.**
 
 The snagging list is where the **pre-live-running to-do list gets built
 from**, so read the whole file before serious live running.
@@ -162,10 +189,19 @@ from**, so read the whole file before serious live running.
   `docs/delivery-failure-design-question.md`, written to be readable
   without repo access and **awaiting an outside review**.
 
-New this session (18 Jul): **#24** (can't correct a landlord email after
-send — minor, and dependent on #25), **#25** (above), **#26**
-(copy-anchored view assertions rot silently — a label rename left an
-`assertDontSee` passing vacuously against a string no longer in the app).
+Added 18 Jul: **#24** (can't correct a landlord email after send), **#25**
+(above), **#26** (copy-anchored view assertions rot silently — a label
+rename left an `assertDontSee` passing vacuously against a string no longer
+in the app).
+
+Added 27 Jul (UI usability session): **#27** (verify link bounces
+guest browsers to /login — cross-browser: register in Chrome, open the
+verify email in Edge), **#28** (default the email field on non-prod auth
+forms — dev convenience), **#29** ("Members Only" login banner is
+intimidating; soften or suppress on the verify path). All three trivial +
+deferred with fixes recorded. **#24 was PROMOTED 27 Jul** from convenience
+to a data-design item — now fronted by `landlord-contact-model-gap.md`
+(see the branch section above).
 
 Resolved by Phase 5 (D16): #4, #14, #15, #16, #20, #21.
 
@@ -190,6 +226,10 @@ a post-#8 machine-state / Surface-D admin pass.
   review** (snags #24/#25). Written to be readable without repo access;
   poses the open rulings rather than answering them. **Awaiting a verdict —
   do not build #25 before it lands.**
+- `landlord-contact-model-gap.md` — **design note + decision** (27 Jul),
+  D0 candidate. Property-owned versioned landlord contact; retire the
+  global email-keyed table; one address per property; fixes snag #24.
+  Reconcile with the design doc before building.
 - `pre-flip-checklist.md` — production cutover conditions (wider/public
   launch sign-offs).
 - `User Guides/` — dispatch-sequence refs + automation orientation.
@@ -212,10 +252,13 @@ a post-#8 machine-state / Surface-D admin pass.
 
 ## Branches
 
-**LIVE / UNMERGED: `feature/onboarding-nav`** — 14 commits, 18 Jul, suite
-green at 547/2265. The onboarding + content pass described at the top of
-this file. Not merged, not deployed anywhere. **This is the one open
-decision.**
+**UNMERGED: `feature/admin-unverified-users`** — 8 commits, 27 Jul, pushed
+to origin. The UI usability pass + landlord-contact design note described
+at the top. Not merged, not deployed. **This is the current working
+branch.**
+
+`feature/onboarding-nav` — **MERGED** to `main` (`b92b907`) and on gafol;
+deletable.
 
 Merged, retained-but-deletable: `registration-lock`,
 `d14-escalation-exhausted`, `d15-engagement-gating`, `d16-admin-config-ui`,
