@@ -4,10 +4,13 @@ Human-readable mirror of what is deployed where. The DB `migrations`
 table is the source of truth; this file is reconciled against
 `php artisan migrate:status` at each deploy (CLAUDE.md "Deployment ledger").
 
-**Reconcile status:** git tips verified (27 Jun 2026). **gafol** and
-**dotrent** both at current `main` with the **registration gate deployed
-and verified live** (27 Jun 2026). Staging-at-or-ahead holds. Remaining:
-the DNS flip (Phase C) + prod retirement only.
+**Reconcile status:** git tips verified (27 Jun 2026); **dotrent retired
+1 Aug 2026** (see its entry — the record is kept, the box is gone).
+**gafol** at `b92b907` (24 Jul); renters.rent per its entry. Staging-at-
+or-ahead holds. Live entries are now **gafol, renters.rent, main** —
+remaining housekeeping is recording the old Windows prod box's retirement.
+**Not yet reconciled against `migrate:status` since 27 Jun** — do that at
+the next deploy, per the CLAUDE.md Deployment-ledger rule.
 
 ---
 
@@ -82,7 +85,25 @@ the DNS flip (Phase C) + prod retirement only.
   of prod still holds.
 - Last verified: 24 Jul 2026.
 
-## dotrent — production candidate (dotrent.net) — ✅ AT MAIN (Phase B green)
+## dotrent — preprod (dotrent.net) — 🛑 RETIRED 1 Aug 2026
+
+> **RETIRED 1 Aug 2026.** No longer a live environment. Everything below
+> this banner is the HISTORICAL record of the box as it stood when it was
+> running — kept because it was the proven production dry-run, and because
+> the Phase B build sequence is the reference for a rebuild. Do not treat
+> any "ACTION" or "PENDING" item below as outstanding; they died with the
+> box. renters.rent is now the only environment on `mg.renters.rent`.
+>
+> Ledger effect: live entries are now **gafol, renters.rent, main** —
+> the end state the housekeeping plan was aiming at, once the old Windows
+> prod box's retirement is also recorded.
+>
+> NOT CAPTURED — worth filling in: what retirement physically meant here
+> (Plesk subscription deleted? site disabled but files retained? DB
+> `ukrenter_dotrent_db` dropped or kept? DNS for dotrent.net?). The date
+> is recorded; the disposal detail is not.
+
+### Historical record (as at 27 Jun 2026) — ✅ WAS AT MAIN (Phase B green)
 - Box: dotrent.net, the production candidate for the renters.rent flip.
   DB `ukrenter_dotrent_db` on mysql01. Deploy mechanism: **Plesk Laravel
   Toolkit** (no `.git` in docroot).
@@ -118,13 +139,12 @@ the DNS flip (Phase C) + prod retirement only.
   via `config:show services.mailgun` on the box. Fail-loud `CaseNotice`
   guard therefore satisfied; **B3 firmed up.** (Secrets not recorded
   here by policy.)
-- **ACTION — rotate Mailgun credentials (do now, 2026-07-04):**
-  `config:show` printed `MAILGUN_SECRET` + `MAILGUN_WEBHOOK_SIGNING_KEY`
-  in full in a chat session on 2026-07-04. These are live production
-  credentials now in a transcript. Rotate both in the Mailgun dashboard,
-  update dotrent `.env`, `config:clear`. Independent of the flip — do not
-  defer to go-live. Signing-key exposure specifically weakens
-  inbound-webhook authenticity until rotated.
+- ~~**ACTION — rotate Mailgun credentials (do now, 2026-07-04):**~~
+  **DONE 1 Aug 2026** — both keys rotated in the Mailgun dashboard
+  (snagging-list #23, open 28 days). The exposed values from the
+  2026-07-04 transcript are dead. No dotrent `.env` update was needed:
+  the box was retired the same day, leaving renters.rent as the only
+  consumer of `mg.renters.rent`.
 - **DECISION PENDING — from-address wording:** `cases_from_address`
   currently reads `preprod@mg.renters.rent` — cosmetic (the From address
   landlords/tenants see). Decide whether to switch to a public-facing
@@ -133,10 +153,11 @@ the DNS flip (Phase C) + prod retirement only.
 - Surfaces validated against production MariaDB: **A** (11 templates),
   **B** (settings, B2=No), **C** (empty, clean).
 - Last verified: 27 Jun 2026.
-- Next: retirement, NOT a flip. The "DNS flip renters.rent → dotrent"
-  plan is SUPERSEDED — renters.rent is being built as its own fresh
-  sibling site (see the renters.rent entry). dotrent remains preprod /
-  proven dry-run and is retired once renters.rent is proven live.
+- Outcome: **retired 1 Aug 2026**, as planned — not flipped. The "DNS flip
+  renters.rent → dotrent" plan was SUPERSEDED; renters.rent was built as
+  its own fresh sibling site (see that entry). dotrent served as the
+  preprod / proven dry-run and was retired once renters.rent was proven
+  live, which is exactly the condition that was set for it.
 
 ## prod — renters.rent (Windows, EOL)
 - Git tip: UNKNOWN (not reconciled this session). Demo mode. **DNS for

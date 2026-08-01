@@ -50,6 +50,11 @@
             transition: color 0.3s ease;
         }
 
+        /* Keep nav links from breaking mid-label on desktop */
+        .navbar-nav .nav-link {
+            white-space: nowrap;
+        }
+
         /* Dial down heading sizes */
         h1 {
             font-size: 1.75rem;
@@ -179,14 +184,12 @@
                             <a class="nav-link text-dark" href="{{ route('dashboard') }}">Dashboard</a>
                         </li>
 
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle text-dark" href="#" id="RentalProfileDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                Properties &amp; Cases
-                            </a>
-                            <ul class="dropdown-menu" aria-labelledby="RentalProfileDropdown">
-                                <li><a class="dropdown-item" href="{{ route('properties.index') }}">Your Properties</a></li>
-                                <li><a class="dropdown-item" href="{{ route('cases.index') }}">Your Repair Cases</a></li>
-                            </ul>
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" href="{{ route('properties.index') }}">Properties</a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" href="{{ route('cases.index') }}">Cases</a>
                         </li>
                         @endauth
 

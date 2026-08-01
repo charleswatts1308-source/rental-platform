@@ -20,11 +20,24 @@ class ProfileUpdateRequest extends FormRequest
             'email' => [
                 'required',
                 'string',
-                'lowercase',
                 'email',
                 'max:255',
                 Rule::unique(User::class)->ignore($this->user()->id),
             ],
         ];
+    }
+
+    /**
+     * Normalise the email before the rules run.
+     *
+     * Mirrors RegisteredUserController::store — a capitalised address is
+     * tidied, not rejected. Running here (rather than after validation)
+     * means the `unique` rule checks the same value that gets saved.
+     */
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'email' => strtolower(trim((string) $this->input('email'))),
+        ]);
     }
 }

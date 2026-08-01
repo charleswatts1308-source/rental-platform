@@ -91,6 +91,34 @@ class RegistrationTest extends TestCase
         $this->assertDatabaseHas('users', ['email' => 'invited@example.com']);
     }
 
+    public function test_registration_normalises_a_capitalised_email(): void
+    {
+        // The SUBMITTED side. The test above varies case in the CONFIG only
+        // and submits lowercase, so this path was untested: Breeze's
+        // `lowercase` rule used to REJECT a capitalised address rather than
+        // tidy it. Capitalising your own email is an ordinary thing to do,
+        // and the resulting "must be lowercase" error reads as nonsense.
+        config([
+            'app.registration_open_to_all' => false,
+            'app.registration_allowlist' => 'invited@example.com',
+        ]);
+
+        $response = $this->post('/register', [
+            'name' => 'Invited Guest',
+            'email' => '  Invited@Example.COM  ',
+            'password' => 'password',
+            'password_confirmation' => 'password',
+        ]);
+
+        $response->assertSessionHasNoErrors();
+        $this->assertAuthenticated();
+        $response->assertRedirect(route('dashboard', absolute: false));
+
+        // Stored lowercased — the allowlist gate, landlord contacts and
+        // inbound reply matching all compare against lowercase.
+        $this->assertDatabaseHas('users', ['email' => 'invited@example.com']);
+    }
+
     public function test_empty_allowlist_in_beta_admits_nobody_but_stays_beta(): void
     {
         // KEY PROPERTY: emptying the allowlist must NOT open or close the

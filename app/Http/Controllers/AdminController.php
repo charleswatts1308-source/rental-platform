@@ -34,7 +34,12 @@ class AdminController extends Controller
             ->limit(100)
             ->get();
 
-        return view('admin.users', compact('users', 'totalVerified', 'totalNonVerified', 'monthlyNonVerified'));
+        $unverifiedUsers = User::whereNull('email_verified_at')
+            ->orderBy('created_at', 'desc')
+            ->limit(100)
+            ->get();
+
+        return view('admin.users', compact('users', 'unverifiedUsers', 'totalVerified', 'totalNonVerified', 'monthlyNonVerified'));
     }
 
     public function pageViews()

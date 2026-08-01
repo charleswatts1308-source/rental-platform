@@ -1,0 +1,134 @@
+DNS RECORDS — OLD VALUES AND CHANGES
+====================================
+
+Record of DNS values before and after each change, kept so we can compare
+or roll back. Append new entries below; do not overwrite history.
+
+Provider: HUK, DNS Management page for renters.rent.
+
+
+================================================================
+CHANGE SET — 2026-08-01
+================================================================
+
+Two edits and one new entry, then Save Changes.
+
+Wider context for the day: these three DNS records, plus the Mailgun
+tracking toggle, plus confirming her email is the ONLY entry in
+REGISTRATION_ALLOWLIST. Then the trial begins.
+
+
+1. REPLACE — _dmarc.mg  (existing record, edited in place)
+----------------------------------------------------------
+
+Host and record type unchanged. Click into the Address field on the
+_dmarc.mg row and replace the whole contents.
+
+OLD VALUE (as it stood before this change):
+
+v=DMARC1; p=none; pct=100; fo=1; ri=3600; rua=mailto:e9730fdf@dmarc.mailgun.org,mailto:4f222f37@inbox.ondmarc.com; ruf=mailto:e9730fdf@dmarc.mailgun.org,mailto:4f222f37@inbox.ondmarc.com;
+
+NEW VALUE:
+
+v=DMARC1; p=none; rua=mailto:e9730fdf@dmarc.mailgun.org,mailto:4f222f37@inbox.ondmarc.com
+
+What this drops, and why:
+- pct and ri — deprecated (see RFC note at the foot of this file).
+- fo and ruf — forensic reporting. These forward message CONTENT to
+  third parties. On this platform that content contains tenant data, so
+  the forensic channel is removed deliberately, not for tidiness.
+
+Aggregate reporting (rua) is retained, to both Mailgun and OnDMARC.
+
+
+2. ADD ENTRY — apex DMARC  (new record)
+---------------------------------------
+
+Host Name    _dmarc
+Record Type  TXT (Text)
+TTL          3600
+Address:
+
+v=DMARC1; p=none; sp=none; rua=mailto:e9730fdf@dmarc.mailgun.org,mailto:4f222f37@inbox.ondmarc.com
+
+Note: sp=none is set explicitly so the apex policy does not inherit down
+onto subdomains — mg.renters.rent keeps its own record (item 1 above).
+
+
+3. ADD ENTRY — apex SPF  (new record)
+-------------------------------------
+
+Host Name    @
+Record Type  TXT (Text)
+TTL          3600
+Address:
+
+v=spf1 include:mailgun.org ~all
+
+
+4. MAILGUN CONFIG — done alongside the DNS change set
+-----------------------------------------------------
+
+Open/click TRACKING confirmed OFF in all three cases (2026-08-01).
+
+Why this matters, recorded so it is not switched back on casually:
+tracking works by REWRITING every link in an outbound message to point
+at a Mailgun tracking domain. On this platform the outbound messages are
+landlord letters that are frozen at send time and relied on as an
+evidential record — a rewritten link means the letter the landlord
+received is not byte-for-byte the letter we hold. It also leaks
+recipient behaviour (opens, clicks) into a third party's logs.
+
+Off is the correct setting here. Treat any future request to enable it
+as a change to the evidential model, not a marketing preference.
+
+
+5. CREDENTIAL ROTATION — done 2026-08-01
+----------------------------------------
+
+MAILGUN_SECRET and MAILGUN_WEBHOOK_SIGNING_KEY rotated. These had been
+exposed in a chat transcript on 4 Jul 2026 and were live for 28 days.
+Closes snagging-list #23.
+
+Not recorded here: the new values. They belong in the .env on each box
+and nowhere else — that is the whole point of the rotation.
+
+Dotrent: not applicable — RETIRED 1 Aug 2026. renters.rent is now the
+only box using mg.renters.rent, so the rotation is complete.
+
+
+================================================================
+NOTES
+================================================================
+
+Why the apex needs its own records at all
+-----------------------------------------
+Settled by the mail identity audit, 2026-08-01. The apex is used as a
+sending identity in one place: app/Mail/ContactReply.php hardcodes
+from: 'noreply@renters.rent'. Everything else sends from the mail
+subdomain (case notices from cases@mg.renters.rent) or from whatever
+MAIL_FROM_ADDRESS resolves to per environment.
+
+So the apex records cover ContactReply, and any auth mail if
+MAIL_FROM_ADDRESS on production turns out to be an apex address —
+CONFIRM with: php artisan config:show mail.from   (on the box; use
+config:show rather than reading .env, per the duplicate-key trap).
+
+Both new policies are p=none — monitoring only, nothing is rejected or
+quarantined. This is a baseline to observe from, not enforcement.
+
+RFC reference
+-------------
+The deprecation of pct and ri was cited as RFC 9989 at the time of
+writing. Worth verifying the number before quoting it anywhere external
+— DMARCbis went through several draft numbers. The change itself stands
+on its own merits regardless of the citation.
+
+inbox.renters.rent — does not exist
+-----------------------------------
+Flagged during the same audit. docs/deploy-checklist.md lines 24 and 60
+give inbox.renters.rent as the production MAILGUN_INBOUND_DOMAIN,
+including in a copy-paste .env block. That domain has no MX and no A
+record. Production actually uses mg.renters.rent. Following that
+checklist on a rebuild would silently break inbound landlord replies.
+The checklist has NOT been corrected yet.
