@@ -173,7 +173,7 @@ Then pick up the escalation test above.
 ## Snags — open
 
 `docs/llcs-snagging-list.txt`: **#7, #8, #12, #13, #17, #18, #19, #22, #23,
-#24, #25, #26, #27, #28, #29.**
+#24, #25, #26, #27, #28, #29, #30.**
 
 The snagging list is where the **pre-live-running to-do list gets built
 from**, so read the whole file before serious live running.

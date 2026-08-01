@@ -831,3 +831,45 @@ Fix:         Soften it: drop "Members Only", switch alert-warning -> a
              sign in to continue." Optionally suppress it entirely on the
              verify path once #27 lands. Copy-only + class change; no logic.
 --------------------------------------------------------------------
+#30
+Page:        Contact Us (contact.create/store) + admin reply
+             (admin.contact-messages.*). Reviewed 2026-08-01.
+Severity:    minor — capability gap / expectation mismatch, NOT a defect.
+             Everything present works; the question is whether it's enough.
+Saw:         Contact Us is a stored-message box with a ONE-WAY, ONE-SHOT
+             email reply — not a two-way email conversation.
+             - Inbound (user->us): ContactMessageController::store writes a
+               contact_messages row only. NO email is sent on submit; auth-
+               only route, so the sender is a known user.
+             - Outbound (us->user): AdminController::contactMessageReply sends
+               exactly ONE real email (ContactReply mailable, via Mailgun) and
+               is guarded against a second (`if ($contactMessage->admin_reply)`).
+             - It does NOT receive email back: ContactReply goes out
+               from noreply@renters.rent (ContactReply.php:19) with no Reply-To
+               and no inbound webhook for contact mail. A user hitting "reply"
+               in their inbox lands nowhere. No threading.
+Expected:    Decide the intended shape and make the UX match it. Either
+             (a) confirm one-shot-reply is the design and set expectations
+                 (e.g. wording in the reply email: "this mailbox is not
+                 monitored — reply via the site"), or
+             (b) make it a real two-way thread.
+Status:      open — snagged 01 Aug. Deferred; flag for a design call.
+             Distinct from the LLCS case correspondence (#4, which IS full
+             send-receive with Mailgun inbound binding replies onto cases).
+             Contact Us deliberately reuses NONE of that machinery.
+Notes:       Not urgent while contact volume is low and admin can eyeball the
+             list. The trap is silent: a user who replies to our answer
+             reasonably assumes it reached us; it did not. If a two-way thread
+             is wanted it is a larger build (inbound routing/threading), so
+             the cheap interim is (a) — a Reply-To that goes somewhere real
+             OR an explicit "do not reply" note in ContactReply. The admin
+             one-reply guard also means a follow-up question can't be answered
+             on the same thread even from our side.
+Fix:         Minimum: add a monitored Reply-To (or a "please reply via the
+             Contact form / this address is unmonitored" line) to the
+             ContactReply mailable so a user reply isn't silently lost.
+             Larger option (only if a real conversation is wanted): route
+             inbound contact mail (mirror the MailgunInboundController /
+             verify.mailgun.signature pattern), thread replies onto
+             contact_messages, and drop the single-reply admin guard.
+--------------------------------------------------------------------
