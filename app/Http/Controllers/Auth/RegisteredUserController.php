@@ -30,9 +30,21 @@ class RegisteredUserController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
+        // Normalise rather than reject. Breeze ships a `lowercase` rule here,
+        // which VALIDATES for lowercase instead of applying it — so a user
+        // typing Charlie@Example.com is bounced with "must be lowercase",
+        // which reads as nonsense about their own address. Every other email
+        // path in the app (allowlist gate below, landlord contacts, inbound
+        // reply matching) already lowercases on the way in; this was the
+        // holdout. Merging BEFORE validate() matters: `unique` then checks
+        // the same value that gets stored.
+        $request->merge([
+            'email' => strtolower(trim((string) $request->input('email'))),
+        ]);
+
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:'.User::class],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 

@@ -61,9 +61,23 @@ content archive sorts newest-first. All live on gafol now. Ledger updated.
 
 ## ⚠ UNMERGED WORK — `feature/admin-unverified-users` (27 Jul)
 
-**8 commits, pushed to origin, NOT merged, NOT on any box.** A UI
-usability session (views + docs only; suite unaffected, last green at
-547/2265). Merge to `main` + deploy to gafol when happy.
+**Pushed to origin (8 commits), plus local commits since. NOT merged, NOT
+on any box.** Began as a UI usability session; **as of 1 Aug it also
+carries a code change** — email case normalisation on the two auth paths
+(see below), so it is no longer views + docs only. **Suite green at
+550/2279** (was 547/2265; +3 tests are the new normalisation ones).
+Merge to `main` + deploy to gafol when happy.
+
+**Email case normalisation (1 Aug, code).** Breeze's `lowercase` rule
+*validates* for lowercase rather than applying it, so registering or
+changing your profile email as `Charlie@Example.com` was REJECTED with
+"The email field must be lowercase" — nonsense to a normal person, and
+sitting on the front door right before a family trial. Both paths now
+normalise (trim + lowercase) before validation:
+`RegisteredUserController::store` and `ProfileUpdateRequest`. The
+landlord-email path already did this (`CaseController:493`) and was not
+touched. Three tests added, each confirmed to FAIL without the fix.
+No migration, no config.
 
 - **Admin users page:** unverified users now listed under their own
   heading (previously counted but never shown); the verified table gained
@@ -273,10 +287,12 @@ a post-#8 machine-state / Surface-D admin pass.
 
 ## Branches
 
-**UNMERGED: `feature/admin-unverified-users`** — 8 commits, 27 Jul, pushed
-to origin. The UI usability pass + landlord-contact design note described
-at the top. Not merged, not deployed. **This is the current working
-branch.**
+**UNMERGED: `feature/admin-unverified-users`** — 8 commits pushed 27 Jul,
+further commits local since (1 Aug: mail identity audit docs, DNS record,
+#23 closure, email case normalisation). The UI usability pass +
+landlord-contact design note described at the top, **plus one code change
+(email normalisation)**. Not merged, not deployed. **This is the current
+working branch.**
 
 `feature/onboarding-nav` — **MERGED** to `main` (`b92b907`) and on gafol;
 deletable.
