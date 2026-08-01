@@ -531,9 +531,15 @@ Saw:         `config:show services.mailgun` printed MAILGUN_SECRET and
              4 Jul 2026. These are LIVE production credentials. Still not
              rotated as of 13 Jul (9 days).
 Expected:    Both keys rotated; no live credential sitting in a transcript.
-Status:      open — the ONLY outstanding item on renters.rent. Everything
-             else in the hardening tail is closed and proven (cron, outbound,
-             inbound, SSL, registration gate).
+Status:      CLOSED 2026-08-01 — both keys rotated. The exposed credentials
+             are dead; the transcript from 4 Jul no longer carries anything
+             live. Open for 28 days.
+             TO CONFIRM if not already done on the day: that the .env on
+             DOTRENT was updated too, not just renters.rent — both boxes
+             share mg.renters.rent, so a rotation on one leaves the other
+             authenticating with a dead secret. Symptom would be dotrent
+             outbound failing at the API and inbound failing signature
+             verification. If dotrent was missed, reopen this entry.
 Notes:       Matters MORE now than it did on 4 Jul, not less: Mailgun inbound
              is live on renters.rent and carrying real landlord replies. The
              signing key is precisely what proves an inbound webhook genuinely

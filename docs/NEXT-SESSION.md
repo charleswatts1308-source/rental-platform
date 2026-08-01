@@ -119,14 +119,18 @@ behaviour, not a defect — harmless at the real 14-day interval.
    ladder test passes. B2 "Applies to in-flight cases" stays **Off**.
 3. **Begin the family trial.** gafol stays permanent staging.
 
-**⚠️ THE ONLY OUTSTANDING ITEM ON PROD — snag #23: rotate the Mailgun
-credentials.** `MAILGUN_SECRET` + `MAILGUN_WEBHOOK_SIGNING_KEY` were
-exposed in a transcript on 4 Jul 2026 and are still live. Full Fix line is
-in `llcs-snagging-list.txt` #23 (~10 min, covers renters.rent AND dotrent).
-Do it **before serious live running** — inbound is now live and carrying
-real landlord replies, and the signing key is what proves a webhook
-genuinely came from Mailgun. For an evidential record, that's the leak
-that matters most.
+**✅ DONE 1 Aug — snag #23, the Mailgun credential rotation.**
+`MAILGUN_SECRET` + `MAILGUN_WEBHOOK_SIGNING_KEY` are rotated; the keys
+exposed in the 4 Jul transcript are dead after 28 days live. This was the
+last outstanding item on prod. One check left: confirm **dotrent's** `.env`
+was updated too — both boxes share `mg.renters.rent`, so rotating on one
+leaves the other authenticating with a dead secret.
+
+Also done 1 Aug: **three DNS records** (apex SPF, apex DMARC, tightened
+`_dmarc.mg` — dropping the forensic `ruf`/`fo` reporting that would forward
+tenant data to third parties), and **Mailgun open/click tracking confirmed
+off in all three cases**. Full before/after in
+`docs/DNS records old values.txt`.
 
 **Housekeeping:**
 - **Retire the old boxes:** confirm the Windows prod box is dark and record

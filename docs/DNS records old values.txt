@@ -66,6 +66,38 @@ Address:
 v=spf1 include:mailgun.org ~all
 
 
+4. MAILGUN CONFIG — done alongside the DNS change set
+-----------------------------------------------------
+
+Open/click TRACKING confirmed OFF in all three cases (2026-08-01).
+
+Why this matters, recorded so it is not switched back on casually:
+tracking works by REWRITING every link in an outbound message to point
+at a Mailgun tracking domain. On this platform the outbound messages are
+landlord letters that are frozen at send time and relied on as an
+evidential record — a rewritten link means the letter the landlord
+received is not byte-for-byte the letter we hold. It also leaks
+recipient behaviour (opens, clicks) into a third party's logs.
+
+Off is the correct setting here. Treat any future request to enable it
+as a change to the evidential model, not a marketing preference.
+
+
+5. CREDENTIAL ROTATION — done 2026-08-01
+----------------------------------------
+
+MAILGUN_SECRET and MAILGUN_WEBHOOK_SIGNING_KEY rotated. These had been
+exposed in a chat transcript on 4 Jul 2026 and were live for 28 days.
+Closes snagging-list #23.
+
+Not recorded here: the new values. They belong in the .env on each box
+and nowhere else — that is the whole point of the rotation.
+
+OUTSTANDING CHECK: confirm dotrent's .env was updated too. Both boxes
+share mg.renters.rent, so rotating on renters.rent alone leaves dotrent
+authenticating with a dead secret.
+
+
 ================================================================
 NOTES
 ================================================================
