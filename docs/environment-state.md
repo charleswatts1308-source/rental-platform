@@ -94,7 +94,25 @@ the next deploy, per the CLAUDE.md Deployment-ledger rule.
   address bar) — confirms "am I on gafol?" at a glance. Prod renders no
   badge (`@unless(app()->environment('production'))`). Staging-at-or-ahead
   of prod still holds.
-- Last verified: 24 Jul 2026.
+- **Usability + mail-identity deploy (1 Aug 2026):** pulled `main` →
+  `7507a72` (the `--no-ff` merge of `feature/admin-unverified-users`).
+  Plesk Git pull + `config:cache` + `view:clear`. **Code-only, NO
+  migrations** (verified: no `database/migrations` changes across
+  `133a103..7507a72`). Suite green pre- and post-merge: **550 passed,
+  2279 assertions** (was 547/2265; the 3 new tests are the email
+  normalisation ones).
+  Carries: the 27 Jul UI usability pass, and **one behavioural code
+  change** — email case normalisation on registration and profile update
+  (Breeze's `lowercase` rule VALIDATED for lowercase rather than applying
+  it, so a capitalised address was rejected outright).
+  Verified on the box by Charlie: **stage badge** (the yellow
+  `gafol.rent` hostname badge — CONFIRM this is what "new stage icon"
+  meant), **nav changes** (Properties / Cases split to two top-level
+  items), **content changes**, and the **unverified-users list** on the
+  admin users page.
+  NOT separately confirmed on gafol: the capitalised-email registration
+  path itself. Staging-at-or-ahead of prod holds.
+- Last verified: 1 Aug 2026.
 
 ## dotrent — preprod (dotrent.net) — 🛑 RETIRED 1 Aug 2026
 
