@@ -93,9 +93,8 @@ Closes snagging-list #23.
 Not recorded here: the new values. They belong in the .env on each box
 and nowhere else — that is the whole point of the rotation.
 
-OUTSTANDING CHECK: confirm dotrent's .env was updated too. Both boxes
-share mg.renters.rent, so rotating on renters.rent alone leaves dotrent
-authenticating with a dead secret.
+Dotrent: not applicable — RETIRED 1 Aug 2026. renters.rent is now the
+only box using mg.renters.rent, so the rotation is complete.
 
 
 ================================================================

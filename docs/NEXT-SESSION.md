@@ -136,9 +136,9 @@ behaviour, not a defect — harmless at the real 14-day interval.
 **✅ DONE 1 Aug — snag #23, the Mailgun credential rotation.**
 `MAILGUN_SECRET` + `MAILGUN_WEBHOOK_SIGNING_KEY` are rotated; the keys
 exposed in the 4 Jul transcript are dead after 28 days live. This was the
-last outstanding item on prod. One check left: confirm **dotrent's** `.env`
-was updated too — both boxes share `mg.renters.rent`, so rotating on one
-leaves the other authenticating with a dead secret.
+last outstanding item on prod. **Dotrent is retired as of 1 Aug**, so
+renters.rent is the only box on `mg.renters.rent` and the rotation is
+complete — no second box to update.
 
 Also done 1 Aug: **three DNS records** (apex SPF, apex DMARC, tightened
 `_dmarc.mg` — dropping the forensic `ruf`/`fo` reporting that would forward

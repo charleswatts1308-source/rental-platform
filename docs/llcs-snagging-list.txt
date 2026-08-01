@@ -534,12 +534,9 @@ Expected:    Both keys rotated; no live credential sitting in a transcript.
 Status:      CLOSED 2026-08-01 — both keys rotated. The exposed credentials
              are dead; the transcript from 4 Jul no longer carries anything
              live. Open for 28 days.
-             TO CONFIRM if not already done on the day: that the .env on
-             DOTRENT was updated too, not just renters.rent — both boxes
-             share mg.renters.rent, so a rotation on one leaves the other
-             authenticating with a dead secret. Symptom would be dotrent
-             outbound failing at the API and inbound failing signature
-             verification. If dotrent was missed, reopen this entry.
+             Dotrent: N/A — RETIRED as of 1 Aug 2026, so the "rotate on
+             both boxes" half of the original Fix line no longer applies.
+             renters.rent is the only box sharing mg.renters.rent.
 Notes:       Matters MORE now than it did on 4 Jul, not less: Mailgun inbound
              is live on renters.rent and carrying real landlord replies. The
              signing key is precisely what proves an inbound webhook genuinely
