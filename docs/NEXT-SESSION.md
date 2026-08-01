@@ -172,8 +172,11 @@ Then pick up the escalation test above.
 
 ## Snags — open
 
-`docs/llcs-snagging-list.txt`: **#7, #8, #12, #13, #17, #18, #19, #22, #23,
-#24, #25, #26, #27, #28, #29, #30.**
+`docs/llcs-snagging-list.txt`: **#1, #2, #7, #12, #13, #17, #18, #19, #22,
+#23, #24, #25, #26, #27, #28, #29, #30, #31, #32, #33, #34, #35, #36.**
+
+*(#1 and #2 were open all along but missing from this list — corrected
+1 Aug. #8 was CLOSED 1 Aug as a duplicate of #25, not as fixed.)*
 
 The snagging list is where the **pre-live-running to-do list gets built
 from**, so read the whole file before serious live running.
@@ -193,6 +196,20 @@ Added 18 Jul: **#24** (can't correct a landlord email after send), **#25**
 (above), **#26** (copy-anchored view assertions rot silently — a label
 rename left an `assertDontSee` passing vacuously against a string no longer
 in the app).
+
+Added 1 Aug (mail identity + reply-path audit): **#31** (deploy-checklist
+names `inbox.renters.rent`, a domain with no DNS — a rebuild following it
+would silently break every landlord reply, and the `CaseNotice` guard tests
+presence not validity), **#32** (`ContactReply` hardcodes an apex sender,
+bypassing the fail-loud discipline), **#33** (apex SPF is a temporary shape,
+blocked on #32), **#34** (CLAUDE.md's Mail section contradicts the code —
+the keys have no defaults, by design), **#35** (local `MAIL_FROM_ADDRESS`
+is a third-party domain), **#36** (Mailgun tier — open question, two
+pre-sales questions before spending). Four of the six are minutes of doc or
+config work; only #32 is code. **#25 gained the evidential argument** for
+delivery webhooks and the wording discipline (name the MX host; delivered
+≠ read). **#30 took a decision**: rebuild Contact Us as a real two-way
+thread, not patch it.
 
 Added 27 Jul (UI usability session): **#27** (verify link bounces
 guest browsers to /login — cross-browser: register in Chrome, open the

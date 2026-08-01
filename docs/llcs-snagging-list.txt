@@ -184,10 +184,14 @@ Expected:    Platform consumes Mailgun delivery webhooks (delivered /
              case_messages row, and surfaces failures to the tenant
              ("your letter could not be delivered to <address>") with a
              path to act (correct the address, resend).
-Status:      open — post-cutover feature. Design needed (webhook endpoint
-             reuses the existing HMAC-verified inbound pattern; new
-             delivery_status + delivered_at columns; tenant notification
-             on hard failure).
+Status:      CLOSED 2026-08-01 — superseded by #25, which describes the
+             same blind spot and carries the actual build plan (envelope
+             metadata correlation, the columns, the webhook controller,
+             the escalation-counter invariant). Nothing here is fixed;
+             this entry is retired as a DUPLICATE, not as done.
+             The two live-fire observations below are the field evidence
+             for #25 and have been carried across to it. Kept here for
+             provenance — work #25, not this.
 Notes:       For a service whose promise is "your landlord was notified,
              here's the proof", sent-but-not-delivered is the one
              discrepancy that must never be silent. 2026-06-06 test data:
@@ -634,6 +638,23 @@ Notes:       This is the one that matters, and it is NOT really about typos.
              Note the asymmetry with the inbound path, which is carefully
              built (signature verification, token resolution, quarantine).
              Outbound delivery is currently assumed to succeed.
+
+             FIELD EVIDENCE — carried from #8 when that entry was closed
+             as a duplicate on 2026-08-01. This blind spot has been
+             OBSERVED TWICE, not merely reasoned about:
+             - 2026-06-06, gafol: 10 sends accepted by Mailgun, 4 failed
+               at Gmail with 550 spam blocks. The platform showed no
+               trace. A human reading the Mailgun dashboard was the only
+               reason it was ever known. 40% silent loss.
+             - 2026-06-07, gafol Phase 3 live-fire: repeat. Gmail
+               returned 5.7.1 and blocked 4 sandbox sends; the Mailgun
+               log was again the sole ground truth, the platform again
+               showed nothing.
+             Both were sandbox-domain reputation failures, and
+             production's DMARC-aligned mg.renters.rent will not fail at
+             that rate — but the BLIND SPOT is rate-independent. At any
+             rate above zero the platform reports silence it cannot
+             distinguish from non-delivery.
 Fix:         LIMIT (state this in any tenant-facing wording) — bounce
              handling catches "went NOWHERE", not "went SOMEWHERE WRONG".
              A hard bounce is detectable; a typo landing on a real mailbox
@@ -685,6 +706,51 @@ Fix:         LIMIT (state this in any tenant-facing wording) — bounce
              llcs-silence-model-design.md — which currently assumes
              delivery — before building. See
              docs/delivery-failure-design-question.md.
+
+             ADDENDUM 2026-08-01 — confirmed still unbuilt, plus a
+             SECOND reason to do it that is not about correctness.
+
+             Confirmed today: routes/web.php:182-184 is the only Mailgun
+             route, and app/Http/Controllers/Webhooks/ holds exactly one
+             controller (MailgunInboundController). No delivered / failed
+             / complained / unsubscribed events are received. Whether they
+             are SUBSCRIBED in the Mailgun dashboard for mg.renters.rent
+             is unchecked — but nothing would receive them either way.
+
+             (a) CORRECTNESS — as above. A `failed` event means the
+             message was never accepted (wrong address, mailbox full,
+             domain rejecting). That is not landlord silence, but the
+             clock cannot tell the difference and will run a dead case all
+             the way to escalation. The tenant should be told to check the
+             address instead.
+
+             (b) EVIDENTIAL RECORD — new, and arguably the stronger
+             argument. The `delivered` event carries a delivery-status
+             object with the accepting server's SMTP code, response
+             string, MX host, attempt number and session duration.
+             Captured against the case, that turns "letter sent" into a
+             contemporaneous record of an EXTERNAL event, verifiable via
+             MAILGUN_WEBHOOK_SIGNING_KEY. It also makes Mailgun's 1-day
+             log retention irrelevant, since we would hold the event
+             ourselves. Today the only ground truth lives in a dashboard
+             that forgets after a day — see #8, where a human reading that
+             dashboard was the sole reason a 40% failure rate was noticed.
+
+             Verify the actual field names against a real payload before
+             building. The list above is from documentation, not observed.
+
+             ⚠ WORDING DISCIPLINE — binding on anything surfaced to a user
+             or written into a case record. The accepting server is the MX
+             responsible for the RECIPIENT'S DOMAIN (Google, Microsoft,
+             etc), NOT "the landlord's mail server". Name the MX host from
+             the payload. And "delivered" means ACCEPTED BY THAT SERVER —
+             it does NOT mean read, and nothing in the UI or the case file
+             may imply that it does. Overstating this would put a claim in
+             the evidential record that the data does not support.
+
+             LIST HYGIENE: #8 describes the same blind spot from the
+             pre-cutover angle and predates this entry. Consider closing
+             #8 as superseded by #25 — not actioned, flagged for a call.
 --------------------------------------------------------------------
 #26
 Page:        Test suite — view-level assertions anchored on UI copy are
@@ -853,7 +919,13 @@ Expected:    Decide the intended shape and make the UX match it. Either
                  (e.g. wording in the reply email: "this mailbox is not
                  monitored — reply via the site"), or
              (b) make it a real two-way thread.
-Status:      open — snagged 01 Aug. Deferred; flag for a design call.
+Status:      open — snagged 01 Aug. DECISION TAKEN 01 Aug: rebuild rather
+             than patch — option (b), a real two-way thread. The one-shot
+             reply is not the design we want on a platform whose whole
+             proposition is that correspondence does not get lost.
+             INTERIM MITIGATION if the rebuild is delayed: set a replyTo
+             on a monitored address, so a user reply reaches a human
+             instead of vanishing. That is a holding measure, not the fix.
              Distinct from the LLCS case correspondence (#4, which IS full
              send-receive with Mailgun inbound binding replies onto cases).
              Contact Us deliberately reuses NONE of that machinery.
@@ -872,4 +944,182 @@ Fix:         Minimum: add a monitored Reply-To (or a "please reply via the
              inbound contact mail (mirror the MailgunInboundController /
              verify.mailgun.signature pattern), thread replies onto
              contact_messages, and drop the single-reply admin guard.
+--------------------------------------------------------------------
+#31
+Page:        docs/deploy-checklist.md lines 24 and 60 — the checklist names
+             a DNS domain that does not exist. Surfaced 2026-08-01 during
+             the mail identity audit.
+Severity:    minor as it stands (doc only, nothing broken today) but the
+             FAILURE MODE is functional and silent. Doc-only fix, low risk.
+Saw:         Both lines give inbox.renters.rent as the production
+             MAILGUN_INBOUND_DOMAIN — line 24 in prose ("Production values:
+             cases@mg.renters.rent and inbox.renters.rent"), line 60 inside
+             a copy-paste .env block. That domain does not exist in the
+             renters.rent DNS zone: no MX, no A record. Production actually
+             uses mg.renters.rent.
+Expected:    The checklist states the value production actually runs.
+Status:      open — snagged 01 Aug. Flagged for a call on whether to fix
+             now or post-trial; it is a two-line doc edit either way.
+Notes:       Why this is worse than an ordinary stale doc: a rebuild
+             following the checklist would set the dead domain, and the
+             CaseNotice constructor guard would NOT catch it. That guard
+             tests PRESENCE, not validity (CaseNotice.php:49-57 — blank()
+             only), so a non-existent domain sails through, every landlord
+             letter goes out with a Reply-To at an NXDOMAIN address, and
+             every landlord reply hard-bounces. Nothing in the app would
+             report it — the letters send fine; only the replies die.
+             The value also appears (harmlessly) in .env.example:78, which
+             is COMMENTED OUT, and in phpunit.xml:30 as a test-env value,
+             and across four design docs including two archived copies.
+             Only the deploy-checklist occurrences are load-bearing.
+Fix:         Change both occurrences to mg.renters.rent. Consider also
+             whether the CaseNotice guard should validate the domain
+             resolves rather than merely being non-blank — separate call,
+             don't fold it into the doc fix.
+--------------------------------------------------------------------
+#32
+Page:        app/Mail/ContactReply.php:19 — hardcoded apex sender.
+             Surfaced 2026-08-01 during the mail identity audit.
+Severity:    minor — no user-visible defect today. Discipline/consistency
+             gap with a real deliverability consequence (see #33).
+Saw:         ContactReply sends from: 'noreply@renters.rent' as a string
+             literal in the Envelope. It is the ONLY hardcoded sender and
+             the ONLY apex sender in the app. Everything else routes
+             through config: CaseNotice reads
+             services.mailgun.cases_from_address, and the tenant notices
+             plus all of Laravel's auth mail fall through to
+             config('mail.from.address').
+Expected:    Sender identity comes from per-environment config, and a
+             missing value fails loudly — the discipline config/services.php
+             already applies to the case-mail keys.
+Status:      open — snagged 01 Aug. Replacement code already drafted;
+             NOT applied. Do not build from this entry.
+Notes:       Two consequences. (1) It bypasses the fail-loud pattern:
+             services.php:23-25 deliberately gives cases_from_address and
+             inbound_domain no default so a misconfigured environment
+             throws rather than sending production identity through the
+             wrong domain. ContactReply cannot fail that way — it always
+             has a value, so it cannot be caught. (2) It sends the same
+             apex production identity from LOCAL and STAGING, which is
+             exactly what that discipline exists to prevent.
+             This entry is also what forces the apex SPF record — see #33.
+Fix:         Add contact_from_address to the services.mailgun block with
+             NO default; read it in ContactReply; throw on blank in the
+             constructor as CaseNotice does; add tags: [app()->environment()]
+             to the Envelope so a misrouted send shows up in Mailgun's
+             per-domain log. Set MAILGUN_CONTACT_FROM_ADDRESS per
+             environment. Then #33 becomes actionable.
+--------------------------------------------------------------------
+#33
+Page:        DNS — the apex SPF record published 2026-08-01 is a temporary
+             shape, and nothing in the zone says so.
+Severity:    minor — correct and honest today; becomes wrong silently once
+             #32 is done.
+Saw:         renters.rent now publishes v=spf1 include:mailgun.org ~all at
+             the apex. That is honest ONLY because ContactReply still sends
+             from noreply@renters.rent (#32). The record authorises Mailgun
+             to send as the apex.
+Expected:    Once #32 lands and all sending is under mg.renters.rent, the
+             apex should authorise nothing: v=spf1 -all. Consider null MX
+             (RFC 7505) too, if the apex is to accept no mail either.
+Status:      open — snagged 01 Aug. BLOCKED ON #32; do not tighten before
+             it, or Contact Us replies start failing SPF.
+Notes:       Recorded because a bare include:mailgun.org at the apex looks
+             PERMANENT to anyone reading the zone later — including us in
+             six months. There is nothing in DNS that can carry the
+             reasoning, so it has to live here. The full before/after of
+             the 01 Aug change set is in docs/DNS records old values.txt.
+             Both DMARC policies published that day are p=none — monitoring
+             only, nothing rejected or quarantined. Tightening the policy
+             is a separate decision from tightening SPF.
+Fix:         After #32: change the apex TXT to v=spf1 -all, and decide on
+             null MX. Record the change in the DNS file alongside the 01 Aug
+             entry, with the reasoning, so the next reader sees why the
+             record moved twice.
+--------------------------------------------------------------------
+#34
+Page:        CLAUDE.md, Mail section — a standing rule that contradicts the
+             code. Surfaced 2026-08-01 during the mail identity audit.
+Severity:    minor — no runtime impact. Misleads the reader on a
+             load-bearing safety property, which is worse than it sounds.
+Saw:         CLAUDE.md states the config/services.php Mailgun keys carry
+             production defaults of mg.renters.rent. They do not. Verified:
+             MAILGUN_DOMAIN, cases_from_address and inbound_domain are all
+             bare env() calls with NO default, by explicit design — the
+             comment at services.php:23-25 says so in terms. Only `endpoint`
+             carries a default (api.eu.mailgun.net).
+Expected:    The working agreement describes what the code does.
+Status:      open — snagged 01 Aug. Doc-only fix.
+Notes:       Worth correcting rather than leaving: the rule as written
+             implies a safety net that does not exist. Someone trusting it
+             would assume a missing MAILGUN_CASES_FROM_ADDRESS quietly
+             falls back to production values — when in fact CaseNotice
+             throws and no letters send at all. Those are opposite
+             failure modes, and the real one is the safer of the two.
+             A standing rule that contradicts the code is worse than no
+             rule, because it is consulted instead of the code.
+Fix:         Rewrite the CLAUDE.md Mail bullet to state the actual design:
+             the case-mail keys are REQUIRED per environment with no
+             defaults, and CaseNotice throws if either is blank. Keep the
+             per-environment routing table (prod/preprod Mailgun
+             mg.renters.rent, staging sandbox outbound-only, local Mailpit)
+             — that part is accurate.
+--------------------------------------------------------------------
+#35
+Page:        Local .env — MAIL_FROM_ADDRESS is a third-party domain.
+             Surfaced 2026-08-01 during the mail identity audit.
+Severity:    trivial — no production impact. Worth fixing because the
+             failure mode is embarrassing rather than costly.
+Saw:         Local MAIL_FROM_ADDRESS is jcwatts99@outlook.com. That is the
+             global default sender, so it governs every mailable that does
+             not set its own from — the tenant notices and all of Laravel's
+             auth mail (verification, password reset).
+Expected:    Development mail sends from a domain we control, or from a
+             reserved test domain that cannot resolve.
+Status:      open — snagged 01 Aug. Local only; no production change.
+Notes:       Normally harmless because local mail goes to Mailpit and never
+             leaves the machine. The hazard is if dev mail ever escapes to
+             a real recipient — a misconfigured MAIL_MAILER, a copied .env,
+             a box pointed at Mailgun by accident. Then we would be sending
+             mail claiming to be from outlook.com over infrastructure with
+             no authority for that domain: fails DMARC alignment outright,
+             and spoofs Microsoft's domain from ours. Not a risk we are
+             taking today, but not one worth carrying either.
+Fix:         Change local MAIL_FROM_ADDRESS to something on mg.renters.rent
+             (e.g. dev@mg.renters.rent) or a reserved .test domain, which
+             cannot resolve and so cannot escape anywhere. Check the same
+             value on gafol while at it.
+--------------------------------------------------------------------
+#36
+Page:        Mailgun account tier — OPEN QUESTION, do not action.
+             Raised 2026-08-01.
+Severity:    open question, not a snag. No decision taken. Recorded so it
+             is not re-derived from scratch later.
+Saw:         The account is on the free tier, which sends from SHARED IP
+             pools. Shared pools are a structural deliverability risk —
+             your reputation is partly other people's behaviour. It bites
+             hardest at Microsoft, which weighs IP reputation alongside
+             domain reputation more heavily than Gmail does.
+Expected:    A deliberate decision on tier, made on answers rather than
+             assumption.
+Status:      open — QUESTION ONLY. Nothing to build. Do not act on this
+             entry without a decision from Charlie.
+Notes:       Relevant history: #8 and #25 record two separate occasions
+             where sends were silently blocked (Gmail 550 / 5.7.1 on the
+             sandbox domain). Those were sandbox-reputation failures rather
+             than shared-pool failures, but they are the same class of
+             problem — deliverability we do not control and cannot see.
+             Alternative under consideration: Postmark. Subject to
+             CHECKING DATA RESIDENCY first — this platform holds UK tenant
+             data, and where mail content is processed and retained is a
+             condition of the choice, not a detail.
+Fix:         Before paying for Basic 10k (£12/mo), two PRE-SALES questions
+             to Mailgun support:
+             (a) does a paid account send from a DIFFERENT shared IP pool
+                 than a free account? (If not, paying buys volume, not
+                 deliverability — which changes the whole case.)
+             (b) does the "1 sending domain" limit count the gafol sandbox
+                 domain? If it does, Basic BREAKS STAGING and is unusable
+                 at any price — staging must keep its own outbound path.
+             Answer both before spending anything.
 --------------------------------------------------------------------
