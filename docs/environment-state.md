@@ -15,18 +15,29 @@ the next deploy, per the CLAUDE.md Deployment-ledger rule.
 ---
 
 ## main (working line)
-- `origin/main`: `0e0a4e0` (pushed 11 Jul 2026) — code tip `b165114` +
-  the merged registration gate (`15ec602`), docs commits, and the 11 Jul
-  content rework (`66ff6fe` + `0e0a4e0`: About Us + How It Works collapsed
-  to single pages; The Law / The PRS / The Longer Term / Landlord Contact
-  Service / Know Your Landlord archived to the dev-only content-archive).
-  Tags on origin: `pre-registration-lock` = `a63ac4a`, `post-d16-phase5`
+- **`origin/main`: `7507a72` (pushed 1 Aug 2026).** Local and origin are
+  LEVEL — the long-standing "local ahead, push held" state is cleared.
+  The push moved origin on by 17 commits (`8955def..7507a72`), which had
+  accumulated since the last push on 11 Jul.
+- Tip is the `--no-ff` merge of `feature/admin-unverified-users`
+  (`7507a72`): the 27 Jul UI usability pass (admin unverified-users list,
+  nav split into Properties/Cases, post-verification welcome banner), the
+  1 Aug mail identity audit docs, and **one code change** — email case
+  normalisation on both auth paths (registration + profile update).
+  Suite green pre- and post-merge: **550 passed, 2279 assertions.**
+  **No migrations in the merge.**
+- Also now on origin, having been local since 11 Jul: the 3 PWA app icons
+  (`a6517a6`) and the PWA wiring merge (`cd29c0d`).
+- Earlier history for reference: `0e0a4e0` (11 Jul) was code tip `b165114`
+  + the merged registration gate (`15ec602`) + the 11 Jul content rework
+  (About Us / How It Works collapsed to single pages; The Law, The PRS,
+  The Longer Term, Landlord Contact Service, Know Your Landlord archived
+  to the dev-only content-archive). `b92b907` (24 Jul) was the
+  onboarding-nav merge.
+- Tags on origin: `pre-registration-lock` = `a63ac4a`, `post-d16-phase5`
   = `cf2f5c9`.
-- Local `main`: ahead of `origin/main` (unpushed) — carries the 11 Jul
-  ledger commits, the 3 PWA app icons (`a6517a6`), and the PWA wiring
-  merged via `--no-ff` (merge `cd29c0d`; branch `feature/pwa-wiring` also
-  pushed to origin). Push held per the Git rule until asked. renters.rent
-  (prod) does NOT yet carry the PWA.
+- **Not yet deployed anywhere.** gafol sits at `b92b907` (24 Jul) and
+  renters.rent at `133a103` (13 Jul) until each is pulled.
 
 ## gafol — permanent staging (gafol.rent) — ✅ AT MAIN (Phase A green)
 - Box: gafol.rent is the staging domain. DB `ukrenter_gafol_db` on
