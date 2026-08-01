@@ -1,0 +1,23 @@
+DNS RECORDS — OLD VALUES
+========================
+
+Snapshot of DNS record values as they stood BEFORE any change, kept so we
+can compare or roll back. Append new entries below; do not overwrite.
+
+Recorded: 2026-08-01
+
+
+DMARC
+-----
+Type:   TXT
+Value:
+
+v=DMARC1; p=none; pct=100; fo=1; ri=3600; rua=mailto:e9730fdf@dmarc.mailgun.org,mailto:4f222f37@inbox.ondmarc.com; ruf=mailto:e9730fdf@dmarc.mailgun.org,mailto:4f222f37@inbox.ondmarc.com;
+
+Notes:
+- Host/zone not recorded at capture time — confirm whether this is the
+  apex (_dmarc.renters.rent) or the mail subdomain (_dmarc.mg.renters.rent)
+  before relying on it for a rollback.
+- p=none — monitor only, no enforcement.
+- Aggregate (rua) and forensic (ruf) reports going to both Mailgun and
+  OnDMARC.
