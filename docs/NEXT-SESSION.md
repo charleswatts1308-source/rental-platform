@@ -1,314 +1,223 @@
 # NEXT-SESSION — start here
 
-Living entry point for a fresh session. Stable filename; keep it
-current. The `docs/` folder has many files and many are stale — this
-index says which to trust and which to ignore so you don't re-derive
-state from a superseded doc.
+Living entry point for a fresh session. Stable filename; keep it current.
+The `docs/` folder has many files and many are stale — this index says
+which to trust and which to ignore, so you don't re-derive state from a
+superseded doc. It is a **router, not a record**: keep it short.
 
-**Last updated:** 2026-07-27. **renters.rent is LIVE.** The onboarding +
-content pass (`feature/onboarding-nav`) is now **MERGED to `main`
-(`b92b907`) and deployed to gafol** (24 Jul, code-only, no migrations) —
-it is no longer an open decision. A **non-prod hostname badge** shipped
-with it: shows the domain (e.g. `gafol.rent`) on any non-production box so
-you can tell at a glance you're not on prod — renders nothing on prod.
+**Last updated:** 2026-08-02.
 
-**Current in-progress branch: `feature/admin-unverified-users`** — a UI
-usability pass (27 Jul), 8 commits, **pushed to origin, unmerged, not on
-any box.** See its own section below. Its main output is a **design note
-for the landlord-contact model** — a strong D0 candidate.
+**Everything is level and deployed.** `main`, gafol and renters.rent all
+sit at **`7507a72`**. No unmerged branches, nothing waiting to go out.
+Local `main` is **4 docs-only commits ahead of origin** (unpushed, per the
+Git rule) — push when convenient; no box needs them.
 
-⚠ *Carried over from 18 Jul and NOT re-verified this session — check the
-ledger / box before trusting: the prod commit, the in-flight
-escalation-ladder test, and snag #23 (Mailgun rotation). They may already
-be actioned; the sections below are as they stood on 18 Jul.*
+**dotrent is RETIRED** (1 Aug). Live ledger entries are now **gafol,
+renters.rent, main** — the end state the housekeeping plan was aiming at,
+bar recording the old Windows prod box's retirement.
 
 ---
 
 ## Parked state — read this first
 
-The silence/email model (Phases 1–5, D1–D16) is complete, merged, and
-**now running live on renters.rent**. The 4 Jul cutover is finished:
+The silence/email model (Phases 1–5, D1–D16) is complete, merged and
+running live on renters.rent. Cron, outbound and inbound are all proven on
+the real box. PWA live. Private-beta registration gate live and locked.
 
-- **renters.rent (production)** — fresh sibling site on the Linux box,
-  DNS cut over, SSL live, clean DB (`ukrenter_renters_db`). **Scheduler
-  heartbeat confirmed running** (shadow-log rows at `06:15:02`),
-  **outbound proven** (landlord letter delivered), **Mailgun inbound
-  proven** (real landlord replies landing on cases). PWA + content rework
-  live and tested.
-- **gafol** — permanent staging. **dotrent** — preprod, awaiting retirement.
-- The private-beta **registration gate** is built, merged and deployed.
+**Do not re-diagnose these — both are closed and root-caused:**
+- The 4 Jul "verification email sends nothing, logs nothing" issue was
+  **duplicate `.env` keys** (within one file Laravel takes the LAST `KEY=`
+  and silently ignores earlier ones). Baked into the install recipe, Step 8.
+- Snag **#23**, the exposed Mailgun credentials, is **rotated and proven**
+  (2 Aug, a live landlord reply bound onto a case against the new signing
+  key). Closed after 28 days.
 
-**The 4 Jul "verification email sends nothing, logs nothing" LIVE ISSUE is
-RESOLVED** — root cause was **duplicate `.env` keys** (within one file
-Laravel takes the LAST `KEY=` and silently ignores earlier ones). Same
-trap now baked into the install recipe, Step 8. Do not re-diagnose it.
-
-**Authoritative record for current state: docs/environment-state.md** (the
-deployment ledger). Supporting: `huk-laravel-site-install-recipe.md` (the
-sibling build), `pre-flip-checklist.md` (wider/public-launch gates),
-`dotrent-deploy-plan.md` (Phases A/B history only; Phase C SUPERSEDED).
+**Authoritative record of what is deployed where: `docs/environment-state.md`.**
 
 ---
 
-## ✅ MERGED since — `feature/onboarding-nav` (was the open decision)
+## What landed 1–2 Aug
 
-**Merged to `main` (`b92b907`, `--no-ff`) and deployed to gafol 24 Jul,
-code-only.** The onboarding + content pass: dashboard turned into a real
-hub, Dashboard in the main navbar, dead-ends fixed, new home page
-(`welcome-4`, Erin version archived at
-`/content-archive/homepage-erin-18-july-2026`), About restructured,
-content archive sorts newest-first. All live on gafol now. Ledger updated.
+**Deployed to both boxes (`7507a72`, code-only, no migrations).** Prod
+jumped three weeks in one hop — it had never carried the 24 Jul onboarding
+merge — so it took the onboarding hub + content refresh, the 27 Jul
+usability pass, and the email fix together.
 
-## ⚠ UNMERGED WORK — `feature/admin-unverified-users` (27 Jul)
-
-**Pushed to origin (8 commits), plus local commits since. NOT merged, NOT
-on any box.** Began as a UI usability session; **as of 1 Aug it also
-carries a code change** — email case normalisation on the two auth paths
-(see below), so it is no longer views + docs only. **Suite green at
-550/2279** (was 547/2265; +3 tests are the new normalisation ones).
-Merge to `main` + deploy to gafol when happy.
-
-**Email case normalisation (1 Aug, code).** Breeze's `lowercase` rule
-*validates* for lowercase rather than applying it, so registering or
-changing your profile email as `Charlie@Example.com` was REJECTED with
-"The email field must be lowercase" — nonsense to a normal person, and
-sitting on the front door right before a family trial. Both paths now
-normalise (trim + lowercase) before validation:
-`RegisteredUserController::store` and `ProfileUpdateRequest`. The
-landlord-email path already did this (`CaseController:493`) and was not
-touched. Three tests added, each confirmed to FAIL without the fix.
-No migration, no config.
-
-- **Admin users page:** unverified users now listed under their own
-  heading (previously counted but never shown); the verified table gained
-  a "Verified On" timestamp.
-- **Nav:** the "Properties & Cases" dropdown split into two top-level items
-  **Properties** and **Cases**; nav labels no longer wrap mid-label on
-  desktop (`white-space: nowrap`).
-- **Dashboard:** green "Welcome — and thanks for registering!" banner on
-  the post-verification landing (`?verified=1`).
-- **Snags #27, #28, #29** added (see snags section).
-
-### ⭐ Main output — landlord-contact model design note (D0 candidate)
-
-`docs/landlord-contact-model-gap.md` (decision recorded 27 Jul). The
-landlord contact hangs off the **case** via a global email-keyed table;
-the **property has no landlord link**, so a mistyped landlord email can't
-be corrected (snag #24 — **hit for real this session**). Agreed direction:
-**property-owned, versioned contact with change-history; retire
-`landlord_contacts`; ONE address per property** (the tenancy-agreement
-service address is the legally-required item — the recipient circulates it
-internally as they please), **no per-case override.** Integrity checked
-**safe** — all evidential data is frozen at send/receipt (`to_address_raw`,
-`bound_email`, `from_address_raw`), so relocating the live email rewrites
-no past facts. **~5–6 focused days, D0-first, reconcile with the
-silence-model design doc.** Sequencing: #25 (delivery-failure detection)
-makes a typo *visible* and should come first.
+- **Email case normalisation (the only behavioural code change).** Breeze's
+  `lowercase` rule *validates* for lowercase rather than applying it, so
+  `Charlie@Example.com` was REJECTED with "The email field must be
+  lowercase". Registration and profile-update now trim + lowercase before
+  validation. **Proven on prod**: mixed case keyed in, stored lowercase.
+  Three tests, each confirmed to fail without the fix.
+- **UI:** admin unverified-users list + "Verified On"; nav split into
+  Properties / Cases; post-verification welcome banner (**broken — see #37**).
+- **DNS (1 Aug):** apex SPF, apex DMARC, tightened `_dmarc.mg` (dropped
+  `ruf`/`fo` — forensic reporting forwards tenant data to third parties).
+  Before/after in `docs/DNS records old values.txt`.
+- **Mailgun:** credentials rotated; open/click tracking confirmed **off**
+  in all three cases (tracking rewrites links, so an enabled tracker means
+  the letter the landlord received is not the letter we hold as evidence).
+- **Mail identity audit** → snags #31–#36; #8 closed as a duplicate of #25.
 
 ---
 
-## Next session — finish the escalation test, then open the family trial
+## Open actions — do these first
 
-**IN FLIGHT — the escalation ladder on prod (case 3).** Surface B set to
-`escalation.interval_days=1` / `escalation.max_notices=2`, correctly
-snapshotted onto the case (shadow log reads `0/1 days`, not the 14-day
-default). Landlord letter 1 went out Sun 12 Jul evening; **first
-escalation was due at the 06:15 sweep on Tue 14 Jul.** Check
-`silence_shadow_log` for `send_escalation` / `executed=1` plus the letter
-in the landlord's inbox. **Result not yet recorded here — confirm it and
-write the outcome into the ledger.**
+**Asked for but NOT confirmed done. Check before trusting.**
 
-*Read the clock correctly before calling anything broken:* the sweep is a
-**daily 06:15 batch**, and silence is floored to **whole days** — so a
-1-day interval fires ~34h after the letter, not 24h. And because each sent
-letter restarts the clock a beat *after* the sweep's own timestamp, later
-rungs drift by one sweep (escalation 2 lands Thu, not Wed). Designed
-behaviour, not a defect — harmless at the real 14-day interval.
+1. **Restore prod pacing.** Surface B was set to `interval_days=1` /
+   `max_notices=2` for the ladder test. Production defaults, confirmed
+   against BOTH the seeder and the design doc: **`interval_days` = 14,
+   `max_notices` = 4.** Everything else is already at default; B2 "Applies
+   to In-flight cases" stays **No**.
+2. **Close out case 3.** B2 is Off, so the settings change above will NOT
+   slow it — it keeps its frozen `0/1 days` snapshot and carries on
+   laddering. Abandon or resolve it directly. Check `silence_shadow_log`
+   for any OTHER case created during testing carrying a 1-day snapshot.
+3. **Confirm the allowlist.** On the box: `php artisan config:cache` then
+   `php artisan config:show app`. Her address the only entry;
+   `registration_open_to_all` still **false**. Also `grep -c` for duplicate
+   `KEY=` lines while in there — that is the trap that broke it before.
+4. **Settle #27's 403.** Read `storage/logs/laravel.log` on prod at the
+   time of the failure. `AuthorizationException` = id mismatch;
+   `InvalidSignatureException` = the link itself was rejected. **Different
+   causes need different fixes** — don't design before this is known.
+5. **Read the mail headers.** All four mail paths delivered on 2 Aug, but
+   SPF/DKIM/DMARC results were never read from "Show original". The 1 Aug
+   DNS change is proven *not broken*, not proven *aligned*.
 
-**Then, to open the family trial:**
-1. ~~Confirm the front door is locked.~~ **DONE (13 Jul):**
-   `registration_open_to_all` = **false**, allowlist populated with 5
-   family addresses (verified via `config:show app` on the box).
-2. **Restore prod pacing:** put Surface B back to real intervals once the
-   ladder test passes. B2 "Applies to in-flight cases" stays **Off**.
-3. **Begin the family trial.** gafol stays permanent staging.
+**Never recorded:** the outcome of the July escalation-ladder test on case
+3. If it is still wanted as evidence, get it from `silence_shadow_log`
+before wiping; otherwise close it out and let it go.
 
-**✅ DONE 1 Aug — snag #23, the Mailgun credential rotation.**
-`MAILGUN_SECRET` + `MAILGUN_WEBHOOK_SIGNING_KEY` are rotated; the keys
-exposed in the 4 Jul transcript are dead after 28 days live. This was the
-last outstanding item on prod. **Dotrent is retired as of 1 Aug**, so
-renters.rent is the only box on `mg.renters.rent` and the rotation is
-complete — no second box to update.
+*Read the clock correctly before calling the sweep broken:* it is a daily
+**06:15 batch** and silence floors to **whole days**, so a 1-day interval
+fires ~34h after the letter, not 24h; later rungs drift one sweep. Designed
+behaviour — harmless at the real 14-day interval.
 
-Also done 1 Aug: **three DNS records** (apex SPF, apex DMARC, tightened
-`_dmarc.mg` — dropping the forensic `ruf`/`fo` reporting that would forward
-tenant data to third parties), and **Mailgun open/click tracking confirmed
-off in all three cases**. Full before/after in
-`docs/DNS records old values.txt`.
-
-**Housekeeping:**
-- **Retire the old boxes:** confirm the Windows prod box is dark and record
-  its retirement; retire dotrent once renters.rent is proven. End state:
-  three live ledger entries — gafol, renters.rent, main.
-- **Go-live switch (LATER, the only one):** open beyond family by setting
-  renters.rent `REGISTRATION_OPEN_TO_ALL=true` + `config:cache`. Public
-  launch still gated by solicitor wording sign-off — see
-  `pre-flip-checklist.md`.
-- ~~gafol branch back on `main`~~ — **DONE 13 Jul.** gafol and prod are
-  level at `133a103`. Stage-then-prod discipline has been kept throughout.
-
-**Note:** solicitor letter-wording sign-off does NOT gate the family
-trial (functional accuracy, family's own landlords — Charlie's call,
-21 Jun 2026). It gates a wider/public launch.
+**Then: begin the family trial.** The front door is locked, mail is proven
+both directions, and the email fix that blocked a capitalised address is
+live. gafol stays permanent staging.
 
 ---
 
-## Read in this order (the live set)
+## Priorities after the trial opens
 
-1. **/CLAUDE.md** (repo root) — working agreements. Now carries the
-   **Migrations** rule (manual MariaDB `SHOW CREATE TABLE` before merge)
-   AND the **Deployment-ledger** rule (every long-lived deploy updates
-   environment-state.md as its last step, reconciled vs `migrate:status`).
-2. **docs/environment-state.md** — the deployment ledger. Current truth of
-   what's deployed where: **gafol at `b92b907`** (24 Jul, onboarding +
-   badge); renters.rent per the ledger entry; dotrent awaiting retirement.
-   `main` has advanced past docs-only (onboarding merge);
-   `feature/admin-unverified-users` sits ahead of `main`, pushed, unmerged.
-3. **docs/dotrent-deploy-plan.md** — Phases A/B deploy history; Phase C
-   (flip) SUPERSEDED. Current build runs off the sibling-site recipe.
-3b. **docs/huk-laravel-site-install-recipe.md** — the fresh sibling-site
-   build (incl. Step 10b admin creation on production).
-4. **docs/llcs-silence-model-design.md** — AUTHORITATIVE design (D1–D16).
+- **#25 — no delivery-failure detection.** A bounced letter and an ignored
+  letter are indistinguishable, so the product will say "served on the 12th,
+  no response in 14 days" with full confidence when nobody was ever served.
+  Goes to the core claim. ~a day of plumbing, but the DESIGN questions come
+  first — `docs/delivery-failure-design-question.md` is **awaiting an
+  outside review; do not build before it lands.**
+- **#37 — the welcome banner has never worked.** Shipped 1 Aug, failed on
+  the first real registration. Cheap fix (flash to session, not a query
+  flag) and it needs the test that was missing.
+- **Landlord-contact model (D0 candidate)** —
+  `docs/landlord-contact-model-gap.md`. Property-owned, versioned contact
+  with change history; retire the global email-keyed `landlord_contacts`;
+  ONE address per property. ~5–6 focused days. **Sequenced after #25**,
+  which makes a typo visible in the first place.
+- **#32 → #33** — move `ContactReply` off the hardcoded apex sender; then
+  the apex SPF added 1 Aug becomes unnecessary and can tighten to
+  `v=spf1 -all`. Fixing #32 also removes Gmail's "on behalf of" display.
+
+**Go-live switch (LATER, the only one):** `REGISTRATION_OPEN_TO_ALL=true`
++ `config:cache` on renters.rent. Public launch still gated by solicitor
+wording sign-off (`pre-flip-checklist.md`). That sign-off does **not** gate
+the family trial — Charlie's call, 21 Jun.
+
+---
+
+## Read in this order
+
+1. **/CLAUDE.md** — working agreements. Carries the **Migrations** rule
+   (manual MariaDB check before merge) and the **Deployment-ledger** rule.
+2. **docs/environment-state.md** — the ledger; current truth of what is
+   deployed where. **Not reconciled against `migrate:status` since 27 Jun**
+   — do that at the next deploy.
+3. **docs/llcs-silence-model-design.md** — AUTHORITATIVE design (D1–D16).
    Wins over any brief; tie-breaker if two docs disagree.
-5. **docs/User Guides/** — plain-English + technical dispatch-sequence
-   references (which letter fires when), and the CC automation
-   orientation (read-at-leisure).
-
-Then pick up the escalation test above.
+4. **docs/llcs-snagging-list.txt** — the pre-live-running to-do list.
+5. **docs/huk-laravel-site-install-recipe.md** — the sibling-site build.
+6. **docs/User Guides/** — dispatch-sequence references + automation
+   orientation (read at leisure).
 
 ---
 
 ## Snags — open
 
-`docs/llcs-snagging-list.txt`: **#1, #2, #7, #12, #13, #17, #18, #19, #22,
-#23, #24, #25, #26, #27, #28, #29, #30, #31, #32, #33, #34, #35, #36.**
+**#1, #2, #7, #12, #13, #17, #18, #19, #22, #24, #25, #26, #27, #28, #29,
+#30, #31, #32, #33, #34, #35, #36, #37.**
 
-*(#1 and #2 were open all along but missing from this list — corrected
-1 Aug. #8 was CLOSED 1 Aug as a duplicate of #25, not as fixed.)*
+Closed since: **#23** (creds rotated, 1 Aug), **#8** (duplicate of #25,
+1 Aug — retired, not fixed). Resolved by Phase 5 (D16): #4, #14, #15, #16,
+#20, #21.
 
-The snagging list is where the **pre-live-running to-do list gets built
-from**, so read the whole file before serious live running.
+**Added 1 Aug (mail identity audit):** #31 `deploy-checklist.md` names
+`inbox.renters.rent`, a domain with no DNS — a rebuild following it would
+silently break every landlord reply, and the `CaseNotice` guard tests
+presence not validity; #32 `ContactReply` hardcodes an apex sender; #33
+apex SPF is a temporary shape, blocked on #32; #34 CLAUDE.md's Mail section
+contradicts the code (the keys have no defaults, by design); #35 local
+`MAIL_FROM_ADDRESS` is a third-party domain; #36 Mailgun tier — open
+question, two pre-sales questions before spending. Four are minutes of doc
+or config work; only #32 is code.
 
-**Two priorities:**
-- **#23** — rotate the exposed Mailgun credentials. Security, and still the
-  oldest open item.
-- **#25** — **no delivery-failure detection.** A bounced letter and an
-  ignored letter are indistinguishable to the system, so the product will
-  state "served on the 12th, no response in 14 days" with full confidence
-  when nobody was ever served. Goes to the core claim. Roughly a day of
-  plumbing, but the DESIGN questions come first — see
-  `docs/delivery-failure-design-question.md`, written to be readable
-  without repo access and **awaiting an outside review**.
-
-Added 18 Jul: **#24** (can't correct a landlord email after send), **#25**
-(above), **#26** (copy-anchored view assertions rot silently — a label
-rename left an `assertDontSee` passing vacuously against a string no longer
-in the app).
-
-Added 1 Aug (mail identity + reply-path audit): **#31** (deploy-checklist
-names `inbox.renters.rent`, a domain with no DNS — a rebuild following it
-would silently break every landlord reply, and the `CaseNotice` guard tests
-presence not validity), **#32** (`ContactReply` hardcodes an apex sender,
-bypassing the fail-loud discipline), **#33** (apex SPF is a temporary shape,
-blocked on #32), **#34** (CLAUDE.md's Mail section contradicts the code —
-the keys have no defaults, by design), **#35** (local `MAIL_FROM_ADDRESS`
-is a third-party domain), **#36** (Mailgun tier — open question, two
-pre-sales questions before spending). Four of the six are minutes of doc or
-config work; only #32 is code. **#25 gained the evidential argument** for
-delivery webhooks and the wording discipline (name the MX host; delivered
-≠ read). **#30 took a decision**: rebuild Contact Us as a real two-way
-thread, not patch it.
-
-Added 27 Jul (UI usability session): **#27** (verify link bounces
-guest browsers to /login — cross-browser: register in Chrome, open the
-verify email in Edge), **#28** (default the email field on non-prod auth
-forms — dev convenience), **#29** ("Members Only" login banner is
-intimidating; soften or suppress on the verify path). All three trivial +
-deferred with fixes recorded. **#24 was PROMOTED 27 Jul** from convenience
-to a data-design item — now fronted by `landlord-contact-model-gap.md`
-(see the branch section above).
-
-Resolved by Phase 5 (D16): #4, #14, #15, #16, #20, #21.
+**Added 2 Aug (prod verification run):** **#37** — post-verification
+welcome banner never fires (`redirect()->intended()` discards the
+`?verified=1` fallback whenever a `url.intended` exists). **#27 gained a
+worse failure mode** — a hard 403, not the /login redirect recorded; root
+cause OPEN, see action 4 above. **#32 gained the visible symptom** — Gmail's
+"on behalf of" display.
 
 Deferred named gaps (not built): `letter_templates.active` toggle,
-`ExhaustedStance` enum/`setStance` (dormant, no UI). Both candidates for
-a post-#8 machine-state / Surface-D admin pass.
+`ExhaustedStance` enum/`setStance`. Both candidates for a future Surface-D
+admin pass.
 
 ---
 
 ## Doc status map (design doc + ledger win when in doubt)
 
-**LIVE — trust these:**
-- `CLAUDE.md` — working agreements (Migrations + Deployment-ledger rules).
-- `environment-state.md` — deployment ledger (current).
-- `huk-laravel-site-install-recipe.md` — the fresh sibling-site build
-  (current cutover build doc).
-- `dotrent-deploy-plan.md` — Phases A/B deploy HISTORY only; **Phase C
-  (flip) SUPERSEDED** by the sibling build.
-- `llcs-silence-model-design.md` — authoritative design (D1–D16).
-- `llcs-snagging-list.txt` — open snags (above).
-- `delivery-failure-design-question.md` — **standalone brief for outside
-  review** (snags #24/#25). Written to be readable without repo access;
-  poses the open rulings rather than answering them. **Awaiting a verdict —
-  do not build #25 before it lands.**
-- `landlord-contact-model-gap.md` — **design note + decision** (27 Jul),
-  D0 candidate. Property-owned versioned landlord contact; retire the
-  global email-keyed table; one address per property; fixes snag #24.
-  Reconcile with the design doc before building.
-- `pre-flip-checklist.md` — production cutover conditions (wider/public
-  launch sign-offs).
-- `User Guides/` — dispatch-sequence refs + automation orientation.
+**LIVE — trust these:** `CLAUDE.md`; `environment-state.md`;
+`llcs-silence-model-design.md` (authoritative); `llcs-snagging-list.txt`;
+`huk-laravel-site-install-recipe.md`; `DNS records old values.txt` (DNS
+before/after + Mailgun config decisions); `landlord-contact-model-gap.md`
+(D0 candidate, 27 Jul); `delivery-failure-design-question.md` (**awaiting
+outside verdict — do not build #25 first**); `pre-flip-checklist.md`;
+`User Guides/`.
 
 **HISTORICAL — accurate for their phase, don't lead with them:**
-- `d16-cc-brief.md`, the D14/D15 briefs/reports/runbooks/write-ups, the
-  phase-1/2a/2b/3 briefs + runbooks + write-ups.
+`d16-cc-brief.md`, the D14/D15 briefs/reports/runbooks, the
+phase-1/2a/2b/3 briefs + runbooks + write-ups, `dotrent-deploy-plan.md`
+(Phases A/B history; Phase C SUPERSEDED).
 
-**ARCHIVE — pre-silence-model; ignore for current work:**
-- `LLCS Version 1/`, `LLCS old docs 3 May 1150/`,
-  `landlord-contact-service-*.md`.
+**ARCHIVE — ignore for current work:** `LLCS Version 1/`,
+`LLCS old docs 3 May 1150/`, `landlord-contact-service-*.md`.
 
-**VERIFY before relying on:**
-- `phase-3-design-*.md` (likely folded into design doc),
-  `phase-8-design-notes.md` (speculative), `deploy-checklist.md` (older;
-  the live cutover doc is `dotrent-deploy-plan.md` + `pre-flip-checklist`),
-  `huk-*`, `chats/*`, `state-summary-2026-05.md`, `session-writeup-*`.
+**VERIFY before relying on:** `phase-3-design-*.md`,
+`phase-8-design-notes.md`, **`deploy-checklist.md` (contains the known-bad
+`inbox.renters.rent` value — snag #31)**, `huk-*`, `chats/*`,
+`state-summary-2026-05.md`, `session-writeup-*`.
 
 ---
 
 ## Branches
 
-**UNMERGED: `feature/admin-unverified-users`** — 8 commits pushed 27 Jul,
-further commits local since (1 Aug: mail identity audit docs, DNS record,
-#23 closure, email case normalisation). The UI usability pass +
-landlord-contact design note described at the top, **plus one code change
-(email normalisation)**. Not merged, not deployed. **This is the current
-working branch.**
-
-`feature/onboarding-nav` — **MERGED** to `main` (`b92b907`) and on gafol;
-deletable.
+**No unmerged work.** `feature/admin-unverified-users` merged to `main`
+(`7507a72`, `--no-ff`) 1 Aug and deployed to both boxes 1–2 Aug; deletable.
+`feature/onboarding-nav` merged (`b92b907`); deletable.
 
 Merged, retained-but-deletable: `registration-lock`,
 `d14-escalation-exhausted`, `d15-engagement-gating`, `d16-admin-config-ui`,
-`d16-admin-security`. Delete once cutover sign-offs land.
+`d16-admin-security`, `feature/pwa-wiring`.
 
-Tags: `pre-registration-lock` (`a63ac4a`), `post-d16-phase5` (`cf2f5c9`),
-`pre-d16-phase5`, `pre-d16` — all on origin.
+Tags on origin: `pre-registration-lock` (`a63ac4a`), `post-d16-phase5`
+(`cf2f5c9`), `pre-d16-phase5`, `pre-d16`.
 
 ---
 
 ## Maintenance rule
 
 When a phase closes: move its brief/report/runbook to HISTORICAL, repoint
-the parked-state block, prune resolved snags. Keep this file to one
-screen — it's a router, not a record. On any deploy, the LAST step is
-writing environment-state.md (CLAUDE.md Deployment-ledger rule).
+the parked-state block, prune resolved snags. Keep this file to one screen.
+On any deploy, the LAST step is writing `environment-state.md`.
