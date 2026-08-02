@@ -22,19 +22,16 @@ to anyone. Nothing has been filed anywhere.</p>
 <hr class="my-4">
 
 {{--
-    PLACEHOLDER — two fields still to fill before this page goes live:
-    the trader's name and a correspondence address. A sole trader using a
-    business name must disclose both on the website, and a landlord
-    judging legitimacy looks for a named person they can check — saying
-    what you do while staying vague about who you are is what a scam
-    reads like.
-    Use a service/mail-forwarding address, NOT a home address: this page
-    is read by landlords who have just received a formal repair notice.
+    TRIAL WORDING — Charlie's decision, 2026-08-02. Deliberately gives no
+    trader name or correspondence address: this is the one-off family
+    trial, not a public launch. Both become required disclosures before
+    the service opens to the public — see snag #42. Do not treat this
+    wording as settled for launch.
 --}}
 <h3 class="mb-3">Who we are</h3>
 
-<p>renters.rent is a service operated by <strong>[NAME]</strong>, a sole trader based in the
-United Kingdom. Correspondence address: <strong>[ADDRESS]</strong>.</p>
+<p>renters.rent is a new service developed to aid tenants and landlords in their joint
+pursuit of rental property improvement.</p>
 
 <p>We're registered with the Information Commissioner's Office, the UK data protection
 regulator, under registration reference <strong>ICO:00014275530</strong>. You can check that

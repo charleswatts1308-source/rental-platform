@@ -1492,11 +1492,30 @@ Notes:       Why an address is not optional: a sole trader trading under
              that resolves to nothing is WORSE than no number: a landlord
              who checks it and finds nothing concludes the opposite of
              what the page intends.
-Fix:        Decide and buy a service address; set [NAME] and [ADDRESS] in
-             resources/views/landlords.blade.php and remove the
-             placeholder comment; verify the ICO reference on the public
-             register and correct it if it is the wrong identifier. Then
-             the page can deploy. Consider whether the same address
-             belongs in the site footer and privacy notice, which have
-             the same disclosure exposure.
+             DECISION 2026-08-02 (Charlie) — for the ONE-OFF FAMILY TRIAL
+             only, the page carries no trader name and no correspondence
+             address. "Who we are" now reads simply that renters.rent is a
+             new service developed to aid tenants and landlords in their
+             joint pursuit of rental property improvement. The bracketed
+             placeholders are gone, so the page is deployable for the
+             trial.
+             THIS SNAG STAYS OPEN. The decision is scoped to the trial and
+             does NOT carry to public launch, where the name and a service
+             address become required disclosures again. The trial audience
+             is a handful of known family landlords; the launch audience is
+             strangers who have just received a formal notice about their
+             own property. Different exposure in both directions.
+             For accuracy: the page is reachable by anyone at
+             renters.rent/landlords during the trial — the registration
+             gate covers signing up, not public pages. The decision is that
+             this is acceptable at trial scale, not that the page is
+             private.
+Fix:        Before public launch: decide and buy a service address, set the
+             trader name and address in
+             resources/views/landlords.blade.php and remove the trial-
+             wording comment; verify the ICO reference on the public
+             register and correct it if it is the wrong identifier.
+             Consider whether the same address belongs in the site footer
+             and privacy notice, which have the same disclosure exposure.
+             Add to pre-flip-checklist.md so launch cannot pass without it.
 --------------------------------------------------------------------
