@@ -13,11 +13,9 @@ this page explains what it is and what happens next.</p>
 <h3 class="mb-3">The email is genuine</h3>
 
 <p>It was sent because one of your tenants used renters.rent to put a repair request in
-writing. Our emails always come from an address ending <code>renters.rent</code>, and we
-will never ask you for payment, bank details or a password.</p>
+writing. Our emails always come from an address ending <code>renters.rent</code>.</p>
 
-<p>We're not a claims company, a solicitor, or a complaints body. No one has reported you
-to anyone. Nothing has been filed anywhere.</p>
+<p>We're not a claims company, not a solicitor, not a complaints body.</p>
 
 <hr class="my-4">
 
