@@ -848,11 +848,32 @@ Notes:       Two things are conflated in the current UX: (1) VERIFYING the
              verify link in another, and got a hard
              "403 This action is unauthorized" — not the /login redirect
              this snag originally described.
-             Cause: the second browser was not a GUEST, it was signed in
-             as a DIFFERENT user (admin, from earlier testing). Laravel's
-             EmailVerificationRequest::authorize() compares the logged-in
-             user's id against the id in the link; mismatch returns false,
-             and false is a 403.
+             Browsers used: admin session in CHROME, registration in
+             FIREFOX, verify link opened in EDGE. Edge was believed to be
+             session-free.
+             CAUSE NOT YET ESTABLISHED — an earlier note here blamed "the
+             browser was signed in as admin"; that is RETRACTED, the admin
+             session was in Chrome, not Edge.
+             What the code does establish: the route sits inside
+             Route::middleware('auth') (routes/auth.php:38-44) with
+             `signed` + `throttle:6,1` on top, and there is no custom
+             Authenticate override in bootstrap/app.php. So a genuine
+             guest gets a 302 to /login — `auth` CANNOT emit a 403. Both
+             403 sources on this route sit downstream of `auth`:
+               - `signed`                     -> "Invalid signature."
+               - EmailVerificationRequest::authorize() -> "This action is
+                 unauthorized."  <- the wording actually seen
+             Therefore the request PASSED auth, which means Edge held a
+             session for some user whose id did not match the link (a
+             stale login from earlier testing, or a remember-me cookie,
+             would do it). That contradicts the recollection, so it is
+             recorded as an open question rather than a conclusion.
+             TO SETTLE IT: read storage/logs/laravel.log on prod at the
+             time of the 403. AuthorizationException = id mismatch;
+             InvalidSignatureException = the link itself was rejected,
+             which would instead point at the mail client mangling the
+             URL. Do this before designing the fix — the two causes need
+             different fixes.
              So the half-built guest branch at VerifyEmailController.php:
              34-57 is unreachable TWO ways, not one:
                - truly logged out -> `auth` middleware redirects to /login,
