@@ -1362,3 +1362,92 @@ Fix:         Render the staged photo count and filenames in
              explicitly when there are none, so "no photos attached" is
              visible rather than inferred from absence.
 --------------------------------------------------------------------
+#40
+Page:        CaseController::store validation (:359-360) — photo limits
+             are per-file only, with no combined-size rule, and the
+             per-file ceiling is too small for ordinary phone photos.
+             Surfaced 2026-08-02 attempting the FIRST real attachment
+             test on prod.
+Severity:    MAJOR. Two distinct defects, one of which destroys tenant
+             input with no warning. Photographs are the strongest
+             evidence a tenant has and this is their only chance to
+             attach any.
+Saw:         (a) A 3.22MB PNG — a completely ordinary phone-photo size —
+             was rejected with "The photos.0 failed to upload." That
+             string is Laravel's `uploaded` rule firing because PHP
+             rejected the file before validation ran. It names no size,
+             no limit and no remedy, and "photos.0" is meaningless to a
+             tenant. Proven on prod: 162KB succeeds, 3.22MB fails.
+             (b) The form permits 6 files at max:2048 each — up to 12MB
+             — but the server's effective post_max_size is 8M (see #41).
+             PHP discards an oversized POST ENTIRELY, including the CSRF
+             token, so the tenant gets a 419 "page expired" and loses
+             the description they typed. NOT YET REPRODUCED — inferred
+             from the measured limits; confirm before relying on it.
+Expected:    A tenant attaching normal phone photos either succeeds, or
+             is told clearly and specifically what to change, BEFORE
+             anything they have typed is lost.
+Status:      open — snagged 02 Aug. Blocked in part on #41 (hosting).
+Notes:       Never caught by tests because the suite fabricates
+             UploadedFile objects in memory — they never touch PHP's
+             upload limits or a real filesystem. Green tests could not
+             have found this. It is a good argument for exercising file
+             paths on a real box before trusting them.
+             The attachment path itself WORKS: proven end to end on prod
+             the same day (case WS2ZPP), original filename preserved,
+             and the letter scored SCL:1 BCL:0 dest:I — a small
+             attachment cost nothing in deliverability. Untested at the
+             top end: no multi-megabyte letter has been spam-scored,
+             because the limits above prevent sending one.
+             Design tension to resolve, not just a number to raise:
+             6 files x 5MB = 30MB, over Mailgun's 25MB message ceiling.
+             Raising limits alone trades a visible failure for a silent
+             one. The durable answer is resize-on-upload — keep the
+             tenant's ORIGINAL untouched on disk as the evidential
+             record, attach a compressed derivative to the letter. That
+             accepts any phone photo, keeps letters small, and preserves
+             the evidence. Note it means the bytes the landlord receives
+             are not the bytes held as evidence; that is a deliberate
+             decision and should be recorded as one, not drifted into.
+Fix:         Immediate, independent of hosting: add a combined-size
+             validation rule below whatever the server actually accepts,
+             so oversize is refused with a clear message instead of
+             destroying the submission; and override the `uploaded` and
+             `max` messages for photos.* to name the file and the limit
+             in plain words. Then decide on resize-on-upload separately
+             — that one is a design call, not a patch.
+--------------------------------------------------------------------
+#41
+Page:        Hosting — Plesk PHP Settings for renters.rent do not reach
+             the running PHP. Surfaced 2026-08-02 while diagnosing #40.
+Severity:    MAJOR as a trust problem, whatever the upload numbers turn
+             out to be. A control panel that displays and saves settings
+             it does not apply invalidates anything configured there.
+Saw:         Domain renters.rent, PHP 8.4.23 as FastCGI application.
+             Set and APPLIED in the domain's PHP Settings page:
+             upload_max_filesize 8M, post_max_size 16M. phpinfo for the
+             same domain, after a forced reload, still reports Local
+             Values of 2M and 8M. Confirmed functionally, not just from
+             phpinfo: the 3.22MB upload still fails after applying.
+             Before those changes the panel displayed 32M for BOTH
+             values — and 32M is not an option in either dropdown, which
+             tops out at 16M. So the page was showing a stored value it
+             cannot itself set and which was never in effect.
+Expected:    The domain PHP Settings page is authoritative for the
+             domain, or says plainly that it is not.
+Status:      open — snagged 02 Aug. HUK support ticket raised same day.
+Notes:       Ruled out at our end: no php_value in public/.htaccess
+             (stock Laravel rewrite rules only), no .user.ini anywhere
+             in the application, no application php.ini.
+             The consequence reaches past uploads. deploy-checklist.md
+             and huk-laravel-site-install-recipe.md both assume Plesk
+             PHP settings can be read and set at face value. Until this
+             is understood, any value on that page is unverified — and
+             most of them fail far less visibly than an upload does.
+             Verify effective values from phpinfo, not the panel.
+Fix:         Hosting answer required: are these directives locked at
+             service-plan or server level; what maxima are available;
+             and is that panel meant to be authoritative. If it is not,
+             record in the install recipe which settings must be
+             verified via phpinfo rather than trusted from the panel.
+--------------------------------------------------------------------
