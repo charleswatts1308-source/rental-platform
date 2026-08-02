@@ -6,7 +6,7 @@
 <h1 class="mb-4">Information for landlords</h1>
 
 <p class="lead">If you've arrived here after receiving an email about one of your properties,
-this page explains what it is and what happens next.</p>
+this page provides some explanation.</p>
 
 <hr class="my-4">
 
