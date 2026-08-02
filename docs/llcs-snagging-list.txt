@@ -1208,6 +1208,31 @@ Fix:         Before paying for Basic 10k (£12/mo), two PRE-SALES questions
                  domain? If it does, Basic BREAKS STAGING and is unusable
                  at any price — staging must keep its own outbound path.
              Answer both before spending anything.
+
+             ANSWERED 2026-08-02 — Mailgun (Sinch) support, question (a):
+             "Different plan tiers don't come with higher reputation IP
+             pools." Paying buys volume and features, NOT deliverability.
+             That removes the entire deliverability case for upgrading,
+             which was the reason this entry existed.
+             DECISION: do not upgrade on deliverability grounds. Revisit
+             only if VOLUME or a feature forces it — at which point (b),
+             the sending-domain count, still needs answering because it
+             could break staging. (b) remains UNANSWERED; it is moot
+             while we are not buying.
+             Do not buy a dedicated IP either. Dedicated IPs start with
+             no reputation and need sustained volume to warm up; at a
+             few letters a week one would perform WORSE than the shared
+             pool. Shared is correct here and will be for a long time.
+             Corroborating evidence, same day: landlord letters to
+             Outlook scored SCL:1 BCL:0 dest:I (Inbox) from the shared
+             pool, with SPF/DKIM/DMARC all passing and aligned. The
+             structural risk recorded above is real but is NOT currently
+             biting — see environment-state.md, 2 Aug header read.
+             Also from the reply, worth keeping for #25: Mailgun will
+             investigate a delivery failure only if given the Message-ID
+             of an event that names one of THEIR IPs as the cause. That
+             tells us what to retain when failure detection is built.
+             Status: (a) closed. Tier question closed. (b) parked.
 --------------------------------------------------------------------
 #37
 Page:        Post-verification welcome banner (dashboard.blade.php) —
@@ -1255,4 +1280,85 @@ Fix:         Stop carrying this in the URL. Flash it to the session
              and leaves nothing in the address bar. Add a test asserting
              the banner shows after a real verify redirect — there is
              currently none, which is why this shipped.
+--------------------------------------------------------------------
+#38
+Page:        Property city is stored and rendered exactly as typed —
+             no capitalisation of the leading character. Surfaced
+             2026-08-02 reading a real landlord letter on prod.
+Severity:    minor — cosmetic, but it lands in the one place that is
+             meant to look formal.
+Saw:         Notice 1 to the landlord renders the property address as
+             "66 Pond Road, reading, RG1 5RD". The tenant typed the
+             town in lower case at property creation and nothing
+             normalised it. The same string appears in the letter
+             SUBJECT line, so it is visible before the message is even
+             opened.
+Expected:    Town renders capitalised — "Reading" — in a formal notice
+             citing the Landlord and Tenant Act 1985.
+Status:      open — snagged 02 Aug.
+Notes:       Why it is worth fixing rather than tolerating: this letter
+             is the product's core artefact and its whole job is to be
+             taken seriously by a landlord. A lower-case town name reads
+             as an unproofed automated mailshot, which is exactly the
+             impression the letter must not give. The tenant typed it,
+             but the landlord sees OUR letter.
+             Precedent already set: registration and profile-update
+             normalise email case on input (1 Aug). This is the same
+             class of problem in the same class of field, and the same
+             answer applies.
+             Scope note: address_line1/2 have the identical exposure and
+             are equally visible in the subject line. Fixing city alone
+             leaves "66 pond road" possible. Postcode is a third case —
+             it should be UPPER, not title case.
+             Beware naive ucwords() on UK addresses: it produces
+             "Stratford-Upon-Avon", "Kings Lynn" losing "King's", and
+             mangles "St Leonards-on-Sea". Title-casing a free-text
+             address field is not as simple as it looks — decide
+             deliberately how far to go.
+Fix:         Normalise on input in PropertyController (validation rules
+             at :112, assignment at :60 and :95 — store AND update
+             both). Trim, then apply the chosen capitalisation to city
+             and address lines, and strtoupper the postcode. Add a test
+             per field asserting the stored value, mirroring the email
+             normalisation tests. Decide separately whether to correct
+             EXISTING rows — letters already sent are frozen evidence
+             and must not be altered, but the property record can be.
+--------------------------------------------------------------------
+#39
+Page:        resources/views/cases/preview.blade.php — the D13 preview
+             does not show that photos are attached. Surfaced
+             2026-08-02.
+Severity:    minor — no data loss, but it undermines what the preview
+             is FOR.
+Saw:         The two-step create flow (store -> preview -> confirm)
+             renders the notice the landlord will receive so the tenant
+             can check it before anything is sent. Staged photos are
+             held at that point and WILL be attached to notice 1, but
+             the preview makes no mention of them — no filenames, no
+             count, no thumbnails. Nothing in preview.blade.php
+             references photos or attachments at all.
+Expected:    The preview shows what is about to be sent, attachments
+             included — at minimum a count and the filenames, matching
+             what _message_card.blade.php already renders after the
+             fact.
+Status:      open — snagged 02 Aug.
+Notes:       The preview is the tenant's ONLY chance to check the
+             letter before it goes to their landlord, and photos are
+             the one part they cannot take back once sent. A tenant who
+             attached the wrong photo — of the wrong room, or one that
+             happens to show a family member — has no way to notice
+             from this screen.
+             It also fails the other way: a tenant whose upload was
+             silently rejected sees a preview identical to a successful
+             one, and only learns the letter went out bare afterwards.
+             That failure mode is live TODAY, given the 2M server limit.
+             The data needed is already in the session payload the
+             preview reads — count($payload['photos']) plus each
+             original_filename. No new query, no new state.
+Fix:         Render the staged photo count and filenames in
+             preview.blade.php from the session payload, in the same
+             shape _message_card.blade.php uses (filename + KB). Add a
+             test asserting the preview names each staged file. Say
+             explicitly when there are none, so "no photos attached" is
+             visible rather than inferred from absence.
 --------------------------------------------------------------------
