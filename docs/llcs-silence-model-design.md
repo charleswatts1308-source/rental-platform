@@ -6,6 +6,21 @@
 
 ---
 
+## 0. What gives the record its power
+
+A record of the conversation between tenant and landlord is the backbone
+of this system. The power is in the FACT of the record and in the
+landlord knowing it exists. Most cases will be resolved, abandoned or
+quietly settled long before anyone examines the detail; only a tiny
+minority will ever have their contents tested for accuracy in a court.
+
+That is a sorting rule, not an excuse. It says:
+
+**Invest in the record's completeness, continuity and credibility.
+Do not over-invest in the forensic fidelity of individual artefacts.**
+
+---
+
 ## 1. The model in one paragraph
 
 Both parties correspond freely. Silence — and only silence — drives the
