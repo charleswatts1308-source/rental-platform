@@ -38,11 +38,10 @@ regulator, under registration reference <strong>ICO:00014275530</strong>.</p>
 
 <h3 class="mb-3">What renters.rent is</h3>
 
-<p>It's a tool that helps tenants send repair requests as proper, dated correspondence
-rather than a text message that gets lost in a thread. The tenant writes the request; we
-format it, send it, and keep a record of what was sent and when.</p>
-
-<p>That's the whole of it.</p>
+<p>It's a tool that allows tenants to send repair requests as proper, dated correspondence.
+The tenant writes the request; we format it, send it, and keep a simple record of
+correspondence. This is acknowledged as a difficult process for most individuals to
+accomplish successfully.</p>
 
 <hr class="my-4">
 
