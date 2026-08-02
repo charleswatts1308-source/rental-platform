@@ -15,6 +15,12 @@ Route::get('/about', function () {
     return view('about');
 });
 
+// Landing page for a landlord who has just received a repair notice and is
+// asking "who are these people?". Reached from the email footer, but named
+// and linked in the nav so it can be typed directly — a suspicious reader
+// should not have to click a link in the message they are suspicious of.
+Route::get('/landlords', fn () => view('landlords'))->name('landlords');
+
 // PWA offline fallback — served by the service worker when a navigation fails.
 Route::get('/offline', fn() => view('offline'))->name('offline');
 

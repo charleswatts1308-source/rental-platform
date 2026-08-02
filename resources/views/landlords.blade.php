@@ -1,0 +1,123 @@
+@extends('layouts.app')
+
+@section('title', 'For Landlords')
+
+@section('content')
+<h1 class="mb-4">Information for landlords</h1>
+
+<p class="lead">If you've arrived here after receiving an email about one of your properties,
+this page explains what it is and what happens next.</p>
+
+<hr class="my-4">
+
+<h3 class="mb-3">The email is genuine</h3>
+
+<p>It was sent because one of your tenants used renters.rent to put a repair request in
+writing. Our emails always come from an address ending <code>renters.rent</code>, and we
+will never ask you for payment, bank details or a password.</p>
+
+<p>We're not a claims company, a solicitor, or a complaints body. No one has reported you
+to anyone. Nothing has been filed anywhere.</p>
+
+<hr class="my-4">
+
+{{--
+    PLACEHOLDER — must be completed before this page goes live.
+    A landlord judging whether this is legitimate looks for a named entity
+    they can check. Without it the page reads as evasive, which defeats
+    the purpose of the page. Fill in the operating name, and the company
+    number and registered address if there is one.
+--}}
+<h3 class="mb-3">Who we are</h3>
+
+<p>renters.rent is operated by <strong>[OPERATING NAME]</strong>, based in
+<strong>[TOWN, COUNTRY]</strong>. <strong>[Registered in England and Wales, company number
+XXXXXXXX. Registered address: …]</strong></p>
+
+<p>You're welcome to check us before replying to anything. If you'd rather reach this page
+without clicking a link in an email you're unsure about, type
+<strong>renters.rent/landlords</strong> into your browser directly.</p>
+
+<hr class="my-4">
+
+<h3 class="mb-3">What renters.rent is</h3>
+
+<p>It's a tool that helps tenants send repair requests as proper, dated correspondence
+rather than a text message that gets lost in a thread. The tenant writes the request; we
+format it, send it, and keep a record of what was sent and when.</p>
+
+<p>That's the whole of it.</p>
+
+<hr class="my-4">
+
+<h3 class="mb-3">How we have your email address</h3>
+
+<p>Your tenant gave it to us when they raised the request. We don't buy contact details or
+look them up, and we don't hold a database of landlords.</p>
+
+<p>It also means the details can be wrong — see "Checking this is your tenant" below.</p>
+
+<hr class="my-4">
+
+<h3 class="mb-3">How to respond</h3>
+
+<p><strong>Just reply to the email.</strong> Your reply goes back to your tenant and is
+added to the record of the correspondence.</p>
+
+<p>You don't need an account and there's nothing to sign up for. If you'd rather phone or
+write to your tenant directly, that's entirely fine — it's your tenancy and your
+relationship. We'd only ask that you let them know you've received the request, so they're
+not left wondering.</p>
+
+<hr class="my-4">
+
+<h3 class="mb-3">What we keep a record of</h3>
+
+<p>We record what was sent, when it was sent, and any replies. Both you and your tenant can
+rely on that record later if there's ever a disagreement about what was said. It works the
+same way for both of you.</p>
+
+<p>If the repair gets sorted, the tenant closes the case and the correspondence stops.</p>
+
+<hr class="my-4">
+
+<h3 class="mb-3">If you don't reply</h3>
+
+<p>The system will send a few reminders. It doesn't do anything else — it can't. It's a
+correspondence tool, not an enforcement mechanism.</p>
+
+<hr class="my-4">
+
+<h3 class="mb-3">Checking this is your tenant</h3>
+
+<p>The email includes the property address and your tenant's name. Please check these
+against your own records. If they don't match, or you've received this in error,
+<a href="{{ route('contact.create') }}">contact us</a> and we'll look into it.</p>
+
+<hr class="my-4">
+
+<h3 class="mb-3">Your information</h3>
+
+<p>We hold the email address your tenant gave us, the correspondence sent to it, and any
+replies you send back. We use it only to pass messages between you and your tenant and to
+keep the record described above. We don't sell it or use it for marketing.</p>
+
+<p>Our <a href="/privacy">privacy notice</a> explains this in full, including how to ask
+what we hold about you.</p>
+
+<hr class="my-4">
+
+<h3 class="mb-3">Repair responsibilities</h3>
+
+<p>We don't give legal advice to either party. For an authoritative summary of what
+landlords and tenants are each responsible for, see the
+<a href="https://www.gov.uk/private-renting/repairs" rel="noopener" target="_blank">guidance
+on GOV.UK</a>.</p>
+
+<hr class="my-4">
+
+<h3 class="mb-3">Contact us</h3>
+
+<p>If anything here doesn't look right, or you'd like to speak to a person, please
+<a href="{{ route('contact.create') }}">get in touch</a>.</p>
+@endsection

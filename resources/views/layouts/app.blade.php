@@ -176,6 +176,10 @@
                             <a class="nav-link text-dark" href="{{ route('members.how-it-works') }}">How It Works</a>
                         </li>
 
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" href="{{ route('landlords') }}">For Landlords</a>
+                        </li>
+
                         {{-- Signed-in area. Guarded by @auth: these all sit behind
                              auth+verified, so showing them to a guest only produced a
                              bounce to the login page with no explanation. --}}
