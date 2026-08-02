@@ -15,8 +15,6 @@ this page provides some explanation.</p>
 <p>It was sent because one of your tenants used renters.rent to put a repair request in
 writing. Our emails always come from an address ending <code>renters.rent</code>.</p>
 
-<p>We're not a claims company, not a solicitor, not a complaints body.</p>
-
 <hr class="my-4">
 
 {{--
@@ -30,6 +28,8 @@ writing. Our emails always come from an address ending <code>renters.rent</code>
 
 <p>renters.rent is a new service developed to aid tenants and landlords in their joint
 pursuit of rental property improvement.</p>
+
+<p>We're not a claims company, not a solicitor, not a complaints body.</p>
 
 <p>We're registered with the Information Commissioner's Office, the UK data protection
 regulator, under registration reference <strong>ICO:00014275530</strong>.</p>
