@@ -228,10 +228,9 @@ the next deploy, per the CLAUDE.md Deployment-ledger rule.
 - **SSL — DONE (11 Jul 2026):** cert installed; `https://renters.rent/`
   serves live over HTTPS (confirmed by external fetch of `/about`). TLS
   1.0/1.1 disable + HSTS not separately confirmed here.
-- **Now at: `133a103`** (13 Jul 2026) — carries the PWA merge (`cd29c0d`)
-  and the 11 Jul content rework. Only two DOCS-ONLY commits sit ahead on
-  `origin/main` (`95f5745`, `1cb35cd` — the `.env` dupe-key recipe note),
-  so prod is **code-current**. **PWA live and tested on prod.**
+- **Now at: `7507a72`** (2 Aug 2026) — see the 2 Aug deploy entry below.
+  Previously `133a103` (13 Jul), which carried the PWA merge (`cd29c0d`)
+  and the 11 Jul content rework. **PWA live and tested on prod.**
 - **HARDENING TAIL — CLOSED (13 Jul 2026).** All four items proven live:
   - **Scheduler heartbeat — CONFIRMED RUNNING.** Evidence: `silence_shadow_log`
     rows stamped `2026-07-13 06:15:02`, one per non-terminal case. The Plesk
@@ -262,12 +261,41 @@ the next deploy, per the CLAUDE.md Deployment-ledger rule.
   the letter, not 24h — and because each sent letter restarts the clock a
   beat AFTER the sweep timestamp, later rungs drift one sweep. Expected as
   designed; not a defect.
-- **Still open (not blocking the trial):**
-  - **UNCONFIRMED: Mailgun credential rotation** — `MAILGUN_SECRET` +
-    `MAILGUN_WEBHOOK_SIGNING_KEY` were exposed in a transcript on 4 Jul and
-    have not been recorded as rotated. Signing-key exposure weakens
-    inbound-webhook authenticity until done. **Now matters more, not less:
-    inbound is live and carrying real landlord replies.**
+- ~~**Still open: UNCONFIRMED Mailgun credential rotation**~~ — **DONE
+  1 Aug 2026.** `MAILGUN_SECRET` + `MAILGUN_WEBHOOK_SIGNING_KEY` rotated
+  after 28 days exposed (snag #23, closed). **Proven working 2 Aug** by a
+  live landlord reply arriving on a case — inbound signature verification
+  passes against the new key, which is the check that actually matters.
+
+- **Usability + mail-identity deploy (2 Aug 2026):** pulled `main` →
+  `7507a72`. Plesk Git pull + `config:cache` + `view:clear`. **Code-only,
+  NO migrations** (`133a103..7507a72` touches no `database/migrations`).
+  Suite green 550/2279. Prod jumped three weeks in one hop: it had never
+  carried the 24 Jul onboarding merge (`b92b907`), so this deploy landed
+  the onboarding hub + content refresh AND the 27 Jul usability pass AND
+  the 1 Aug email normalisation together.
+  **VERIFIED LIVE on prod (2 Aug):**
+  - **Email case normalisation — PROVEN.** A mixed-case address was keyed
+    in at registration, accepted, and stored fully lowercased. This is the
+    release's only behavioural code change and gafol did not test it.
+  - **Registration + verification complete** — created and verified
+    timestamps both correct on the new account.
+  - **Auth mail delivered** (exercises `MAIL_FROM_ADDRESS`).
+  - **Contact Us reply delivered** — the ONLY code path that sends from
+    the apex, so the only live test of the 1 Aug apex SPF record.
+  - **Landlord letter outbound delivered** (`cases@mg.renters.rent`).
+  - **Landlord reply inbound bound onto the case** — proves the rotated
+    signing key end to end.
+  **DEFECTS FOUND during the same run** (both recorded, neither blocking):
+  snag #27 gained a worse failure mode — opening the verify link in a
+  browser signed in as a DIFFERENT user gives a hard 403, not the /login
+  redirect previously recorded; and new snag #37 — the post-verification
+  welcome banner never fires, because `redirect()->intended()` discards
+  the `?verified=1` fallback whenever a `url.intended` exists.
+  **NOT SEPARATELY CONFIRMED:** SPF/DKIM/DMARC results read from message
+  headers ("Show original"). Delivery was confirmed on all four paths;
+  header-level ALIGNMENT was not recorded, so the 1 Aug DNS change is
+  proven not-broken rather than proven-aligned.
 - Status: **LIVE. Build clean, hardening green, escalation ladder under
   test.** Cron + outbound + inbound all proven on the real box.
 - **Content deploy (11 Jul 2026):** pulled `main` → `0e0a4e0`;

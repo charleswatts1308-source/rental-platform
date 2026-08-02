@@ -843,6 +843,29 @@ Notes:       Two things are conflated in the current UX: (1) VERIFYING the
              the route already has `signed`, single-use (used_at), and
              `throttle:6,1`. Reconsider posture before opening registration
              wide / at prod scale, where forwarded-inbox risk grows.
+             OBSERVED ON PROD 2026-08-02 — a WORSE failure mode than the
+             one recorded above. Registered in one browser, opened the
+             verify link in another, and got a hard
+             "403 This action is unauthorized" — not the /login redirect
+             this snag originally described.
+             Cause: the second browser was not a GUEST, it was signed in
+             as a DIFFERENT user (admin, from earlier testing). Laravel's
+             EmailVerificationRequest::authorize() compares the logged-in
+             user's id against the id in the link; mismatch returns false,
+             and false is a 403.
+             So the half-built guest branch at VerifyEmailController.php:
+             34-57 is unreachable TWO ways, not one:
+               - truly logged out -> `auth` middleware redirects to /login,
+                 controller never runs;
+               - logged in as ANYONE ELSE -> authorize() 403s, controller
+                 never runs.
+             The second path is the more likely one in real use (people
+             stay signed into things), and a 403 reads as BROKEN rather
+             than as a step to complete. Raises the priority of this snag
+             from friction to something a real user would report as a bug.
+             Verification itself still completed fine once the link was
+             opened in the original browser — this is UX, not a broken
+             verification path.
 Fix:         Move verify-email/{id}/{hash} out of the `auth` group so a guest
              click reaches the controller's existing login branch, AND change
              the action off EmailVerificationRequest (whose authorize()
@@ -1012,6 +1035,29 @@ Fix:         Add contact_from_address to the services.mailgun block with
              to the Envelope so a misrouted send shows up in Mailgun's
              per-domain log. Set MAILGUN_CONTACT_FROM_ADDRESS per
              environment. Then #33 becomes actionable.
+
+             OBSERVED ON PROD 2026-08-02 — the visible symptom, confirmed
+             in a real inbox. A Contact Us reply arrives in Gmail showing:
+               noreply=renters.rent@mg.renters.rent
+               on behalf of noreply@renters.rent
+             Cause: two different sender addresses on the same message.
+             The From: header is the hardcoded apex noreply@renters.rent,
+             while the envelope sender / Return-Path is Mailgun's VERP
+             address on the domain it actually controls (the local part
+             noreply=renters.rent encodes the original address). Gmail
+             prints "on behalf of" whenever those two domains differ.
+             NOT an error and NOT a misconfiguration — DMARC should still
+             pass, because alignment defaults to RELAXED and both share
+             the organisational domain renters.rent. Mail arrives fine.
+             Why it belongs here rather than as its own snag: the odd
+             display exists BECAUSE ContactReply hardcodes an apex sender
+             while everything actually leaves via mg.renters.rent. Fixing
+             this entry (move it to contact@mg.renters.rent via config)
+             makes From and Return-Path match exactly and the "on behalf
+             of" disappears on its own. No separate work.
+             Also strengthens #33: once this lands, the apex SPF record
+             added 1 Aug is no longer needed and the apex can tighten to
+             v=spf1 -all.
 --------------------------------------------------------------------
 #33
 Page:        DNS — the apex SPF record published 2026-08-01 is a temporary
@@ -1125,4 +1171,51 @@ Fix:         Before paying for Basic 10k (£12/mo), two PRE-SALES questions
                  domain? If it does, Basic BREAKS STAGING and is unusable
                  at any price — staging must keep its own outbound path.
              Answer both before spending anything.
+--------------------------------------------------------------------
+#37
+Page:        Post-verification welcome banner (dashboard.blade.php) —
+             does not appear. Surfaced 2026-08-02 on the FIRST real
+             registration on prod, the day after it shipped.
+Severity:    minor — cosmetic, no functional impact. But it is a feature
+             that shipped 1 Aug and has never once worked in real use,
+             which is the interesting part.
+Saw:         Registered on prod, verified, landed on the dashboard —
+             and the green "Welcome — and thanks for registering!"
+             banner did NOT show.
+Expected:    A first-time user completing verification sees the welcome
+             banner on the dashboard they land on.
+Status:      open — snagged 02 Aug. Introduced by commit 79989e9 on
+             feature/admin-unverified-users, merged in 7507a72 and
+             deployed to prod the same day.
+Notes:       ROOT CAUSE — VerifyEmailController.php:31:
+                 return redirect()->intended(
+                     route('dashboard', absolute: false).'?verified=1');
+             intended() uses its argument only as a FALLBACK. If the
+             session holds a url.intended — which it does, because the
+             user hit /dashboard while unverified and was bounced — it
+             redirects THERE instead and discards the ?verified=1
+             entirely. The blade reads request()->boolean('verified')
+             (dashboard.blade.php:10), so no query param means no banner.
+             The user lands on the dashboard because that is what was
+             intended; just without the flag.
+             SECOND, INDEPENDENT GAP in the same file: the not-logged-in
+             branch at line 57 redirects to route('dashboard') with NO
+             ?verified=1 at all. So even once #27 is fixed and that
+             branch becomes reachable, the banner still would not fire.
+             Both branches need to carry the signal.
+             Worth noting the class of bug: a query-string flag is
+             fragile because it only survives if the redirect target is
+             exactly the one you predicted. It also leaves ?verified=1
+             sitting in the address bar, where a refresh or a shared link
+             re-triggers a "welcome, you just registered" message for
+             someone who did not just register.
+Fix:         Stop carrying this in the URL. Flash it to the session
+             instead — redirect()->intended(...)->with('verified', true)
+             on the logged-in branch, the same ->with() on the guest
+             branch at line 57, and change the blade to read
+             session('verified') rather than request()->boolean().
+             That survives ANY redirect target, works on both branches,
+             and leaves nothing in the address bar. Add a test asserting
+             the banner shows after a real verify redirect — there is
+             currently none, which is why this shipped.
 --------------------------------------------------------------------
