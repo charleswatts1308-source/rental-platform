@@ -1451,3 +1451,52 @@ Fix:         Hosting answer required: are these directives locked at
              record in the install recipe which settings must be
              verified via phpinfo rather than trusted from the panel.
 --------------------------------------------------------------------
+#42
+Page:        /landlords ("For Landlords") — the trading identity block is
+             unfilled, and no correspondence address exists to fill it
+             with. Raised 2026-08-02 building the page.
+Severity:    functional — BLOCKS PUBLISHING the page, and carries a legal
+             disclosure requirement plus a personal-safety decision. Not
+             a code defect; a purchase and a decision.
+Saw:         The page renders "[NAME]" and "[ADDRESS]" as literal
+             placeholders. The business is a sole trader, so there is no
+             company number or registered office to fall back on.
+Expected:    The page names the trader and gives an address at which
+             documents can be served, as required of a sole trader using
+             a business name — and does so without exposing a home
+             address.
+Status:      open — snagged 02 Aug. Page is committed and in the nav but
+             MUST NOT be deployed until this is resolved; it currently
+             renders bracketed placeholder text to the public.
+Notes:       Why an address is not optional: a sole trader trading under
+             a business name must disclose the trader's own name and an
+             address for service of documents, on the website as well as
+             on correspondence. Omitting it is not a tidiness choice.
+             Why NOT the home address: this is the one page in the
+             product read by people who have just received a formal
+             notice about their own property, some of whom will be
+             angry. A tenant-facing page has a sympathetic audience; this
+             one does not. A mail-forwarding or virtual office address is
+             roughly £20-50/year and removes the exposure entirely.
+             Treat the cost as part of launching, not as an extra.
+             Do not publish the page with placeholders visible, and do
+             not "temporarily" substitute the home address — temporary
+             addresses on public pages are archived, cached and scraped
+             within days, and cannot be withdrawn afterwards.
+             SEPARATE CHECK, same block: the ICO reference published on
+             the page is ICO:00014275530 — eleven digits. ICO public
+             registration references are normally of the form ZA123456 /
+             ZB123456, and an eleven-digit number looks more like an
+             account or payment reference. Confirm the number returns the
+             entry when searched on the ICO public register. A number
+             that resolves to nothing is WORSE than no number: a landlord
+             who checks it and finds nothing concludes the opposite of
+             what the page intends.
+Fix:        Decide and buy a service address; set [NAME] and [ADDRESS] in
+             resources/views/landlords.blade.php and remove the
+             placeholder comment; verify the ICO reference on the public
+             register and correct it if it is the wrong identifier. Then
+             the page can deploy. Consider whether the same address
+             belongs in the site footer and privacy notice, which have
+             the same disclosure exposure.
+--------------------------------------------------------------------
