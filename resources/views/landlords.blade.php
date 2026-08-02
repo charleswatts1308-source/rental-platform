@@ -116,6 +116,6 @@ on GOV.UK</a>.</p>
 
 <h3 class="mb-3">Contact us</h3>
 
-<p>If anything here doesn't look right, or you'd like to speak to a person, please
+<p>If anything here doesn't look right please
 <a href="{{ route('contact.create') }}">get in touch</a>.</p>
 @endsection
