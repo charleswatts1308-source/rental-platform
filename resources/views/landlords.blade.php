@@ -57,13 +57,12 @@ look them up, and we don't hold a database of landlords.</p>
 
 <h3 class="mb-3">How to respond</h3>
 
-<p><strong>Just reply to the email.</strong> Your reply goes back to your tenant and is
-added to the record of the correspondence.</p>
+<p><strong>Just reply to the email.</strong> Your reply goes back to your tenant and the
+conversation can proceed.</p>
 
 <p>You don't need an account and there's nothing to sign up for. If you'd rather phone or
-write to your tenant directly, that's entirely fine — it's your tenancy and your
-relationship. We'd only ask that you let them know you've received the request, so they're
-not left wondering.</p>
+write to your tenant directly, that's entirely fine — we only ask that you let them know
+you've received the request, so they're not left wondering.</p>
 
 <hr class="my-4">
 
