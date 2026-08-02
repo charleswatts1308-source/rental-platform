@@ -22,17 +22,23 @@ to anyone. Nothing has been filed anywhere.</p>
 <hr class="my-4">
 
 {{--
-    PLACEHOLDER — must be completed before this page goes live.
-    A landlord judging whether this is legitimate looks for a named entity
-    they can check. Without it the page reads as evasive, which defeats
-    the purpose of the page. Fill in the operating name, and the company
-    number and registered address if there is one.
+    PLACEHOLDER — two fields still to fill before this page goes live:
+    the trader's name and a correspondence address. A sole trader using a
+    business name must disclose both on the website, and a landlord
+    judging legitimacy looks for a named person they can check — saying
+    what you do while staying vague about who you are is what a scam
+    reads like.
+    Use a service/mail-forwarding address, NOT a home address: this page
+    is read by landlords who have just received a formal repair notice.
 --}}
 <h3 class="mb-3">Who we are</h3>
 
-<p>renters.rent is operated by <strong>[OPERATING NAME]</strong>, based in
-<strong>[TOWN, COUNTRY]</strong>. <strong>[Registered in England and Wales, company number
-XXXXXXXX. Registered address: …]</strong></p>
+<p>renters.rent is a service operated by <strong>[NAME]</strong>, a sole trader based in the
+United Kingdom. Correspondence address: <strong>[ADDRESS]</strong>.</p>
+
+<p>We're registered with the Information Commissioner's Office, the UK data protection
+regulator, under registration reference <strong>ICO:00014275530</strong>. You can check that
+on the ICO's public register.</p>
 
 <p>You're welcome to check us before replying to anything. If you'd rather reach this page
 without clicking a link in an email you're unsure about, type
