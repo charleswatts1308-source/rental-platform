@@ -40,8 +40,9 @@ regulator, under registration reference <strong>ICO:00014275530</strong>.</p>
 
 <p>It's a tool that allows tenants to send repair requests as proper, dated correspondence.
 The tenant writes the request; we format it, send it, and keep a simple record of
-correspondence. This is acknowledged as a difficult process for most individuals to
-accomplish successfully.</p>
+correspondence. Setting a repair request out clearly, and keeping track of what was sent
+and when, is harder than it sounds — which is why the service exists, and why what reaches
+you is a single dated request rather than a run of messages.</p>
 
 <hr class="my-4">
 
