@@ -176,10 +176,6 @@
                             <a class="nav-link text-dark" href="{{ route('members.how-it-works') }}">How It Works</a>
                         </li>
 
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" href="{{ route('landlords') }}">For Landlords</a>
-                        </li>
-
                         {{-- Signed-in area. Guarded by @auth: these all sit behind
                              auth+verified, so showing them to a guest only produced a
                              bounce to the login page with no explanation. --}}
@@ -212,6 +208,14 @@
                             </ul>
                         </li>
                         @endif
+
+                        {{-- Last in the nav deliberately. The landlord arrives by
+                             typing renters.rent from the letter footer rather than
+                             clicking a link, so this only has to be findable from
+                             the homepage — it is not part of the tenant journey. --}}
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" href="{{ route('landlords') }}">Landlords</a>
+                        </li>
                     </ul>
                 </div>
             </div>
