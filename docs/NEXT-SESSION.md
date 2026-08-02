@@ -82,9 +82,15 @@ usability pass, and the email fix together.
    time of the failure. `AuthorizationException` = id mismatch;
    `InvalidSignatureException` = the link itself was rejected. **Different
    causes need different fixes** — don't design before this is known.
-5. **Read the mail headers.** All four mail paths delivered on 2 Aug, but
-   SPF/DKIM/DMARC results were never read from "Show original". The 1 Aug
-   DNS change is proven *not broken*, not proven *aligned*.
+5. ~~**Read the mail headers.**~~ **DONE 2 Aug — the 1 Aug DNS change is
+   now proven ALIGNED.** Landlord letter (→ Outlook) and tenant
+   notification (→ Gmail) both read from headers: SPF, DKIM and DMARC all
+   pass, all on `mg.renters.rent`, and Microsoft scored the landlord letter
+   `compauth=pass reason=100` / `SCL:1` / `BCL:0` — inbox on its merits.
+   DKIM selector is **`s1`**. Full detail in `environment-state.md`.
+   *Residual:* the Contact Us reply (apex sender, #32) is still unread —
+   expected to pass on relaxed alignment, but that is reasoning, not a
+   reading. And no attachment-bearing letter has ever been spam-scored.
 
 **Never recorded:** the outcome of the July escalation-ladder test on case
 3. If it is still wanted as evidence, get it from `silence_shadow_log`

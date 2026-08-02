@@ -292,10 +292,39 @@ the next deploy, per the CLAUDE.md Deployment-ledger rule.
   redirect previously recorded; and new snag #37 — the post-verification
   welcome banner never fires, because `redirect()->intended()` discards
   the `?verified=1` fallback whenever a `url.intended` exists.
-  **NOT SEPARATELY CONFIRMED:** SPF/DKIM/DMARC results read from message
-  headers ("Show original"). Delivery was confirmed on all four paths;
-  header-level ALIGNMENT was not recorded, so the 1 Aug DNS change is
-  proven not-broken rather than proven-aligned.
+  **HEADER-LEVEL ALIGNMENT — CONFIRMED (2 Aug), two of four paths.**
+  Read from received-message headers, not inferred from DNS. The 1 Aug DNS
+  change is now proven ALIGNED, not merely not-broken.
+  - **Landlord letter → Outlook** (`cases@mg.renters.rent`, tenant-reply
+    letter through `CaseNotice`): `spf=pass` `smtp.mailfrom=mg.renters.rent`;
+    `dkim=pass` `header.d=mg.renters.rent`; `dmarc=pass action=none`
+    `header.from=mg.renters.rent`; `compauth=pass reason=100` (Microsoft
+    passed it explicitly on DMARC, not on reputation); `SCL:1` `BCL:0` —
+    classified not-spam, not-bulk. `Sender:` and `From:` MATCH, so no
+    "on behalf of" on this path. `Reply-To` is the inbound token address
+    and does not disturb alignment (DMARC ignores Reply-To).
+    `X-Mailgun-Tag: production` — environment tagging confirmed live.
+  - **Tenant notification → Gmail** (`noreply@mg.renters.rent`):
+    `dkim=pass` on BOTH `d=mg.renters.rent` (selector `s1`) and
+    `d=eu.mailgun.org`; `spf=pass`; `dmarc=pass`
+    `header.from=mg.renters.rent`. SPF and DKIM each pass independently,
+    so a landlord who auto-forwards still receives an authenticated letter
+    (DKIM survives forwarding; SPF does not).
+  - **DKIM selector is `s1`** on `mg.renters.rent`. Recorded because it is
+    not one of Mailgun's guessable defaults and DNS alone will not reveal it.
+  - Sending is **Mailgun EU** (`euw1.send.eu.mailgun.net`) — a distinct
+    config axis from the US region if this is ever rebuilt from the recipe.
+  **STILL NOT HEADER-CONFIRMED:** (a) the stage-1 opening notice — same
+  mailable, same envelope, differs only in subject/body, so authentication
+  cannot differ; not a real gap. (b) The Contact Us reply, the ONLY apex
+  sender (#32). By relaxed DMARC alignment it SHOULD pass — `mg.renters.rent`
+  and `renters.rent` share an organizational domain — but this is reasoning,
+  not a reading. Confirm from headers before relying on it.
+  **UNMEASURED:** every message header-checked so far carried NO
+  attachments. Attachment-bearing letters (first send only, up to 6 files
+  / 2MB each) have never been spam-scored. Relevant to any decision about
+  stripping attachments from the first letter for deliverability — that
+  premise is currently untested in either direction.
 - Status: **LIVE. Build clean, hardening green, escalation ladder under
   test.** Cron + outbound + inbound all proven on the real box.
 - **Content deploy (11 Jul 2026):** pulled `main` → `0e0a4e0`;

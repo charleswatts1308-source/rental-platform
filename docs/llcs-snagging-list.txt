@@ -1079,6 +1079,22 @@ Fix:         Add contact_from_address to the services.mailgun block with
              Also strengthens #33: once this lands, the apex SPF record
              added 1 Aug is no longer needed and the apex can tighten to
              v=spf1 -all.
+
+             CORROBORATED BY CONTRAST 2026-08-02 — headers read from a
+             landlord letter delivered to Outlook show Sender: and From:
+             BOTH cases@mg.renters.rent, i.e. matching, and that message
+             displays no "on behalf of" anywhere. Same infrastructure,
+             same signing key, one difference: the sender domains agree.
+             That isolates the display artefact to the apex sender alone
+             and confirms the mechanism recorded above, so the diagnosis
+             is no longer reasoning from first principles.
+             Still NOT read: the Contact Us message's own headers. The
+             claim that it passes DMARC on relaxed alignment remains
+             inference. Cheap to settle — read Authentication-Results on
+             any Contact Us reply — and worth settling before #33 tightens
+             the apex on the strength of it.
+             Severity confirmed COSMETIC, not a delivery risk: this path
+             is about trust and appearance, not whether mail arrives.
 --------------------------------------------------------------------
 #33
 Page:        DNS — the apex SPF record published 2026-08-01 is a temporary
