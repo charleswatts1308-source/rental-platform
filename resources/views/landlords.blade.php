@@ -34,12 +34,7 @@ to anyone. Nothing has been filed anywhere.</p>
 pursuit of rental property improvement.</p>
 
 <p>We're registered with the Information Commissioner's Office, the UK data protection
-regulator, under registration reference <strong>ICO:00014275530</strong>. You can check that
-on the ICO's public register.</p>
-
-<p>You're welcome to check us before replying to anything. If you'd rather reach this page
-without clicking a link in an email you're unsure about, type
-<strong>renters.rent/landlords</strong> into your browser directly.</p>
+regulator, under registration reference <strong>ICO:00014275530</strong>.</p>
 
 <hr class="my-4">
 
