@@ -398,6 +398,25 @@ it('names the file and states the limit in plain words when a photo is too large
     expect($message)->not->toContain('kilobytes');
 });
 
+it('shows a photo error once, beside the input, not also in the page summary', function () {
+    [$tenant, $property] = tenantWithProperty();
+
+    $this->actingAs($tenant)
+        ->from('/cases/create')
+        ->post('/cases', validStorePayload($property->id) + [
+            'photos' => [UploadedFile::fake()->create('kitchen-damp.jpg', 5000, 'image/jpeg')],
+        ])
+        ->assertRedirect('/cases/create');
+
+    $page = $this->actingAs($tenant)->get('/cases/create');
+
+    $page->assertSee('kitchen-damp.jpg');
+    // The summary is for errors the tenant fixes elsewhere on the page. A
+    // photo problem is fixed at the input, and rendering it in both places
+    // showed the same message twice — and the script could only clear one.
+    $page->assertDontSee('Please correct the following');
+});
+
 it('lists the staged photos on the preview, with sizes', function () {
     [$tenant, $property] = tenantWithProperty();
 

@@ -24,11 +24,24 @@
             <a href="{{ route('properties.create') }}" class="btn btn-primary">Register your property</a>
         </div>
     @else
-        @if($errors->any())
+        @php
+            // Photo errors are deliberately EXCLUDED from this summary and
+            // rendered next to the file input instead. Two reasons: the
+            // tenant fixes a photo problem at the input, not at the top of
+            // the page; and the script clears them the moment the selection
+            // changes, which it cannot do to a summary that also carries
+            // unrelated errors. Leaving them in both places showed the same
+            // message twice and cleared only one copy.
+            $summaryErrors = collect($errors->keys())
+                ->reject(fn ($key) => $key === 'photos' || str_starts_with($key, 'photos.'))
+                ->flatMap(fn ($key) => $errors->get($key))
+                ->all();
+        @endphp
+        @if(count($summaryErrors) > 0)
             <div class="alert alert-danger">
                 <strong>Please correct the following:</strong>
                 <ul class="mb-0">
-                    @foreach($errors->all() as $error)
+                    @foreach($summaryErrors as $error)
                         <li>{{ $error }}</li>
                     @endforeach
                 </ul>
