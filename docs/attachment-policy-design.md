@@ -67,9 +67,15 @@ Ruled by Charlie, 2026-08-09:
 
 | letter | attachments | quantity |
 |---|---|---|
-| Letter 1 (stage 1) | tenant attaches at create | configurable ceiling, 0–3 |
+| Letter 1 (stage 1) | tenant attaches at create | configurable ceiling, 0–3, **default 1** |
 | Chasing letters (stages 2–4) | **never** | not configurable — a fixed property |
-| Tenant replies | tenant attaches at reply | configurable ceiling, 0–3 |
+| Tenant replies | tenant attaches at reply | configurable ceiling, 0–3, default 1 |
+
+**Default 1, ruled by Charlie 2026-08-09**, on deliverability grounds —
+the ceiling exists precisely so it can be raised at will once real
+sending data exists. Starting at 1 also makes the size arithmetic
+trivially safe: one file cannot approach `post_max_size`, Mailgun's
+ceiling, or a recipient's.
 
 The rule, stated once: **a letter carries attachments only when a person
 chose them for that letter.** Sweep letters have no author present, so
@@ -105,11 +111,54 @@ knob that displays a value it does not control is the #41 failure mode in
 miniature. Until reply attachments exist, the key does not appear on the
 settings page.
 
-**R6 — Per-file size stays a constant, not a setting.** Proposed value
-**4MB** (`max:4096`). Quantity is the deliverability lever that was
-actually reasoned about; size is bounded by the server and a configurable
-value could promise more than the box accepts. One knob that works beats
-two where the second can lie.
+**R6 — Per-file UPLOAD size stays a constant, not a setting.** Proposed
+value **4MB** (`max:4096`). It is bounded by the server, and a
+configurable value could promise more than the box accepts — the #41
+failure mode. What the *landlord receives* is governed by R7 instead,
+which is where the deliverability lever belongs.
+
+**R7 — Resize-on-upload is a config option.** Ruled by Charlie
+2026-08-09, on deliverability grounds. One key,
+`attachments.resize_max_edge_px`, giving the longest edge in pixels for
+the copy that is attached to the letter; **0 means do not resize**,
+mirroring the ceiling-of-0 convention. Proposed default **1600** — ample
+for a landlord to see damp, mould or a broken fitting, and a few hundred
+KB rather than several MB.
+
+The tenant's **original is kept on disk untouched** as the evidential
+record; the resized derivative is what is attached and what the
+`MessageAttachment` row describes, because that row's job is to say what
+the landlord actually received.
+
+That splits one evidential claim into two, and both matter:
+
+- *"this is what I sent the landlord"* — the derivative, recorded on the
+  message and frozen with the letter
+- *"this is what the damp looked like"* — the original, retained
+
+So `MessageAttachment` needs to carry both paths and both sizes, not
+replace one with the other. Recording only the derivative would quietly
+discard the tenant's best evidence; recording only the original would
+misstate what was sent.
+
+Consequences to build against, not to discover later:
+
+- **Needs GD or Imagick.** Verify from `phpinfo` on prod before relying
+  on it — the #41 discipline. If neither is present, resize is
+  unavailable and the key must be forced to 0 rather than silently
+  passing full-size photos through.
+- **PDFs cannot be resized.** They pass through untouched, so R6's
+  per-file cap is still doing real work and cannot be dropped.
+- **EXIF orientation** must be honoured or resized photos arrive
+  rotated.
+- **Resizing strips EXIF**, which cuts both ways and should be a
+  conscious choice: it removes **GPS coordinates** from what the landlord
+  receives, which is a privacy gain for the tenant, and it removes the
+  **capture timestamp**, which loses corroboration. The retained original
+  keeps both, so nothing is destroyed — but the copy in the landlord's
+  hands no longer carries either.
+- **Never retroactive** (R4). Resizing happens at send time; a config
+  change cannot alter a letter already sent.
 
 ### Why 3 × 4MB fits
 
@@ -170,6 +219,12 @@ prod. The tenant believes three photos are attached and one is sent.
 Multi-select in a single dialog stages correctly (verified: two files
 selected together both staged). Fixed by the accumulating list in §4.
 
+⚠ **A ceiling of 1 MASKS this defect without fixing it.** At one
+permitted file, a second selection replacing the first is exactly what a
+tenant would want. The defect returns in full the moment the ceiling is
+raised — which is the whole point of it being configurable. Build the
+accumulating list anyway; do not let the default make it look fixed.
+
 **#44 — the staged-photo message persists across abandoned cases.**
 `preview.blade.php:34` links Edit to a bare `route('cases.create')`, so
 `create()` (`CaseController.php:312-321`) cannot distinguish "returning
@@ -192,7 +247,7 @@ preview folder.
 **Now — letter 1.**
 
 1. Add `attachments.first_notice_max` to `SettingController`, with a new
-   range type (min 0, max 3). Seed the row; default **3**.
+   range type (min 0, max 3). Seed the row; default **1**.
 2. Read it in `CaseController::store` in place of the hardcoded `max:6`;
    re-check at `confirm()`, since a ceiling can change between staging
    and confirming.
@@ -206,6 +261,20 @@ preview folder.
 7. Case-page units to MB.
 8. Fix #44's stale-payload leak.
 9. Hide the file input entirely when the ceiling is 0.
+
+**Then — resize (R7).** Its own piece of work, after letter 1 is sound:
+
+10. Confirm GD or Imagick on prod from `phpinfo`. If absent, stop —
+    the key is forced to 0 and this step does not ship.
+11. `MessageAttachment` columns for the retained original alongside the
+    sent derivative (path + size for each). Migration — **manual MariaDB
+    `SHOW CREATE TABLE` check before merge**, per the #18 rule.
+12. Resize on promote: honour EXIF orientation, write the derivative,
+    keep the original untouched. JPG/PNG only; PDFs pass through.
+13. `attachments.resize_max_edge_px` on the settings page; default 1600,
+    0 = off.
+14. Surface both in the UI where it is honest to do so — the tenant
+    should be able to tell that the landlord received a smaller copy.
 
 **Later — with #19.** Reply attachments and
 `attachments.tenant_reply_max`, built and shipped together (R5).
@@ -223,15 +292,15 @@ letters (R1).
 
 ## 8. Open questions for Charlie
 
-1. **Default letter-1 ceiling: 3?** Or lower for the trial, raised later.
-2. **Resize-on-upload** — deferred here, not decided. Snag #40 argues for
-   keeping the tenant's original on disk as the evidential record and
-   attaching a compressed derivative. That would decouple photo quality
-   from message size entirely and make the ceilings far less load-bearing.
-   It also means the bytes the landlord receives are not the bytes held as
-   evidence — a deliberate decision, to be recorded as one if taken.
-3. **Confirm Mailgun's 25MB ceiling** against current documentation
-   before the numbers in §3 are relied on.
-4. **PDF as an attachment type** — currently permitted alongside JPG and
+Decided 2026-08-09: default ceiling **1** (§3), and resize-on-upload is
+**a config option** (R7). Both were open questions here; both are now
+rulings above. Remaining:
+
+1. **Confirm Mailgun's 25MB ceiling** against current documentation
+   before the numbers in §3 are relied on. Largely academic at a ceiling
+   of 1, but it becomes load-bearing if the ceiling is raised.
+2. **PDF as an attachment type** — currently permitted alongside JPG and
    PNG. Unchanged here, but worth a conscious yes: a PDF is not a photo,
-   and the wording throughout the UI says "photos".
+   the wording throughout the UI says "photos", and PDFs are the one
+   type resize cannot shrink (R7).
+3. **Default `resize_max_edge_px` of 1600** — proposed, not ruled.
