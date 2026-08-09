@@ -203,6 +203,17 @@
                 <input id="landlord_name" name="landlord_name" type="text" maxlength="255"
                        class="form-control @error('landlord_name') is-invalid @enderror"
                        value="{{ old('landlord_name') }}">
+                {{-- The fallback lives in SendCaseNotice::buildLetterVars
+                     ($case->landlordContact->name ?: 'Sir or Madam') and the
+                     templates open "Dear {{landlord_name}},". Said here so
+                     the tenant chooses it rather than discovers it on the
+                     preview. Note the fallback does NOT apply when we
+                     already hold a contact for this email — the stored name
+                     is used instead (see snag #7), which is a better outcome
+                     than advertised, so the hint stays simple. --}}
+                <div class="form-text">
+                    Optional. Left blank, the letter opens &ldquo;Dear Sir or Madam&rdquo;.
+                </div>
             </div>
 
             <div class="col-md-4">
