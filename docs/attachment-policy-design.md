@@ -91,10 +91,36 @@ choosing what evidence goes to a landlord in the tenant's name.
 Consequence: today's behaviour becomes deliberate, and `SendCaseNotice`
 needs no change at all.
 
-**R2 — The admin setting is a ceiling, not a behaviour.** It can only
-restrict what a tenant may choose; it can never cause an attachment to be
-sent that the tenant did not select. Setting the letter-1 ceiling to 0
-removes the file input entirely.
+**R2 — The admin setting is a ceiling, not a behaviour.** Two guarantees,
+in both directions:
+
+- it can never cause an attachment to be sent that the tenant did not
+  select; and
+- it can never **silently remove** one the tenant did select.
+
+**The ceiling binds at STAGING, not at send.** It governs what the tenant
+is allowed to attach on the create form. Once files are legitimately
+staged, that selection is the tenant's decision and is honoured through
+to sending — a ceiling lowered mid-flight does not reach back into an
+in-flight case creation.
+
+This is deliberate, and it is the resolution of a trap. The obvious
+alternative — re-check the live ceiling at `confirm()` — means a tenant
+who staged a photo under a ceiling of 1 confirms a letter they have been
+shown with that photo, and it goes out bare because the ceiling moved
+between the two clicks. That is precisely the silent evidence loss this
+whole note exists to eliminate (#43, #44). A ceiling change must never be
+able to edit a tenant's letter behind them.
+
+The cost is a short window: at most one in-flight creation per user, held
+in a session payload, might still send a photo after the ceiling drops to
+0. In a genuine deliverability emergency that is a handful of messages
+over a few minutes, against the certainty of silently discarding evidence
+otherwise. Accepted deliberately.
+
+Setting the ceiling to 0 removes the file input entirely, and says so on
+the form — see build step 9. An input that simply vanishes leaves a
+tenant who came to attach a photo with no explanation.
 
 **R3 — Settings read live, not snapshotted.** Deliberately the opposite
 of `escalation.interval_days`, which is snapshotted per case under D4 so
@@ -248,9 +274,10 @@ preview folder.
 
 1. Add `attachments.first_notice_max` to `SettingController`, with a new
    range type (min 0, max 3). Seed the row; default **1**.
-2. Read it in `CaseController::store` in place of the hardcoded `max:6`;
-   re-check at `confirm()`, since a ceiling can change between staging
-   and confirming.
+2. Read it in `CaseController::store` in place of the hardcoded `max:6`.
+   **Enforce at staging only — `confirm()` must NOT re-check** and must
+   never drop a staged file (R2). Add a test: stage under a ceiling of 1,
+   drop the setting to 0, confirm, and assert the photo still sends.
 3. Per-file limit to `max:4096`.
 4. Error messages: name the file and state the limit in plain words.
    Today's string is "The photos.0 field must not be greater than 2048
@@ -260,7 +287,19 @@ preview folder.
 6. Preview file list (#39).
 7. Case-page units to MB.
 8. Fix #44's stale-payload leak.
-9. Hide the file input entirely when the ceiling is 0.
+9. Ceiling of 0: hide the file input, and **say why**. Silence would
+   leave a tenant who came to attach evidence with nothing to read, and
+   "you can't" without a reason reads as a fault. Proposed wording:
+
+   > Photos can't be attached to this letter at the moment. Letters
+   > carrying attachments are more likely to be filtered as spam before
+   > your landlord sees them, so we've turned them off for now. Please
+   > describe the problem in as much detail as you can instead — the
+   > letter still carries your full description.
+
+   Name the reason (deliverability, not a fault or a restriction on
+   them), and give them the alternative in the same breath. The same
+   wording, adjusted, covers the tenant-reply form when #19 lands.
 
 **Then — resize (R7).** Its own piece of work, after letter 1 is sound:
 
