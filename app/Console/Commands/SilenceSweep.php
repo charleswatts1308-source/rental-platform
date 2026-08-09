@@ -100,14 +100,13 @@ class SilenceSweep extends Command
         $isPretend = $this->option('pretend-today') !== null;
         $pretendToday = $isPretend ? $now->toDateString() : null;
 
+        // Snag #47 — an ALLOW-list derived from CaseStatus::isSweepable(),
+        // replacing the whereNotIn that used to sit here. The old deny-list
+        // swept any status not explicitly excluded, so adding an enum value
+        // silently opted it INTO escalation. The set of statuses loaded is
+        // unchanged; only the direction of the default is.
         $cases = RepairCase::query()
-            ->whereNotIn('status', [
-                CaseStatus::Resolved,
-                CaseStatus::Abandoned,
-                CaseStatus::Dormant,
-                // D14 — terminal, sweep-inert at every stance value.
-                CaseStatus::EscalationExhausted,
-            ])
+            ->whereIn('status', CaseStatus::sweepable())
             ->get();
 
         $writtenRowIds = [];
