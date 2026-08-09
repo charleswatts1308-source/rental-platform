@@ -1697,3 +1697,47 @@ Fix:         Applied — resolveStagedPhotos() replaces the unconditional
              the count cue, and the test asserts the FILENAME — a stronger
              claim than the cue it replaced.
 --------------------------------------------------------------------
+#47
+Page:        Case status handling is OPT-OUT everywhere — a new
+             CaseStatus value defaults to "sweep it and run a clock on
+             it". Found 2026-08-09 while ruling on #25 (Charlie: "are
+             you sure the ladder can happily cope with non-meaning
+             statuses").
+Severity:    minor TODAY (no unclassified status exists), but the
+             failure mode is FUNCTIONAL and silent, and it is armed the
+             moment anyone adds an enum value. Blocks #25.
+Saw:         Two independent deny-lists, both opt-out:
+               - SilenceSweep.php:104 — whereNotIn('status', [Resolved,
+                 Abandoned, Dormant, EscalationExhausted]). Anything
+                 not named here IS SWEPT.
+               - SilenceClock.php:60 — NO_CLOCK_STATUSES, same four.
+                 Anything not named here GETS A SILENCE CLOCK.
+             There are likely more (display predicates, policy); the
+             two above are what a first look found.
+Expected:    Adding a status forces an explicit decision about it,
+             rather than defaulting to the most dangerous behaviour.
+Status:      open — snagged 09 Aug. PREREQUISITE for #25: that build
+             adds a terminal `contact_failed` status, and if either
+             list were missed the sweep would keep escalating cases we
+             had just declared unreachable — reintroducing the exact
+             defect #25 exists to fix, via its own fix.
+Notes:       The direction of the default is the whole problem. A
+             forgotten entry does not produce an inert case, it
+             produces an ACTIVELY ESCALATING one. On a product whose
+             output is a legal-ish record, the safe default has to be
+             "do nothing until told".
+             This also makes statuses genuinely expensive, which is
+             what drove the #25 ruling (R8) to keep delivery outcomes
+             on case_messages rather than in the status enum: no
+             predicate branches on a message column, so those carry no
+             equivalent risk.
+Fix:         A test that enumerates CaseStatus::cases() and asserts
+             every value is explicitly classified in each list — swept
+             or not-swept, clock or no-clock. Adding an enum value then
+             FAILS THE SUITE until someone decides what it means,
+             instead of silently defaulting to escalate. ~10 lines.
+             It will also flush out the opt-out lists not yet found,
+             since each needs the same treatment.
+             Consider inverting the lists to allow-lists afterwards,
+             but the test alone removes the hazard and is far cheaper.
+--------------------------------------------------------------------

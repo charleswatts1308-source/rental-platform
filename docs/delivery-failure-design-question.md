@@ -150,3 +150,178 @@ Not code. A ruling on:
 
 That last one is a genuine possibility and shouldn't be dismissed just
 because the alternative sounds more helpful.
+
+---
+
+# RULINGS — Charlie, 2026-08-09
+
+Nine rulings, taken in sequence. These close the questions above and
+serve as the **brief** for the #25 build; the D0 report cites this
+section. No code has been written against them.
+
+## R1 — the record EXTENDS, it does not break (answers Q4)
+
+Reading B: the product's claim is that the landlord was **served**, not
+merely that we posted something. But a bounce does not invalidate the
+record — it **adds to it**. Each of these stays separately true and each
+gets its own entry:
+
+> we sent it · we detected a bounce · we informed the tenant · we stopped
+> · the tenant gave a new address · the case restarted
+
+This is a stronger position than the question anticipated, because the
+record never has to retract anything. It also means the tenant-facing
+wording can be wholly factual at every step.
+
+## R2 — hard bounce stops; soft bounce is recorded silently
+
+`permanent_fail` stops the case and notifies the tenant.
+`temporary_fail` is captured against the message and visible in the
+record, but produces **no tenant-facing action** — Mailgun retries these
+on its own schedule and most deliver. Alarming a tenant about a full
+mailbox, and asking them to "fix" a correct address, would manufacture a
+crisis out of a hiccup.
+
+*Build check:* confirm from a real payload whether Mailgun converts an
+exhausted soft bounce into a `permanent_fail` when it finally gives up.
+If it does, a permanently soft-bouncing address is covered for free. If
+it does not, that is a residual gap and must be recorded as one.
+
+## R3 — a letter-1 bounce forks; the old case closes
+
+The copy-and-start-over model. The old case keeps its single bounced
+letter (frozen and correct), closes terminal, and a new case is created
+carrying the same property, category, severity, description and photos.
+
+The new case starts with **zero message rows**, so its derived counter is
+genuinely 0 and its first letter is stage 1. Nothing is reset, nothing is
+rewound — the numbers are simply true. **D3's ratchet is untouched.**
+
+**No link between the two cases.** A relationship nothing consumes is not
+worth modelling; the closed case explains itself through its own events.
+
+## R4 — mid-flow bounces are OUT OF SCOPE
+
+A bounce after one or more letters have been delivered is rare and hard
+to get right: continuing honestly would require re-serving the bounced
+rung, which would write a second row at the same stage and inflate the
+row-counted ladder. Deliberately deferred.
+
+What still happens mid-flow, because it is free from the same machinery:
+**detect, record on the message, notify the tenant, stop the case.** What
+is *not* built is the automated "correct the address and continue". The
+tenant's route is to raise a fresh case.
+
+*Consequence:* #25 no longer depends on snag #24, and **the escalation
+counter is not modified in any way** — no `COUNT(DISTINCT)`, no
+delivery-state dependency, no new entry shape in `SendCaseNotice`.
+
+## R5 — the transition is IMMEDIATE, with no waiting state
+
+"A bounce is a bounce — it's not going to change." The case transitions
+on receipt of the event. No paused state that could sit forever, no
+timeout rule, no case held open awaiting an action that may never come.
+
+## R6 — capture successes as well as failures
+
+`delivered` events are captured too. They carry the accepting server's
+SMTP code, response string, MX host and attempt number, turning "we sent
+a letter" into a contemporaneous, signature-verifiable record of an
+**external** event — and removing the dependency on Mailgun's one-day log
+retention, which is currently the only ground truth in existence.
+
+## R7 — complaints are terminal WHEREVER they occur
+
+Corrected during the session: a complaint is not a letter-1 concern. It
+can arrive at any rung, and it must **never** prompt a copy-and-restart.
+There is no address problem for a new address to fix, and routing around
+someone who has explicitly rejected the mail would be both wrong and
+futile.
+
+Note the evidential asymmetry, which is the interesting part: a bounce
+proves the letter went **nowhere**; a complaint proves the **opposite** —
+it arrived, was seen, and was rejected. That is evidence of receipt, and
+close to the strongest available short of a reply.
+
+`unsubscribed` is out of scope by definition: the landlord never
+subscribed to anything.
+
+*Build check:* confirm no `List-Unsubscribe` header is being attached.
+Mailgun can add one from domain settings regardless of intent, and on a
+statutory notice that would hand a landlord a one-click opt-out from
+being served, followed by silent suppression of everything after it.
+
+## R8 — failure reasons are NOT case statuses
+
+The decisive ruling on modelling. **Two separate collections:**
+
+| collection | home | nature |
+|---|---|---|
+| delivery outcome | `case_messages` | a fact about ONE message: which letter, which address, which SMTP response, when |
+| lifecycle state | `cases.status` | where the CONVERSATION stands |
+
+Delivery status, timestamp and detail go on the message row. **One** new
+terminal case status means "email contact with this landlord cannot
+continue"; *why* is read from the message, never encoded in the status.
+
+The reason this matters is cost asymmetry, established during the
+session and evidenced in R9: **statuses are expensive and dangerous,
+message columns are cheap and inert.** Every status must be classified in
+the sweep denylist, the clock's `NO_CLOCK_STATUSES`, and every display
+predicate — and each one fails open if forgotten. No predicate branches
+on a delivery column, so it carries no such risk.
+
+Rejected on the way: reusing `abandoned` (tenant-initiated — would
+misattribute the decision to the tenant) and two statuses
+`undeliverable` + `complained` (reads better in a list, but doubles the
+fail-open surface).
+
+**Status name:** `contact_failed`. It must be true of a bounce *and* a
+complaint, which are opposites — `undeliverable` fails that test, since a
+complaint means the letter *was* delivered. What the two share is that
+email contact has stopped and cannot resume.
+
+## R9 — display: list shows the status, case page explains it
+
+The all-cases list carries the status as a short label; the individual
+case page gives the full explanation, read from the message's delivery
+status so it differs by cause. The enum value and the displayed text need
+not match — `contact_failed` can render as "Closed — could not contact
+landlord".
+
+## Wording discipline (binding on anything user-facing or in the record)
+
+Extends the discipline already recorded in snag #25:
+
+- **"delivered" means ACCEPTED BY A SERVER** — not read, not seen.
+- **The accepting server is the MX for the RECIPIENT'S DOMAIN** (Google,
+  Microsoft), *not* "the landlord's mail server". Name the MX host from
+  the payload.
+- **A complaint is "reported as spam", not "the landlord marked it as
+  spam".** The event reaches us from the recipient's mailbox provider via
+  a feedback loop; it tells us a complaint was registered against the
+  message, not which person clicked what. On a record intended for a
+  dispute, that difference matters.
+- A bounce catches "went NOWHERE", never "went SOMEWHERE WRONG". A typo
+  landing on a real stranger's mailbox delivers cleanly and is reported
+  as success. Any claim about delivery must stay honest about that limit.
+
+## Open build items (decided to be decided later, not overlooked)
+
+1. **What "stop the case" means mechanically for a mid-flow bounce or a
+   complaint.** The letter-1 path has `contact_failed`, terminal. Mid-flow
+   is not terminal and not undeliverable. Reuse `on_hold`, or add a
+   paused state? To be settled at D0.
+2. The two Mailgun payload checks in R2 and R7.
+3. Whether the tenant notification for a complaint should say anything
+   about next steps. Email as a channel is finished for that landlord;
+   the realistic route is off-platform (post, council, solicitor). The
+   notification must not imply we can keep trying.
+
+## Prerequisite
+
+**The fail-open status trap (snag #47) should be closed BEFORE
+`contact_failed` is added.** Adding a status to the enum today silently
+opts it INTO sweeping and INTO having a silence clock — so the fix for
+#25 would, if that step were forgotten, escalate the very cases it just
+declared unreachable.
