@@ -143,6 +143,7 @@ function validSettingsPayload(array $overrides = []): array
         'dormancy_revival_days' => 90,
         'hold_max_days' => 60,
         'escalation_apply_inflight' => '0',
+        'attachments_first_notice_max' => 1,
     ], $overrides);
 }
 

@@ -27,11 +27,36 @@
             @else
                 <div class="alert alert-warning">No active escalation template found. Seed the letter_templates table before sending.</div>
             @endif
+
+            {{-- Snag #39 — say what is attached, and say it explicitly when
+                 nothing is. A blank region reads identically to a successful
+                 upload and to a silently rejected one. --}}
+            <hr>
+            @if(count($stagedPhotos) > 0)
+                <p class="small text-muted mb-1">
+                    <strong>{{ count($stagedPhotos) }}</strong>
+                    {{ count($stagedPhotos) === 1 ? 'photo will be attached' : 'photos will be attached' }}
+                </p>
+                <ul class="small mb-0">
+                    @foreach($stagedPhotos as $photo)
+                        <li>
+                            {{ $photo['original_filename'] ?? basename($photo['path']) }}
+                            <span class="text-muted">({{ \App\Support\FileSize::human((int) ($photo['size_bytes'] ?? 0)) }})</span>
+                        </li>
+                    @endforeach
+                </ul>
+            @else
+                <p class="small text-muted mb-0">No photos attached.</p>
+            @endif
         </div>
     </div>
 
     <div class="d-flex justify-content-between">
-        <a href="{{ route('cases.create') }}" class="btn btn-outline-secondary">Edit</a>
+        {{-- ?resume=1 marks this as a genuine return to the draft. Without
+             it the create form clears the staged payload, so an abandoned
+             draft cannot tell a later case that photos are already saved
+             when they are not (snag #44). --}}
+        <a href="{{ route('cases.create', ['resume' => 1]) }}" class="btn btn-outline-secondary">Edit</a>
         <form method="POST" action="{{ route('cases.confirm') }}" class="d-inline">
             @csrf
             <button type="submit" class="btn btn-primary">Confirm and send notice 1</button>

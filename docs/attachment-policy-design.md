@@ -265,8 +265,24 @@ evidence, and #39 means nothing catches it before sending.
 Fix shape for #44: give Edit an explicit resume marker
 (`route('cases.create', ['resume' => 1])`); treat a payload as resumable
 only with that marker; otherwise clear it and delete the staged files.
-Abandoned payloads currently also leave orphaned files in the per-user
-preview folder.
+
+**Correction, 2026-08-09** — an earlier draft of this section said
+abandoned payloads leave orphaned files that nothing sweeps. That was
+wrong. `SilenceSweep::cleanupPreviewPhotos`
+(`app/Console/Commands/SilenceSweep.php:852-869`) deletes
+`cases/preview/{user}/{random}/` folders older than 24h on live runs. The
+files were always cleaned; the **session key outlives them**, which is
+both what drives #44's misleading cue and what causes #45 below.
+
+**#45 — an attachment row is written for a file that no longer exists.**
+`promotePreviewPhotos` (`CaseController.php:567-579`) guards the file
+*move* with `if ($disk->exists(...))` but pushes the row into `$promoted`
+either way. A draft staged one day and confirmed the next — after the 24h
+sweep — therefore writes `MessageAttachment` rows pointing at deleted
+paths. `CaseNotice::attachments()` then calls `Attachment::fromStorageDisk`
+on a missing path inside a queued job, so the send fails somewhere the
+tenant cannot see, and the case page lists evidence they do not have.
+Fixed in the same pass: skip the entry and log a warning.
 
 ## 6. Build sequence
 
@@ -291,15 +307,23 @@ preview folder.
    leave a tenant who came to attach evidence with nothing to read, and
    "you can't" without a reason reads as a fault. Proposed wording:
 
-   > Photos can't be attached to this letter at the moment. Letters
-   > carrying attachments are more likely to be filtered as spam before
-   > your landlord sees them, so we've turned them off for now. Please
-   > describe the problem in as much detail as you can instead — the
-   > letter still carries your full description.
+   > Photos can't be attached to this letter at the moment — we've turned
+   > attachments off for now to make sure letters reach landlords'
+   > inboxes. Please describe the problem in as much detail as you can
+   > instead; the letter still carries your full description.
 
    Name the reason (deliverability, not a fault or a restriction on
    them), and give them the alternative in the same breath. The same
    wording, adjusted, covers the tenant-reply form when #19 lands.
+
+   **Softened 2026-08-09.** An earlier draft said letters carrying
+   attachments "are more likely to be filtered as spam". Plausible, but
+   this platform has not measured it — the only relevant observation runs
+   the other way (2026-08-02: a letter *with* an attachment scored SCL:1
+   BCL:0 straight to Inbox). The wording now states what was done and why
+   without asserting a cause we cannot evidence. Tenant-facing copy on an
+   evidential product should not make claims the product's own data does
+   not support.
 
 **Then — resize (R7).** Its own piece of work, after letter 1 is sound:
 

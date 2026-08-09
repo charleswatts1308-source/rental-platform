@@ -42,6 +42,10 @@ it('attaches uploaded photos to the queued CaseNotice mailable', function () {
     $tenant = User::factory()->create();
     $property = Property::factory()->create(['registered_by_user_id' => $tenant->id]);
 
+    // Shipped ceiling is 1; this test is about the multi-attachment path,
+    // so raise it rather than weakening the assertion to one file.
+    allowPhotoCeiling(3);
+
     postCaseWithPhotos($tenant, $property, [
         UploadedFile::fake()->image('mould-a.jpg'),
         UploadedFile::fake()->image('mould-b.png'),

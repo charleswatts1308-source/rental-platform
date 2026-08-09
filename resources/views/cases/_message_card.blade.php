@@ -49,7 +49,7 @@
                 <small class="text-muted d-block mb-1">Attachments</small>
                 <ul class="list-unstyled mb-0 small">
                     @foreach($message->attachments as $attachment)
-                        <li>{{ $attachment->original_filename ?? basename($attachment->path) }} <span class="text-muted">({{ number_format($attachment->size_bytes / 1024, 0) }} KB)</span></li>
+                        <li>{{ $attachment->original_filename ?? basename($attachment->path) }} <span class="text-muted">({{ \App\Support\FileSize::human((int) $attachment->size_bytes) }})</span></li>
                     @endforeach
                 </ul>
             </div>

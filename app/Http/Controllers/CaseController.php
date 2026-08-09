@@ -16,11 +16,14 @@ use App\Models\Setting;
 use App\Services\LetterTemplateRenderer;
 use App\Services\Silence\SilenceClock;
 use App\Support\CaseReference;
+use App\Support\FileSize;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
@@ -46,6 +49,23 @@ class CaseController extends Controller
     private const PHOTO_DISK = 'local';
 
     private const PREVIEW_SESSION_KEY = 'cases.preview.payload';
+
+    /**
+     * Per-file upload ceiling, in kilobytes.
+     *
+     * A constant, not a setting (docs/attachment-policy-design.md R6): it
+     * is bounded by the server's own upload_max_filesize / post_max_size,
+     * and a configurable value could promise more than the box accepts —
+     * which is snag #41's failure mode. The deliverability lever is the
+     * COUNT, which is configurable, and later the resize option (R7).
+     */
+    private const PHOTO_MAX_KB = 4096;
+
+    /**
+     * Ceiling fallback when the setting row is missing. Matches the
+     * seeded default; deliberately conservative.
+     */
+    private const PHOTO_COUNT_DEFAULT = 1;
 
     public function __construct(
         private SendCaseNotice $sendCaseNotice,
@@ -309,15 +329,36 @@ class CaseController extends Controller
         // repopulates; the file input can't be re-seeded (browser
         // security), but the staged photos survive in the session payload
         // and promote on confirm, so surface a count cue in the view.
+        //
+        // Snag #44 — that cue MUST NOT survive into a different case. The
+        // payload is one session key per user, not per case, so without a
+        // marker this method cannot tell "came back via Edit" (where the
+        // cue is correct) from "starting a fresh case" (where it is a lie
+        // that talks the tenant out of attaching evidence: they read "your
+        // photo is saved", don't attach, and store() then overwrites the
+        // payload with an empty photo array). Only ?resume=1, which only
+        // the preview's Edit link sets, counts as a resume.
         $payload = session(self::PREVIEW_SESSION_KEY);
-        $stagedPhotoCount = 0;
-        if ($payload && (int) ($payload['user_id'] ?? 0) === $request->user()->id) {
+        $ownsPayload = $payload && (int) ($payload['user_id'] ?? 0) === $request->user()->id;
+        $stagedPhotos = [];
+
+        if ($ownsPayload && $request->boolean('resume')) {
             // The staged 'validated' array is file-free (store() drops the
             // UploadedFiles), so it flashes cleanly; old() then repopulates
-            // every text field. Photos can't re-seed a file input, so we
-            // surface a count cue instead.
+            // every text field. Photos can't re-seed a file input, so the
+            // view lists them from the payload instead — naming them, not
+            // just counting them, so the tenant can see WHICH files are
+            // attached rather than being told a number.
             $request->session()->flashInput($payload['validated']);
-            $stagedPhotoCount = count($payload['photos'] ?? []);
+            $stagedPhotos = $payload['photos'] ?? [];
+        } elseif ($ownsPayload) {
+            // Starting fresh with a draft still in the session: abandon it
+            // now rather than leaving it to mislead. The daily sweep would
+            // clear the files after 24h anyway
+            // (SilenceSweep::cleanupPreviewPhotos), but the session key
+            // outlives that and is what drives the cue.
+            $this->discardStagedPhotos($payload);
+            $request->session()->forget(self::PREVIEW_SESSION_KEY);
         }
 
         return view('cases.create', [
@@ -325,8 +366,31 @@ class CaseController extends Controller
             'categories' => $categories,
             'severities' => CaseSeverity::cases(),
             'roles' => LandlordContactRole::cases(),
-            'stagedPhotoCount' => $stagedPhotoCount,
+            'stagedPhotos' => $stagedPhotos,
+            'photoCeiling' => $this->photoCeiling(),
+            'photoMaxBytes' => $this->effectivePhotoMaxBytes(),
+            'photoMaxLabel' => FileSize::human($this->effectivePhotoMaxBytes()),
         ]);
+    }
+
+    /**
+     * Delete the staged files behind an abandoned preview payload.
+     *
+     * Best-effort: the daily sweep removes orphaned preview folders after
+     * 24h regardless, so a failure here costs disk space for a day, never
+     * correctness.
+     *
+     * @param  array{photos?: array<int, array{path: string}>}  $payload
+     */
+    private function discardStagedPhotos(array $payload): void
+    {
+        $disk = Storage::disk(self::PHOTO_DISK);
+
+        foreach ($payload['photos'] ?? [] as $photo) {
+            if (isset($photo['path']) && $disk->exists($photo['path'])) {
+                $disk->delete($photo['path']);
+            }
+        }
     }
 
     /**
@@ -356,16 +420,15 @@ class CaseController extends Controller
             'landlord_name' => ['nullable', 'string', 'max:255'],
             'landlord_role' => ['required', Rule::enum(LandlordContactRole::class)],
             'organisation_name' => ['nullable', 'string', 'max:255'],
-            'photos' => ['nullable', 'array', 'max:6'],
-            'photos.*' => ['file', 'mimes:jpg,jpeg,png,pdf', 'max:2048'],
+            'photos' => ['nullable', 'array', 'max:'.$this->photoCeiling()],
+            'photos.*' => ['file', 'mimes:jpg,jpeg,png,pdf', 'max:'.self::PHOTO_MAX_KB],
         ];
 
-        $validated = $request->validate($rules);
+        [$photoMessages, $photoAttributes] = $this->photoValidationCopy($request);
 
-        $previewPhotos = $this->stagePreviewPhotos(
-            $request->file('photos', []) ?? [],
-            $userId,
-        );
+        $validated = $request->validate($rules, $photoMessages, $photoAttributes);
+
+        $previewPhotos = $this->resolveStagedPhotos($request, $userId);
 
         // The uploaded files are staged to disk above; keeping the
         // UploadedFile objects in the session payload would break
@@ -432,6 +495,11 @@ class CaseController extends Controller
             'property' => $property,
             'renderedLetter' => $renderedLetter,
             'renderedAuthorisation' => $renderedAuthorisation,
+            // Snag #39 — the preview is the tenant's only chance to check
+            // the letter before it reaches their landlord, and photos are
+            // the part they cannot take back once sent. The data was
+            // always here in the payload; it simply was not rendered.
+            'stagedPhotos' => $payload['photos'] ?? [],
         ]);
     }
 
@@ -515,6 +583,171 @@ class CaseController extends Controller
     }
 
     /**
+     * Decide what the staged photo set is after a store() submission.
+     *
+     * Snag #46 — this used to be an unconditional re-stage of whatever the
+     * request carried, which meant a resubmit with no files WIPED the
+     * staged photos. That is the ordinary Edit round-trip: preview, spot a
+     * typo, go back, fix a word, resubmit. A browser cannot re-seed a file
+     * input for security reasons, so the second POST legitimately carries
+     * no files — and the form was meanwhile telling the tenant "your photo
+     * is saved, you don't need to re-attach it". The cue was false and the
+     * photo left the letter silently.
+     *
+     * Three cases now, in priority order:
+     *   1. New files uploaded  -> they REPLACE the staged set.
+     *   2. No files, keep flag -> carry the staged set forward (the cue is
+     *      now true).
+     *   3. Otherwise           -> empty; the tenant removed them, or there
+     *      were never any.
+     *
+     * The keep flag defaults to on whenever a staged set exists, so the
+     * safe outcome (evidence survives) is what happens without JavaScript.
+     * Only a deliberate act — choosing new files, or clicking Remove —
+     * turns it off.
+     *
+     * @return array<int, array{disk: string, path: string, original_filename: string, mime_type: string, size_bytes: int}>
+     */
+    private function resolveStagedPhotos(Request $request, int $userId): array
+    {
+        $incoming = $request->file('photos', []) ?? [];
+        $payload = session(self::PREVIEW_SESSION_KEY);
+        $ownsPayload = $payload && (int) ($payload['user_id'] ?? 0) === $userId;
+        $staged = $ownsPayload ? ($payload['photos'] ?? []) : [];
+
+        if (count($incoming) > 0) {
+            // Replacing: the superseded files would be swept within 24h
+            // anyway, but there is no reason to leave them lying about.
+            if ($staged) {
+                $this->discardStagedPhotos($payload);
+            }
+
+            return $this->stagePreviewPhotos($incoming, $userId);
+        }
+
+        // ABSENT means keep. Only an explicit "0" — which the form's script
+        // sets when the tenant chooses new files or clicks Remove — drops
+        // them. Defaulting the other way would make every caller that
+        // forgets the field silently discard a tenant's evidence, which is
+        // the failure mode this whole design exists to prevent.
+        $keepStaged = ! $request->has('keep_staged_photos')
+            || $request->boolean('keep_staged_photos');
+
+        if ($staged && $keepStaged) {
+            return $staged;
+        }
+
+        if ($staged) {
+            $this->discardStagedPhotos($payload);
+        }
+
+        return [];
+    }
+
+    /**
+     * The per-file size the machine will ACTUALLY accept, in bytes.
+     *
+     * min(our own PHOTO_MAX_KB, PHP's upload_max_filesize). PHP rejects an
+     * oversized upload before validation ever runs, so a form advertising
+     * 4MB on a box configured for 2M is promising something that cannot
+     * happen — the #41 lesson turned on our own UI: never display a limit
+     * the machine will not honour.
+     *
+     * DISPLAY AND CLIENT-SIDE ONLY. The server-side validation rule stays
+     * the fixed PHOTO_MAX_KB constant: the suite runs under the CLI
+     * php.ini, so deriving the rule from ini_get() would make validation
+     * environment-dependent. Nothing is lost by that — anything above
+     * PHP's limit fires the `uploaded` rule long before `max` is reached.
+     */
+    private function effectivePhotoMaxBytes(): int
+    {
+        $ours = self::PHOTO_MAX_KB * 1024;
+        $php = FileSize::fromIniShorthand(ini_get('upload_max_filesize'));
+
+        return $php > 0 ? min($ours, $php) : $ours;
+    }
+
+    /**
+     * The live attachment ceiling for letter 1.
+     *
+     * Read LIVE, never snapshotted — deliberately the opposite of the
+     * escalation intervals (D4), because the whole purpose of this key is
+     * reacting to a deliverability problem now, across cases already
+     * running (docs/attachment-policy-design.md R3).
+     *
+     * Clamped to the range the admin surface offers, so a value edited
+     * directly in the database cannot widen the ceiling past the design.
+     */
+    private function photoCeiling(): int
+    {
+        $value = Setting::get('attachments.first_notice_max', self::PHOTO_COUNT_DEFAULT);
+
+        return max(0, min(3, (int) $value));
+    }
+
+    /**
+     * Validation messages and attribute names for the photo rules.
+     *
+     * Laravel's defaults render as "The photos.0 field must not be greater
+     * than 2048 kilobytes" — an internal array index, a unit nobody thinks
+     * in, and form jargon, shown to a tenant attaching evidence about their
+     * home. These name the tenant's own file and state the limit plainly.
+     *
+     * The per-index `photos.N.max` messages take precedence over the
+     * wildcard, which is what lets the actual size appear; the wildcards
+     * stay as the fallback so no failure is left unworded.
+     *
+     * Filenames are user-supplied but render through {{ $error }} in the
+     * blade, which escapes.
+     *
+     * @return array{0: array<string, string>, 1: array<string, string>}
+     */
+    private function photoValidationCopy(Request $request): array
+    {
+        $ceiling = $this->photoCeiling();
+        $limit = FileSize::human(self::PHOTO_MAX_KB * 1024);
+
+        $attributes = [];
+        $messages = [
+            'photos.max' => $ceiling === 0
+                ? 'Photos cannot be attached at the moment.'
+                : 'You can attach up to '.$ceiling.' '.($ceiling === 1 ? 'photo' : 'photos').'.',
+        ];
+
+        foreach ($request->file('photos', []) ?? [] as $index => $file) {
+            if (! $file instanceof UploadedFile) {
+                continue;
+            }
+
+            $original = $file->getClientOriginalName();
+            $label = filled($original)
+                ? '"'.Str::limit($original, 60).'"'
+                : 'number '.($index + 1);
+
+            $attributes["photos.{$index}"] = $label;
+
+            // getSize() only means anything when PHP accepted the upload.
+            // On a PHP-level rejection the `uploaded` rule fires instead of
+            // `max`, and that message deliberately carries no size.
+            if ($file->isValid()) {
+                $messages["photos.{$index}.max"] = 'Photo '.$label.' is '
+                    .FileSize::human((int) $file->getSize())
+                    .' — each photo must be '.$limit.' or smaller.';
+            }
+        }
+
+        // Union, not merge: the per-index keys above must win.
+        $messages += [
+            'photos.*.max' => 'Photo :attribute is too large — each photo must be '.$limit.' or smaller.',
+            'photos.*.mimes' => 'Photo :attribute is not a supported file type. Please attach a JPG, PNG or PDF.',
+            'photos.*.uploaded' => 'Photo :attribute could not be uploaded — it may be too large for the server to accept.',
+            'photos.*.file' => 'Photo :attribute could not be read. Please try attaching it again.',
+        ];
+
+        return [$messages, $attributes];
+    }
+
+    /**
      * Stage photos to a temp preview folder so they survive the
      * store→preview→confirm hop without being held in session.
      * The session only carries the disk paths.
@@ -562,13 +795,33 @@ class CaseController extends Controller
      */
     private function promotePreviewPhotos(array $previewPhotos, int $caseId): array
     {
-        $disk = \Illuminate\Support\Facades\Storage::disk(self::PHOTO_DISK);
+        $disk = Storage::disk(self::PHOTO_DISK);
         $promoted = [];
         foreach ($previewPhotos as $photo) {
-            $newPath = "cases/{$caseId}/".basename($photo['path']);
-            if ($disk->exists($photo['path'])) {
-                $disk->move($photo['path'], $newPath);
+            // Snag #45 — the staged file may be GONE. SilenceSweep's daily
+            // cleanupPreviewPhotos deletes preview folders older than 24h,
+            // so a draft left overnight and confirmed the next day has a
+            // session payload naming files that no longer exist.
+            //
+            // Promoting the row anyway would write a MessageAttachment
+            // pointing at nothing: CaseNotice::attachments() then calls
+            // Attachment::fromStorageDisk on a missing path inside a queued
+            // job, and the case page lists evidence that isn't there. Skip
+            // it instead, and log — a letter quietly losing its attachment
+            // must not pass unrecorded.
+            if (! $disk->exists($photo['path'])) {
+                Log::warning('[LLCS] Staged photo missing at promote; attachment dropped.', [
+                    'case_id' => $caseId,
+                    'path' => $photo['path'],
+                    'original_filename' => $photo['original_filename'] ?? null,
+                ]);
+
+                continue;
             }
+
+            $newPath = "cases/{$caseId}/".basename($photo['path']);
+            $disk->move($photo['path'], $newPath);
+
             $promoted[] = [
                 'disk' => $photo['disk'],
                 'path' => $newPath,
