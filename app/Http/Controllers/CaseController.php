@@ -368,7 +368,8 @@ class CaseController extends Controller
             'roles' => LandlordContactRole::cases(),
             'stagedPhotos' => $stagedPhotos,
             'photoCeiling' => $this->photoCeiling(),
-            'photoMaxLabel' => FileSize::human(self::PHOTO_MAX_KB * 1024),
+            'photoMaxBytes' => $this->effectivePhotoMaxBytes(),
+            'photoMaxLabel' => FileSize::human($this->effectivePhotoMaxBytes()),
         ]);
     }
 
@@ -641,6 +642,29 @@ class CaseController extends Controller
         }
 
         return [];
+    }
+
+    /**
+     * The per-file size the machine will ACTUALLY accept, in bytes.
+     *
+     * min(our own PHOTO_MAX_KB, PHP's upload_max_filesize). PHP rejects an
+     * oversized upload before validation ever runs, so a form advertising
+     * 4MB on a box configured for 2M is promising something that cannot
+     * happen — the #41 lesson turned on our own UI: never display a limit
+     * the machine will not honour.
+     *
+     * DISPLAY AND CLIENT-SIDE ONLY. The server-side validation rule stays
+     * the fixed PHOTO_MAX_KB constant: the suite runs under the CLI
+     * php.ini, so deriving the rule from ini_get() would make validation
+     * environment-dependent. Nothing is lost by that — anything above
+     * PHP's limit fires the `uploaded` rule long before `max` is reached.
+     */
+    private function effectivePhotoMaxBytes(): int
+    {
+        $ours = self::PHOTO_MAX_KB * 1024;
+        $php = FileSize::fromIniShorthand(ini_get('upload_max_filesize'));
+
+        return $php > 0 ? min($ours, $php) : $ours;
     }
 
     /**

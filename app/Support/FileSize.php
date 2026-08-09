@@ -38,4 +38,31 @@ class FileSize
 
         return max(1, (int) round($bytes / self::KB)).' KB';
     }
+
+    /**
+     * Parse a php.ini shorthand size ("2M", "8M", "512K", "1G", "1048576")
+     * into bytes.
+     *
+     * ini_get() returns these in shorthand notation, not bytes, and the
+     * suffix is case-insensitive. A blank or unparseable value returns 0,
+     * which callers should read as "no usable limit reported" rather than
+     * "zero bytes allowed".
+     */
+    public static function fromIniShorthand(?string $value): int
+    {
+        $value = trim((string) $value);
+
+        if ($value === '' || ! preg_match('/^(\d+(?:\.\d+)?)\s*([KMG])?B?$/i', $value, $m)) {
+            return 0;
+        }
+
+        $bytes = (float) $m[1];
+
+        return (int) match (strtoupper($m[2] ?? '')) {
+            'G' => $bytes * self::MB * self::KB,
+            'M' => $bytes * self::MB,
+            'K' => $bytes * self::KB,
+            default => $bytes,
+        };
+    }
 }

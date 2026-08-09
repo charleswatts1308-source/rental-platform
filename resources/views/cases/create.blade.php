@@ -142,6 +142,7 @@
                     <input id="photos" name="photos[]" type="file" multiple
                            accept=".jpg,.jpeg,.png,.pdf"
                            data-photo-ceiling="{{ $photoCeiling }}"
+                           data-photo-max-bytes="{{ $photoMaxBytes }}"
                            class="form-control @error('photos') is-invalid @enderror @error('photos.*') is-invalid @enderror">
                     <div class="form-text">
                         JPG, PNG, or PDF. Each file must be under {{ $photoMaxLabel }}.
@@ -265,6 +266,8 @@
     const ceiling = parseInt(input.dataset.photoCeiling || '0', 10);
     if (!ceiling) return;
 
+    const maxBytes = parseInt(input.dataset.photoMaxBytes || '0', 10);
+
     const keepFlag = document.getElementById('keep-staged-photos');
     const errorBox = document.getElementById('photo-errors');
 
@@ -285,6 +288,23 @@
     function clearErrors() {
         if (errorBox) errorBox.innerHTML = '';
         input.classList.remove('is-invalid');
+    }
+
+    // Client-side problems render in the same place, and read the same, as
+    // the server's — the tenant should not be able to tell which stopped
+    // them. Refusing a file here is not a lesser event than refusing it
+    // there.
+    function showProblems(messages) {
+        if (!errorBox || !messages.length) return;
+
+        messages.forEach(function (text) {
+            const line = document.createElement('div');
+            line.className = 'text-danger small mt-1';
+            line.textContent = text;
+            errorBox.appendChild(line);
+        });
+
+        input.classList.add('is-invalid');
     }
 
     list.addEventListener('click', function (event) {
@@ -367,20 +387,39 @@
             dropStaged();
         }
 
-        // Anything over the ceiling is dropped here AND refused by the
-        // server; the tenant is told rather than left to wonder.
         const incoming = Array.from(input.files || []);
+
+        // Refuse oversize HERE, before submitting. Otherwise one too-large
+        // file fails server validation, the redirect loses the whole
+        // selection (a browser cannot re-seed a file input), and the tenant
+        // has to re-pick photos that were perfectly fine. The limit is the
+        // one the machine will actually accept — min(our cap, PHP's
+        // upload_max_filesize) — so this cannot promise more than the box
+        // takes.
+        const tooBig = maxBytes > 0 ? incoming.filter(f => f.size > maxBytes) : [];
+        const usable = maxBytes > 0 ? incoming.filter(f => f.size <= maxBytes) : incoming;
+
         const room = ceiling - chosen.length;
+        const accepted = usable.slice(0, Math.max(0, room));
+        chosen = chosen.concat(accepted);
 
-        chosen = chosen.concat(incoming.slice(0, Math.max(0, room)));
+        const problems = [];
 
-        if (incoming.length > Math.max(0, room)) {
-            window.alert(
-                'You can attach up to ' + ceiling + (ceiling === 1 ? ' photo' : ' photos') + '. ' +
-                'Remove one first if you want to swap it for a different photo.'
+        tooBig.forEach(function (file) {
+            problems.push(
+                'Photo "' + file.name + '" is ' + humanSize(file.size) +
+                ' — each photo must be ' + humanSize(maxBytes) + ' or smaller. It has not been attached.'
+            );
+        });
+
+        if (usable.length > accepted.length) {
+            problems.push(
+                'You can attach up to ' + ceiling + (ceiling === 1 ? ' photo' : ' photos') +
+                '. Remove one first if you want to swap it for a different photo.'
             );
         }
 
+        showProblems(problems);
         sync();
     });
 

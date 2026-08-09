@@ -398,6 +398,24 @@ it('names the file and states the limit in plain words when a photo is too large
     expect($message)->not->toContain('kilobytes');
 });
 
+it('states the limit the machine will actually accept, not our own cap', function () {
+    [$tenant] = tenantWithProperty();
+
+    $ours = 4096 * 1024;
+    $php = \App\Support\FileSize::fromIniShorthand(ini_get('upload_max_filesize'));
+    $effective = $php > 0 ? min($ours, $php) : $ours;
+
+    $response = $this->actingAs($tenant)->get('/cases/create');
+
+    $response->assertOk();
+    // Advertising 4MB on a box PHP has configured for 2M promises something
+    // that cannot happen — the tenant hits a refusal the form said wouldn't
+    // come. The displayed figure and the byte limit handed to the script
+    // both come from the same effective value.
+    $response->assertSee('under '.\App\Support\FileSize::human($effective));
+    $response->assertSee('data-photo-max-bytes="'.$effective.'"', false);
+});
+
 it('shows a photo error once, beside the input, not also in the page summary', function () {
     [$tenant, $property] = tenantWithProperty();
 
