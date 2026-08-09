@@ -126,15 +126,6 @@
                     <label for="photos" class="form-label">
                         Photos (optional, up to {{ $photoCeiling }})
                     </label>
-                    @if(($stagedPhotoCount ?? 0) > 0)
-                        <div class="form-text text-success mb-1">
-                            @if($stagedPhotoCount === 1)
-                                Your photo is saved — you don't need to re-attach it unless you want to change your selection.
-                            @else
-                                Your {{ $stagedPhotoCount }} photos are saved — you don't need to re-attach them unless you want to change your selection.
-                            @endif
-                        </div>
-                    @endif
                     <input id="photos" name="photos[]" type="file" multiple
                            accept=".jpg,.jpeg,.png,.pdf"
                            data-photo-ceiling="{{ $photoCeiling }}"
@@ -142,9 +133,44 @@
                     <div class="form-text">
                         JPG, PNG, or PDF. Each file must be under {{ $photoMaxLabel }}.
                     </div>
-                    {{-- Populated by the script below. Stays empty without JS,
-                         where the native control's own summary applies. --}}
-                    <ul id="photo-list" class="list-unstyled small mt-2 mb-0"></ul>
+
+                    {{-- Photo errors live here rather than only in the summary
+                         at the top, so the script can clear them the moment the
+                         tenant changes their selection. A stale "too large"
+                         message sitting above a freshly-chosen, perfectly good
+                         photo reads as a live failure. --}}
+                    <div id="photo-errors">
+                        @foreach($errors->get('photos') as $message)
+                            <div class="text-danger small mt-1">{{ $message }}</div>
+                        @endforeach
+                        @foreach($errors->get('photos.*') as $messages)
+                            @foreach((array) $messages as $message)
+                                <div class="text-danger small mt-1">{{ $message }}</div>
+                            @endforeach
+                        @endforeach
+                    </div>
+
+                    {{-- Staged photos are rendered server-side so an Edit
+                         round-trip SHOWS what is attached. A browser cannot
+                         re-seed a file input, so without this the tenant is
+                         told a number at best and nothing at worst (#46). --}}
+                    <ul id="photo-list" class="list-unstyled small mt-2 mb-0">
+                        @foreach($stagedPhotos as $photo)
+                            <li data-staged="1" class="d-flex align-items-center gap-2 mb-1">
+                                <span>{{ $photo['original_filename'] ?? basename($photo['path']) }}</span>
+                                <span class="text-muted">({{ \App\Support\FileSize::human((int) ($photo['size_bytes'] ?? 0)) }})</span>
+                                <span class="badge text-bg-light">attached</span>
+                                <button type="button" class="btn btn-link btn-sm p-0 text-danger" data-remove-staged>Remove</button>
+                            </li>
+                        @endforeach
+                    </ul>
+
+                    {{-- Defaults ON whenever a staged set exists, so the safe
+                         outcome — the evidence survives the round-trip —
+                         is what happens with no JavaScript at all. Only
+                         choosing new files or clicking Remove turns it off. --}}
+                    <input type="hidden" id="keep-staged-photos" name="keep_staged_photos"
+                           value="{{ count($stagedPhotos) > 0 ? 1 : 0 }}">
                 @endif
             </div>
 
@@ -226,6 +252,35 @@
     const ceiling = parseInt(input.dataset.photoCeiling || '0', 10);
     if (!ceiling) return;
 
+    const keepFlag = document.getElementById('keep-staged-photos');
+    const errorBox = document.getElementById('photo-errors');
+
+    function stagedRows() {
+        return Array.from(list.querySelectorAll('[data-staged]'));
+    }
+
+    // Staged photos are the server's, not this script's — we hold no File
+    // objects for them. Dropping them is therefore a server instruction
+    // (the keep flag), not a DataTransfer edit.
+    function dropStaged() {
+        stagedRows().forEach(row => row.remove());
+        if (keepFlag) keepFlag.value = '0';
+    }
+
+    // A validation error from the previous request describes files that are
+    // no longer the selection. Clear it as soon as the tenant changes it.
+    function clearErrors() {
+        if (errorBox) errorBox.innerHTML = '';
+        input.classList.remove('is-invalid');
+    }
+
+    list.addEventListener('click', function (event) {
+        if (!event.target.matches('[data-remove-staged]')) return;
+        dropStaged();
+        clearErrors();
+        render();
+    });
+
     // Mirrors App\Support\FileSize::human().
     function humanSize(bytes) {
         if (bytes >= 1048576) return (Math.round(bytes / 1048576 * 10) / 10) + ' MB';
@@ -242,9 +297,14 @@
     }
 
     function render() {
+        // Never wipe server-rendered staged rows here — they are the record
+        // of what is currently attached, and this script cannot recreate
+        // them. dropStaged() is the only thing that removes them.
+        const staged = stagedRows();
         list.innerHTML = '';
+        staged.forEach(row => list.appendChild(row));
 
-        if (!chosen.length) {
+        if (!chosen.length && !staged.length) {
             const none = document.createElement('li');
             none.className = 'text-muted';
             none.textContent = 'No photos attached.';
@@ -285,6 +345,15 @@
     }
 
     input.addEventListener('change', function () {
+        clearErrors();
+
+        // Choosing new files REPLACES the staged set — same rule the server
+        // applies in resolveStagedPhotos(), so the screen cannot promise
+        // something different from what will be sent.
+        if (stagedRows().length) {
+            dropStaged();
+        }
+
         // Anything over the ceiling is dropped here AND refused by the
         // server; the tenant is told rather than left to wonder.
         const incoming = Array.from(input.files || []);

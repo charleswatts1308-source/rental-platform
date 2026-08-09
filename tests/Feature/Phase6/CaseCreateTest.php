@@ -9,7 +9,6 @@ use App\Models\MessageAttachment;
 use App\Models\Property;
 use App\Models\RepairCase;
 use App\Models\RepairCategory;
-use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -115,8 +114,15 @@ it('Edit round-trip — GET /cases/create after staging re-fills the form from t
     $response->assertSee('Persistent damp behind the kitchen units.');
     $response->assertSee('landlord@example.com');
     // The staged photo can't re-seed a file input, but it survives in the
-    // session payload — the cue tells the tenant it's safe.
-    $response->assertSee('photo is saved');
+    // session payload. It is now NAMED on the form rather than counted by a
+    // cue — "your photo is saved" told the tenant a number and, until #46
+    // was fixed, was not even true. Naming the file is the stronger claim:
+    // the tenant can see WHICH evidence is attached.
+    $response->assertSee('damp.jpg');
+    $response->assertSee('attached');
+    // And the keep flag rides along so a resubmit carries it forward.
+    $response->assertSee('name="keep_staged_photos"', false);
+    $response->assertSee('value="1"', false);
 });
 
 it('Edit round-trip does not leak another tenant\'s staged draft', function () {
@@ -438,6 +444,70 @@ it('#44 — an abandoned draft does not tell a NEW case that photos are saved', 
 
     // And the stale draft is gone rather than lying in wait.
     expect(session('cases.preview.payload'))->toBeNull();
+});
+
+it('#46 — Edit, change a word, resubmit: the staged photos survive', function () {
+    [$tenant, $property] = tenantWithProperty();
+
+    // Stage a draft WITH a photo.
+    $this->actingAs($tenant)->post('/cases', validStorePayload($property->id) + [
+        'photos' => [UploadedFile::fake()->image('damp.jpg')],
+    ]);
+
+    // Edit, reword the description, resubmit. A file input cannot be
+    // re-seeded by the browser, so the second POST legitimately carries no
+    // files — exactly what a tenant does when the form tells them "your
+    // photo is saved, you don't need to re-attach it".
+    $this->actingAs($tenant)->get('/cases/create?resume=1');
+    $this->actingAs($tenant)->post('/cases', validStorePayload($property->id, [
+        'description' => 'Reworded: black mould along the bedroom wall, worsening.',
+    ]));
+
+    $this->actingAs($tenant)->post('/cases/preview/confirm');
+
+    $message = CaseMessage::where('direction', MessageDirection::Outbound)->firstOrFail();
+    expect(MessageAttachment::where('case_message_id', $message->id)->count())->toBe(1);
+});
+
+it('#46 — an explicit Remove does clear the staged photos', function () {
+    [$tenant, $property] = tenantWithProperty();
+
+    $this->actingAs($tenant)->post('/cases', validStorePayload($property->id) + [
+        'photos' => [UploadedFile::fake()->image('damp.jpg')],
+    ]);
+
+    // keep_staged_photos=0 is what the form's script sets when the tenant
+    // clicks Remove. Only an explicit 0 drops them — absent means keep.
+    $this->actingAs($tenant)->post('/cases', validStorePayload($property->id) + [
+        'keep_staged_photos' => 0,
+    ]);
+
+    $this->actingAs($tenant)->post('/cases/preview/confirm');
+
+    $message = CaseMessage::where('direction', MessageDirection::Outbound)->firstOrFail();
+    expect(MessageAttachment::where('case_message_id', $message->id)->count())->toBe(0);
+});
+
+it('#46 — newly chosen photos REPLACE the staged set rather than adding to it', function () {
+    [$tenant, $property] = tenantWithProperty();
+
+    allowPhotoCeiling(3);
+
+    $this->actingAs($tenant)->post('/cases', validStorePayload($property->id) + [
+        'photos' => [UploadedFile::fake()->image('first.jpg')],
+    ]);
+
+    $this->actingAs($tenant)->post('/cases', validStorePayload($property->id) + [
+        'photos' => [UploadedFile::fake()->image('second.jpg')],
+    ]);
+
+    $this->actingAs($tenant)->post('/cases/preview/confirm');
+
+    $message = CaseMessage::where('direction', MessageDirection::Outbound)->firstOrFail();
+    $attachments = MessageAttachment::where('case_message_id', $message->id)->get();
+
+    expect($attachments)->toHaveCount(1);
+    expect($attachments->first()->original_filename)->toBe('second.jpg');
 });
 
 it('#45 — drops an attachment whose staged file has been swept, rather than recording one that is not there', function () {

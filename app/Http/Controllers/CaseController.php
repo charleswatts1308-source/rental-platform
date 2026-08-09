@@ -340,15 +340,17 @@ class CaseController extends Controller
         // the preview's Edit link sets, counts as a resume.
         $payload = session(self::PREVIEW_SESSION_KEY);
         $ownsPayload = $payload && (int) ($payload['user_id'] ?? 0) === $request->user()->id;
-        $stagedPhotoCount = 0;
+        $stagedPhotos = [];
 
         if ($ownsPayload && $request->boolean('resume')) {
             // The staged 'validated' array is file-free (store() drops the
             // UploadedFiles), so it flashes cleanly; old() then repopulates
-            // every text field. Photos can't re-seed a file input, so we
-            // surface a count cue instead.
+            // every text field. Photos can't re-seed a file input, so the
+            // view lists them from the payload instead — naming them, not
+            // just counting them, so the tenant can see WHICH files are
+            // attached rather than being told a number.
             $request->session()->flashInput($payload['validated']);
-            $stagedPhotoCount = count($payload['photos'] ?? []);
+            $stagedPhotos = $payload['photos'] ?? [];
         } elseif ($ownsPayload) {
             // Starting fresh with a draft still in the session: abandon it
             // now rather than leaving it to mislead. The daily sweep would
@@ -364,7 +366,7 @@ class CaseController extends Controller
             'categories' => $categories,
             'severities' => CaseSeverity::cases(),
             'roles' => LandlordContactRole::cases(),
-            'stagedPhotoCount' => $stagedPhotoCount,
+            'stagedPhotos' => $stagedPhotos,
             'photoCeiling' => $this->photoCeiling(),
             'photoMaxLabel' => FileSize::human(self::PHOTO_MAX_KB * 1024),
         ]);
@@ -425,10 +427,7 @@ class CaseController extends Controller
 
         $validated = $request->validate($rules, $photoMessages, $photoAttributes);
 
-        $previewPhotos = $this->stagePreviewPhotos(
-            $request->file('photos', []) ?? [],
-            $userId,
-        );
+        $previewPhotos = $this->resolveStagedPhotos($request, $userId);
 
         // The uploaded files are staged to disk above; keeping the
         // UploadedFile objects in the session payload would break
@@ -580,6 +579,68 @@ class CaseController extends Controller
         } while (RepairCase::where('url_slug', $slug)->exists());
 
         return $slug;
+    }
+
+    /**
+     * Decide what the staged photo set is after a store() submission.
+     *
+     * Snag #46 — this used to be an unconditional re-stage of whatever the
+     * request carried, which meant a resubmit with no files WIPED the
+     * staged photos. That is the ordinary Edit round-trip: preview, spot a
+     * typo, go back, fix a word, resubmit. A browser cannot re-seed a file
+     * input for security reasons, so the second POST legitimately carries
+     * no files — and the form was meanwhile telling the tenant "your photo
+     * is saved, you don't need to re-attach it". The cue was false and the
+     * photo left the letter silently.
+     *
+     * Three cases now, in priority order:
+     *   1. New files uploaded  -> they REPLACE the staged set.
+     *   2. No files, keep flag -> carry the staged set forward (the cue is
+     *      now true).
+     *   3. Otherwise           -> empty; the tenant removed them, or there
+     *      were never any.
+     *
+     * The keep flag defaults to on whenever a staged set exists, so the
+     * safe outcome (evidence survives) is what happens without JavaScript.
+     * Only a deliberate act — choosing new files, or clicking Remove —
+     * turns it off.
+     *
+     * @return array<int, array{disk: string, path: string, original_filename: string, mime_type: string, size_bytes: int}>
+     */
+    private function resolveStagedPhotos(Request $request, int $userId): array
+    {
+        $incoming = $request->file('photos', []) ?? [];
+        $payload = session(self::PREVIEW_SESSION_KEY);
+        $ownsPayload = $payload && (int) ($payload['user_id'] ?? 0) === $userId;
+        $staged = $ownsPayload ? ($payload['photos'] ?? []) : [];
+
+        if (count($incoming) > 0) {
+            // Replacing: the superseded files would be swept within 24h
+            // anyway, but there is no reason to leave them lying about.
+            if ($staged) {
+                $this->discardStagedPhotos($payload);
+            }
+
+            return $this->stagePreviewPhotos($incoming, $userId);
+        }
+
+        // ABSENT means keep. Only an explicit "0" — which the form's script
+        // sets when the tenant chooses new files or clicks Remove — drops
+        // them. Defaulting the other way would make every caller that
+        // forgets the field silently discard a tenant's evidence, which is
+        // the failure mode this whole design exists to prevent.
+        $keepStaged = ! $request->has('keep_staged_photos')
+            || $request->boolean('keep_staged_photos');
+
+        if ($staged && $keepStaged) {
+            return $staged;
+        }
+
+        if ($staged) {
+            $this->discardStagedPhotos($payload);
+        }
+
+        return [];
     }
 
     /**

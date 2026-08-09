@@ -1652,3 +1652,48 @@ Fix:         Applied — skip the entry when the source file is gone, and
              Log::warning it. A letter quietly losing its attachment must
              not pass unrecorded.
 --------------------------------------------------------------------
+#46
+Page:        CaseController::store — the Edit round-trip SILENTLY DROPPED
+             the staged photos, while the form told the tenant they were
+             safe. Found 2026-08-09 in the local browser walk (Charlie:
+             "when i do preview and choose edit, the attachments are no
+             longer listed and I'm unsure which I uploaded").
+Severity:    functional — SILENT EVIDENCE LOSS on the most ordinary path
+             through the form. Pre-existing; NOT introduced by the
+             attachment work, only found by it.
+Saw:         store() unconditionally re-staged whatever the request
+             carried: stagePreviewPhotos($request->file('photos', []))
+             then session()->put(... 'photos' => $previewPhotos). A
+             browser CANNOT re-seed a file input (security), so the second
+             POST of an Edit round-trip legitimately carries no files —
+             and the payload's photos were overwritten with [].
+             So: attach a photo, preview, spot a typo, click Edit, fix one
+             word, resubmit, send. The letter goes WITHOUT the photo.
+             Meanwhile the form said "Your photo is saved — you don't need
+             to re-attach it unless you want to change your selection."
+             That cue was FALSE for as long as it has existed.
+Expected:    A staged photo survives an Edit round-trip, and the form
+             shows WHICH files are attached rather than counting them.
+Status:      FIXED 09 Aug on feature/attachment-policy. Tests:
+             CaseCreateTest "#46 — Edit, change a word, resubmit: the
+             staged photos survive", plus the explicit-Remove and
+             replace-not-append cases.
+Notes:       Two failures compounding, which is why it went unnoticed:
+             the data loss itself, and a cue that actively asserted the
+             opposite. The tenant had no way to detect either — the
+             preview showed no attachments at all (#39) until today, so
+             the first sight of the truth was the case page after sending.
+             The old assertion assertSee('photo is saved') passed
+             throughout: it pinned the CUE, not the behaviour the cue
+             claimed. A test can be green and still be testing the lie.
+Fix:         Applied — resolveStagedPhotos() replaces the unconditional
+             re-stage with three explicit cases: new files REPLACE the
+             staged set; no files + keep flag CARRIES IT FORWARD; explicit
+             Remove CLEARS it. The keep flag defaults to ON whenever a
+             staged set exists and is only turned off by a deliberate act,
+             so the safe outcome (evidence survives) is what happens with
+             no JavaScript at all. An ABSENT flag means keep, never drop.
+             The form now lists staged files by name and size instead of
+             the count cue, and the test asserts the FILENAME — a stronger
+             claim than the cue it replaced.
+--------------------------------------------------------------------
