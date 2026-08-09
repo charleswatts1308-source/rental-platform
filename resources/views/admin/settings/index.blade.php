@@ -19,9 +19,11 @@
 @endif
 
 <p class="text-muted">
-    Intervals, caps, and ladder lengths that govern the escalation sweep.
-    Values must be whole numbers of at least 1 — a smaller value would stall
-    the sweep. By default a change applies to new cases only.
+    Intervals, caps, and ladder lengths that govern the escalation sweep, plus
+    the attachment ceiling. Sweep values must be whole numbers of at least 1 —
+    a smaller value would stall the sweep. The attachment ceiling may be 0.
+    Each field states its own range if it has one. By default a change applies
+    to new cases only.
 </p>
 
 <form method="POST" action="{{ route('admin.settings.update') }}">
@@ -38,7 +40,9 @@
                         <option value="1" @selected(old($setting['field'], $setting['value']) === '1')>Yes</option>
                     </select>
                 @else
-                    <input type="number" min="1" step="1" class="form-control"
+                    <input type="number" step="1" class="form-control"
+                           min="{{ $setting['min'] ?? 1 }}"
+                           @isset($setting['max']) max="{{ $setting['max'] }}" @endisset
                            id="{{ $setting['field'] }}" name="{{ $setting['field'] }}"
                            value="{{ old($setting['field'], $setting['value']) }}" required>
                 @endif

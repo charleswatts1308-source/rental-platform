@@ -49,6 +49,13 @@ class SettingSeeder extends Seeder
             // evaluates against current settings so changes reach in-flight
             // cases at the next sweep. Read live; never snapshotted.
             'escalation.apply_inflight' => '0',
+            // Attachment ceiling for letter 1 (docs/attachment-policy-design.md).
+            // A ceiling on tenant choice, not a behaviour: it can never cause an
+            // attachment the tenant did not select, and never silently removes
+            // one they did (R2 — the ceiling binds at staging, not at send).
+            // Ships at 1 on deliverability grounds; raise at will. Stages 2-4
+            // never attach at any value.
+            'attachments.first_notice_max' => '1',
         ];
 
         foreach ($defaults as $key => $value) {

@@ -1606,11 +1606,49 @@ Notes:       Cause: preview.blade.php:34 links Edit to a bare
              photo array, and letter 1 goes out bare. #39 means the preview
              does not catch it either. Every checkpoint that could correct
              the belief is missing.
-             Second-order: abandoned payloads leave orphaned files in the
-             per-user preview folder; nothing sweeps them.
+             CORRECTION 09 Aug: an earlier draft of this entry said
+             abandoned payloads leave orphaned files that "nothing
+             sweeps". That is WRONG and is retracted.
+             SilenceSweep::cleanupPreviewPhotos (SilenceSweep.php:852-869)
+             deletes cases/preview/{user}/{random}/ folders older than 24h
+             on live runs. The FILES were always cleaned; it is the
+             SESSION KEY that outlives them, and the session key is what
+             drives the misleading cue. See #45 for what the 24h deletion
+             does to a draft confirmed the next day.
 Fix:         Give Edit an explicit resume marker
              (route('cases.create', ['resume' => 1])); treat a staged
              payload as resumable only with that marker; otherwise clear it
              and delete its staged files. Add a test for
              abandon-then-start-new asserting no cue and no staged count.
+--------------------------------------------------------------------
+#45
+Page:        CaseController::promotePreviewPhotos (:567-579) — an
+             attachment row is written for a staged file that no longer
+             exists. Found 2026-08-09 reading the path for the attachment
+             policy build.
+Severity:    functional — writes evidence into the record that is not
+             there, and breaks the send. Narrow trigger, bad outcome.
+Saw:         The method guards the file MOVE with
+             if ($disk->exists($photo['path'])) but pushes the row into
+             $promoted regardless. SilenceSweep::cleanupPreviewPhotos
+             (SilenceSweep.php:852-869) deletes preview folders older than
+             24h, while the SESSION payload naming those files outlives
+             them. So a draft staged one day and confirmed the next writes
+             MessageAttachment rows pointing at deleted paths.
+Expected:    An attachment that cannot be found is not recorded as sent.
+Status:      FIXED 09 Aug on feature/attachment-policy — the entry is
+             skipped and a warning logged. Test:
+             CaseCreateTest "#45 — drops an attachment whose staged file
+             has been swept".
+Notes:       Two consequences, both bad. CaseNotice::attachments() calls
+             Attachment::fromStorageDisk on the missing path INSIDE a
+             queued job, so the letter fails to send from the worker
+             rather than anywhere the tenant can see. And the case page
+             lists an attachment the tenant does not have — the record
+             claims evidence was sent to the landlord when nothing was.
+             Same family as #43 and #44: the tenant's belief about what is
+             attached diverges silently from what exists.
+Fix:         Applied — skip the entry when the source file is gone, and
+             Log::warning it. A letter quietly losing its attachment must
+             not pass unrecorded.
 --------------------------------------------------------------------

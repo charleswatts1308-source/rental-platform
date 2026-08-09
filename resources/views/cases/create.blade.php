@@ -105,20 +105,42 @@
             </div>
 
             <div class="col-12">
-                <label for="photos" class="form-label">Photos (optional, up to 6)</label>
-                @if(($stagedPhotoCount ?? 0) > 0)
-                    <div class="form-text text-success mb-1">
-                        @if($stagedPhotoCount === 1)
-                            Your photo is saved — you don't need to re-attach it unless you want to change your selection.
-                        @else
-                            Your {{ $stagedPhotoCount }} photos are saved — you don't need to re-attach them unless you want to change your selection.
-                        @endif
+                @if($photoCeiling === 0)
+                    {{-- Ceiling of 0 — say WHY. An input that simply vanishes
+                         leaves a tenant who came to attach evidence with
+                         nothing to read, and reads as a fault. --}}
+                    <label class="form-label">Photos</label>
+                    <div class="alert alert-light border mb-0 py-2 small">
+                        Photos can't be attached to this letter at the moment. Letters carrying
+                        attachments are more likely to be filtered as spam before your landlord
+                        sees them, so we've turned them off for now. Please describe the problem
+                        in as much detail as you can instead — the letter still carries your
+                        full description.
                     </div>
+                @else
+                    <label for="photos" class="form-label">
+                        Photos (optional, up to {{ $photoCeiling }})
+                    </label>
+                    @if(($stagedPhotoCount ?? 0) > 0)
+                        <div class="form-text text-success mb-1">
+                            @if($stagedPhotoCount === 1)
+                                Your photo is saved — you don't need to re-attach it unless you want to change your selection.
+                            @else
+                                Your {{ $stagedPhotoCount }} photos are saved — you don't need to re-attach them unless you want to change your selection.
+                            @endif
+                        </div>
+                    @endif
+                    <input id="photos" name="photos[]" type="file" multiple
+                           accept=".jpg,.jpeg,.png,.pdf"
+                           data-photo-ceiling="{{ $photoCeiling }}"
+                           class="form-control @error('photos') is-invalid @enderror @error('photos.*') is-invalid @enderror">
+                    <div class="form-text">
+                        JPG, PNG, or PDF. Each file must be under {{ $photoMaxLabel }}.
+                    </div>
+                    {{-- Populated by the script below. Stays empty without JS,
+                         where the native control's own summary applies. --}}
+                    <ul id="photo-list" class="list-unstyled small mt-2 mb-0"></ul>
                 @endif
-                <input id="photos" name="photos[]" type="file" multiple
-                       accept=".jpg,.jpeg,.png,.pdf"
-                       class="form-control @error('photos') is-invalid @enderror @error('photos.*') is-invalid @enderror">
-                <div class="form-text">JPG, PNG, or PDF. Each file must be under 2MB.</div>
             </div>
 
             <hr class="mt-4">
@@ -163,4 +185,119 @@
         </form>
     @endif
 </div>
+@endsection
+
+@section('scripts')
+{{--
+    Photo selection list.
+
+    Two jobs, both about the tenant seeing what is actually attached:
+
+    1. Snag #43 — a file input REPLACES its entire FileList on each
+       selection, so choosing one photo and then browsing again for a
+       second silently discards the first. Standard HTML behaviour, and
+       invisible server-side: store() receives one file and validates it
+       happily. We accumulate into a DataTransfer instead, so a second
+       browse ADDS.
+
+       NOTE: a ceiling of 1 MASKS #43 without fixing it — at one permitted
+       file, replacement is exactly what a tenant wants. The defect returns
+       in full the moment the ceiling is raised, which is the point of it
+       being configurable. Hence this runs at every ceiling.
+
+    2. Show filename and size before sending, matching the preview and the
+       case page. Keep the size format in step with App\Support\FileSize.
+
+    ENHANCEMENT ONLY. If this never runs, the native input still submits
+    and CaseController::store still enforces the ceiling, the mime types
+    and the per-file size. No evidential guarantee rests on it.
+--}}
+<script>
+(function () {
+    const input = document.getElementById('photos');
+    const list = document.getElementById('photo-list');
+    if (!input || !list) return;
+
+    const ceiling = parseInt(input.dataset.photoCeiling || '0', 10);
+    if (!ceiling) return;
+
+    // Mirrors App\Support\FileSize::human().
+    function humanSize(bytes) {
+        if (bytes >= 1048576) return (Math.round(bytes / 1048576 * 10) / 10) + ' MB';
+        return Math.max(1, Math.round(bytes / 1024)) + ' KB';
+    }
+
+    let chosen = [];
+
+    function sync() {
+        const data = new DataTransfer();
+        chosen.forEach(file => data.items.add(file));
+        input.files = data.files;
+        render();
+    }
+
+    function render() {
+        list.innerHTML = '';
+
+        if (!chosen.length) {
+            const none = document.createElement('li');
+            none.className = 'text-muted';
+            none.textContent = 'No photos attached.';
+            list.appendChild(none);
+            return;
+        }
+
+        chosen.forEach((file, index) => {
+            const row = document.createElement('li');
+            row.className = 'd-flex align-items-center gap-2 mb-1';
+
+            const name = document.createElement('span');
+            name.textContent = file.name;
+
+            const size = document.createElement('span');
+            size.className = 'text-muted';
+            size.textContent = '(' + humanSize(file.size) + ')';
+
+            const remove = document.createElement('button');
+            remove.type = 'button';
+            remove.className = 'btn btn-link btn-sm p-0 text-danger';
+            remove.textContent = 'Remove';
+            remove.addEventListener('click', function () {
+                chosen.splice(index, 1);
+                sync();
+            });
+
+            row.append(name, size, remove);
+            list.appendChild(row);
+        });
+
+        if (chosen.length >= ceiling) {
+            const note = document.createElement('li');
+            note.className = 'text-muted mt-1';
+            note.textContent = chosen.length + ' of ' + ceiling + ' — remove one to attach a different photo.';
+            list.appendChild(note);
+        }
+    }
+
+    input.addEventListener('change', function () {
+        // Anything over the ceiling is dropped here AND refused by the
+        // server; the tenant is told rather than left to wonder.
+        const incoming = Array.from(input.files || []);
+        const room = ceiling - chosen.length;
+
+        chosen = chosen.concat(incoming.slice(0, Math.max(0, room)));
+
+        if (incoming.length > Math.max(0, room)) {
+            window.alert(
+                'You can attach up to ' + ceiling + (ceiling === 1 ? ' photo' : ' photos') + '. ' +
+                'Remove one first if you want to swap it for a different photo.'
+            );
+        }
+
+        sync();
+    });
+
+    render();
+})();
+</script>
 @endsection

@@ -60,3 +60,21 @@ function something()
 {
     // ..
 }
+
+/**
+ * Raise (or lower) the letter-1 attachment ceiling for a test.
+ *
+ * SettingSeeder ships attachments.first_notice_max at 1 — deliberately
+ * conservative, on deliverability grounds. Tests that exercise the
+ * MULTI-attachment path call this rather than dropping to a single file,
+ * so the assertion keeps its original strength.
+ *
+ * Also used to drive the ceiling to 0 (uploads switched off).
+ */
+function allowPhotoCeiling(int $max): void
+{
+    \App\Models\Setting::updateOrCreate(
+        ['key' => 'attachments.first_notice_max'],
+        ['value' => (string) $max],
+    );
+}

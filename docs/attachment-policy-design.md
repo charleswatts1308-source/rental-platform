@@ -265,8 +265,24 @@ evidence, and #39 means nothing catches it before sending.
 Fix shape for #44: give Edit an explicit resume marker
 (`route('cases.create', ['resume' => 1])`); treat a payload as resumable
 only with that marker; otherwise clear it and delete the staged files.
-Abandoned payloads currently also leave orphaned files in the per-user
-preview folder.
+
+**Correction, 2026-08-09** — an earlier draft of this section said
+abandoned payloads leave orphaned files that nothing sweeps. That was
+wrong. `SilenceSweep::cleanupPreviewPhotos`
+(`app/Console/Commands/SilenceSweep.php:852-869`) deletes
+`cases/preview/{user}/{random}/` folders older than 24h on live runs. The
+files were always cleaned; the **session key outlives them**, which is
+both what drives #44's misleading cue and what causes #45 below.
+
+**#45 — an attachment row is written for a file that no longer exists.**
+`promotePreviewPhotos` (`CaseController.php:567-579`) guards the file
+*move* with `if ($disk->exists(...))` but pushes the row into `$promoted`
+either way. A draft staged one day and confirmed the next — after the 24h
+sweep — therefore writes `MessageAttachment` rows pointing at deleted
+paths. `CaseNotice::attachments()` then calls `Attachment::fromStorageDisk`
+on a missing path inside a queued job, so the send fails somewhere the
+tenant cannot see, and the case page lists evidence they do not have.
+Fixed in the same pass: skip the entry and log a warning.
 
 ## 6. Build sequence
 

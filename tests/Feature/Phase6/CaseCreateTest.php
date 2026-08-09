@@ -9,6 +9,7 @@ use App\Models\MessageAttachment;
 use App\Models\Property;
 use App\Models\RepairCase;
 use App\Models\RepairCategory;
+use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -104,7 +105,10 @@ it('Edit round-trip — GET /cases/create after staging re-fills the form from t
         ['description' => 'Persistent damp behind the kitchen units.']
     ) + ['photos' => [UploadedFile::fake()->image('damp.jpg')]]);
 
-    $response = $this->actingAs($tenant)->get('/cases/create');
+    // ?resume=1 is what the preview's Edit link carries. Without it the
+    // create form treats the visit as a fresh case and clears the draft —
+    // see the abandon-then-start-new test below (snag #44).
+    $response = $this->actingAs($tenant)->get('/cases/create?resume=1');
 
     $response->assertOk();
     // old() repopulates the text inputs from the staged payload.
@@ -215,6 +219,11 @@ it('rejects a property_id that belongs to another user', function () {
 it('uploads photos and creates message_attachments rows on the outbound message', function () {
     [$tenant, $property] = tenantWithProperty();
 
+    // The shipped ceiling is 1 (attachments.first_notice_max). This test is
+    // about the multi-attachment path, so raise it explicitly rather than
+    // weakening the assertion to a single file.
+    allowPhotoCeiling(3);
+
     $files = [
         UploadedFile::fake()->image('mould-1.jpg'),
         UploadedFile::fake()->image('mould-2.png'),
@@ -290,6 +299,167 @@ it('redirects guests away from /cases/create', function () {
     $response = $this->get('/cases/create');
 
     $response->assertRedirect('/login');
+});
+
+/*
+|--------------------------------------------------------------------------
+| Attachment policy — docs/attachment-policy-design.md
+|--------------------------------------------------------------------------
+*/
+
+it('refuses more photos than the ceiling allows', function () {
+    [$tenant, $property] = tenantWithProperty();
+
+    allowPhotoCeiling(1);
+
+    $response = $this->actingAs($tenant)->post('/cases', validStorePayload($property->id) + [
+        'photos' => [
+            UploadedFile::fake()->image('one.jpg'),
+            UploadedFile::fake()->image('two.jpg'),
+        ],
+    ]);
+
+    $response->assertSessionHasErrors('photos');
+    expect(RepairCase::count())->toBe(0);
+});
+
+it('honours a raised ceiling', function () {
+    [$tenant, $property] = tenantWithProperty();
+
+    allowPhotoCeiling(3);
+
+    submitAndConfirm($tenant, validStorePayload($property->id) + [
+        'photos' => [
+            UploadedFile::fake()->image('one.jpg'),
+            UploadedFile::fake()->image('two.jpg'),
+            UploadedFile::fake()->image('three.jpg'),
+        ],
+    ]);
+
+    $message = CaseMessage::where('direction', MessageDirection::Outbound)->firstOrFail();
+    expect(MessageAttachment::where('case_message_id', $message->id)->count())->toBe(3);
+});
+
+it('hides the photo input and explains why when the ceiling is 0', function () {
+    [$tenant] = tenantWithProperty();
+
+    allowPhotoCeiling(0);
+
+    $response = $this->actingAs($tenant)->get('/cases/create');
+
+    $response->assertOk();
+    $response->assertSee('Photos can\'t be attached to this letter at the moment', false);
+    // The input itself is gone, not merely hidden.
+    $response->assertDontSee('name="photos[]"', false);
+});
+
+it('R2 — a ceiling lowered AFTER staging never drops a photo the tenant already chose', function () {
+    [$tenant, $property] = tenantWithProperty();
+
+    // Tenant stages a photo under a ceiling that permits it.
+    allowPhotoCeiling(1);
+    $this->actingAs($tenant)->post('/cases', validStorePayload($property->id) + [
+        'photos' => [UploadedFile::fake()->image('damp.jpg')],
+    ]);
+
+    // Admin switches attachments off entirely between the two clicks.
+    allowPhotoCeiling(0);
+
+    $this->actingAs($tenant)->post('/cases/preview/confirm');
+
+    // The letter still carries what the tenant chose. A ceiling change must
+    // never edit a tenant's letter behind them — that is the silent evidence
+    // loss this whole design exists to eliminate.
+    $message = CaseMessage::where('direction', MessageDirection::Outbound)->firstOrFail();
+    expect(MessageAttachment::where('case_message_id', $message->id)->count())->toBe(1);
+});
+
+it('names the file and states the limit in plain words when a photo is too large', function () {
+    [$tenant, $property] = tenantWithProperty();
+
+    $response = $this->actingAs($tenant)->post('/cases', validStorePayload($property->id) + [
+        'photos' => [UploadedFile::fake()->create('kitchen-damp.jpg', 5000, 'image/jpeg')],
+    ]);
+
+    $errors = session('errors')->getBag('default')->all();
+    $message = implode(' ', $errors);
+
+    // The tenant's own filename, not an array index.
+    expect($message)->toContain('kitchen-damp.jpg');
+    expect($message)->not->toContain('photos.0');
+    // A unit people think in, and the real limit.
+    expect($message)->toContain('4 MB');
+    expect($message)->not->toContain('kilobytes');
+});
+
+it('lists the staged photos on the preview, with sizes', function () {
+    [$tenant, $property] = tenantWithProperty();
+
+    $this->actingAs($tenant)->post('/cases', validStorePayload($property->id) + [
+        'photos' => [UploadedFile::fake()->image('bedroom-mould.jpg')],
+    ]);
+
+    $response = $this->actingAs($tenant)->get('/cases/preview');
+
+    $response->assertOk();
+    $response->assertSee('bedroom-mould.jpg');
+    $response->assertSee('photo will be attached');
+});
+
+it('says explicitly on the preview when no photos are attached', function () {
+    [$tenant, $property] = tenantWithProperty();
+
+    $this->actingAs($tenant)->post('/cases', validStorePayload($property->id));
+
+    $response = $this->actingAs($tenant)->get('/cases/preview');
+
+    $response->assertOk();
+    // Absence must be stated, never inferred from a blank region — a tenant
+    // whose upload was rejected sees the same screen otherwise.
+    $response->assertSee('No photos attached.');
+});
+
+it('#44 — an abandoned draft does not tell a NEW case that photos are saved', function () {
+    [$tenant, $property] = tenantWithProperty();
+
+    // Stage a draft, reach the preview, then walk away.
+    $this->actingAs($tenant)->post('/cases', validStorePayload($property->id) + [
+        'photos' => [UploadedFile::fake()->image('old-draft.jpg')],
+    ]);
+
+    // Start a fresh case: no ?resume=1, so this is not a return via Edit.
+    $response = $this->actingAs($tenant)->get('/cases/create');
+
+    $response->assertOk();
+    // The cue would otherwise read "Your photo is saved — you don't need to
+    // re-attach it", talking the tenant out of attaching evidence to a case
+    // that has none.
+    $response->assertDontSee('you don\'t need to re-attach', false);
+
+    // And the stale draft is gone rather than lying in wait.
+    expect(session('cases.preview.payload'))->toBeNull();
+});
+
+it('#45 — drops an attachment whose staged file has been swept, rather than recording one that is not there', function () {
+    [$tenant, $property] = tenantWithProperty();
+
+    $this->actingAs($tenant)->post('/cases', validStorePayload($property->id) + [
+        'photos' => [UploadedFile::fake()->image('vanished.jpg')],
+    ]);
+
+    // Simulate SilenceSweep::cleanupPreviewPhotos having removed the staged
+    // folder overnight, before the tenant came back and confirmed.
+    $payload = session('cases.preview.payload');
+    Storage::disk('local')->delete($payload['photos'][0]['path']);
+
+    $this->actingAs($tenant)->post('/cases/preview/confirm');
+
+    $message = CaseMessage::where('direction', MessageDirection::Outbound)->firstOrFail();
+
+    // No row pointing at a file that does not exist: CaseNotice would throw
+    // on it inside a queued job, and the case page would list evidence the
+    // tenant does not have.
+    expect(MessageAttachment::where('case_message_id', $message->id)->count())->toBe(0);
 });
 
 it('redirects guests away from POST /cases', function () {
