@@ -1,0 +1,203 @@
+RELEASE + TEST CHECKLIST
+Written 2026-08-09. Two SEPARATE releases — do them in order, not together.
+
+Release 1 = the attachment work. A real feature release, stays on the box.
+Release 2 = the delivery-event capture run. TEMPORARY, comes back off.
+
+Tick as you go. Anything that fails, stop and note it rather than
+carrying on — both releases touch the letter path.
+
+
+====================================================================
+RELEASE 1 — ATTACHMENT POLICY  (main, commit 1a46766)
+====================================================================
+
+WHAT IT CHANGES FOR A TENANT
+  - Letter 1 can carry photos, capped by a NEW admin setting
+    (Photos a tenant may attach to letter 1). Ships at 1.
+  - Per-file limit 2MB -> 4MB. The form now states the limit the
+    SERVER will actually accept, not our number.
+  - Photos are listed with filenames and sizes on the create form,
+    the preview, and the case page.
+  - Chasing letters (stages 2-4) never carry attachments. Unchanged
+    behaviour, now deliberate.
+
+PRE-DEPLOY
+[ ] Confirm local suite green:  php artisan test        (expect 580)
+[ ] Optional but advised: deploy to gafol first and walk the tests
+    below there. Note gafol's PHP upload limits may differ from
+    prod's 8M/16M, so the >2MB tests may behave differently.
+
+DEPLOY
+[ ] Push main to the deploy branch:  git push origin main:master
+[ ] Plesk: pull/deploy
+[ ] php artisan migrate --force
+      Expect ONE migration:
+      2026_08_09_120000_seed_attachments_first_notice_max_setting
+      It only INSERTS a settings row. No table is created or altered,
+      so no MariaDB SHOW CREATE TABLE check is needed for this one.
+[ ] php artisan config:cache
+[ ] php artisan view:clear     (the blades changed)
+
+DO NOT run SettingSeeder on prod to get the new row. It uses
+updateOrCreate and would reset every OTHER tuned setting back to its
+shipped default. The migration exists precisely to avoid that.
+
+TEST — ADMIN SURFACE
+[ ] /admin/settings shows a new field:
+    "Photos a tenant may attach to letter 1", value 1
+[ ] Try 4 -> refused, message says it must be between 0 and 3
+[ ] Try 0 -> saves
+[ ] Set it back to 1 before the tenant tests
+
+TEST — THE ORIGINAL DEFECT (#40, the reason for all this)
+[ ] Find the 3.22MB photo that was REFUSED on prod on 2 Aug
+[ ] Raise a case, attach it
+    EXPECT: it uploads. Prod PHP is now 8M and our limit is 4MB.
+    If it is refused, read the message carefully:
+      - names the file and says "must be 4 MB or smaller"  -> our rule
+      - "could not be uploaded"                            -> PHP's
+
+TEST — THE FORM (ceiling 1)
+[ ] Attach one photo -> it is LISTED by name and size below the input
+[ ] The help text states a size limit. On prod it should read 4 MB
+[ ] Remove -> the list empties and reads "No photos attached."
+
+TEST — OVERSIZE IS REFUSED WITHOUT LOSING THE REST  (found in the walk)
+[ ] Set ceiling to 3
+[ ] Select a >4MB file TOGETHER with two small ones
+    EXPECT: the big one is named and refused ON THE SPOT; the two
+    small ones stay attached. Nothing is submitted, nothing is lost.
+
+TEST — #43, SEQUENTIAL SELECTION  (no automated test can ever cover this)
+[ ] Ceiling still 3
+[ ] Attach ONE photo. Then click Browse AGAIN and attach a second.
+    EXPECT: BOTH listed.
+    Before this release the first was silently discarded and the
+    letter went with one photo. This is the single most important
+    manual test in the list.
+[ ] Add a third. Try a fourth -> refused with a message, not silently
+
+TEST — THE PREVIEW  (#39)
+[ ] Submit through to the preview
+    EXPECT: the photos listed with names and sizes
+[ ] Raise another case with NO photos
+    EXPECT: preview says "No photos attached." explicitly
+
+TEST — #46, THE EDIT ROUND-TRIP  (this was silent evidence loss)
+[ ] Attach a photo, go to preview, click Edit
+    EXPECT: the file still listed, badged "attached", with a Remove
+[ ] Change a word in the description, submit, confirm and send
+    EXPECT: the sent letter CARRIES the photo
+    Before this release it did not, while the form said it would.
+[ ] Repeat but click Remove on the Edit screen first
+    EXPECT: letter sends with no attachment
+[ ] Repeat but choose a DIFFERENT photo on the Edit screen
+    EXPECT: the new one replaces the old, not both
+
+TEST — #44, ABANDONED DRAFT
+[ ] Start a case with a photo, reach the preview, then navigate away
+    to "Raise a repair case" fresh (NOT via Edit)
+    EXPECT: empty form, no photo listed, no "saved" message
+
+TEST — CEILING 0
+[ ] Set the setting to 0
+[ ] Create-case form: the photo input is GONE and a short explanation
+    says why (deliverability). Not a bare missing field.
+[ ] Set it back to 1
+
+TEST — THE DELIVERED ARTEFACT
+[ ] Check the landlord's actual inbox: the letter arrived WITH the
+    attachment, correct filename, opens correctly
+[ ] Case page lists the attachment with size in MB (not "3277 KB")
+
+AFTER
+[ ] Update docs/environment-state.md — commit/tag landed, date,
+    migration applied, what was verified. Per CLAUDE.md a deploy is
+    not done until the ledger says it happened.
+
+
+====================================================================
+RELEASE 2 — DELIVERY-EVENT CAPTURE  (feature/delivery-events)
+====================================================================
+
+TEMPORARY. The point is to see the bytes Mailgun actually sends, so the
+real receiver is built against observed payloads rather than
+documentation. It comes back off afterwards.
+
+Do NOT start this until Release 1 is tested and the ledger updated.
+
+WHY IT EXISTS
+  The D0 found that our existing signature middleware reads FLAT
+  timestamp/token/signature fields (the inbound-routing shape).
+  Delivery events are believed to NEST those under a "signature"
+  object — which would make the middleware reject every event with a
+  406, and 406 is the response Mailgun treats as "stop retrying". So
+  events would be discarded permanently and silently while the webhook
+  looked healthy. This run settles that from evidence.
+
+DEPLOY
+[ ] Choose a long random token (password generator). Call it TOKEN.
+[ ] Add to prod .env:   MAILGUN_CAPTURE_TOKEN=TOKEN
+[ ] While in the .env, check for duplicate KEY= lines — within one
+    file Laravel takes the LAST and silently ignores earlier ones.
+    That is the trap that broke the allowlist before.
+[ ] git push origin feature/delivery-events:master
+[ ] Plesk: pull/deploy
+[ ] php artisan config:cache      (prod caches config; without this
+                                   the token is not read and the
+                                   endpoint stays 404)
+[ ] Confirm inert-when-off works as expected: the endpoint 404s for
+    any wrong token.
+
+MAILGUN
+[ ] Webhooks -> DOMAIN-LEVEL tab -> mg.renters.rent -> Add webhook
+    URL: https://renters.rent/webhooks/mailgun/capture/TOKEN
+[ ] Subscribe: Delivered, Permanent Fail, Temporary Fail, Complained
+[ ] DOMAIN-level, NOT account-level. Account-level fires for every
+    domain including the gafol sandbox, and case_message ids are plain
+    integers — a staging event could match a production message and
+    stamp a delivery status onto the wrong case's record.
+
+THE TWO SENDS
+[ ] Raise a case with a landlord address at a domain that cannot
+    exist, e.g. landlord@this-domain-does-not-exist-9f3k2.com
+    -> should produce a permanent_fail event
+[ ] Raise a second case to an inbox you control
+    -> should produce a delivered event
+
+COLLECT
+[ ] Fetch storage/logs/mailgun-capture.log (Plesk File Manager or
+    FileZilla) and send it over
+[ ] TREAT AS PERSONAL DATA — it contains real recipient addresses and
+    subject lines. Fetch it, do not leave it on the box.
+
+TEAR DOWN — do not skip
+[ ] Delete the webhook in Mailgun
+[ ] Remove MAILGUN_CAPTURE_TOKEN from prod .env
+[ ] php artisan config:cache
+[ ] Delete storage/logs/mailgun-capture.log from the box
+[ ] Redeploy main to master so prod is back on released code
+
+WHAT WE LEARN
+  If the payload shows a NESTED signature object, the D0 was right and
+  a second middleware is confirmed necessary.
+  If the fields are FLAT after all, the existing middleware can be
+  reused and the D0's central finding was wrong — equally worth
+  knowing, and cheaper.
+
+
+====================================================================
+NOT IN EITHER RELEASE
+====================================================================
+
+  #48  admin@renters.rent cannot receive mail — it is both the
+       published privacy/cookies contact AND the admin login, so the
+       admin password reset cannot work. Plan is an info@renters.rent
+       mailbox. Do NOT change the blades until that mailbox actually
+       receives, or one dead address is swapped for another.
+       Clear the Mailgun suppression entry only AFTER it works, or it
+       re-suppresses on the next bounce.
+
+  The delivery-event RECEIVER itself. Not written yet, deliberately —
+  it is gated behind the captured payloads above.

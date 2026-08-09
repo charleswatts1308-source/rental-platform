@@ -5,12 +5,23 @@ The `docs/` folder has many files and many are stale — this index says
 which to trust and which to ignore, so you don't re-derive state from a
 superseded doc. It is a **router, not a record**: keep it short.
 
-**Last updated:** 2026-08-02.
+**Last updated:** 2026-08-09.
 
-**Everything is level and deployed.** `main`, gafol and renters.rent all
-sit at **`7507a72`**. No unmerged branches, nothing waiting to go out.
-Local `main` is **4 docs-only commits ahead of origin** (unpushed, per the
-Git rule) — push when convenient; no box needs them.
+**⚠ NOT level any more. Two releases are waiting to go out.**
+`main` is at **`1a46766`** (attachment work merged, 570 tests green).
+The boxes are still at **`7507a72`** — gafol and renters.rent have NONE
+of the 9 Aug work. There is also an open branch,
+`feature/delivery-events`, carrying an accepted D0 and a temporary
+capture endpoint.
+
+Everything is pushed to origin, including the branch and the tags
+`pre-attachments` / `pre-delivery-events`. Nothing is on `master`, so
+nothing is deployed.
+
+**➡ START HERE: `release-attachments-and-capture.txt`** — the detailed
+release + test checklist for both. Release 1 (attachments) is a real
+feature release and stays. Release 2 (event capture) is temporary and
+comes back off. Do them in order, not together.
 
 **dotrent is RETIRED** (1 Aug). Live ledger entries are now **gafol,
 renters.rent, main** — the end state the housekeeping plan was aiming at,
@@ -61,7 +72,66 @@ usability pass, and the email fix together.
 
 ---
 
+## What landed 9 Aug (all local + origin, NOT deployed)
+
+**Attachment policy — merged to `main`, 570 tests.** Letter 1 carries
+tenant-chosen photos under an admin-configurable ceiling (0–3, ships at
+**1**); per-file 2MB → 4MB; the form now advertises the limit the SERVER
+will accept, not ours; photos listed with sizes on the create form,
+preview and case page. Chasing letters never attach — unchanged
+behaviour, now deliberate. Design: `attachment-policy-design.md`.
+Report: `attachment-policy-implementation-report.md`.
+
+Four defects found while building it, three of them pre-existing:
+- **#46** — the Edit round-trip **silently dropped staged photos**. Worst
+  of the set: attach, preview, spot a typo, Edit, fix a word, resubmit —
+  the letter went WITHOUT the photo, while the form said "your photo is
+  saved". The old test `assertSee('photo is saved')` passed throughout
+  because it pinned the *cue*, not the behaviour the cue claimed.
+- **#45** — attachment rows written for files the 24h sweep had deleted.
+- **#43** — a second Browse silently discarded the first photo (a file
+  input replaces its whole FileList). **No test can ever catch this** —
+  it lives entirely in the browser.
+- Oversize input costing the whole selection.
+
+**Delivery events (#25) — D0 ACCEPTED, on `feature/delivery-events`.**
+Nine rulings taken; see the RULINGS section of
+`delivery-failure-design-question.md` and **D17** in the design doc.
+Net effect: #25 touches **neither the escalation counter nor D3**, and no
+longer depends on #24.
+
+Two build steps done, both safe:
+- **#47 closed** — case status handling was OPT-OUT in two places, so a
+  new enum value defaulted to "sweep it and run a clock on it". Now an
+  exhaustive `match` with no default; verified the guard fires by
+  temporarily adding an unclassified status.
+- **D17** added, so the authoritative doc no longer silently assumes
+  delivery.
+
+**Gated:** the receiver is NOT written. Charlie ruled a real prod send
+comes first (D0.2 found our signature middleware probably rejects the
+delivery-event payload shape, and its 406 makes Mailgun stop retrying —
+silently). Release 2 in the checklist captures the real bytes.
+
+**Mailgun dashboard checked 9 Aug:** no delivery-event webhooks exist at
+either level; Unsubscribes OFF; click + open tracking OFF and **must stay
+off** (click tracking rewrites links at send time, so the delivered
+letter would no longer match the frozen `body_raw`). Two hard bounces
+sitting in Suppressions since early July that the platform never knew
+about — #25 in the wild, not hypothetical.
+
+**New snag #48** — `admin@renters.rent` cannot receive mail, and it is
+BOTH the published privacy/cookies contact AND the admin login, so admin
+password reset is broken. Fix is an `info@renters.rent` mailbox. Not
+started.
+
+---
+
 ## Open actions — do these first
+
+**FIRST: work `release-attachments-and-capture.txt`.** Two releases,
+in order, with the full test list. Everything below predates 9 Aug and
+is still outstanding unless marked otherwise.
 
 **Asked for but NOT confirmed done. Check before trusting.**
 
@@ -153,11 +223,32 @@ the family trial — Charlie's call, 21 Jun.
 ## Snags — open
 
 **#1, #2, #7, #12, #13, #17, #18, #19, #22, #24, #25, #26, #27, #28, #29,
-#30, #31, #32, #33, #34, #35, #36, #37.**
+#30, #31, #32, #33, #34, #35, #36, #37, #38, #39*, #40*, #42, #47*, #48.**
+
+\* = fixed in code on 9 Aug but **not yet deployed** — #39 (preview shows
+no attachments), #40 (photo limits), #43, #44, #45, #46 all ship with
+Release 1; #47 ships with the delivery branch.
 
 Closed since: **#23** (creds rotated, 1 Aug), **#8** (duplicate of #25,
-1 Aug — retired, not fixed). Resolved by Phase 5 (D16): #4, #14, #15, #16,
-#20, #21.
+1 Aug — retired, not fixed), **#41** (9 Aug — the Plesk PHP Settings page
+was inert because the domain uses CloudLinux **PHP Selector**; limits now
+8M/16M, verified from phpinfo AND functionally). Resolved by Phase 5
+(D16): #4, #14, #15, #16, #20, #21.
+
+**Added 9 Aug (attachment build + walk):** **#43** sequential photo
+selection silently discarded earlier files — browser-side, no test can
+catch it; **#44** an abandoned draft told a NEW case its photos were
+saved, talking the tenant out of attaching evidence; **#45** attachment
+rows written for files the 24h sweep had deleted; **#46** the Edit
+round-trip silently dropped staged photos on the most ordinary path
+through the form; **#47** case status handling was opt-out, so a new
+status defaulted to being swept and clocked; **#48** `admin@renters.rent`
+cannot receive mail — published privacy contact AND admin login.
+#43–#47 are fixed and awaiting deploy. **#48 is not started.**
+
+**Standing lesson from 9 Aug, worth keeping:** #46 survived because a
+test asserted the *cue* ("photo is saved") rather than the behaviour the
+cue claimed. A green suite can be testing the lie. Same family as #26.
 
 **Added 1 Aug (mail identity audit):** #31 `deploy-checklist.md` names
 `inbox.renters.rent`, a domain with no DNS — a rebuild following it would
@@ -209,7 +300,15 @@ phase-1/2a/2b/3 briefs + runbooks + write-ups, `dotrent-deploy-plan.md`
 
 ## Branches
 
-**No unmerged work.** `feature/admin-unverified-users` merged to `main`
+**⚠ ONE OPEN BRANCH: `feature/delivery-events`** (on origin). Holds the
+accepted D0, the #47 fix, D17, and a TEMPORARY capture endpoint. Do not
+merge it — the receiver it exists for is not written yet, and the capture
+code is meant to come back out. Tag `pre-delivery-events` on main.
+
+`feature/attachment-policy` merged to `main` (`--no-ff`) 9 Aug; tag
+`pre-attachments`; deletable.
+
+`feature/admin-unverified-users` merged to `main`
 (`7507a72`, `--no-ff`) 1 Aug and deployed to both boxes 1–2 Aug; deletable.
 `feature/onboarding-nav` merged (`b92b907`); deletable.
 
