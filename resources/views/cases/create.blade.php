@@ -110,12 +110,17 @@
                          leaves a tenant who came to attach evidence with
                          nothing to read, and reads as a fault. --}}
                     <label class="form-label">Photos</label>
+                    {{-- Deliberately does NOT claim attachments cause spam
+                         filtering. Plausible, but this platform has not
+                         measured it — a letter WITH an attachment scored
+                         SCL:1 BCL:0 straight to Inbox on 2026-08-02. Says
+                         what we did and why, without asserting a cause we
+                         cannot evidence. --}}
                     <div class="alert alert-light border mb-0 py-2 small">
-                        Photos can't be attached to this letter at the moment. Letters carrying
-                        attachments are more likely to be filtered as spam before your landlord
-                        sees them, so we've turned them off for now. Please describe the problem
-                        in as much detail as you can instead — the letter still carries your
-                        full description.
+                        Photos can't be attached to this letter at the moment — we've turned
+                        attachments off for now to make sure letters reach landlords' inboxes.
+                        Please describe the problem in as much detail as you can instead; the
+                        letter still carries your full description.
                     </div>
                 @else
                     <label for="photos" class="form-label">

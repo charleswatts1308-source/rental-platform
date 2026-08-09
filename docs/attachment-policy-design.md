@@ -307,15 +307,23 @@ Fixed in the same pass: skip the entry and log a warning.
    leave a tenant who came to attach evidence with nothing to read, and
    "you can't" without a reason reads as a fault. Proposed wording:
 
-   > Photos can't be attached to this letter at the moment. Letters
-   > carrying attachments are more likely to be filtered as spam before
-   > your landlord sees them, so we've turned them off for now. Please
-   > describe the problem in as much detail as you can instead — the
-   > letter still carries your full description.
+   > Photos can't be attached to this letter at the moment — we've turned
+   > attachments off for now to make sure letters reach landlords'
+   > inboxes. Please describe the problem in as much detail as you can
+   > instead; the letter still carries your full description.
 
    Name the reason (deliverability, not a fault or a restriction on
    them), and give them the alternative in the same breath. The same
    wording, adjusted, covers the tenant-reply form when #19 lands.
+
+   **Softened 2026-08-09.** An earlier draft said letters carrying
+   attachments "are more likely to be filtered as spam". Plausible, but
+   this platform has not measured it — the only relevant observation runs
+   the other way (2026-08-02: a letter *with* an attachment scored SCL:1
+   BCL:0 straight to Inbox). The wording now states what was done and why
+   without asserting a cause we cannot evidence. Tenant-facing copy on an
+   evidential product should not make claims the product's own data does
+   not support.
 
 **Then — resize (R7).** Its own piece of work, after letter 1 is sound:
 
