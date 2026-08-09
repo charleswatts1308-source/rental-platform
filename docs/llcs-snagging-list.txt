@@ -1387,7 +1387,21 @@ Saw:         (a) A 3.22MB PNG — a completely ordinary phone-photo size —
 Expected:    A tenant attaching normal phone photos either succeeds, or
              is told clearly and specifically what to change, BEFORE
              anything they have typed is lost.
-Status:      open — snagged 02 Aug. Blocked in part on #41 (hosting).
+Status:      open — snagged 02 Aug. Hosting half RESOLVED 09 Aug (#41
+             closed: PHP Selector, limits now 8M/16M and verified).
+             (b) IS NOW CLOSED BY HEADROOM: the form's own maximum
+             (6 x 2MB = 12MB) fits inside post_max_size 16M, so the
+             submission-destroying 419 can no longer be constructed. It
+             was never reproduced and now cannot be.
+             (a) REMAINS OPEN and is entirely ours: max:2048 at
+             CaseController.php:360 refuses the 3.22MB photo before PHP
+             ever objects. Only the error message improved.
+             SUPERSEDED IN PART — docs/attachment-policy-design.md now
+             carries the decisions (3-attachment ceiling as an admin
+             setting, 4MB per file, no combined-size rule needed since
+             3 x 4MB is safe by construction, sweep letters never attach).
+             Work that note, not the Fix line below, for everything except
+             the error-message wording.
 Notes:       Never caught by tests because the suite fabricates
              UploadedFile objects in memory — they never touch PHP's
              upload limits or a real filesystem. Green tests could not
@@ -1435,7 +1449,24 @@ Saw:         Domain renters.rent, PHP 8.4.23 as FastCGI application.
              cannot itself set and which was never in effect.
 Expected:    The domain PHP Settings page is authoritative for the
              domain, or says plainly that it is not.
-Status:      open — snagged 02 Aug. HUK support ticket raised same day.
+Status:      CLOSED 2026-08-09 — HUK answered: the settings are NOT locked
+             at plan or server level; the domain uses CloudLinux PHP
+             SELECTOR, not the Plesk PHP Settings page, so everything set
+             on that page was inert. HUK raised the limits via the
+             Selector. VERIFIED at our end, both from phpinfo Local Values
+             (upload_max_filesize 8M, post_max_size 16M — Local and Master
+             agree, so it is set in the alt-php ini rather than a
+             per-directory override) AND functionally: the 3.22MB upload
+             now reaches Laravel and is refused by our own max:2048 rule
+             instead of PHP's "failed to upload". That change of error
+             message is the proof the setting is live.
+             STANDING CONSEQUENCE — the Plesk PHP Settings page is NOT
+             authoritative for this domain, for ANY directive, not just
+             uploads. Anything ever set there (memory_limit,
+             max_execution_time, ...) was equally ignored. Use PHP
+             Selector; verify from phpinfo, never from either panel.
+             HUK did not answer the "what else on that panel is
+             ineffective" question directly — the answer is everything.
 Notes:       Ruled out at our end: no php_value in public/.htaccess
              (stock Laravel rewrite rules only), no .user.ini anywhere
              in the application, no application php.ini.
@@ -1518,4 +1549,68 @@ Fix:        Before public launch: decide and buy a service address, set the
              Consider whether the same address belongs in the site footer
              and privacy notice, which have the same disclosure exposure.
              Add to pre-flip-checklist.md so launch cannot pass without it.
+--------------------------------------------------------------------
+#43
+Page:        Create-case form, photo input (cases/create.blade.php:118) —
+             selecting photos in two separate goes silently discards the
+             first. Surfaced 2026-08-09 on prod.
+Severity:    functional — SILENT EVIDENCE LOSS. The tenant believes files
+             are attached that are not. Photographs are the strongest
+             evidence a tenant has.
+Saw:         Attached one photo, then clicked Browse again and attached a
+             second. Only the second was staged. Nothing warned, and the
+             native control shows only "1 file" / "2 files" with no names.
+             Verified the other way the same day: two files chosen TOGETHER
+             in one dialog both staged correctly ("Your 2 photos are saved"
+             on returning via Edit), so the defect is specific to
+             sequential selection.
+Expected:    A second selection ADDS to the first, and the tenant can see
+             exactly which files are attached before sending.
+Status:      open — snagged 09 Aug. Folded into
+             docs/attachment-policy-design.md §4/§5.
+Notes:       Not a bug in our code — an HTML file input replaces its entire
+             FileList on each selection. That makes it invisible server-side:
+             CaseController::store receives one file and validates it
+             happily. No test could catch it; it lives entirely in the
+             browser.
+             Compounded by #39 — the preview shows no attachments at all, so
+             the tenant's first sight of the truth is the case page, after
+             the letter has gone to the landlord.
+Fix:         Accumulate selections client-side in a DataTransfer and render
+             a list (filename, size, remove control, running count) on the
+             create form. Enhancement only — the server stays authoritative.
+             See the design note; the app already runs JS
+             (layouts/app.blade.php:17-27, :310, @yield('scripts') at :311).
+--------------------------------------------------------------------
+#44
+Page:        Create-case form — the "your photo is saved" cue persists from
+             an ABANDONED case into a new one
+             (CaseController.php:312-321, cases/create.blade.php:109-116).
+             Surfaced 2026-08-09 on prod.
+Severity:    functional — actively misleads the tenant into NOT attaching
+             evidence. Worse than the stale-message it looks like.
+Saw:         After abandoning a case at the preview step, starting a new
+             case still showed "Your photo is saved — you don't need to
+             re-attach it unless you want to change your selection."
+Expected:    A fresh case creation starts with no staged photos and no cue.
+Status:      open — snagged 09 Aug. Folded into
+             docs/attachment-policy-design.md §5.
+Notes:       Cause: preview.blade.php:34 links Edit to a bare
+             route('cases.create'), so create() cannot distinguish
+             "returning via Edit" (where the cue is correct and wanted)
+             from "starting fresh" (where it is a lie). The preview payload
+             is ONE session key per user, not per case, and is never
+             cleared when a creation is abandoned.
+             The harm chain: tenant reads the cue on a NEW case, does not
+             attach, store() then overwrites the payload with an empty
+             photo array, and letter 1 goes out bare. #39 means the preview
+             does not catch it either. Every checkpoint that could correct
+             the belief is missing.
+             Second-order: abandoned payloads leave orphaned files in the
+             per-user preview folder; nothing sweeps them.
+Fix:         Give Edit an explicit resume marker
+             (route('cases.create', ['resume' => 1])); treat a staged
+             payload as resumable only with that marker; otherwise clear it
+             and delete its staged files. Add a test for
+             abandon-then-start-new asserting no cue and no staged count.
 --------------------------------------------------------------------
