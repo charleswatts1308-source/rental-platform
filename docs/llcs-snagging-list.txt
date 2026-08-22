@@ -1955,3 +1955,83 @@ Fix:         Pull the address format onto the Property model (an
              small support class beside FileSize, and point all call
              sites at it, admin view included. Mechanical.
 --------------------------------------------------------------------
+#53
+Page:        Edit-from-preview: clicking Remove on ONE of two staged
+             photos deletes BOTH. Found 2026-08-22 in the gafol walk of
+             Release 1 (Charlie: "doing edit from preview and deleting
+             1 of 2 attachments actually deletes both files").
+Severity:    functional — evidence loss, though VISIBLE rather than
+             silent (see Notes). **NOT pre-existing. This ships WITH
+             Release 1** — the per-file Remove control is new in the
+             attachment work, so this is a defect in the #46 fix, not
+             something it uncovered.
+Saw:         The staged set is all-or-nothing on BOTH sides, while the
+             UI offers per-file control.
+               - create.blade.php:172-179 renders a [data-remove-staged]
+                 Remove button INSIDE the @foreach, so each staged photo
+                 gets its own.
+               - create.blade.php:321-326 — the click handler calls
+                 dropStaged() for ANY of those buttons, ignoring which
+                 row was clicked.
+               - dropStaged() (:292-295) removes EVERY [data-staged] row
+                 from the DOM and sets keep_staged_photos = '0'.
+               - Server side, CaseController::resolveStagedPhotos()
+                 (:611) reads that flag as a single boolean for the
+                 WHOLE set: staged && !keep -> discardStagedPhotos(),
+                 return []. There is no per-file identity in the
+                 instruction, so the server COULD NOT honour a partial
+                 removal even if the script asked for one.
+             So the control says "remove this photo" and the system
+             hears "remove all photos".
+Expected:    Remove on one staged photo removes that photo. The others
+             survive the round-trip.
+Status:      open — snagged 22 Aug during the Release 1 gafol walk.
+             UNREACHABLE AT THE SHIPPED DEFAULT (see Notes).
+Notes:       Two things soften this, and one sharpens it.
+             Softening:
+               - It is NOT silent. dropStaged() clears the rows from
+                 the list immediately, so both photos visibly vanish in
+                 front of the tenant. Unlike #46, an attentive tenant
+                 sees it happen. They just cannot get one back without
+                 re-attaching both.
+               - attachments.first_notice_max SHIPS AT 1, and with a
+                 ceiling of 1 there is never a second staged photo, so
+                 the defect cannot occur on a default install. It is
+                 LATENT, and armed the moment an admin raises the
+                 ceiling to 2 or 3 — which is the entire point of the
+                 setting existing.
+             Sharpening:
+               - It is the SAME FAMILY as #46 and #49: a surface
+                 asserting something the behaviour does not honour.
+                 Three now, in one feature area. #46 was the "photo is
+                 saved" cue, #49 the preview's salutation, this the
+                 per-file Remove button. Worth treating as a pattern
+                 rather than three coincidences — the letter path keeps
+                 growing controls whose promises nothing enforces.
+               - The suite did not catch it because the #46 tests
+                 (explicit-Remove, replace-not-append) all run with a
+                 SINGLE staged photo, where all-or-nothing and
+                 per-file are indistinguishable. Any test at ceiling 2
+                 would have failed.
+Fix:         The keep flag has to stop being one boolean for the set.
+             Replace it with a per-file instruction the server can act
+             on — e.g. a hidden keep_staged_photos[] carrying the
+             staged paths that survive, with resolveStagedPhotos()
+             intersecting the payload against it and discarding only
+             the dropped ones. Keep the ABSENT-means-keep default: an
+             absent array must still mean "keep everything", so a
+             caller that forgets the field cannot wipe evidence.
+             Then the per-row handler passes the clicked row's identity
+             instead of calling dropStaged() blindly.
+             TEST AT CEILING 2 OR 3, not 1 — attach two, remove the
+             first, assert the SECOND still reaches the sent letter and
+             the first does not. That test fails today and is the whole
+             point.
+             RELEASE CALL: shipping at ceiling 1 keeps this unreachable
+             and is defensible. But the ceiling is the feature, so this
+             needs fixing before anyone is told they can raise it —
+             and #40, the defect that started the attachment work, was
+             a photo problem found in the wild. Do not leave a known
+             evidence-loss path behind an admin toggle without saying
+             so plainly in the release note.
+--------------------------------------------------------------------
