@@ -23,14 +23,22 @@ WHAT IT CHANGES FOR A TENANT
     behaviour, now deliberate.
 
 PRE-DEPLOY
-[ ] Confirm local suite green:  php artisan test        (expect 580)
+[x] Confirm local suite green:  php artisan test        (expect 570)
+    DONE 22 Aug 2026: 570 passed, 2330 assertions, exit 0.
+    (The "580" written here on 9 Aug was a slip; 570 is the number
+    NEXT-SESSION recorded for this same commit.)
 [ ] Optional but advised: deploy to gafol first and walk the tests
     below there. Note gafol's PHP upload limits may differ from
     prod's 8M/16M, so the >2MB tests may behave differently.
 
 DEPLOY
-[ ] Push main to the deploy branch:  git push origin main:master
-[ ] Plesk: pull/deploy
+    NOTHING TO PUSH. Both Plesk repos track `main` directly (switched
+    back from the pwa-wiring branch on 13 Jul 2026 — see the ledger),
+    and `main` == `origin/main` == ded69f2 already. The old
+    "git push origin main:master" line was wrong: `master` is a dead
+    branch stranded at 8ef8037, an old content commit that is not in
+    main's history at all. Do not push to it.
+[ ] Plesk: pull/deploy  (gafol repo is `laravel_093fde`)
 [ ] php artisan migrate --force
       Expect ONE migration:
       2026_08_09_120000_seed_attachments_first_notice_max_setting
