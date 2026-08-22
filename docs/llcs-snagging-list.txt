@@ -2079,4 +2079,56 @@ Fix:         Two things, cheap.
                  matrix rather than ad hoc, and fix #53 first — it
                  contaminates every multi-photo test until it is gone.
              Neither blocks Release 1 at ceiling 1.
+             ACCEPTED 22 Aug (Charlie): "OK so far as it goes and
+             restricted to setting =1". Ceiling 1 is now the released
+             capability by decision, not by default.
+--------------------------------------------------------------------
+#55
+Page:        /landlords — the published ICO registration reference
+             should read "Pending" rather than a number that may not
+             resolve on the public register. Raised 2026-08-22 by
+             Charlie while scoping Release 1.
+Severity:    minor, but it is a CREDIBILITY surface — see #42, which
+             carries the original observation. Not a blocker.
+Saw:         landlords.blade.php:35 publishes "registration reference
+             ICO:00014275530" — eleven digits. ICO public register
+             references are normally ZA123456 / ZB123456 form, so an
+             eleven-digit value looks more like an account or payment
+             reference than a register entry. #42 flagged this on
+             02 Aug and it has never been checked against the register.
+Expected:    The page states only what a reader can verify. Where the
+             reference is not confirmed, it says so plainly.
+Status:      open — snagged 22 Aug. DEFERRED BY DECISION (Charlie):
+             ships in a LATER release, does not hold Release 1.
+Notes:       The audience is what makes this worth doing at all. This
+             page is read by someone who has just received a formal
+             notice about their own property and is checking whether
+             the sender is legitimate. They are the single most likely
+             reader to search that number. A reference that resolves
+             to nothing tells them the opposite of what the page is
+             for — which is why #42 called it worse than no number.
+             ONE THING TO SETTLE BEFORE WORDING IT. "Pending" is
+             itself a factual claim, so it has to be the true one:
+               - If registration is genuinely not yet complete,
+                 "Pending" is right.
+               - If registration IS complete and only the reference
+                 has been mis-transcribed (ICO:00014275530 may well be
+                 the PAYMENT or account reference from a finished
+                 registration), then "Pending" understates the
+                 position and is inaccurate in the other direction.
+                 The honest wording there is the correct ZA/ZB number.
+             Check the ICO public register first, then word it. The
+             lookup is the same 30 seconds either way and it decides
+             which sentence is true.
+             Accepted risk in the meantime: Release 1 publishes the
+             unverified number. Judged acceptable at trial scale — a
+             handful of known family landlords — on the same reasoning
+             as the #42 trial decision. It does NOT carry to public
+             launch.
+Fix:         Look up the ICO public register. Then either correct the
+             reference to the real ZA/ZB entry, or replace it with a
+             "registration pending" line, whichever is true. Ships in
+             a later release. Add to pre-flip-checklist.md so public
+             launch cannot pass with an unverified reference — #42
+             already has a line there and this belongs with it.
 --------------------------------------------------------------------
