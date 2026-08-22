@@ -2152,4 +2152,43 @@ Fix:         APPLIED 22 Aug — landlords.blade.php:35 now publishes
              trader name and service address of #42 return as required
              disclosures, and the trading name should be live on the
              register by then.
+             The trading-name notification is tracked separately as
+             #56, so it stays visible once this entry reads as fixed.
+--------------------------------------------------------------------
+#56
+Page:        ICO registration Z229825X does not list renters.rent as a
+             trading name. Raised 2026-08-22 by Charlie ("i do need to
+             advise them of new site").
+Severity:    minor, and NOT a code task — an administrative action on
+             Charlie, carried here so it is not lost.
+Saw:         The registration is live and correct (see #55), but it
+             predates renters.rent and names only the earlier trading
+             identity. /landlords now publishes Z229825X, so a
+             landlord who checks it finds a genuine registration that
+             does not mention the site that wrote to them.
+Expected:    The register entry names renters.rent, so the reference
+             on the page confirms what the reader is trying to confirm.
+Status:      OPEN — task on Charlie, 22 Aug. Not code; nothing in the
+             repo changes when it is done. Close this entry once the
+             amended entry shows renters.rent.
+Notes:       This is an AMENDMENT to the registration already held,
+             not a new registration and not a second fee — ICO
+             registration attaches to the data controller (one sole
+             trader, one registration) and trading names are published
+             against that single entry. See #55 for the full reasoning
+             and sources; it was very nearly the other way round.
+             Why it is worth doing rather than leaving: the audience
+             for /landlords is someone who has just received a formal
+             notice about their own property and is checking whether
+             the sender is real. A reference that resolves to a
+             registration in a DIFFERENT name is a partial answer, and
+             a sceptical reader may take a partial answer badly. It is
+             already far better than the number that resolved to
+             nothing, so this is an improvement, not a defect.
+             No deadline for the trial. It SHOULD be live on the
+             register before public launch, alongside the #42 trader
+             name and service address.
+Fix:         Amend registration Z229825X with the ICO to add
+             renters.rent as a trading name. Then confirm the public
+             entry shows it, and close this snag.
 --------------------------------------------------------------------
