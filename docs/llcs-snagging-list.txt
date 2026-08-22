@@ -2035,3 +2035,48 @@ Fix:         The keep flag has to stop being one boolean for the set.
              evidence-loss path behind an admin toggle without saying
              so plainly in the release note.
 --------------------------------------------------------------------
+#54
+Page:        Attachment behaviour at ceiling >= 2 is NOT fully tested,
+             and cannot cheaply be. Recorded 2026-08-22 at the end of
+             the Release 1 gafol walk (Charlie: "its actually tricky to
+             test, many combinations ... more to be done on
+             attachments").
+Severity:    coverage gap, not a defect. Recorded so the untested area
+             is a KNOWN boundary rather than an assumed-good one.
+Saw:         The walk proved: ceiling honoured at 1 and at 2; a letter
+             delivered with 2 attachments; the admin field present and
+             range-checked. It also found #53. It did NOT complete the
+             #46 Edit round-trip variants, #44, ceiling 0, the preview
+             negative, #43 sequential selection, or the oversize-with-
+             survivors case.
+             The reason it stalled is structural, not effort: the state
+             space multiplies. Ceiling (0-3) x staged/new/removed/
+             replaced x first-submit vs Edit round-trip x within/over
+             size x one-file vs many. Most of it lives in the BROWSER
+             — a file input cannot be re-seeded by script, which is the
+             very fact behind #46 and #43 — so the suite cannot reach
+             it and every combination is a manual walk.
+Expected:    The tested configuration and the shipped configuration are
+             the same thing, and the untested part is named.
+Status:      open — recorded 22 Aug. Deliberate scope call, not a
+             defect found and ignored.
+Notes:       The important observation is that the matrix is almost
+             ENTIRELY a ceiling >= 2 matrix. At ceiling 1 it collapses:
+             one photo means no partial removal (#53 unreachable), no
+             sequential accumulation (#43 degenerate), no "one of two"
+             anything. The small, mostly-proven state space and the
+             shipped default are the SAME configuration — which is
+             luck worth converting into a deliberate position.
+             So ceiling 1 is not merely the default. It is the tested
+             capability. Ceiling 2 and 3 are built, reachable from the
+             admin surface, and NOT released in any meaningful sense.
+Fix:         Two things, cheap.
+             (1) Treat ceiling >= 2 as unreleased: say so in the
+                 release note and in the admin field's help text, so
+                 raising it is an informed act rather than a setting
+                 that looks as finished as the others.
+             (2) When the ceiling work resumes, walk it as a written
+                 matrix rather than ad hoc, and fix #53 first — it
+                 contaminates every multi-photo test until it is gone.
+             Neither blocks Release 1 at ceiling 1.
+--------------------------------------------------------------------
