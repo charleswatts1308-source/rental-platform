@@ -1751,8 +1751,9 @@ Page:        CaseController::resolveLandlordContact / preview / send —
              should say Dear Larry Landlord as per case entry").
 Severity:    FUNCTIONAL, and the second half is evidential. The tenant
              approves one letter at the preview and a DIFFERENT letter
-             leaves the building. Pre-existing; NOT introduced by the
-             attachment work, only found by walking it.
+             leaves the building — REPRODUCED ON DEMAND, twice, on
+             gafol. Pre-existing; NOT introduced by the attachment
+             work, only found by walking it.
 Saw:         Case VMRXZP on gafol. "Larry Landlord" was entered on the
              create form; the sent letter opened "Dear C Watts" and the
              admin case view showed Recipient: C Watts. That address
@@ -1773,8 +1774,9 @@ Saw:         Case VMRXZP on gafol. "Larry Landlord" was entered on the
                    $case->landlordContact->name — the stored row. When
                    they disagree, the preview shows a letter that was
                    never sent.
-             (b) is derived from reading both call sites; not yet
-             separately confirmed in the browser.
+             (b) CONFIRMED IN THE BROWSER 22 Aug by a repeat run on
+             gafol: the preview showed the CORRECT typed landlord name,
+             and the resulting email did not. Observed, not inferred.
 Expected:    The name a tenant types is the name their landlord reads,
              or they are TOLD it will not be. Whatever the preview
              shows is the letter that goes.
