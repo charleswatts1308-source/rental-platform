@@ -72,6 +72,59 @@ STEP 1 — ADD DOMAIN TO PLESK
     switch to ns10/11/12. The warning will persist; just dismiss it.
 
 
+STEP 1b — PHP LIMITS: WHERE THEY ACTUALLY LIVE
+==============================================
+
+Read this before touching any PHP directive. It cost a full diagnosis
+(snag #41) and then a second round of confusion (22 Aug) to establish.
+
+[ ] Set upload/post limits in CloudLinux PHP SELECTOR -> OPTIONS.
+    That page is the source of truth for these directives.
+
+[ ] Know that it is SUBSCRIPTION-WIDE. One subscription, one Linux
+    system user, ONE set of values shared by every domain under it.
+    There is no per-domain lever: CloudLinux Isolates, the per-site
+    variant, does not work under LiteSpeed. Confirmed 22 Aug against
+    both active domains — they read identically because they cannot
+    do otherwise.
+    CONSEQUENCE: you cannot give staging different limits from
+    production. Whatever you set, you set everywhere. That is
+    convenient for fidelity and dangerous if you forget it.
+
+[ ] The Plesk per-domain PHP SETTINGS page is INERT. Not partially,
+    not for uploads only — for EVERY directive. It displays and saves
+    values that never reach the running PHP. Anything ever set there
+    (memory_limit, max_execution_time, ...) was ignored. See #41: the
+    page once displayed 32M for both upload values, a figure its own
+    dropdown cannot even offer, and none of it was in effect.
+
+[ ] NEVER read these values with artisan. The CLI and web SAPIs load
+    SEPARATE php.ini files, so
+        php artisan tinker --execute="echo ini_get('upload_max_filesize');"
+    returns the CLI figure with total confidence and tells you nothing
+    about what the web server will accept. This trap has caught both
+    sides of this project. The same fact is why the application's own
+    per-file limit is a fixed constant rather than read from ini_get()
+    — deriving it would make validation differ between the test suite
+    (CLI) and the browser (web).
+
+[ ] Verification: read the Selector -> Options page. A web-served
+    phpinfo() is the stricter check and was the standing advice, but it
+    is only NEEDED if a per-directory override might exist — and none
+    does: a filesystem search across the whole home directory
+        find ~ -maxdepth 5 \( -name '.user.ini' -o -name 'php.ini' \)
+    returned nothing (22 Aug, over SSH), and the repo carries no
+    .user.ini and no php_value in .htaccess. With no override possible,
+    the panel value IS the effective value. Re-run that find if you
+    ever suspect divergence; otherwise do not put a phpinfo file on a
+    production docroot — it discloses more than it is worth.
+
+[ ] Current values (22 Aug 2026): post_max_size 16M,
+    upload_max_filesize 8M. RECORDED AS A DATE-STAMPED READING, not a
+    guarantee — these are control-panel settings and they have already
+    gone stale once in this project. Re-read before relying on them.
+
+
 STEP 2 — CONFIGURE CUSTOMER-PORTAL DNS
 ======================================
 

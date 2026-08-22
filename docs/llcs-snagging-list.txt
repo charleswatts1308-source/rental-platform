@@ -2192,3 +2192,85 @@ Fix:         Amend registration Z229825X with the ICO to add
              renters.rent as a trading name. Then confirm the public
              entry shows it, and close this snag.
 --------------------------------------------------------------------
+#57
+Page:        There is no resources/views/errors/ directory at all, so
+             every HTTP error on production renders the framework's
+             bare page. Raised 2026-08-22 by Charlie, from the
+             ValidatePostSize review.
+Severity:    minor functionally, but it is a TRUST surface. A tenant
+             who hits an error mid-case sees a page that looks like
+             the service has fallen over, on a product whose entire
+             proposition is that it reliably handles something that
+             matters to them.
+Saw:         resources/views/errors/ does not exist. With
+             APP_DEBUG=false, 404 / 500 / 419 / 413 all fall through
+             to Laravel's stock error page — correct HTTP status,
+             correct behaviour, no reassurance and no way back.
+             419 is worth calling out: session expiry on a long form
+             is the MOST likely error a real tenant meets, because
+             writing up a repair honestly takes time.
+Expected:    An error page that says what happened in plain words,
+             says whether anything was lost, and offers a route back.
+Status:      open — snagged 22 Aug. Raise-not-action, by decision.
+Notes:       Sequence this AFTER #53 and #49, which are behavioural.
+             Related to the 413 handler under discussion (see the
+             ValidatePostSize work): that handler needs a 413 view,
+             and it makes little sense to build one error view alone.
+             Doing 404/419/500 in the same short pass is barely more
+             work than doing 413 by itself.
+             The standing rule from #46/#49/#53 applies here more than
+             anywhere: an error page must not claim anything the
+             system cannot honour. "Your work has been saved" is
+             exactly the sentence to avoid unless it is true.
+Fix:         A small pass: 404, 419, 500, 413. Plain wording, the site
+             layout, a link back to the dashboard. No promises about
+             recovered data unless the data is genuinely recoverable.
+--------------------------------------------------------------------
+#58
+Page:        The create form's client-side photo check validates
+             PER-FILE size only. Nothing checks the TOTAL of the
+             selection against post_max_size. Raised 2026-08-22 by
+             Charlie during the ValidatePostSize review.
+Severity:    minor today — unreachable at the shipped ceiling of 1 and
+             at ceilings 2 and 3 by arithmetic. Recorded because the
+             safety is COINCIDENTAL, not enforced.
+Saw:         create.blade.php:410 filters incoming files with
+             f.size > maxBytes, where maxBytes is
+             min(our 4MB, upload_max_filesize). Per file. There is
+             also a count check against the ceiling. No sum is taken
+             and post_max_size is never consulted client-side.
+             Why it is safe RIGHT NOW: the ceiling is hard-clamped to
+             3 in photoCeiling(), so the worst case is 3 x 4MB =
+             ~12MB against post_max_size 16M, leaving roughly 4MB for
+             the description field and multipart overhead.
+Expected:    The form refuses a selection the server cannot receive,
+             for the same reason it already refuses an oversize single
+             file: losing the whole submission to a 413 is a worse
+             outcome than being told at selection time.
+Status:      open — snagged 22 Aug. Raise-not-action, by decision.
+             Moot at ceiling 1 (#54).
+Notes:       The reason to record it rather than shrug: the margin is
+             held by two numbers NEITHER of which the application
+             controls or watches. post_max_size lives in CloudLinux
+             PHP Selector -> Options, subscription-wide, and it has
+             already been changed once mid-project without the app
+             knowing (22 Aug — it is what started this whole review).
+             Lower it to 8M and the 12MB worst case becomes a 413 with
+             the tenant's entire submission discarded, silently as far
+             as the code is concerned, because nothing compares the
+             two numbers.
+             So this is not "the JS is missing a check" so much as
+             "an invariant is being maintained by luck".
+Fix:         Sum the selection client-side and refuse when it exceeds
+             a safe fraction of post_max_size, using the same
+             error-rendering path as the per-file refusal so the
+             tenant cannot tell which rule stopped them.
+             Pass post_max_size to the view the same way the per-file
+             limit already is (see effectivePhotoMaxBytes) rather than
+             hardcoding it, so it tracks the panel.
+             Consider ALSO asserting the relationship server-side —
+             a test that fails when ceiling x per-file limit gets too
+             close to post_max_size would turn a silent hosting change
+             into a visible failure. That is the part that removes the
+             luck.
+--------------------------------------------------------------------
