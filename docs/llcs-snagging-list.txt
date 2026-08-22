@@ -1810,3 +1810,148 @@ Fix:         (b) FIRST — it is cheap and it is what breaks trust in
              returned and the typed name differs, say so on the
              preview rather than discarding it in silence.
 --------------------------------------------------------------------
+#50
+Page:        Severity is collected as a REQUIRED field and then reaches
+             nobody. It is absent from the preview, from the letter,
+             and from the D9 header block. Found 2026-08-22 in the
+             gafol walk of Release 1 (Charlie: "Severity setting does
+             not appear on preview or letter").
+Severity:    functional/content. Not silent data loss — the value is
+             stored correctly — but the tenant is made to classify the
+             urgency of their own repair and that classification never
+             leaves the building.
+Saw:         cases.severity is an enum routine|serious|emergency
+             (migration 2026_05_03_160918, default routine), required
+             at CaseController.php:417, cast on the model, and shown
+             to the TENANT on the case page (show.blade.php:54).
+             It is not in LetterTemplateRenderer::WHITELIST, so even
+             if someone wrote {{severity}} into a template body it
+             would render as the LITERAL text "{{severity}}" rather
+             than substituting — the allow-list is the gate.
+             It is not in the preview vars (CaseController.php:468) and
+             not passed by SendCaseNotice (:295-310).
+             Nor does it drive any behaviour: response_days comes from
+             the global escalation.interval_days setting, so an
+             emergency and a routine case get the SAME 14 days and a
+             textually IDENTICAL letter. Grepping the app, severity
+             appears only in the form, the store, the model/factory/
+             migration, the dev:* commands, and the tenant case page.
+Expected:    Either the landlord is told how urgent the tenant says it
+             is, or the tenant is not asked to say.
+Status:      open — snagged 22 Aug during the Release 1 gafol walk.
+             Pre-existing; nothing to do with attachments.
+Notes:       This is a DESIGN question before it is a code change, and
+             it belongs to the design doc, not a brief. Adding
+             {{severity}} to the whitelist is ten minutes; deciding
+             what an "emergency" claim DOES is not.
+             Two things to settle first:
+               - Does severity change the response deadline? An
+                 emergency with the same 14 days reads oddly, but a
+                 tenant-chosen field that shortens a legal-ish
+                 deadline is a much bigger claim and interacts with
+                 D4 interval snapshotting.
+               - Is a tenant's self-assessment safe to put in an
+                 evidential letter at all? "EMERGENCY" asserted by the
+                 claimant, in a document meant to be neutral, is a
+                 weaker artefact than the facts stated plainly. The
+                 issue description already carries the substance.
+             A defensible outcome is to KEEP severity as internal
+             triage, drop it from the form's prominence, and say so —
+             rather than surfacing it because it happens to exist.
+Fix:         Decide the above first. If it is to be shown: add
+             'severity' to LetterTemplateRenderer::WHITELIST, pass it
+             from BOTH the preview vars and SendCaseNotice (see #49 —
+             those two must read one source), and put it in the D9
+             header block so every outbound letter carries it. If it
+             is to stay internal: record that ruling in the design doc
+             and leave the letter alone.
+--------------------------------------------------------------------
+#51
+Page:        Postcode is format-checked but never verified to EXIST, and
+             nothing cross-checks it against the city the tenant typed.
+             Raised 2026-08-22 during the Release 1 gafol walk (Charlie:
+             "need to have postcode validation - the free service that
+             just provides city").
+Severity:    functional, and EVIDENTIAL at the sharp end — the property
+             address is the thing the letter identifies. A notice that
+             names an address which does not exist is a weaker
+             artefact, and the tenant has no way to know.
+Saw:         PropertyController.php:26 POSTCODE_PATTERN is a shape
+             regex only: /^[A-Z]{1,2}\d[A-Z\d]?\s*\d[A-Z]{2}$/i, with
+             normalisePostcode() upper-casing and re-spacing. Any
+             well-formed string passes, whether or not Royal Mail has
+             ever issued it. properties.city is a separate required
+             free-text column (100 chars) with no relationship to it.
+             Live example from the walk: "23 New Street, Henley,
+             RG1 5RD" was accepted. RG1 is READING, not Henley. The
+             letter's address block (SendCaseNotice::propertyAddress)
+             joins line1, line2, city, postcode — so the wrong town
+             went out to the landlord inside the notice.
+Expected:    A postcode that does not exist is refused. A city that
+             disagrees with the postcode is questioned before the
+             letter carries it.
+Status:      open — snagged 22 Aug. Feature, not a regression.
+Notes:       postcodes.io is the obvious free service: UK-wide, no API
+             key, no registration, open data, and it returns the
+             admin_district that gives the town. Caveats to weigh
+             BEFORE building on it:
+               - It is a third party in the request path. It must
+                 degrade OPEN: if the lookup is down or slow, the
+                 tenant still registers their property. A repair case
+                 must never be blocked by an address-tidying service.
+               - It sends a tenant's home postcode to an outside host.
+                 Small, but this project has already declined that
+                 trade once on principle — the 1 Aug DMARC change
+                 dropped ruf/fo precisely because forensic reports
+                 forward tenant data to third parties. Same question,
+                 same answer needed, not assumed.
+               - admin_district is the local authority, NOT the Royal
+                 Mail post town. They differ often enough that a hard
+                 equality check would reject correct addresses.
+             So the useful shape is SUGGEST, not ENFORCE: verify the
+             postcode exists (hard rule, purely local consequence),
+             and where the district disagrees with the typed city,
+             offer the lookup's answer rather than overruling. The
+             tenant lives there; they are the authority on their own
+             address.
+Fix:         Two independent steps, smallest first.
+             (1) Existence check against postcodes.io on the property
+                 create/edit path, with a short timeout and a
+                 fail-open fallback to today's regex. Cache results —
+                 postcodes do not move.
+             (2) City reconciliation as a soft prompt on the same
+                 form: "RG1 5RD looks like Reading — is that right?"
+                 with the tenant's own value kept if they say yes.
+             Test both with the service stubbed, including the
+             fail-open path, so the suite never depends on a live
+             third-party host.
+--------------------------------------------------------------------
+#52
+Page:        The admin case view renders a DIFFERENT, shorter property
+             address than the letter does. Found 2026-08-22 while
+             investigating #49 (not separately reported).
+Severity:    minor — cosmetic today, but it is the drift pattern that
+             #49 is the serious version of.
+Saw:         admin/cases/show.blade.php:66 hardcodes
+             "{{ $case->property?->address_line1 }},
+              {{ $case->property?->postcode }}"
+             — dropping address_line2 AND city. The letter uses
+             SendCaseNotice::propertyAddress(), which joins all four.
+             So case VMRXZP read "23 New Street, RG1 5RD" on the admin
+             oversight screen while the letter carried the city too.
+             The admin screen is where you check what a case says; it
+             should not quietly show less than what was sent.
+Expected:    One address formatter, used everywhere.
+Status:      open — snagged 22 Aug.
+Notes:       Third private copy of the same logic. There is already a
+             formatAddress() in CaseController (:843) and
+             propertyAddress() in SendCaseNotice, SendExhaustionCloser,
+             HandleInboundReply and SilenceSweep. The FileSize class
+             docblock makes exactly this argument for sizes — "a
+             private format in each view is how they drift" — and the
+             address has more copies than the size ever had.
+Fix:         Pull the address format onto the Property model (an
+             accessor, e.g. $property->formatted_address) or into a
+             small support class beside FileSize, and point all call
+             sites at it, admin view included. Mechanical.
+--------------------------------------------------------------------
