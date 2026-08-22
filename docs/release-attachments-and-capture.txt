@@ -9,8 +9,32 @@ carrying on — both releases touch the letter path.
 
 
 ====================================================================
-RELEASE 1 — ATTACHMENT POLICY  (main, commit 1a46766)
+RELEASE 1 — ATTACHMENT POLICY  (main, now 3f2fdd7)
 ====================================================================
+
+*** ACCEPTED FOR LIVE 22 Aug 2026 (Charlie). ***
+Gafol walk done in part; accepted with the gaps below KNOWN and
+recorded, not overlooked.
+
+  SCOPE IS WIDER THAN THE TITLE. This release also carries the new
+  public /landlords page, the nav change (Landlords moved to the end,
+  "For" dropped), and the cases content line about a blank landlord
+  name. The attachment work is the headline, not the whole.
+
+  SHIPPING AT CEILING 1, BY DECISION (#54). Ceiling 1 is the tested
+  capability. Ceilings 2 and 3 are built and reachable from the admin
+  surface but NOT meaningfully released — #53 (Remove on one of two
+  staged photos deletes both) is unreachable at 1 and armed above it.
+  Do not raise the ceiling on prod until #53 is fixed.
+
+  KNOWN AND ACCEPTED, going live with the release:
+    #49  preview shows one landlord name, the letter sends another.
+         Reaches real trial users. Accepted; fix to follow.
+    #53  see above — contained by ceiling 1.
+    #54  attachment coverage above ceiling 1 is incomplete.
+    #56  ICO not yet told about renters.rent as a trading name.
+  Fixed and INCLUDED: #55 — /landlords now publishes the real ICO
+  reference Z229825X, verified against the public register.
 
 WHAT IT CHANGES FOR A TENANT
   - Letter 1 can carry photos, capped by a NEW admin setting
