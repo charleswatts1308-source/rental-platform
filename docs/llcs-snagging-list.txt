@@ -2098,8 +2098,16 @@ Saw:         landlords.blade.php:35 publishes "registration reference
              02 Aug and it has never been checked against the register.
 Expected:    The page states only what a reader can verify. Where the
              reference is not confirmed, it says so plainly.
-Status:      open — snagged 22 Aug. DEFERRED BY DECISION (Charlie):
-             ships in a LATER release, does not hold Release 1.
+Status:      CODE FIXED 22 Aug, same day, and pulled INTO Release 1
+             rather than deferred — once the real reference was known
+             the fix was a one-line content change needing no
+             decision, so carrying a knowingly-wrong number to prod
+             had nothing to recommend it.
+             ONE ACTION REMAINS, and it is not code: renters.rent must
+             be notified to the ICO as a trading name on the existing
+             registration (Charlie, 22 Aug: "i do need to advise them
+             of new site"). Amendment to the registration already
+             held — no second registration, no second fee.
 Notes:       The audience is what makes this worth doing at all. This
              page is read by someone who has just received a formal
              notice about their own property and is checking whether
@@ -2107,28 +2115,41 @@ Notes:       The audience is what makes this worth doing at all. This
              reader to search that number. A reference that resolves
              to nothing tells them the opposite of what the page is
              for — which is why #42 called it worse than no number.
-             ONE THING TO SETTLE BEFORE WORDING IT. "Pending" is
-             itself a factual claim, so it has to be the true one:
-               - If registration is genuinely not yet complete,
-                 "Pending" is right.
-               - If registration IS complete and only the reference
-                 has been mis-transcribed (ICO:00014275530 may well be
-                 the PAYMENT or account reference from a finished
-                 registration), then "Pending" understates the
-                 position and is inaccurate in the other direction.
-                 The honest wording there is the correct ZA/ZB number.
-             Check the ICO public register first, then word it. The
-             lookup is the same 30 seconds either way and it decides
-             which sentence is true.
-             Accepted risk in the meantime: Release 1 publishes the
-             unverified number. Judged acceptable at trial scale — a
-             handful of known family landlords — on the same reasoning
-             as the #42 trial decision. It does NOT carry to public
-             launch.
-Fix:         Look up the ICO public register. Then either correct the
-             reference to the real ZA/ZB entry, or replace it with a
-             "registration pending" line, whichever is true. Ships in
-             a later release. Add to pre-flip-checklist.md so public
-             launch cannot pass with an unverified reference — #42
-             already has a line there and this belongs with it.
+             RESOLVED THE GOOD WAY. "Pending" turned out to be the
+             wrong wording: the registration is COMPLETE. The real
+             reference is Z229825X — the older Z+digits+letter format
+             that predates the ZA/ZB scheme, which is why the shape
+             looked unfamiliar. ICO:00014275530 was never the register
+             reference at all; it is the payment/account number, as
+             #42 suspected on 02 Aug. Charlie confirmed the entry
+             resolves on the public register.
+             A SEPARATE MISUNDERSTANDING, worth recording because it
+             nearly cost money: the belief that ICO registration is
+             site-specific and renters.rent would need its own. It is
+             not. Registration attaches to the DATA CONTROLLER — the
+             legal person or organisation — not to a website. A sole
+             trader is one legal person, so one registration, with
+             trading names published against that single entry.
+             Separate registrations are for separate legal entities
+             (a company with its own Companies House number), not
+             separate sites. Source: ICO's own registration FAQs and
+             "Information we will collect and publish".
+             So the existing registration covers renters.rent; what it
+             needs is the trading name adding, which is an amendment.
+Fix:         APPLIED 22 Aug — landlords.blade.php:35 now publishes
+             Z229825X. The "ICO:" prefix went with it: the sentence
+             already names the Information Commissioner's Office, and
+             the prefix was part of what made the old value read like
+             an account reference rather than a register entry.
+             OUTSTANDING (not code): advise the ICO of renters.rent as
+             a trading name on registration Z229825X. Until that is
+             done, a landlord who looks the entry up finds a real
+             registration that does not mention the site they were
+             written to from — which is a weaker answer than the page
+             implies, though far better than a number resolving to
+             nothing.
+             Still add to pre-flip-checklist.md: at public launch the
+             trader name and service address of #42 return as required
+             disclosures, and the trading name should be live on the
+             register by then.
 --------------------------------------------------------------------

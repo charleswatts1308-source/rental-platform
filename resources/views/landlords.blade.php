@@ -32,7 +32,7 @@ pursuit of rental property improvement.</p>
 <p>We're not a claims company, not a solicitor, not a complaints body.</p>
 
 <p>We're registered with the Information Commissioner's Office, the UK data protection
-regulator, under registration reference <strong>ICO:00014275530</strong>.</p>
+regulator, under registration reference <strong>Z229825X</strong>.</p>
 
 <hr class="my-4">
 
