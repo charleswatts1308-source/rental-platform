@@ -1741,3 +1741,70 @@ Fix:         A test that enumerates CaseStatus::cases() and asserts
              Consider inverting the lists to allow-lists afterwards,
              but the test alone removes the hazard and is far cheaper.
 --------------------------------------------------------------------
+#49
+Page:        CaseController::resolveLandlordContact / preview / send —
+             the landlord name typed on a case is SILENTLY DISCARDED
+             when a landlord_contacts row already exists for that
+             email, AND the preview renders a different name from the
+             letter that is actually sent. Found 2026-08-22 in the
+             gafol walk of Release 1 (Charlie: "Dear C Watts / It
+             should say Dear Larry Landlord as per case entry").
+Severity:    FUNCTIONAL, and the second half is evidential. The tenant
+             approves one letter at the preview and a DIFFERENT letter
+             leaves the building. Pre-existing; NOT introduced by the
+             attachment work, only found by walking it.
+Saw:         Case VMRXZP on gafol. "Larry Landlord" was entered on the
+             create form; the sent letter opened "Dear C Watts" and the
+             admin case view showed Recipient: C Watts. That address
+             already carried a landlord_contacts row named "C Watts"
+             from earlier testing.
+             Two separate faults, compounding:
+               (a) CaseController.php:562 — resolveLandlordContact()
+                   does LandlordContact::where('email',$email)->first()
+                   and returns the existing row VERBATIM. The typed
+                   landlord_name is thrown away with no message. The
+                   table is keyed GLOBALLY on email, so first write
+                   wins forever, across every tenant: whoever names an
+                   address first names it for everyone.
+               (b) The two surfaces read DIFFERENT SOURCES.
+                   CaseController.php:470 (preview) renders
+                   $validated['landlord_name'] — what the tenant just
+                   typed. SendCaseNotice.php:302 (send) renders
+                   $case->landlordContact->name — the stored row. When
+                   they disagree, the preview shows a letter that was
+                   never sent.
+             (b) is derived from reading both call sites; not yet
+             separately confirmed in the browser.
+Expected:    The name a tenant types is the name their landlord reads,
+             or they are TOLD it will not be. Whatever the preview
+             shows is the letter that goes.
+Status:      open — snagged 22 Aug during the Release 1 gafol walk.
+             Testing unblocked by UPDATEing the row, or by using a
+             fresh unused email per test case.
+Notes:       Live evidence for the D0 candidate in
+             docs/landlord-contact-model-gap.md — global email-keyed
+             contacts, no per-property ownership, no change history.
+             That doc is sequenced after #25 at ~5-6 days; this is the
+             first time the gap has been seen to CORRUPT A SENT LETTER
+             rather than merely being untidy.
+             Same family as #46: a surface asserted something the
+             behaviour did not honour. #46 was the form's "photo is
+             saved" cue; this is the preview itself. The frozen
+             body_raw invariant HOLDS — what was sent is what is
+             recorded — but the tenant's approval was given against
+             different text, so the freeze is preserving a letter
+             nobody agreed to.
+             Note the two fixes have very different costs and can be
+             taken separately.
+Fix:         (b) FIRST — it is cheap and it is what breaks trust in
+             the preview. Make preview resolve the contact the same
+             way send does, so both render one source. Test: create a
+             case against an email whose stored name DIFFERS from the
+             typed one, assert the preview and the frozen body_raw
+             carry the SAME salutation. That test fails today.
+             (a) is the model change and belongs with the
+             landlord-contact-model D0, not before it. Interim
+             mitigation if that is far off: when an existing row is
+             returned and the typed name differs, say so on the
+             preview rather than discarding it in silence.
+--------------------------------------------------------------------
