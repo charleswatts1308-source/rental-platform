@@ -2225,6 +2225,73 @@ Notes:       Sequence this AFTER #53 and #49, which are behavioural.
 Fix:         A small pass: 404, 419, 500, 413. Plain wording, the site
              layout, a link back to the dashboard. No promises about
              recovered data unless the data is genuinely recoverable.
+             PARKED 22 Aug (Charlie) — designed, not built. The 413
+             design below is finished work; pick it up with the rest
+             of the error pass rather than alone.
+
+             --- 413 DESIGN, AGREED 22 Aug, READY TO BUILD ---
+
+             NO HANDLER CODE. PostTooLargeException is an HttpException
+             with status 413, so Laravel renders
+             resources/views/errors/413.blade.php automatically.
+             bootstrap/app.php withExceptions() stays empty.
+
+             THE CONSTRAINT THAT SHAPES IT: there is NO SESSION when
+             this renders. ValidatePostSize is GLOBAL middleware
+             (Middleware.php:460) and runs BEFORE the web group's
+             StartSession. So: no flash, no old() input, no auth. A
+             redirect-back-with-error is not merely worse, it is
+             UNAVAILABLE. It must be a rendered view.
+
+             DO NOT EXTEND layouts/app. It will not crash —
+             Auth::user()->email sits inside @guest/@else (:142-148) —
+             but with no session it takes the @guest branch and shows
+             LOGIN / REGISTER. A tenant who just lost their work would
+             also be told they are signed out. They are not: the
+             session COOKIE is untouched and their next request is
+             authenticated normally. But this page cannot verify that,
+             so it must not assert it either way. Use a standalone
+             site-styled view with no auth-dependent chrome.
+
+             WORDING (agreed):
+               That was too large to send
+
+               Your form did not reach us, so nothing has been saved.
+               This is almost always caused by photos that are too
+               large.
+
+               We cannot recover what you had typed — you will need to
+               enter the case again. We are sorry.
+
+               Each photo must be 4 MB or smaller, and everything sent
+               at once must come to less than 16 MB in total.
+
+               [ Back to your cases ]
+
+             Deliberately absent: any claim a draft was saved, any
+             half-populated form, any statement about sign-in status,
+             any suggestion we can retrieve it. Says the work is gone,
+             once, plainly, then gives the way forward. Charlie's
+             ruling: this must not become a third instance of the
+             #46/#49 failure mode.
+
+             LANDING: the page IS the landing; no redirect is possible.
+             Link to /cases, which loads authenticated in the ordinary
+             way because the cookie survived.
+
+             TWO OPEN DETAILS, deliberately not decided:
+               - The two figures should be RENDERED, not hardcoded
+                 (#58 principle): post_max_size from ini_get() at
+                 render time (valid — this is the web SAPI), per-file
+                 limit from the same source the form uses. That needs
+                 PHOTO_MAX_KB moved off CaseController, where it is a
+                 private const. Small refactor, flagged not slipped in.
+               - Testability is limited and worth stating plainly: the
+                 suite cannot trigger a real 413, since post_max_size
+                 is a server directive. What IS testable is that the
+                 view renders standalone with no session and no
+                 authenticated user. Same category as #43 — the
+                 mechanism lives below where tests reach.
 --------------------------------------------------------------------
 #58
 Page:        The create form's client-side photo check validates
