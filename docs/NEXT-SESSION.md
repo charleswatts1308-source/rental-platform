@@ -7,10 +7,12 @@ superseded doc. It is a **router, not a record**: keep it short.
 
 **Last updated:** 2026-08-23.
 
-**✅ BOTH RELEASES ARE OUT.** `main` is at **`2a7f546`**, pushed.
-renters.rent carries the attachment release. The delivery-event capture
-run was deployed, run and torn down the same evening — **verified gone**,
-not merely disabled.
+**✅ BOTH RELEASES ARE OUT.** **renters.rent is running `65540e1`** (the
+attachment release, deployed 23 Aug). `main` carries docs written since;
+it is always pushed, so take origin as current rather than looking for a
+commit id here — one written down would go stale the moment this file
+was next edited. The delivery-event capture run was deployed, run and
+torn down the same evening — **verified gone**, not merely disabled.
 
 **⚠ gafol is BEHIND prod** at `7507a72` (1 Aug). Staging-at-or-ahead no
 longer holds. Pull it forward before the next piece of work.
