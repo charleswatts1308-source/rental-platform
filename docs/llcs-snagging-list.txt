@@ -1777,6 +1777,32 @@ Saw:         Case VMRXZP on gafol. "Larry Landlord" was entered on the
              (b) CONFIRMED IN THE BROWSER 22 Aug by a repeat run on
              gafol: the preview showed the CORRECT typed landlord name,
              and the resulting email did not. Observed, not inferred.
+
+             HOW TO REPRODUCE — established 23 Aug (Charlie). It needs
+             a REPEAT LANDLORD EMAIL. On the FIRST case against a given
+             address no landlord_contacts row exists, so one is created
+             from what the tenant typed and the name is CORRECT. Only
+             the SECOND and later cases against that same address find
+             an existing row and discard the typed name. A single case
+             per landlord will never show it.
+
+             TWO CONSEQUENCES OF THAT, both worse than they look:
+               - IT IS NOT CONFINED TO LETTER 1. The salutation comes
+                 from $case->landlordContact->name at EVERY stage, so
+                 chasing letters 2-4 carry the same wrong name. Letter
+                 1 is merely the only one that can be CAUGHT, because
+                 it is the only letter with a preview to disagree with.
+                 The rest go out unseen.
+               - THE FAILURE PROFILE HIDES IT EARLY. A trial in which
+                 each tenant raises one case looks completely clean. It
+                 begins failing only as cases accumulate against the
+                 same landlords — which is the normal pattern for a
+                 repairs product, where one landlord gets a second and
+                 third issue. It passes early testing and emerges once
+                 the product is being used properly.
+             This is also why #7 recorded the same behaviour as minor
+             long ago and nobody caught it: you must raise a second
+             case against the same landlord AND then read the letter.
 Expected:    The name a tenant types is the name their landlord reads,
              or they are TOLD it will not be. Whatever the preview
              shows is the letter that goes.
