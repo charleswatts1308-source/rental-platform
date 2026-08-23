@@ -1741,6 +1741,67 @@ Fix:         A test that enumerates CaseStatus::cases() and asserts
              Consider inverting the lists to allow-lists afterwards,
              but the test alone removes the hazard and is far cheaper.
 --------------------------------------------------------------------
+#48
+Page:        admin@renters.rent — an address that CANNOT RECEIVE MAIL,
+             published as a public contact route AND used as the admin
+             account. Found 2026-08-09 reading the Mailgun suppression
+             list while checking prerequisites for #25.
+Severity:    functional. Two faces, one root cause:
+             (a) COMPLIANCE — the privacy and cookie policies give it as
+                 the contact address for data-protection enquiries.
+             (b) OPERATIONAL — it is the admin login, so password reset
+                 for the admin account cannot work.
+Saw:         Mailgun suppression list for mg.renters.rent, Bounces tab:
+               admin@renters.rent — "Unrouteable address"
+               Sat 04 Jul 2026 22:33:08 UTC
+             Surfaced by Charlie testing forgotten-password against it.
+             The apex renters.rent has NO MX record (only mg.renters.rent
+             has them), so mail falls back to the apex A record — the web
+             server — which runs no mail service. Nothing arrives and
+             nobody is told.
+Expected:    A published contact address receives mail. An admin account
+             can complete a password reset.
+Status:      open — snagged 09 Aug.
+Notes:       Where it appears:
+               - resources/views/privacy.blade.php:60 — "questions about
+                 this Privacy Policy or our data practices"
+               - resources/views/cookies.blade.php:85 — cookie enquiries
+               - app/Console/Commands/DevReset.php:56 (seeded admin)
+               - app/Console/Commands/DevLifecycle.php:29 (ADMIN_EMAIL)
+               - docs/huk-laravel-site-install-recipe.md:270,282 — the
+                 recipe creates it and says to log in as it
+               - docs/environment-state.md:153 — id 1, is_admin=1
+             (a) is more than untidy: a privacy notice must give a data
+             subject a working route to the controller. Someone
+             exercising their rights gets silence, and we never learn
+             they tried. Same family as #42 (ICO reference that may
+             resolve to nothing) — published compliance details that
+             don't work.
+             (b) is a lockout risk, now confirmed live: user id 13 is
+             "long gone" (Charlie, 9 Aug), so id 1 IS the prod admin.
+             Verification was sidestepped by setting email_verified_at
+             directly, which is why it went unnoticed. Mailgun has now
+             hard-suppressed the address on top of the DNS problem.
+             Third-order: the apex is in LIMBO — it neither receives mail
+             nor explicitly refuses it, so senders get a messy failure
+             against a web server rather than a clean rejection. #33
+             already contemplates a null MX (RFC 7505) for the apex; that
+             decision and this one should be taken together.
+             RECOVERED TO MAIN 23 Aug: this entry existed only on
+             feature/delivery-events and was nearly lost when that branch
+             was deleted. NEXT-SESSION listed #48 as open while the entry
+             itself was not in this file — the same stranding that hit
+             #47 and the D0 report.
+Fix:         Point both public pages at a mailbox that actually receives
+             — an address on mg.renters.rent, or set up apex receiving —
+             and move the admin account to a working address. THEN clear
+             the Mailgun suppression entry; doing it before the address
+             works just re-suppresses on the next bounce. Decide the apex
+             mail posture at the same time (receive, or publish null MX
+             so failures are clean) alongside #33's SPF tightening.
+             Consider whether the privacy notice should also carry a
+             postal address — ties to #42's service-address decision.
+--------------------------------------------------------------------
 #49
 Page:        CaseController::resolveLandlordContact / preview / send —
              the landlord name typed on a case is SILENTLY DISCARDED
