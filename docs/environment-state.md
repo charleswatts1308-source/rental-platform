@@ -6,8 +6,10 @@ table is the source of truth; this file is reconciled against
 
 **Reconcile status:** git tips verified (27 Jun 2026); **dotrent retired
 1 Aug 2026** (see its entry — the record is kept, the box is gone).
-**gafol** at `b92b907` (24 Jul); renters.rent per its entry. Staging-at-
-or-ahead holds. Live entries are now **gafol, renters.rent, main** —
+**gafol** at `7507a72` (1 Aug — the header previously said `b92b907`,
+which contradicted gafol's own 1 Aug entry; corrected 23 Aug).
+**renters.rent at `65540e1`** (23 Aug). **Staging-at-or-ahead NO LONGER
+HOLDS** — prod is ahead of gafol until gafol is pulled forward. Live entries are now **gafol, renters.rent, main** —
 remaining housekeeping is recording the old Windows prod box's retirement.
 **Not yet reconciled against `migrate:status` since 27 Jun** — do that at
 the next deploy, per the CLAUDE.md Deployment-ledger rule.
@@ -336,7 +338,58 @@ the next deploy, per the CLAUDE.md Deployment-ledger rule.
   content live over HTTPS (external `/about` fetch, 11 Jul 2026).
   (The hardening tail referenced here was subsequently CLOSED — see the
   13 Jul entries above.)
-- Last verified: 13 Jul 2026.
+- **Attachment policy + landlords page deploy (23 Aug 2026):** pulled
+  `main` → **`65540e1`**. Plesk Git pull, `migrate --force`,
+  `config:cache`, `view:clear`.
+  **ONE MIGRATION RAN, clean:**
+  `2026_08_09_120000_seed_attachments_first_notice_max_setting` (2.29ms).
+  It INSERTS a settings row only — no table created or altered — so the
+  CLAUDE.md MariaDB `SHOW CREATE TABLE` rule does not bite here.
+  `SettingSeeder` deliberately NOT run: it is `updateOrCreate` and would
+  have reset every other tuned setting to its shipped default. The
+  migration exists precisely to avoid that.
+  Carries FOUR things, wider than the release title suggests:
+  - **Attachment policy** — letter 1 may carry tenant photos under a new
+    admin ceiling (0-3). **SHIPPED AT 1 BY DECISION**, not merely by
+    default: ceiling 1 is the tested capability (snag #54), and #53
+    (removing one of several staged photos removes them all) is
+    unreachable at 1 and armed above it. **Do not raise the ceiling on
+    prod until #53 is fixed.**
+  - **New public page `/landlords`** + nav entry. Publishes ICO
+    registration reference **Z229825X**, corrected this release (#55 —
+    the previous value was the payment/account number, not the register
+    reference, and had never been checked).
+  - **Nav change** — Landlords moved to the end, "For" dropped.
+  - **Cases content** — the create form now states what a blank landlord
+    name does to the letter.
+  Suite green pre-deploy: **570 passed, 2330 assertions** (22 Aug, at
+  `ded69f2`; the only code change after that is the one-line ICO
+  reference, which no test asserts).
+  **KNOWN DEFECTS SHIPPED, accepted not overlooked:** #49 (the preview
+  shows one landlord name and the letter sends another — needs a REPEAT
+  landlord email to trigger, and affects all four letters, not just the
+  first), #53, #54, #56. #49(b) was ruled fix-before-deploy on 22 Aug
+  and that ruling was REVERSED 23 Aug to prioritise the delivery-failure
+  work.
+  **NOT YET VERIFIED ON THE BOX** — deploy recorded, verification
+  outstanding: `/landlords` renders and shows Z229825X; nav order; admin
+  photo ceiling reads 1; an attachment-bearing letter sends, arrives and
+  opens; the 4-8MB band produces OUR file-named error rather than PHP's
+  generic one; spam-scoring of an attachment-bearing letter (never done
+  on any path).
+  **PHP LIMITS (23 Aug):** `upload_max_filesize` 8M, `post_max_size` 16M
+  — set in CloudLinux PHP Selector -> Options, which is
+  **SUBSCRIPTION-WIDE** across all domains. There is no per-domain lever
+  (Isolates does not work under LiteSpeed), and no `.user.ini` or
+  `php.ini` override exists anywhere (filesystem search across the whole
+  home directory, 23 Aug). So gafol and prod necessarily read the same.
+  See install recipe STEP 1b.
+  **RECONCILE STILL OUTSTANDING:** `php artisan migrate:status` was NOT
+  run at this deploy. The ledger has not been reconciled against it
+  since 27 Jun, contrary to the CLAUDE.md Deployment-ledger rule. Carry
+  to the next deploy.
+- Last verified: 13 Jul 2026 (the 23 Aug deploy is recorded above but
+  its verification list is outstanding).
 
 ## Dead database — ukrenters_rent (DELETE AFTER go-live)
 - `ukrenters_rent` is an OLD leftover database, NOT used by any live
