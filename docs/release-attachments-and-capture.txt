@@ -167,10 +167,17 @@ endpoint. #47 is now merged to main in its own right (7bcab73), and
 `feature/delivery-capture` is main plus the capture endpoint alone —
 genuinely disposable. The old branch is superseded; do not deploy it.
 
-*** SET A HARD TEARDOWN DATE BEFORE YOU START. ***
-Write it here: TEARDOWN BY ____________________
-An unauthenticated write endpoint on production does not come off by
-memory. Decide the date first, not after.
+*** DONE AND TORN DOWN — 23 Aug 2026, same evening. ***
+Deployed, three real sends captured, endpoint removed. Verified gone:
+GET on the capture path returns 404 where it returned 405 while
+deployed. Token burnt, capture log deleted from the box, prod back on
+main.
+FINDINGS: docs/mailgun-delivery-event-payloads.md — that file is the
+reference the #25 receiver gets built against. Everything below is kept
+as the record of how it was run.
+STILL TO DO from this run: abandon cases 9RKDKC, 3YHRKZ, CZPUAD, and
+run the suppression SQL further down against
+charles.watts1308-t1@gmail.com.
 
 WHY IT EXISTS
   Our existing signature middleware reads FLAT top-level

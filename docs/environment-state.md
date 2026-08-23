@@ -388,8 +388,42 @@ the next deploy, per the CLAUDE.md Deployment-ledger rule.
   run at this deploy. The ledger has not been reconciled against it
   since 27 Jun, contrary to the CLAUDE.md Deployment-ledger rule. Carry
   to the next deploy.
-- Last verified: 13 Jul 2026 (the 23 Aug deploy is recorded above but
-  its verification list is outstanding).
+- **Delivery-event CAPTURE RUN (23 Aug 2026) — deployed, run, and TORN
+  DOWN the same evening.** Temporary by design; prod is back on `main`.
+  - **On:** Plesk repo pointed at `feature/delivery-capture` (main plus
+    a write-only capture endpoint), `MAILGUN_CAPTURE_TOKEN` set in prod
+    `.env`, `config:cache`. Domain-level Mailgun webhook on
+    `mg.renters.rent` subscribed to Delivered / Permanent Fail /
+    Temporary Fail / Complained. No migrations.
+  - **Three real sends** from production cases **9RKDKC**, **3YHRKZ**,
+    **CZPUAD** — a non-existent domain, a genuinely suppressed address,
+    and a real Outlook inbox. All three events captured.
+  - **Off:** webhook deleted FIRST, then token removed, `config:cache`,
+    capture log deleted from the box, Plesk repo returned to `main` and
+    redeployed. **VERIFIED:** GET on the capture path now returns 404
+    where it returned 405 while deployed — the route is gone, not
+    merely inert. Token burnt (it travelled in the URL and is in the
+    access logs).
+  - **Findings are in `docs/mailgun-delivery-event-payloads.md`.**
+    Headline: the event signature IS nested (so the existing middleware
+    would 406 every event and Mailgun would never retry), payloads are
+    JSON not form-encoded, there is no `permanent_fail` event —
+    `failed` + `severity` — and our `case_message_id` custom variable
+    survives the round trip, which is what makes the receiver possible.
+  - **A config trap cost an hour and is worth remembering:** the
+    endpoint 404'd repeatedly after the token was set, because the
+    compiled `bootstrap/cache/config.php` was stale. `config:show` runs
+    under the CLI and reported the new value happily while the web
+    request used the cached one. `config:clear` fixed it; `config:cache`
+    afterwards was then fine. Same CLI-versus-web split as the PHP
+    limits (recipe STEP 1b).
+  - **Still outstanding from this run:** abandon the three test cases,
+    and run the suppression SQL in the release checklist against
+    `charles.watts1308-t1@gmail.com` — a real July hard bounce, proven
+    this evening to be still silently swallowing letters.
+- Last verified: 13 Jul 2026 (the 23 Aug attachment deploy is recorded
+  above but its verification list is outstanding; the capture run above
+  is verified complete).
 
 ## Dead database — ukrenters_rent (DELETE AFTER go-live)
 - `ukrenters_rent` is an OLD leftover database, NOT used by any live
