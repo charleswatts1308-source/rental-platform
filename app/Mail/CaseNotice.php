@@ -11,6 +11,7 @@ use Illuminate\Mail\Mailables\Address;
 use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
+use Illuminate\Mail\Mailables\Headers;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
@@ -79,6 +80,35 @@ class CaseNotice extends Mailable
             // misrouted send is instantly visible in Mailgun's per-domain log view.
             // Laravel maps Envelope tags to Mailgun's o:tag (via Symfony TagHeader).
             tags: [app()->environment()],
+        );
+    }
+
+    /**
+     * Correlation key for delivery events (#25).
+     *
+     * Mailgun echoes custom variables back in every event it raises for
+     * a message, so this is what lets a bounce be matched to the letter
+     * that caused it. Recipient plus timestamp is not enough: the same
+     * landlord address legitimately receives several letters across the
+     * escalation ladder, and a suppressed address produces events for
+     * sends that were never transmitted.
+     *
+     * Set here rather than recorded at send time deliberately — the send
+     * is queued (SendCaseNotice: Mail::to()->queue()), so there is no
+     * SentMessage to read a Mailgun id from without a MessageSent
+     * listener writing back after the fact. A variable set before
+     * dispatch needs no write-back and survives the queue.
+     *
+     * Envelope-only. The frozen body_raw/subject are untouched.
+     */
+    public function headers(): Headers
+    {
+        return new Headers(
+            text: [
+                'X-Mailgun-Variables' => json_encode([
+                    'case_message_id' => $this->message->id,
+                ], JSON_UNESCAPED_SLASHES),
+            ],
         );
     }
 

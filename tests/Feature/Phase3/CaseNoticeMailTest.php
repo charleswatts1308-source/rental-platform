@@ -104,6 +104,21 @@ it('tags the message with the current environment for Mailgun log filtering', fu
     expect($envelope->tags)->toContain(app()->environment());
 });
 
+it('carries the case_message id as a Mailgun custom variable (#25 correlation key)', function () {
+    ['case' => $case, 'message' => $message, 'token' => $token] = makeMailFixtures();
+
+    $headers = (new CaseNotice($case, $message, $token))->headers();
+
+    expect($headers->text)->toHaveKey('X-Mailgun-Variables');
+
+    // Mailgun echoes custom variables back on every delivery event, so a
+    // bounce can be matched to the letter that caused it. Recipient plus
+    // timestamp cannot do that — the same landlord address legitimately
+    // receives several letters across the ladder.
+    expect(json_decode($headers->text['X-Mailgun-Variables'], true))
+        ->toBe(['case_message_id' => $message->id]);
+});
+
 it('refuses to construct when message.body_raw is blank', function () {
     ['case' => $case, 'message' => $message, 'token' => $token] = makeMailFixtures([
         'body_raw' => '',
