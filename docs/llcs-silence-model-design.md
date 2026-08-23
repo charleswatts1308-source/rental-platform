@@ -540,6 +540,78 @@ These are addressed in the Phase 5 build because they are direct dependencies or
 - ~~#21 abandon-collision.~~ **Ruled: Option C — remove the colliding cosmetic stance dropdown (UI-only); D14 revival/close preserved, no backend change.** (#21.)
 - ~~#4 reference format.~~ **Ruled: 6-char, A–Z + 2–9 minus I/O/0/1.** (#4.)
 
+### D17 — Delivery failure: silence must mean "delivered and not answered"
+
+**Ruled by Charlie 2026-08-09.** Full reasoning and the nine rulings R1–R9
+are in `delivery-failure-design-question.md`; the D0 verification is
+`cc-report-delivery-events-d0.md`. This section exists because everything
+above **assumes a sent letter arrives**, and that assumption is now
+explicit rather than silent.
+
+**The gap.** Mailgun's inbound route is consumed; its delivery-event
+webhooks are not. A letter that bounced and a letter that was ignored are
+indistinguishable to the system — so the model's load-bearing claim
+("served on the 12th, no response in 14 days") is stated with full
+confidence when nobody was ever served. Observed twice on gafol (6 and 7
+June 2026): sends accepted by Mailgun, blocked at Gmail, the platform
+showing nothing.
+
+**D17.1 — the record EXTENDS, it does not break.** A bounce does not
+invalidate what came before. *We sent it · we detected a bounce · we
+informed the tenant · we stopped · a new address was given · the case
+restarted* — each separately true, each its own entry. Nothing is ever
+retracted.
+
+**D17.2 — hard stops, soft is silent.** `permanent_fail` stops the case
+and notifies the tenant. `temporary_fail` is recorded on the message and
+produces no tenant-facing action; Mailgun retries and most deliver.
+
+**D17.3 — a letter-1 bounce forks.** The old case closes terminal; a new
+case is created carrying the same property, category, severity,
+description and photos. The new case has **zero message rows**, so its
+derived counter is genuinely 0 and its first letter is stage 1. **Nothing
+is reset and D3's ratchet is untouched** — the numbers are simply true.
+No link is stored between the two cases.
+
+**D17.4 — mid-flow bounces are OUT OF SCOPE.** Continuing after a
+mid-ladder bounce would require re-serving the bounced rung, writing a
+second row at the same stage and inflating the row-counted ladder.
+Deliberately deferred. Mid-flow still detects, records, notifies and
+stops; only the automated correct-and-continue is absent.
+
+**D17.5 — complaints are terminal wherever they occur, and never fork.**
+There is no address problem for a new address to fix. Note the evidential
+asymmetry: a bounce proves the letter went **nowhere**; a complaint proves
+the **opposite** — it arrived, was seen, and was rejected. That is
+evidence of receipt.
+
+**D17.6 — failure reasons are NOT case statuses.** Two collections:
+delivery outcome is a fact about **one message** and lives on
+`case_messages`; case status is where the **conversation** stands. One new
+terminal status `contact_failed` means "email contact with this landlord
+cannot continue"; *why* is read from the message.
+
+The reason is cost asymmetry, evidenced by snag #47: statuses must be
+classified in every predicate and were previously fail-open, whereas no
+predicate branches on a message column. **Statuses are expensive and
+dangerous; message columns are cheap and inert.**
+
+**D17.7 — `delivered` events are captured too**, giving a
+signature-verifiable record of an external event that outlives Mailgun's
+one-day log retention.
+
+**Consequences for the model above:** the escalation counter and D3 are
+**not modified in any way** by D17. The tenant notification is
+**mail-only** and writes no `case_messages` row — an outbound system row
+with a non-null `stage_at_send` would inflate the ladder.
+
+**Wording discipline (binding).** "Delivered" means accepted by a server,
+never read. The accepting server is the MX for the **recipient's domain**
+(Google, Microsoft), not "the landlord's mail server". A complaint is
+"reported as spam", not "the landlord marked it as spam" — the event
+arrives via the provider's feedback loop and does not tell us who clicked.
+Bounce handling catches "went nowhere", never "went somewhere wrong".
+
 ---
 
 ## 3. The razor (cross-cutting principle)

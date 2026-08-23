@@ -56,18 +56,11 @@ class SilenceClock
         'nudge.dormancy_days',
     ];
 
-    /** Statuses where no silence clock runs. */
-    private const NO_CLOCK_STATUSES = [
-        CaseStatus::Open,
-        CaseStatus::OnHold,
-        CaseStatus::Resolved,
-        CaseStatus::Abandoned,
-        CaseStatus::Dormant,
-        // D14 — terminal: the clock stops permanently at ladder exhaustion.
-        // No further automatic letters (the D3 ratchet at counter >= max
-        // guarantees this even if allow-reply later restarts the clock).
-        CaseStatus::EscalationExhausted,
-    ];
+    // Snag #47 — the no-clock list that used to sit here has moved to
+    // CaseStatus::hasSilenceClock(), an exhaustive `match` with no default
+    // arm. It was a DENY-list: any status not named got a clock, so adding
+    // an enum value silently started one. The classification is unchanged;
+    // it is now impossible to add a status without deciding.
 
     /**
      * Read the five clock-relevant settings live. Used at clock-start
@@ -110,7 +103,7 @@ class SilenceClock
      */
     public function ballFor(RepairCase $case): ?BallPosition
     {
-        if (in_array($case->status, self::NO_CLOCK_STATUSES, true)) {
+        if (! $case->status->hasSilenceClock()) {
             return null;
         }
 

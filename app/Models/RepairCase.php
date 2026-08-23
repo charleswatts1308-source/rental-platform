@@ -125,10 +125,9 @@ class RepairCase extends Model
      */
     public function isClosed(): bool
     {
-        return in_array($this->status, [
-            CaseStatus::Resolved,
-            CaseStatus::Abandoned,
-        ], true);
+        // Snag #47 — delegates to an exhaustive match on the enum, so a new
+        // status cannot silently inherit "not closed" without a decision.
+        return $this->status->isClosedStatus();
     }
 
     /**
