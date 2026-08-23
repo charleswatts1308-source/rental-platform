@@ -150,7 +150,7 @@ AFTER
 
 
 ====================================================================
-RELEASE 2 — DELIVERY-EVENT CAPTURE  (feature/delivery-events)
+RELEASE 2 — DELIVERY-EVENT CAPTURE  (feature/delivery-capture)
 ====================================================================
 
 TEMPORARY. The point is to see the bytes Mailgun actually sends, so the
@@ -159,14 +159,46 @@ documentation. It comes back off afterwards.
 
 Do NOT start this until Release 1 is tested and the ledger updated.
 
+*** BRANCH CHANGED 23 Aug. Use `feature/delivery-capture`, NOT
+`feature/delivery-events`. ***
+The old branch mixed the throwaway endpoint with the permanent #47
+fix, and the written teardown would have destroyed #47 along with the
+endpoint. #47 is now merged to main in its own right (7bcab73), and
+`feature/delivery-capture` is main plus the capture endpoint alone —
+genuinely disposable. The old branch is superseded; do not deploy it.
+
+*** SET A HARD TEARDOWN DATE BEFORE YOU START. ***
+Write it here: TEARDOWN BY ____________________
+An unauthenticated write endpoint on production does not come off by
+memory. Decide the date first, not after.
+
 WHY IT EXISTS
-  The D0 found that our existing signature middleware reads FLAT
+  Our existing signature middleware reads FLAT top-level
   timestamp/token/signature fields (the inbound-routing shape).
-  Delivery events are believed to NEST those under a "signature"
-  object — which would make the middleware reject every event with a
-  406, and 406 is the response Mailgun treats as "stop retrying". So
-  events would be discarded permanently and silently while the webhook
-  looked healthy. This run settles that from evidence.
+  Delivery events NEST those inside a `signature` object — CONFIRMED
+  23 Aug, no longer inferred. VerifyMailgunSignature returns 406 on
+  every failure path including "Missing signature fields", and Mailgun
+  treats 406 as a deliberate refusal and never retries. So events would
+  be discarded permanently and silently while the webhook looked
+  healthy. (A 500 would at least have given 8 hours of retries and a
+  chance to notice.)
+  The shapes question is therefore SETTLED. What this run still buys:
+  the actual field names and structure to build the receiver against,
+  and — see below — proof that the correlation key survives the trip.
+
+CORRELATION — already in main, nothing to do here
+  Every outbound letter now carries its case_message id as a Mailgun
+  custom variable (commit a70065b, CaseNotice::headers()). Mailgun
+  echoes custom variables back on every event, which is what lets a
+  bounce be matched to the letter that caused it.
+  Recipient plus timestamp CANNOT do that: the same landlord address
+  legitimately receives several letters across the ladder, and a
+  suppressed address raises events for sends never transmitted.
+  WHAT TO CHECK IN THE CAPTURED PAYLOAD: a `user-variables` block
+  carrying case_message_id. If it is ABSENT, Symfony's Mailgun
+  transport is not passing X-Mailgun-Variables through and the
+  correlation needs a different mechanism — worth knowing now rather
+  than after the receiver is built on it.
 
 DEPLOY
 [ ] Choose a long random token (password generator). Call it TOKEN.
@@ -174,7 +206,9 @@ DEPLOY
 [ ] While in the .env, check for duplicate KEY= lines — within one
     file Laravel takes the LAST and silently ignores earlier ones.
     That is the trap that broke the allowlist before.
-[ ] git push origin feature/delivery-events:master
+[ ] Point the Plesk repo at `feature/delivery-capture` and deploy.
+    (Both boxes normally track `main`; remember to put it BACK at
+    teardown — that is the step that returns prod to released code.)
 [ ] Plesk: pull/deploy
 [ ] php artisan config:cache      (prod caches config; without this
                                    the token is not read and the
@@ -191,32 +225,97 @@ MAILGUN
     integers — a staging event could match a production message and
     stamp a delivery status onto the wrong case's record.
 
-THE TWO SENDS
-[ ] Raise a case with a landlord address at a domain that cannot
-    exist, e.g. landlord@this-domain-does-not-exist-9f3k2.com
-    -> should produce a permanent_fail event
-[ ] Raise a second case to an inbox you control
-    -> should produce a delivered event
+THE THREE SENDS  (was two — the third is the important one)
+[ ] 1. Raise a case with a landlord address at a domain that cannot
+       exist, e.g. landlord@this-domain-does-not-exist-9f3k2.com
+       -> should produce a permanent_fail event
+
+[ ] 2. Raise a SECOND case to that SAME bad address, after the first
+       has failed.
+       -> the address is now on Mailgun's per-domain suppression list,
+          so this send is DROPPED BEFORE ANY DELIVERY ATTEMPT. Our API
+          call succeeds, we record a letter sent, nothing is
+          transmitted, and nothing ever will be.
+       -> expect a failed / suppress-bounce event with a DIFFERENT
+          reason from send 1. Capture both; they are different states
+          and the receiver has to tell them apart.
+       WHY THIS IS THE BIGGER TARGET: it is the state our two July
+       suppressions are ALREADY IN. Those cases have had silence
+       clocks running against letters that were never attempted, and
+       the ladder ratcheting on the strength of it — the record would
+       assert a landlord ignored notices they were never sent.
+       Missing this send means running the whole exercise twice.
+
+[ ] 3. Raise a case to an inbox you control
+       -> should produce a delivered event
+       This is the CONTROL. Without it you cannot distinguish a bounce
+       from a webhook that never fired at all.
+
+ALSO WORTH DOING WHILE THE ENDPOINT IS UP
+[ ] Identify the two existing suppressed addresses in Mailgun
+    (Suppressions -> Bounces) and check what they have done to their
+    cases:
+
+      SELECT c.id, c.url_slug, c.status, c.silence_clock_started_at,
+             lc.email, COUNT(cm.id) AS letters_sent,
+             MAX(cm.sent_at) AS last_sent
+      FROM cases c
+      JOIN landlord_contacts lc ON lc.id = c.landlord_contact_id
+      LEFT JOIN case_messages cm ON cm.case_id = c.id
+           AND cm.direction = 'outbound' AND cm.stage_at_send IS NOT NULL
+      WHERE lc.email IN ('<addr1>', '<addr2>')
+      GROUP BY c.id;
+
+    letters_sent is the escalation counter's own predicate. Any count
+    above 1 means the ladder ratcheted on letters never transmitted.
 
 COLLECT
 [ ] Fetch storage/logs/mailgun-capture.log (Plesk File Manager or
     FileZilla) and send it over
 [ ] TREAT AS PERSONAL DATA — it contains real recipient addresses and
-    subject lines. Fetch it, do not leave it on the box.
+    subject lines, which is tenant and landlord personal data under
+    ICO registration Z229825X. Fetch it off the box and delete it
+    there; do not leave a copy sitting in storage/logs.
 
-TEAR DOWN — do not skip
+TEAR DOWN — do not skip.  TEARDOWN DATE: ____________________
 [ ] Delete the webhook in Mailgun
 [ ] Remove MAILGUN_CAPTURE_TOKEN from prod .env
+[ ] DO NOT REUSE THAT TOKEN. It travelled in the URL path, so it is
+    sitting in the web server's access logs and will remain there
+    after the .env entry is gone. Treat it as burnt.
 [ ] php artisan config:cache
 [ ] Delete storage/logs/mailgun-capture.log from the box
-[ ] Redeploy main to master so prod is back on released code
+[ ] Point the Plesk repo back at `main` and deploy, so prod is on
+    released code again. THIS is the step that actually removes the
+    endpoint — the .env change alone only makes it 404.
+[ ] Delete branch feature/delivery-capture once the payloads are in
+    hand. Nothing on it is worth keeping: #47 and the D0 are already
+    on main.
 
 WHAT WE LEARN
-  If the payload shows a NESTED signature object, the D0 was right and
-  a second middleware is confirmed necessary.
-  If the fields are FLAT after all, the existing middleware can be
-  reused and the D0's central finding was wrong — equally worth
-  knowing, and cheaper.
+  The nested-vs-flat question is already SETTLED (confirmed 23 Aug) —
+  events nest the signature, our middleware 406s on that, and Mailgun
+  never retries a 406. A second middleware IS necessary.
+  So what this run is actually for:
+  - the real field names and structure, to build the receiver against
+    observed bytes rather than a description
+  - whether user-variables comes back carrying case_message_id, which
+    decides whether the correlation key works at all
+  - what a SUPPRESSED-address send looks like versus a fresh bounce —
+    the two must be distinguishable, because they need different
+    responses and the second is the state real cases are already in
+
+WHAT A DETECTED BOUNCE SHOULD DO  (agreed 23 Aug, shapes the receiver)
+  A bounce is not a variant of silence, it is the opposite, and calls
+  for the opposite response. Silence escalates. A bounce must STOP the
+  ladder and hand the problem back to the tenant — no amount of
+  escalation reaches an address that does not work. The contact_failed
+  status planned for #25 is the right shape.
+  KNOWN GAP: there is currently NO WAY for a tenant to supply a
+  corrected address (#24 — no edit route after the first letter; only
+  recovery is abandon and re-raise). So contact_failed as specified
+  would leave the tenant informed and powerless. The correction path
+  may need to land WITH #25 rather than after it. Unresolved.
 
 
 ====================================================================
