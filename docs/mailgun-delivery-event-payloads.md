@@ -10,9 +10,11 @@ This file exists so the #25 receiver is built against observed bytes
 rather than documentation. Written up from the capture log before it was
 deleted from the box.
 
-**Status of the real sends:** not yet done at time of writing. What they
-still buy is listed at the bottom — mainly whether our own
-`X-Mailgun-Variables` header survives Symfony's Mailgun transport.
+**UPDATED 2026-08-23 20:20 — the three real sends are DONE.** Their
+observed values are in §7, and they supersede the synthetic ones
+wherever the two differ. The headline: **the correlation key works** —
+every one of the three came back carrying
+`user-variables.case_message_id`.
 
 ---
 
@@ -127,17 +129,76 @@ them apart — and they need different responses.
 
 ---
 
-## What the real sends still buy
+## 7. THE THREE REAL SENDS — observed 23 Aug 2026 on production
 
-The shape questions above are **settled**. Outstanding:
+All three from real cases on renters.rent, `cases@mg.renters.rent`,
+`tags: ["production"]`.
 
-1. **Does our `X-Mailgun-Variables` header survive Symfony's Mailgun
-   transport?** The captured `user-variables` are Mailgun's placeholders,
-   not ours. If a real send comes back without `case_message_id`, the
-   correlation needs a different mechanism — and better to learn that now
-   than after the receiver is built on it.
-2. **What a real `suppress-bounce` looks like for OUR traffic**, with our
-   sender and our variables attached.
-3. **Confirmation that the dashboard's "Permanent Fail" subscription
-   actually delivers the `failed`/`permanent` events** — the naming
-   mismatch in §3 makes that worth verifying rather than assuming.
+| send | recipient | event | severity | reason | code | case_message_id |
+|---|---|---|---|---|---|---|
+| 1 | non-existent domain | `failed` | `permanent` | `generic` | 498 | 18 |
+| 2 | suppressed address | `failed` | `permanent` | `suppress-bounce` | 605 | 19 |
+| 3 | real inbox (Outlook) | `delivered` | — | — | 250 | 20 |
+
+### THE CORRELATION KEY WORKS
+
+Every one of the three carried `"user-variables":{"case_message_id":N}`.
+So `CaseNotice::headers()` → `X-Mailgun-Variables` survives Symfony's
+Mailgun transport and comes back on the event. The receiver can bind an
+event to its `case_messages` row directly, with no recipient-and-timestamp
+guesswork. **This was the last real unknown and it is answered.**
+
+### How to tell the three apart
+
+The discriminator is **`reason`**, not `severity`. Sends 1 and 2 are both
+`failed`/`permanent`:
+
+- **Send 1, a real bounce attempted:** `reason: generic`, code 498,
+  `"No MX for … no such host"`, `session-seconds: 0.024`,
+  `bounce-type: "soft"`, and the envelope HAS a `sending-ip`.
+- **Send 2, dropped before any attempt:** `reason: suppress-bounce`,
+  code 605, `"Not delivering to previously bounced address"`,
+  `session-seconds: 0.005`, **no `bounce-type`**, and the envelope has
+  **no `sending-ip`** — nothing was ever transmitted.
+- **Send 3, delivered:** code 250, `session-seconds: 4.342`, plus
+  `mx-host`, `mx-host-ip`, `tls: true`, `certificate-verified: true`,
+  `recipient-provider: "Outlook US"`, and
+  `primary-dkim: "s1._domainkey.mg.renters.rent"`.
+
+The absent `sending-ip` on send 2 is a second, independent signal that
+no delivery was attempted — useful as a cross-check.
+
+### A trap in send 1
+
+`severity: permanent` but `bounce-type: "soft"`. A domain that does not
+resolve is treated as permanent for the message, yet Mailgun did NOT add
+the address to the suppression list. So **do not assume a permanent
+failure suppresses the address.** Send 2 had to use a genuinely
+suppressed address (one of the two July hard bounces) to produce the
+`suppress-bounce` shape at all.
+
+### Fields present on real traffic but absent from the test payloads
+
+`api-key-id`, `primary-dkim`, `recipient-provider`,
+`delivery-status.first-delivery-attempt-seconds`,
+`delivery-status.bounce-type`, `flags.is-big`.
+
+Build the receiver defensively: treat every one of these as optional.
+The synthetic payloads and the real ones differ in both directions.
+
+### The real cases raised
+
+9RKDKC (send 1), 3YHRKZ (send 2), CZPUAD (send 3). Real cases on
+production — abandon them once the capture work is finished.
+
+---
+
+## Everything the run was for is now answered
+
+1. ~~Signature shape~~ — **nested**, confirmed (§1)
+2. ~~Content type~~ — **JSON**, not form-encoded (§2)
+3. ~~Event naming~~ — no `permanent_fail`; branch on `severity` (§3)
+4. ~~Suppressed-address shape~~ — `suppress-bounce`/605 (§4, §7)
+5. ~~Does our correlation key survive?~~ — **yes** (§7)
+
+Nothing outstanding requires the capture endpoint. It can come off.
