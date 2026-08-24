@@ -6,15 +6,14 @@ table is the source of truth; this file is reconciled against
 
 **Reconcile status:** **dotrent retired 1 Aug 2026** (see its entry — the
 record is kept, the box is gone). **gafol at `bd80e12`** (24 Aug).
-**renters.rent: exact commit NOT RECORDED.** The capture-run teardown
-returned prod to `main` and redeployed on the evening of 23 Aug without
-noting where that landed. What IS established: prod is at or after
-**`a70065b`** — proven, because the three captured sends carried
-`case_message_id`, which exists only from that commit — and
-`a70065b..bd80e12` is **docs-only**, so **prod and gafol are
-code-identical today**. The figure `65540e1` was release 1's and was
-superseded the same evening; it is not prod's current commit.
-**Read the true id off the Plesk Git panel at the next touch of the box.**
+**renters.rent at `02f1505`** (23 Aug — read off the Plesk Git panel and
+CONFIRMED 24 Aug). This is the commit the capture-run teardown left prod
+on when it redeployed `main`; the teardown never recorded it, and the
+header carried release 1's `65540e1` for a day instead. `02f1505` is
+itself a docs commit, so prod's **code** content is exactly `a70065b`.
+Verified 24 Aug: `02f1505` contains `a70065b` and **`7bcab73` (#47)**, and
+`02f1505..bd80e12` has **no code delta at all** — so **prod and gafol are
+code-identical**, prod trailing main by documentation only.
 **Staging-at-or-ahead HOLDS.** Live entries are **gafol, renters.rent,
 main** — remaining housekeeping is recording the old Windows prod box's
 retirement.
@@ -58,9 +57,9 @@ touch of any box, per the CLAUDE.md Deployment-ledger rule.
 - Tags on origin: `pre-registration-lock` = `a63ac4a`, `post-d16-phase5`
   = `cf2f5c9`.
 - Deployment of this line: **gafol at `bd80e12`** (24 Aug);
-  **renters.rent at an unrecorded commit at or after `a70065b`** (23 Aug
-  teardown redeploy — see the header). The two boxes are code-identical:
-  everything from `a70065b` to `bd80e12` is docs. The "not yet deployed
+  **renters.rent at `02f1505`** (23 Aug teardown redeploy, confirmed off
+  Plesk 24 Aug). The two boxes are code-identical: `02f1505..bd80e12` is
+  documentation only. The "not yet deployed
   anywhere" note that sat here was three deploys out of date; removed
   24 Aug.
 
@@ -470,12 +469,14 @@ touch of any box, per the CLAUDE.md Deployment-ledger rule.
     where it returned 405 while deployed — the route is gone, not
     merely inert. Token burnt (it travelled in the URL and is in the
     access logs).
-  - **GAP — the redeploy commit was never written down.** "Returned to
-    `main` and redeployed" does not say which commit that was, and the
-    header carried release 1's `65540e1` for a day afterwards, which was
-    demonstrably wrong: `65540e1` predates `a70065b`, yet the sends
-    captured that evening carried `case_message_id`. Prod therefore also
-    gained **#47** (`7bcab73`) at this redeploy — `CaseStatus.php`,
+  - **The redeploy landed on `02f1505`** — established 24 Aug by reading
+    the Plesk Git panel, NOT recorded at the time. "Returned to `main`
+    and redeployed" did not say which commit that was, so the header
+    carried release 1's `65540e1` for a day afterwards. That was
+    demonstrably wrong before anyone looked: `65540e1` predates
+    `a70065b`, yet the sends captured that evening carried
+    `case_message_id`. Prod also gained **#47** (`7bcab73`) at this
+    redeploy — confirmed, `7bcab73` is an ancestor of `02f1505` — `CaseStatus.php`,
     `CaseNotice.php`, `SilenceSweep.php`, `RepairCase.php` and
     `SilenceClock.php` all changed after `65540e1`. That is behavioural
     code, not documentation, and it went live unrecorded.

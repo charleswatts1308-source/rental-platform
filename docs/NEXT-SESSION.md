@@ -11,14 +11,12 @@ superseded doc. It is a **router, not a record**: keep it short.
 run and torn down the same evening — **verified gone**, not merely
 disabled.
 
-**⚠ prod's exact commit is NOT KNOWN.** The earlier claim here that
-renters.rent runs `65540e1` was wrong: that was release 1's commit, and
-the capture-run teardown redeployed `main` over it the same evening
-without recording where it landed. Prod is at or after **`a70065b`**
-(proven — the captured sends carried `case_message_id`), so it also
-carries **#47**. Read the real id off the Plesk Git panel next time you
-touch the box. **prod and gafol are code-identical** —
-`a70065b..bd80e12` is docs-only.
+**renters.rent runs `02f1505`** (confirmed off Plesk, 24 Aug). This file
+previously said `65540e1` — that was release 1's commit, and the
+capture-run teardown redeployed `main` over it the same evening without
+recording where it landed. `02f1505` is a docs commit, so prod's code is
+exactly `a70065b`, and it carries **#47** (`7bcab73`).
+**prod and gafol are code-identical** — `02f1505..bd80e12` is docs-only.
 
 **gafol is CURRENT** at `bd80e12` (pulled 24 Aug). Staging-at-or-ahead
 holds. The earlier claim here that gafol was behind at `7507a72` was
