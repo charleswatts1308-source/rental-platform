@@ -120,12 +120,13 @@ prerequisite for #25, which adds a `contact_failed` status. **It is
 already LIVE on prod** — it rode in on the capture-run teardown redeploy.
 Do not plan #25 as though #47 still needs shipping.
 
-**⚠ #25 cannot be staged on gafol.** Release 2 was deployed there before
-prod, correctly, but could not be exercised: staging is the Mailgun
-**sandbox, outbound only, and the sandbox cannot do inbound at all**. The
-delivery-event receiver is untestable on gafol by construction. Settle
-how it gets tested — synthetic signed POSTs, or a prod run like the
-capture — at design time, not at deploy time.
+**Mailgun webhooks are ALWAYS tested on live** — standing position, ruled
+24 Aug. The sandbox cannot do inbound, so gafol can never receive one;
+that limit is known and accepted, not worked around. Release 2 was
+deployed to gafol first, correctly, and simply could not be exercised
+there. Don't build a synthetic test path to dodge this, and don't treat
+"unstageable" as a blocker. The 23 Aug capture run is the pattern: deploy
+behind a token, exercise with real sends, tear down and verify gone.
 
 **#55 fixed and shipped** — `/landlords` now publishes the real ICO
 reference `Z229825X`. The old value was the payment/account number.

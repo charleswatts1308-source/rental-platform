@@ -677,12 +677,18 @@ Ruling:      2026-08-24 — the bounce REACTION is settled. On failed +
                permanently as evidence.
              - #47 is LIVE on prod, so an unclassified new status fails
                loudly rather than misbehaving quietly. Rely on that.
-             TESTABILITY — #25 CANNOT be staged on gafol. Staging is the
-             Mailgun sandbox, outbound only, and the sandbox has no inbound
-             at all, so no webhook can ever reach that box. Either build a
-             non-Mailgun test path (synthetic POSTs with a locally computed
-             NESTED signature) or exercise it on prod as the capture run
-             did. Settle this at design time, not at deploy time.
+             TESTABILITY — SETTLED, and it is a STANDING POSITION, not a
+             #25 decision. Mailgun webhooks are ALWAYS tested on live. The
+             sandbox cannot do inbound at all, so gafol can never receive
+             one; that limit is known and accepted rather than worked
+             around. Do not design a synthetic-signature test path to avoid
+             it, and do not treat "unstageable" as a blocker at deploy time.
+             The 23 Aug capture run is the precedent for how: deploy behind
+             a token, exercise with real sends, tear down and VERIFY gone
+             (that run confirmed 404 where it had returned 405). Unit tests
+             still cover the parser and the nested-signature verifier
+             locally; it is only the live round trip that must happen on
+             prod.
 Notes:       This is the one that matters, and it is NOT really about typos.
              The silence model's entire claim is that it can say "your
              landlord was served on the 12th and has not responded in 14
