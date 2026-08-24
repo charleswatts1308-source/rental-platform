@@ -174,11 +174,13 @@ touch of any box, per the CLAUDE.md Deployment-ledger rule.
   - `view:clear` → `Compiled views cleared successfully.`
   **Pull only — nothing verified on the site for release 2 yet.** Release
   1's surfaces were verified on 23 Aug (above).
-  **NOT CHECKED — `attachments.first_notice_max` on gafol.** The migration
-  returns early when the row exists, so this pull did not reset it. If
-  release-1 testing raised the ceiling above 1, gafol is sitting where
-  **#53 is armed** (Remove on one of several staged photos deletes them
-  all). Prod is pinned at 1 by decision.
+  **`attachments.first_notice_max` = 1 on gafol — CHECKED 24 Aug.** Worth
+  checking because the migration returns early when the row exists, so
+  this pull could not have reset a value that release-1 testing had
+  raised. It had not been raised. gafol therefore matches prod, which is
+  pinned at 1 by decision, and **#53 is NOT armed on either box** (#53:
+  removing one of several staged photos removes them all — unreachable at
+  ceiling 1). Re-check this before raising the ceiling anywhere.
 - Last verified: 23 Aug 2026 (release 1 surfaces). Code at `bd80e12`, 24 Aug.
 
 ## dotrent — preprod (dotrent.net) — 🛑 RETIRED 1 Aug 2026
