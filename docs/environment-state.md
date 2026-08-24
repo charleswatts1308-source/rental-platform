@@ -6,9 +6,18 @@ table is the source of truth; this file is reconciled against
 
 **Reconcile status:** **dotrent retired 1 Aug 2026** (see its entry — the
 record is kept, the box is gone). **gafol at `bd80e12`** (24 Aug).
-**renters.rent at `65540e1`** (23 Aug). **Staging-at-or-ahead HOLDS
-again.** Live entries are **gafol, renters.rent, main** — remaining
-housekeeping is recording the old Windows prod box's retirement.
+**renters.rent: exact commit NOT RECORDED.** The capture-run teardown
+returned prod to `main` and redeployed on the evening of 23 Aug without
+noting where that landed. What IS established: prod is at or after
+**`a70065b`** — proven, because the three captured sends carried
+`case_message_id`, which exists only from that commit — and
+`a70065b..bd80e12` is **docs-only**, so **prod and gafol are
+code-identical today**. The figure `65540e1` was release 1's and was
+superseded the same evening; it is not prod's current commit.
+**Read the true id off the Plesk Git panel at the next touch of the box.**
+**Staging-at-or-ahead HOLDS.** Live entries are **gafol, renters.rent,
+main** — remaining housekeeping is recording the old Windows prod box's
+retirement.
 
 **⚠ Correction, 24 Aug — the gafol figure was wrong twice.** This header
 said `b92b907`, was "corrected" on 23 Aug to `7507a72`, and both were
@@ -48,9 +57,12 @@ touch of any box, per the CLAUDE.md Deployment-ledger rule.
   onboarding-nav merge.
 - Tags on origin: `pre-registration-lock` = `a63ac4a`, `post-d16-phase5`
   = `cf2f5c9`.
-- Deployment of this line: **renters.rent at `65540e1`** (23 Aug) and
-  **gafol at `bd80e12`** (24 Aug). The "not yet deployed anywhere" note
-  that sat here was three deploys out of date; removed 24 Aug.
+- Deployment of this line: **gafol at `bd80e12`** (24 Aug);
+  **renters.rent at an unrecorded commit at or after `a70065b`** (23 Aug
+  teardown redeploy — see the header). The two boxes are code-identical:
+  everything from `a70065b` to `bd80e12` is docs. The "not yet deployed
+  anywhere" note that sat here was three deploys out of date; removed
+  24 Aug.
 
 ## gafol — permanent staging (gafol.rent) — ✅ AT MAIN (Phase A green)
 - Box: gafol.rent is the staging domain. DB `ukrenter_gafol_db` on
@@ -138,6 +150,19 @@ touch of any box, per the CLAUDE.md Deployment-ledger rule.
   renters.rent the same day. Stage-then-prod discipline was kept in fact;
   the ledger simply failed to say so, and for a day the docs asserted gafol
   was three weeks behind prod when it was current with it.
+- **Release 2 deploy (23 Aug 2026) — DEPLOYED BUT NOT EXERCISABLE HERE.**
+  The delivery-event/webhook work was deployed to gafol before prod, so
+  the stage-then-prod order was kept. It **could not be tested on gafol**,
+  and that is structural, not an oversight: per the CLAUDE.md Mail rule
+  staging runs the **Mailgun sandbox, outbound only — the sandbox cannot
+  do inbound at all**. No webhook can be delivered to this box.
+  (Exact commit/branch not captured at the time.)
+  **STANDING CONSEQUENCE, decide before building #25:** the delivery-event
+  receiver is by construction **untestable on gafol**. #25 cannot be
+  staged the normal way. Either it gets a non-Mailgun test path
+  (synthetic POSTs with a locally computed signature), or it is exercised
+  on prod the way the capture run was. This needs settling at design time
+  rather than discovering it at deploy time.
 - **Pull to main (24 Aug 2026):** Plesk Git pull → **`bd80e12`**. Carries
   release 2's code (`a70065b`, the `case_message_id` custom variable) plus
   the 23 Aug docs. Checked against `7507a72..bd80e12` before the pull:
@@ -445,6 +470,18 @@ touch of any box, per the CLAUDE.md Deployment-ledger rule.
     where it returned 405 while deployed — the route is gone, not
     merely inert. Token burnt (it travelled in the URL and is in the
     access logs).
+  - **GAP — the redeploy commit was never written down.** "Returned to
+    `main` and redeployed" does not say which commit that was, and the
+    header carried release 1's `65540e1` for a day afterwards, which was
+    demonstrably wrong: `65540e1` predates `a70065b`, yet the sends
+    captured that evening carried `case_message_id`. Prod therefore also
+    gained **#47** (`7bcab73`) at this redeploy — `CaseStatus.php`,
+    `CaseNotice.php`, `SilenceSweep.php`, `RepairCase.php` and
+    `SilenceClock.php` all changed after `65540e1`. That is behavioural
+    code, not documentation, and it went live unrecorded.
+    **Consequence for planning:** #47 is ALREADY ON PROD. Anything that
+    treats it as a pending prerequisite for #25 is reading a stale
+    baseline.
   - **Findings are in `docs/mailgun-delivery-event-payloads.md`.**
     Headline: the event signature IS nested (so the existing middleware
     would 406 every event and Mailgun would never retry), payloads are

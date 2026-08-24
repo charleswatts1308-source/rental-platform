@@ -7,12 +7,18 @@ superseded doc. It is a **router, not a record**: keep it short.
 
 **Last updated:** 2026-08-24.
 
-**✅ BOTH RELEASES ARE OUT.** **renters.rent is running `65540e1`** (the
-attachment release, deployed 23 Aug). `main` carries docs written since;
-it is always pushed, so take origin as current rather than looking for a
-commit id here — one written down would go stale the moment this file
-was next edited. The delivery-event capture run was deployed, run and
-torn down the same evening — **verified gone**, not merely disabled.
+**✅ BOTH RELEASES ARE OUT.** The delivery-event capture run was deployed,
+run and torn down the same evening — **verified gone**, not merely
+disabled.
+
+**⚠ prod's exact commit is NOT KNOWN.** The earlier claim here that
+renters.rent runs `65540e1` was wrong: that was release 1's commit, and
+the capture-run teardown redeployed `main` over it the same evening
+without recording where it landed. Prod is at or after **`a70065b`**
+(proven — the captured sends carried `case_message_id`), so it also
+carries **#47**. Read the real id off the Plesk Git panel next time you
+touch the box. **prod and gafol are code-identical** —
+`a70065b..bd80e12` is docs-only.
 
 **gafol is CURRENT** at `bd80e12` (pulled 24 Aug). Staging-at-or-ahead
 holds. The earlier claim here that gafol was behind at `7507a72` was
@@ -103,7 +109,16 @@ Findings above.
 
 **#47 merged to main separately** (`7bcab73`) so the disposable branch
 could be deleted without destroying it. Exhaustive status classification;
-prerequisite for #25, which adds a `contact_failed` status.
+prerequisite for #25, which adds a `contact_failed` status. **It is
+already LIVE on prod** — it rode in on the capture-run teardown redeploy.
+Do not plan #25 as though #47 still needs shipping.
+
+**⚠ #25 cannot be staged on gafol.** Release 2 was deployed there before
+prod, correctly, but could not be exercised: staging is the Mailgun
+**sandbox, outbound only, and the sandbox cannot do inbound at all**. The
+delivery-event receiver is untestable on gafol by construction. Settle
+how it gets tested — synthetic signed POSTs, or a prod run like the
+capture — at design time, not at deploy time.
 
 **#55 fixed and shipped** — `/landlords` now publishes the real ICO
 reference `Z229825X`. The old value was the payment/account number.
