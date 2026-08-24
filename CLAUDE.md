@@ -16,9 +16,10 @@ Standing rules. Project history and current-phase state live in `docs/`.
 - Auto-commit anything new or modified under `docs/` alongside the current change — no permission round-trip. Stable filenames for living docs; timestamps only on immutable write-ups.
 
 ## Mail (no exceptions)
-- Production + preprod (dotrent): Mailgun `mg.renters.rent`, both directions.
+- Production: Mailgun `mg.renters.rent`, both directions. (Preprod dotrent was **retired 1 Aug 2026** — the box is gone, not dormant. There is no preprod.)
 - Staging: Mailgun sandbox, **outbound only** (sandbox cannot do inbound).
 - Local: Mailpit only.
+- Mailgun **webhook** work is tested on **live**. The sandbox cannot do inbound, so staging can never receive one — that limit is known and accepted, not worked around. Do not build a synthetic-signature test path to dodge it. Pattern: deploy behind a token, exercise with real sends, tear down and **verify gone**.
 - `config/services.php` Mailgun keys carry **production defaults** (`mg.renters.rent`); env overrides per environment.
 
 ## Env allow-list
