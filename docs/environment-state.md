@@ -4,21 +4,31 @@ Human-readable mirror of what is deployed where. The DB `migrations`
 table is the source of truth; this file is reconciled against
 `php artisan migrate:status` at each deploy (CLAUDE.md "Deployment ledger").
 
-**Reconcile status:** git tips verified (27 Jun 2026); **dotrent retired
-1 Aug 2026** (see its entry — the record is kept, the box is gone).
-**gafol** at `7507a72` (1 Aug — the header previously said `b92b907`,
-which contradicted gafol's own 1 Aug entry; corrected 23 Aug).
-**renters.rent at `65540e1`** (23 Aug). **Staging-at-or-ahead NO LONGER
-HOLDS** — prod is ahead of gafol until gafol is pulled forward. Live entries are now **gafol, renters.rent, main** —
-remaining housekeeping is recording the old Windows prod box's retirement.
-**Not yet reconciled against `migrate:status` since 27 Jun** — do that at
-the next deploy, per the CLAUDE.md Deployment-ledger rule.
+**Reconcile status:** **dotrent retired 1 Aug 2026** (see its entry — the
+record is kept, the box is gone). **gafol at `bd80e12`** (24 Aug).
+**renters.rent at `65540e1`** (23 Aug). **Staging-at-or-ahead HOLDS
+again.** Live entries are **gafol, renters.rent, main** — remaining
+housekeeping is recording the old Windows prod box's retirement.
+
+**⚠ Correction, 24 Aug — the gafol figure was wrong twice.** This header
+said `b92b907`, was "corrected" on 23 Aug to `7507a72`, and both were
+wrong: gafol carried **release 1** on 23 Aug and was tested on it. The
+23 Aug correction reconciled the header against a **stale section of this
+same file** rather than against the box — the exact inversion the
+CLAUDE.md rule forbids, which says the DB and the box are the source of
+truth and this file is their mirror. Proven on 24 Aug when
+`migrate --force` on gafol returned **`Nothing to migrate`** for a 9 Aug
+migration that a box sitting at 1 Aug code could not have run.
+
+**Still not reconciled against `migrate:status` since 27 Jun.** Two
+months overdue, and NOT cleared by the 24 Aug pull. Do it at the next
+touch of any box, per the CLAUDE.md Deployment-ledger rule.
 
 ---
 
 ## main (working line)
-- **`origin/main`: `7507a72` (pushed 1 Aug 2026).** Local and origin are
-  LEVEL — the long-standing "local ahead, push held" state is cleared.
+- **`origin/main`: `bd80e12` (24 Aug 2026).** Local and origin are LEVEL;
+  main is always pushed. (`7507a72` was the 1 Aug tip, recorded below.)
   The push moved origin on by 17 commits (`8955def..7507a72`), which had
   accumulated since the last push on 11 Jul.
 - Tip is the `--no-ff` merge of `feature/admin-unverified-users`
@@ -38,8 +48,9 @@ the next deploy, per the CLAUDE.md Deployment-ledger rule.
   onboarding-nav merge.
 - Tags on origin: `pre-registration-lock` = `a63ac4a`, `post-d16-phase5`
   = `cf2f5c9`.
-- **Not yet deployed anywhere.** gafol sits at `b92b907` (24 Jul) and
-  renters.rent at `133a103` (13 Jul) until each is pulled.
+- Deployment of this line: **renters.rent at `65540e1`** (23 Aug) and
+  **gafol at `bd80e12`** (24 Aug). The "not yet deployed anywhere" note
+  that sat here was three deploys out of date; removed 24 Aug.
 
 ## gafol — permanent staging (gafol.rent) — ✅ AT MAIN (Phase A green)
 - Box: gafol.rent is the staging domain. DB `ukrenter_gafol_db` on
@@ -114,7 +125,37 @@ the next deploy, per the CLAUDE.md Deployment-ledger rule.
   admin users page.
   NOT separately confirmed on gafol: the capitalised-email registration
   path itself. Staging-at-or-ahead of prod holds.
-- Last verified: 1 Aug 2026.
+- **Release 1 deploy (23 Aug 2026) — NOT RECORDED AT THE TIME; entered
+  retrospectively on 24 Aug.** gafol was pulled to the **release-1 line**
+  (`65540e1`, or an immediate ancestor of it — the exact commit was not
+  captured, and that omission is itself the finding). Carried the
+  attachment policy, the new public `/landlords` page, the nav change and
+  the cases content line.
+  **Migration `2026_08_09_120000_seed_attachments_first_notice_max_setting`
+  ran here** — confirmed 24 Aug, when a re-run reported `Nothing to migrate`.
+  **Tested thoroughly by Charlie**, and that testing is what produced snags
+  **#49, #50, #51, #52, #53, #54, #57 and #58**. Release 1 was promoted to
+  renters.rent the same day. Stage-then-prod discipline was kept in fact;
+  the ledger simply failed to say so, and for a day the docs asserted gafol
+  was three weeks behind prod when it was current with it.
+- **Pull to main (24 Aug 2026):** Plesk Git pull → **`bd80e12`**. Carries
+  release 2's code (`a70065b`, the `case_message_id` custom variable) plus
+  the 23 Aug docs. Checked against `7507a72..bd80e12` before the pull:
+  **no `composer.json`/`composer.lock` change** (composer step skipped) and
+  **no `config/` or `.env.example` change**.
+  Artisan, via Laravel Toolkit:
+  - `migrate --force` → **`INFO  Nothing to migrate.`** — expected, since
+    the only pending migration had already run with release 1.
+  - `config:cache` → `Configuration cached successfully.`
+  - `view:clear` → `Compiled views cleared successfully.`
+  **Pull only — nothing verified on the site for release 2 yet.** Release
+  1's surfaces were verified on 23 Aug (above).
+  **NOT CHECKED — `attachments.first_notice_max` on gafol.** The migration
+  returns early when the row exists, so this pull did not reset it. If
+  release-1 testing raised the ceiling above 1, gafol is sitting where
+  **#53 is armed** (Remove on one of several staged photos deletes them
+  all). Prod is pinned at 1 by decision.
+- Last verified: 23 Aug 2026 (release 1 surfaces). Code at `bd80e12`, 24 Aug.
 
 ## dotrent — preprod (dotrent.net) — 🛑 RETIRED 1 Aug 2026
 

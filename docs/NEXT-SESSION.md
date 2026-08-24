@@ -5,7 +5,7 @@ The `docs/` folder has many files and many are stale — this index says
 which to trust and which to ignore, so you don't re-derive state from a
 superseded doc. It is a **router, not a record**: keep it short.
 
-**Last updated:** 2026-08-23.
+**Last updated:** 2026-08-24.
 
 **✅ BOTH RELEASES ARE OUT.** **renters.rent is running `65540e1`** (the
 attachment release, deployed 23 Aug). `main` carries docs written since;
@@ -14,8 +14,10 @@ commit id here — one written down would go stale the moment this file
 was next edited. The delivery-event capture run was deployed, run and
 torn down the same evening — **verified gone**, not merely disabled.
 
-**⚠ gafol is BEHIND prod** at `7507a72` (1 Aug). Staging-at-or-ahead no
-longer holds. Pull it forward before the next piece of work.
+**gafol is CURRENT** at `bd80e12` (pulled 24 Aug). Staging-at-or-ahead
+holds. The earlier claim here that gafol was behind at `7507a72` was
+wrong — it had release 1 on 23 Aug and was tested on it; see the
+correction block at the top of `environment-state.md`.
 
 **No open branches.** `feature/delivery-events` and
 `feature/delivery-capture` are both deleted; everything worth keeping is
@@ -70,16 +72,15 @@ land WITH #25 rather than after it. Decide this before building.
    proven on 23 Aug to be STILL silently swallowing letters. Find out
    what it has done to its cases: whether the ladder ratcheted against
    letters never transmitted.
-3. **Pull gafol forward** to main.
-4. **Finish verifying the prod attachment release.** Deployed but NOT
+3. **Finish verifying the prod attachment release.** Deployed but NOT
    verified: `/landlords` renders with ICO ref `Z229825X`; nav order;
    admin ceiling reads 1; an attachment-bearing letter sends and
    arrives; the 4–8MB band gives OUR file-named error, not PHP's; and
    **spam-scoring an attachment-bearing letter, which has never been
    done on any path.**
-5. **Reconcile the ledger against `migrate:status`** — not done since
+4. **Reconcile the ledger against `migrate:status`** — not done since
    27 Jun, contrary to the CLAUDE.md rule. Overdue.
-6. **#56** — advise the ICO of renters.rent as a trading name on
+5. **#56** — advise the ICO of renters.rent as a trading name on
    registration `Z229825X`. Admin task, not code.
 
 **Still outstanding from before 9 Aug, unconfirmed:** restore prod
