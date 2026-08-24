@@ -586,6 +586,24 @@ Status:      open — snagged 18 Jul; PROMOTED 27 Jul from convenience to a
              which point this becomes the ordinary convenience fix it
              should be. Building this one alone would let a tenant correct
              a mistake they still have no way of knowing they made.
+Ruling:      2026-08-24 — #24 is INDEPENDENT of #25 and is scheduled on
+             engineering grounds alone. No live pressure: there are no real
+             landlords in the system, so nothing is being lost while it
+             waits.
+             What changed: the bounce reaction was settled as STATUS CHANGE
+             + TENANT NOTIFICATION ONLY (see #25). The tenant is told the
+             letter bounced, that the case is stopped, and to correct the
+             address and raise a NEW case. That recovery — abandon and
+             re-raise — EXISTS TODAY, so #25 promises nothing the system
+             cannot deliver, and #24 is not a prerequisite for it.
+             Order still favours #25 first, for the reason already given
+             above: without it a tenant would be correcting a mistake they
+             had no way of knowing they had made.
+             RELEASE SEPARATELY from #25. Different risk profiles — #25 is a
+             receiver plus a status transition; #24 is a new table, a
+             backfill, an FK swap and a DROP TABLE, so the CLAUDE.md manual
+             MariaDB check applies. Bundled, a schema problem would force a
+             working webhook to be rolled back along with it.
 Notes:       Second-order: LandlordContact is a GLOBAL table deduplicated by
              email (CaseController::resolveLandlordContact, no user scoping),
              so a typo also creates a junk global contact row.
@@ -625,6 +643,46 @@ Expected:    A hard bounce marks the case as UNDELIVERED and tells the
              tenant. Silence should mean "delivered and not answered", never
              "never arrived".
 Status:      open — snagged 18 Jul.
+Ruling:      2026-08-24 — the bounce REACTION is settled. On failed +
+             severity permanent, correlated by case_message_id:
+             1. RECORD the bounce as a case_events row — event_type
+                delivery_failed, system actor, meta carrying
+                case_message_id, reason (generic vs suppress-bounce),
+                recipient, Mailgun event id and timestamp. The bounce forms
+                part of the evidence record.
+             2. STOP the case — transitionTo(contact_failed). No escalation,
+                no continuation of the ladder.
+             3. NOTIFY the tenant, mail-only: the letter bounced, the case
+                is stopped, correct the address and raise a new case.
+             Nothing further. No in-place correction route — that is #24 and
+             is NOT required here.
+             SUPERSEDES step 2 of the Fix below (delivery status columns on
+             case_messages). Using the EXISTING case_events table instead
+             means no migration and therefore no #18 MariaDB check; the
+             frozen evidential case_messages row is never mutated; and the
+             record is append-only, which suits several events per message.
+             COST OF THAT CHOICE, for D0 to confirm: case_events keys to
+             case_id, so case_message_id sits in JSON meta with no FK.
+             Nothing at the database level guarantees a bounce event points
+             at a message on that case, and "was letter 3 delivered?"
+             becomes a meta lookup rather than a column read.
+             COUNTER UNAFFECTED — case_events is not case_messages, so a
+             bounce event cannot perturb the escalation predicate, and the
+             mail-only notification keeps the same invariant (see the
+             warning below).
+             STILL TO DECIDE, both small:
+             - RepairCase::TRANSITIONS must define contact_failed, not just
+               the status: which states may enter it, and whether
+               contact_failed -> abandoned is allowed or the case sits
+               permanently as evidence.
+             - #47 is LIVE on prod, so an unclassified new status fails
+               loudly rather than misbehaving quietly. Rely on that.
+             TESTABILITY — #25 CANNOT be staged on gafol. Staging is the
+             Mailgun sandbox, outbound only, and the sandbox has no inbound
+             at all, so no webhook can ever reach that box. Either build a
+             non-Mailgun test path (synthetic POSTs with a locally computed
+             NESTED signature) or exercise it on prod as the capture run
+             did. Settle this at design time, not at deploy time.
 Notes:       This is the one that matters, and it is NOT really about typos.
              The silence model's entire claim is that it can say "your
              landlord was served on the 12th and has not responded in 14

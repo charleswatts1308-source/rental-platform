@@ -60,10 +60,19 @@ variant of silence, it is the opposite. Silence escalates; a bounce must
 **stop the ladder** and hand the problem back to the tenant. The
 `contact_failed` status is the right shape.
 
-**The unresolved part:** the tenant is told a working address is needed
-and **has no way to supply one** — #24, no correction route after the
-first letter; only recovery is abandon and re-raise. So #24 may need to
-land WITH #25 rather than after it. Decide this before building.
+**RULED 24 Aug — the bounce reaction, and #24's relationship to it.** On
+a permanent failure: **record** the bounce as a `case_events` row (it is
+part of the evidence record), **stop** the case with
+`transitionTo(contact_failed)`, and **notify the tenant mail-only** —
+the letter bounced, the case is stopped, correct the address and raise a
+new case. Nothing further.
+
+That recovery is abandon-and-re-raise, which **works today**, so #25
+promises nothing the system cannot deliver and **#24 is NOT a
+prerequisite**. #24 is scheduled on engineering grounds alone and
+**releases separately** — it is a new table, a backfill, an FK swap and a
+`DROP TABLE`, and should not share a merge with a webhook receiver.
+Full rulings are in the snagging list under #24 and #25.
 
 ---
 
