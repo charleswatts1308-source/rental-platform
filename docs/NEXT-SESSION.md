@@ -5,7 +5,12 @@ The `docs/` folder has many files and many are stale — this index says
 which to trust and which to ignore, so you don't re-derive state from a
 superseded doc. It is a **router, not a record**: keep it short.
 
-**Last updated:** 2026-08-24.
+**Last updated:** 2026-08-27.
+
+**⏸ WORK IN FLIGHT — read this first.** `feature/property-landlord-contacts`
+is **built, green, unmerged and unpushed**. 9 commits, tag
+`pre-property-landlord-contacts` on main. It closes **#24** and **#49**
+(both halves). Nothing is deployed. See "Resume here" below.
 
 **✅ BOTH RELEASES ARE OUT.** The delivery-event capture run was deployed,
 run and torn down the same evening — **verified gone**, not merely
@@ -23,13 +28,56 @@ holds. The earlier claim here that gafol was behind at `7507a72` was
 wrong — it had release 1 on 23 Aug and was tested on it; see the
 correction block at the top of `environment-state.md`.
 
-**No open branches.** `feature/delivery-events` and
-`feature/delivery-capture` are both deleted; everything worth keeping is
-on main. Tag `pre-delivery-events` still marks the fork point.
+**One open branch:** `feature/property-landlord-contacts` (below).
+`feature/delivery-events` and `feature/delivery-capture` are both
+deleted; everything worth keeping is on main. Tag `pre-delivery-events`
+still marks the fork point.
 
 ---
 
-## The one thing that changed everything today
+## Resume here — property-owned landlord contacts (#24 + #49)
+
+Built 27 Aug on `feature/property-landlord-contacts`. **Suite green at
+638** (main's real baseline was 578, not the 377 that was being quoted).
+
+The landlord contact now belongs to the **property**, versioned. Routing
+resolves the property's CURRENT contact; the case's
+`property_landlord_contact_id` is provenance and is never read for
+routing. `landlord_contacts` is dropped. `case_messages` was not touched.
+
+**➡ Read `docs/cc-report-property-landlord-contacts-implementation.md`
+first** — §7 is what is NOT covered, and it is the whole of what remains.
+
+**Before merge, in this order:**
+
+1. **`migrate:fresh` on MariaDB — NOT DONE.** The dev DB user has no
+   `CREATE DATABASE` right, so no scratch database could be made, and
+   running it against `rental_platform` would have destroyed dev data.
+   The full chain (create → backfill → drop) is exercised on SQLite every
+   suite run but **never on MariaDB**. Do this on gafol.
+2. **Browser walk — NOT DONE.** The property landlord page
+   (`/properties/{id}/landlord`) and the create form's multi-property
+   toggle have never been opened. Server-side behaviour is tested and
+   authoritative; the JS is display-only. But nobody has looked.
+3. **Backfill on real data.** It has only ever run against dev's 5 cases
+   (3 versions, 0 orphans, clean). gafol and prod shapes are unknown from
+   here. The migration prints the orphan count at migrate time — that
+   number belongs in the ledger.
+4. `--no-ff` merge, then ledger.
+
+**Behaviour changes to expect when walking it:** a reply from a
+superseded address now quarantines; a second case at a property inherits
+its landlord and cannot override it; saving a correction sends nothing.
+
+**Deliberately not built:** a non-escalating "resend to the corrected
+address". Auto-sending on correction takes `SendCaseNotice`'s non-first
+branch and would escalate the case as the price of fixing a typo —
+against D3. Needs a `stage_at_send` ruling against the silence design doc
+before it can exist.
+
+---
+
+## The one thing that changed everything on 23–24 Aug
 
 **#25 is unblocked and specified.** The capture run answered every
 question it existed to answer, from observed bytes rather than
@@ -92,7 +140,9 @@ Full rulings are in the snagging list under #24 and #25.
    **spam-scoring an attachment-bearing letter, which has never been
    done on any path.**
 4. **Reconcile the ledger against `migrate:status`** — not done since
-   27 Jun, contrary to the CLAUDE.md rule. Overdue.
+   27 Jun, contrary to the CLAUDE.md rule. Overdue, and now blocking:
+   the landlord-contact branch adds **five** migrations, and its drop
+   step needs to know what has actually run where.
 5. **#56** — advise the ICO of renters.rent as a trading name on
    registration `Z229825X`. Admin task, not code.
 
@@ -135,9 +185,13 @@ reference `Z229825X`. The old value was the payment/account number.
 
 ## Snags — open
 
-**#1, #2, #7, #12, #13, #17, #18, #19, #22, #24, #25, #26, #27, #28,
+**#1, #2, #7, #12, #13, #17, #18, #19, #22, #25, #26, #27, #28,
 #29, #30, #31, #32, #33, #34, #35, #36, #37, #38, #39, #40, #42, #44,
-#48, #49, #50, #51, #52, #53, #54, #56, #57, #58.**
+#48, #50, #51, #52, #53, #54, #56, #57, #58.**
+
+**BUILT, NOT MERGED, NOT DEPLOYED: #24, #49.** Still live on prod until
+`feature/property-landlord-contacts` ships. #7 is the same defect as
+#49(a) and dies with it.
 
 Closed: **#23**, **#8**, **#41**, **#43**, **#45**, **#46**, **#47**,
 **#55**. Resolved by Phase 5 (D16): #4, #14, #15, #16, #20, #21.
@@ -201,13 +255,19 @@ quietly collected.
 `mailgun-delivery-event-payloads.md`; `llcs-snagging-list.txt`;
 `huk-laravel-site-install-recipe.md`; `release-attachments-and-capture.txt`
 (both releases now DONE — kept as the record of how they were run);
-`DNS records old values.txt`; `landlord-contact-model-gap.md`;
+`DNS records old values.txt`;
+`cc-report-property-landlord-contacts-d0.md` +
+`...-implementation.md` (NEW 27 Aug — the #24/#49 build);
 `delivery-failure-design-question.md`; `cc-report-delivery-events-d0.md`;
 `attachment-policy-design.md`; `pre-flip-checklist.md`; `User Guides/`.
 
 **HISTORICAL — accurate for their phase, don't lead with them:**
 `d16-cc-brief.md`, the D14/D15 briefs/reports/runbooks, the
-phase-1/2a/2b/3 briefs + runbooks + write-ups, `dotrent-deploy-plan.md`.
+phase-1/2a/2b/3 briefs + runbooks + write-ups, `dotrent-deploy-plan.md`,
+`landlord-contact-model-gap.md` (**superseded for build direction by the
+D0 report — the D0 lists seven places the note is wrong, starting with
+routing. Keep it as the record of how Model A was reached; do not build
+from it**).
 
 **ARCHIVE — ignore for current work:** `LLCS Version 1/`,
 `LLCS old docs 3 May 1150/`, `landlord-contact-service-*.md`.
