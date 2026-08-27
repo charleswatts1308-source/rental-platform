@@ -78,7 +78,15 @@
                     <select id="property_id" name="property_id" class="form-select @error('property_id') is-invalid @enderror" required>
                         <option value="">— select a property —</option>
                         @foreach($properties as $property)
-                            <option value="{{ $property->id }}" @selected(old('property_id') == $property->id)>
+                            {{-- The stored landlord rides on the option so
+                                 selecting a property can show whose address
+                                 the notice will go to. Display only — the
+                                 server decides, and ignores anything typed
+                                 for a property that already has one. --}}
+                            <option value="{{ $property->id }}" @selected(old('property_id') == $property->id)
+                                    data-contact-name="{{ $property->currentLandlordContact?->name ?: $property->currentLandlordContact?->email }}"
+                                    data-contact-email="{{ $property->currentLandlordContact?->email }}"
+                                    data-property-url="{{ route('properties.edit', $property) }}">
                                 {{ $property->address_line1 }}@if($property->address_line2), {{ $property->address_line2 }}@endif, {{ $property->postcode }}
                             </option>
                         @endforeach
@@ -191,47 +199,78 @@
             <hr class="mt-4">
             <h2 class="h5">Landlord or letting agent</h2>
 
-            <div class="col-md-6">
-                <label for="landlord_email" class="form-label">Email address</label>
-                <input id="landlord_email" name="landlord_email" type="email"
-                       class="form-control @error('landlord_email') is-invalid @enderror"
-                       value="{{ old('landlord_email') }}" required>
-            </div>
+            {{-- Model A: the landlord belongs to the PROPERTY, not the
+                 case. A property that already has one shows it read-only
+                 and cannot be overridden here — the server excludes these
+                 fields from validation entirely in that case, so what is
+                 shown is what is served. Correcting it is a property edit,
+                 which is the whole of snag #24.
 
-            <div class="col-md-6">
-                <label for="landlord_name" class="form-label">Name</label>
-                <input id="landlord_name" name="landlord_name" type="text" maxlength="255"
-                       class="form-control @error('landlord_name') is-invalid @enderror"
-                       value="{{ old('landlord_name') }}">
-                {{-- The fallback lives in SendCaseNotice::buildLetterVars
-                     ($case->landlordContact->name ?: 'Sir or Madam') and the
-                     templates open "Dear {{landlord_name}},". Said here so
-                     the tenant chooses it rather than discovers it on the
-                     preview. Note the fallback does NOT apply when we
-                     already hold a contact for this email — the stored name
-                     is used instead (see snag #7), which is a better outcome
-                     than advertised, so the hint stays simple. --}}
-                <div class="form-text">
-                    Optional. Left blank, the letter opens &ldquo;Dear Sir or Madam&rdquo;.
+                 With one property the decision is made server-side and no
+                 JavaScript is involved. With several, the block below is
+                 toggled on selection; the server remains authoritative
+                 either way. --}}
+            @php($singleProperty = $properties->count() === 1 ? $properties->first() : null)
+            @php($inheritedContact = $singleProperty?->currentLandlordContact)
+
+            <div class="col-12" id="landlord-inherited"
+                 @class(['d-none' => ! $inheritedContact])>
+                <div class="border rounded p-3 bg-light">
+                    <p class="mb-1">
+                        <span class="text-muted">This property&rsquo;s landlord:</span>
+                        <span class="fw-semibold" data-inherited-name>{{ $inheritedContact?->name ?: $inheritedContact?->email }}</span>
+                    </p>
+                    <p class="mb-1 small text-muted" data-inherited-email>{{ $inheritedContact?->email }}</p>
+                    <p class="mb-0 small">
+                        The notice will be served on this address.
+                        <a href="{{ $singleProperty ? route('properties.edit', $singleProperty) : route('properties.index') }}">Correct it on the property</a>
+                        if it is wrong.
+                    </p>
                 </div>
             </div>
 
-            <div class="col-md-4">
-                <label for="landlord_role" class="form-label">Role</label>
-                <select id="landlord_role" name="landlord_role" class="form-select @error('landlord_role') is-invalid @enderror" required>
-                    @foreach($roles as $role)
-                        <option value="{{ $role->value }}" @selected(old('landlord_role', 'landlord') === $role->value)>
-                            {{ ucfirst($role->value) }}
-                        </option>
-                    @endforeach
-                </select>
-            </div>
+            <div class="row g-3" id="landlord-fields"
+                 @class(['d-none' => (bool) $inheritedContact])>
+                <div class="col-md-6">
+                    <label for="landlord_email" class="form-label">Email address</label>
+                    <input id="landlord_email" name="landlord_email" type="email"
+                           class="form-control @error('landlord_email') is-invalid @enderror"
+                           value="{{ old('landlord_email') }}" @required(! $inheritedContact)>
+                </div>
 
-            <div class="col-md-8">
-                <label for="organisation_name" class="form-label">Organisation name (if agent)</label>
-                <input id="organisation_name" name="organisation_name" type="text" maxlength="255"
-                       class="form-control @error('organisation_name') is-invalid @enderror"
-                       value="{{ old('organisation_name') }}">
+                <div class="col-md-6">
+                    <label for="landlord_name" class="form-label">Name</label>
+                    <input id="landlord_name" name="landlord_name" type="text" maxlength="255"
+                           class="form-control @error('landlord_name') is-invalid @enderror"
+                           value="{{ old('landlord_name') }}">
+                    {{-- The fallback lives in CaseController::resolveLandlordName,
+                         which the preview AND the send both go through, and the
+                         templates open "Dear {{landlord_name}},". One source, so
+                         the name shown on the preview is the name that is sent
+                         (snag #49). --}}
+                    <div class="form-text">
+                        Optional. Left blank, the letter opens &ldquo;Dear Sir or Madam&rdquo;.
+                        This becomes the property&rsquo;s landlord, so later cases here will use it too.
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <label for="landlord_role" class="form-label">Role</label>
+                    <select id="landlord_role" name="landlord_role" class="form-select @error('landlord_role') is-invalid @enderror" @required(! $inheritedContact)>
+                        @foreach($roles as $role)
+                            <option value="{{ $role->value }}" @selected(old('landlord_role', 'landlord') === $role->value)>
+                                {{ ucfirst($role->value) }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div class="col-md-8">
+                    <label for="organisation_name" class="form-label">Organisation name (if agent)</label>
+                    <input id="organisation_name" name="organisation_name" type="text" maxlength="255"
+                           class="form-control @error('organisation_name') is-invalid @enderror"
+                           value="{{ old('organisation_name') }}">
+                </div>
             </div>
 
             <div class="col-12 d-flex gap-2 mt-4">
@@ -435,6 +474,58 @@
     });
 
     render();
+})();
+</script>
+
+<script>
+/*
+    Landlord block toggle, for tenants with more than one property.
+
+    Display only. The server excludes the landlord fields from validation
+    whenever the chosen property already has a contact, so a tenant with
+    JavaScript off — or one who edits the DOM — gets exactly the same
+    outcome: the property's stored landlord is served, and anything typed
+    here is discarded before it is looked at.
+*/
+(function () {
+    const select = document.getElementById('property_id');
+    const inherited = document.getElementById('landlord-inherited');
+    const fields = document.getElementById('landlord-fields');
+
+    if (!select || !inherited || !fields) {
+        return;
+    }
+
+    const nameEl = inherited.querySelector('[data-inherited-name]');
+    const emailEl = inherited.querySelector('[data-inherited-email]');
+    const linkEl = inherited.querySelector('a');
+    const required = ['landlord_email', 'landlord_role'];
+
+    function sync() {
+        const option = select.selectedOptions[0];
+        const email = option ? option.dataset.contactEmail : '';
+
+        if (email) {
+            nameEl.textContent = option.dataset.contactName || email;
+            emailEl.textContent = email;
+            linkEl.href = option.dataset.propertyUrl;
+        }
+
+        inherited.classList.toggle('d-none', !email);
+        fields.classList.toggle('d-none', !!email);
+
+        // Drop required off hidden inputs, or the browser blocks submit on
+        // a field the tenant cannot even see.
+        required.forEach(function (id) {
+            const el = document.getElementById(id);
+            if (el) {
+                el.required = !email;
+            }
+        });
+    }
+
+    select.addEventListener('change', sync);
+    sync();
 })();
 </script>
 @endsection
