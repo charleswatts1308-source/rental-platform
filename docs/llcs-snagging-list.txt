@@ -568,7 +568,22 @@ Saw:         The landlord contact is a property of the CASE
              losing the case reference and the record.
 Expected:    A way to correct the landlord email on an existing case, so a
              typo costs a correction rather than the whole case.
-Status:      open — snagged 18 Jul; PROMOTED 27 Jul from convenience to a
+Status:      BUILT 2026-08-27 on feature/property-landlord-contacts, NOT
+             yet merged and NOT deployed. Landlord contact now belongs to
+             the PROPERTY and is versioned; correcting it on the property
+             page inserts a new version and every subsequent letter on
+             every open case there goes to the new address. Abandon-and-
+             re-raise is no longer the only recovery.
+             Deliberately does NOT auto-send on correction — that would
+             take SendCaseNotice's non-first branch and escalate the case
+             as the price of fixing a typo, against D3. The open question
+             ("should the clock/counter reset on correction") is therefore
+             answered NO for now; a non-escalating resend is a separate
+             piece needing its own ruling. See
+             docs/cc-report-property-landlord-contacts-d0.md and
+             ...-implementation.md.
+             --- history below ---
+             was open — snagged 18 Jul; PROMOTED 27 Jul from convenience to a
              data-design item after being hit in real use (a live landlord
              email needed correcting). Now the presenting symptom of a
              deeper modelling gap: the landlord contact hangs off the CASE
@@ -1931,7 +1946,24 @@ Saw:         Case VMRXZP on gafol. "Larry Landlord" was entered on the
 Expected:    The name a tenant types is the name their landlord reads,
              or they are TOLD it will not be. Whatever the preview
              shows is the letter that goes.
-Status:      open — snagged 22 Aug during the Release 1 gafol walk.
+Status:      BUILT 2026-08-27 on feature/property-landlord-contacts, NOT
+             yet merged and NOT deployed. BOTH halves closed.
+             (a) The global email key is gone — no unique index, and
+             resolveLandlordContact's find-or-create is deleted. Contacts
+             hang off the property, which is already per-tenant, so two
+             tenants at the same agency address get their own row and
+             neither names it for the other.
+             (b) Preview and send both resolve through
+             CaseController::resolveLandlordName, so the salutation shown
+             at the preview is the salutation that is sent. The landlord
+             fields are EXCLUDED from validation when the property already
+             has a contact, so only one source ever exists to read.
+             Both were confirmed to FAIL against the pre-fix commit before
+             the fix was written. The gafol reproduction (second tenant
+             types "Larry Landlord", letter must not open "Dear C Watts")
+             is now a test.
+             --- history below ---
+             was open — snagged 22 Aug during the Release 1 gafol walk.
              Testing unblocked by UPDATEing the row, or by using a
              fresh unused email per test case.
 Notes:       Live evidence for the D0 candidate in
