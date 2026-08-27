@@ -12,9 +12,26 @@ use Illuminate\Support\Facades\DB;
 uses(RefreshDatabase::class);
 
 /**
- * The backfill takes legacy rows as input rather than reading
+ * Put the database back into its pre-migration shape.
+ *
+ * RepairCaseFactory now gives every property a current landlord contact,
+ * which is right for every other test and wrong for these: the backfill's
+ * entire premise is legacy data where no property contact exists yet.
+ * Without this the backfill would collide with the fixture on
+ * UNIQUE(property_id, is_current) — correctly, which is the point.
+ */
+function revertToPreMigrationState(): void
+{
+    DB::table('cases')->update(['property_landlord_contact_id' => null]);
+    DB::table('property_landlord_contacts')->delete();
+}
+
+/**
+ * One row in the shape the migration's join produces.
+ *
+ * The backfill takes legacy rows as an ARGUMENT rather than reading
  * landlord_contacts, so these tests keep working after that table is
- * dropped. Each row is the shape the migration's join produces.
+ * dropped in the final commit.
  */
 function legacyRow(int $caseId, int $propertyId, string $openedAt, string $email, int $userId, ?string $name = null, string $role = 'landlord', ?string $org = null): object
 {
@@ -34,6 +51,8 @@ it('creates one version and repoints the case when a property has a single case'
     $user = User::factory()->create();
     $property = Property::factory()->create();
     $case = RepairCase::factory()->for($property)->create();
+
+    revertToPreMigrationState();
 
     $result = (new BackfillPropertyLandlordContacts)([
         legacyRow($case->id, $property->id, '2026-01-01 09:00:00', 'larry@x.test', $user->id, 'Larry Landlord'),
@@ -61,6 +80,8 @@ it('stamps every backfilled row as inferred, not entered', function () {
     $property = Property::factory()->create();
     $case = RepairCase::factory()->for($property)->create();
 
+    revertToPreMigrationState();
+
     (new BackfillPropertyLandlordContacts)([
         legacyRow($case->id, $property->id, '2026-01-01 09:00:00', 'a@x.test', $user->id),
     ]);
@@ -74,6 +95,8 @@ it('collapses repeated cases on the same email into ONE version', function () {
     $first = RepairCase::factory()->for($property)->create();
     $second = RepairCase::factory()->for($property)->create();
     $third = RepairCase::factory()->for($property)->create();
+
+    revertToPreMigrationState();
 
     $result = (new BackfillPropertyLandlordContacts)([
         legacyRow($first->id, $property->id, '2026-01-01 09:00:00', 'same@x.test', $user->id),
@@ -97,6 +120,8 @@ it('chains a version change when the email differs, closing the old one at the n
     $first = RepairCase::factory()->for($property)->create();
     $second = RepairCase::factory()->for($property)->create();
 
+    revertToPreMigrationState();
+
     (new BackfillPropertyLandlordContacts)([
         legacyRow($first->id, $property->id, '2026-01-01 09:00:00', 'old@x.test', $user->id),
         legacyRow($second->id, $property->id, '2026-06-01 09:00:00', 'new@x.test', $user->id),
@@ -119,6 +144,8 @@ it('points each case at the version in force when THAT case was raised', functio
     $first = RepairCase::factory()->for($property)->create();
     $second = RepairCase::factory()->for($property)->create();
 
+    revertToPreMigrationState();
+
     (new BackfillPropertyLandlordContacts)([
         legacyRow($first->id, $property->id, '2026-01-01 09:00:00', 'old@x.test', $user->id),
         legacyRow($second->id, $property->id, '2026-06-01 09:00:00', 'new@x.test', $user->id),
@@ -135,6 +162,8 @@ it('leaves exactly one current version per property', function () {
     $user = User::factory()->create();
     $property = Property::factory()->create();
     $cases = RepairCase::factory()->for($property)->count(4)->create();
+
+    revertToPreMigrationState();
 
     (new BackfillPropertyLandlordContacts)([
         legacyRow($cases[0]->id, $property->id, '2026-01-01 09:00:00', 'a@x.test', $user->id),
@@ -153,6 +182,8 @@ it('opens a fresh version when an old email returns later (timeline, not a set)'
     $property = Property::factory()->create();
     $cases = RepairCase::factory()->for($property)->count(3)->create();
 
+    revertToPreMigrationState();
+
     (new BackfillPropertyLandlordContacts)([
         legacyRow($cases[0]->id, $property->id, '2026-01-01 09:00:00', 'a@x.test', $user->id),
         legacyRow($cases[1]->id, $property->id, '2026-02-01 09:00:00', 'b@x.test', $user->id),
@@ -170,6 +201,8 @@ it('keeps properties independent of one another', function () {
     $b = Property::factory()->create();
     $caseA = RepairCase::factory()->for($a)->create();
     $caseB = RepairCase::factory()->for($b)->create();
+
+    revertToPreMigrationState();
 
     $result = (new BackfillPropertyLandlordContacts)([
         legacyRow($caseA->id, $a->id, '2026-01-01 09:00:00', 'shared@agency.test', $user->id),
@@ -190,6 +223,8 @@ it('normalises case and whitespace the way the old resolver stored it', function
     $first = RepairCase::factory()->for($property)->create();
     $second = RepairCase::factory()->for($property)->create();
 
+    revertToPreMigrationState();
+
     $result = (new BackfillPropertyLandlordContacts)([
         legacyRow($first->id, $property->id, '2026-01-01 09:00:00', 'Larry@X.test', $user->id),
         legacyRow($second->id, $property->id, '2026-02-01 09:00:00', '  larry@x.test  ', $user->id),
@@ -207,6 +242,8 @@ it('sorts by opened_at regardless of the order rows arrive in', function () {
     $early = RepairCase::factory()->for($property)->create();
     $late = RepairCase::factory()->for($property)->create();
 
+    revertToPreMigrationState();
+
     (new BackfillPropertyLandlordContacts)([
         legacyRow($late->id, $property->id, '2026-06-01 09:00:00', 'new@x.test', $user->id),
         legacyRow($early->id, $property->id, '2026-01-01 09:00:00', 'old@x.test', $user->id),
@@ -222,6 +259,8 @@ it('carries name, role and organisation across to the new row', function () {
     $property = Property::factory()->create();
     $case = RepairCase::factory()->for($property)->create();
 
+    revertToPreMigrationState();
+
     (new BackfillPropertyLandlordContacts)([
         legacyRow($case->id, $property->id, '2026-01-01 09:00:00', 'agent@x.test', $user->id, 'Jane Agent', 'agent', 'Agency Ltd'),
     ]);
@@ -235,6 +274,8 @@ it('carries name, role and organisation across to the new row', function () {
 });
 
 it('does nothing at all when there are no legacy rows', function () {
+    revertToPreMigrationState();
+
     $result = (new BackfillPropertyLandlordContacts)([]);
 
     expect($result)->toBe([
@@ -260,6 +301,8 @@ it('never touches case_messages', function () {
     ]);
 
     $before = DB::table('case_messages')->orderBy('id')->get()->toArray();
+
+    revertToPreMigrationState();
 
     (new BackfillPropertyLandlordContacts)([
         legacyRow($case->id, $property->id, '2026-01-01 09:00:00', 'corrected@x.test', $user->id, 'Larry Landlord'),

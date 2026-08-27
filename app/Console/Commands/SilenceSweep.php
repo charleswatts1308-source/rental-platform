@@ -603,7 +603,7 @@ class SilenceSweep extends Command
             return;
         }
 
-        $case->loadMissing(['tenant', 'property', 'landlordContact']);
+        $case->loadMissing(['tenant', 'property.currentLandlordContact']);
 
         $magicLink = $magicLinkGenerator->mintUrl(
             $case->tenant,
@@ -613,7 +613,7 @@ class SilenceSweep extends Command
 
         $rendered = $renderer->render($template, [
             'tenant_name' => $case->tenant->name,
-            'landlord_name' => $case->landlordContact->name ?: 'your landlord',
+            'landlord_name' => $case->landlordRecipient()?->name ?: 'your landlord',
             'case_reference' => $case->url_slug,
             'property_address' => $this->propertyAddress($case),
             'issue_description' => $case->description,
@@ -651,7 +651,7 @@ class SilenceSweep extends Command
             return;
         }
 
-        $case->loadMissing(['tenant', 'property', 'landlordContact']);
+        $case->loadMissing(['tenant', 'property.currentLandlordContact']);
 
         $magicLink = $magicLinkGenerator->mintUrl(
             $case->tenant,
@@ -661,7 +661,7 @@ class SilenceSweep extends Command
 
         $rendered = $renderer->render($template, [
             'tenant_name' => $case->tenant->name,
-            'landlord_name' => $case->landlordContact->name ?: 'your landlord',
+            'landlord_name' => $case->landlordRecipient()?->name ?: 'your landlord',
             'case_reference' => $case->url_slug,
             'property_address' => $this->propertyAddress($case),
             'issue_description' => $case->description,
@@ -698,7 +698,7 @@ class SilenceSweep extends Command
             return;
         }
 
-        $case->loadMissing(['tenant', 'property', 'landlordContact']);
+        $case->loadMissing(['tenant', 'property.currentLandlordContact']);
 
         $magicLink = $magicLinkGenerator->mintUrl(
             $case->tenant,
@@ -708,7 +708,7 @@ class SilenceSweep extends Command
 
         $rendered = $renderer->render($template, [
             'tenant_name' => $case->tenant->name,
-            'landlord_name' => $case->landlordContact->name ?: 'your landlord',
+            'landlord_name' => $case->landlordRecipient()?->name ?: 'your landlord',
             'case_reference' => $case->url_slug,
             'property_address' => $this->propertyAddress($case),
             'issue_description' => $case->description,

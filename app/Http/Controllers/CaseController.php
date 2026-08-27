@@ -79,7 +79,7 @@ class CaseController extends Controller
 
         $cases = RepairCase::query()
             ->where('tenant_user_id', $request->user()->id)
-            ->with(['property', 'landlordContact', 'category'])
+            ->with(['property', 'property.currentLandlordContact', 'category'])
             ->orderByDesc('opened_at')
             ->get();
 
@@ -93,7 +93,7 @@ class CaseController extends Controller
 
         $case->load([
             'property',
-            'landlordContact',
+            'property.currentLandlordContact',
             'category',
             'tenant',
         ]);
@@ -164,7 +164,7 @@ class CaseController extends Controller
         $case = $this->findCaseOrFail($slug);
         $this->authorize('authoriseEscalation', $case);
 
-        $case->load(['property', 'landlordContact', 'tenant']);
+        $case->load(['property', 'property.currentLandlordContact', 'tenant']);
 
         $noticeNumber = $this->silenceClock->escalationCounter($case) + 1;
         $template = LetterTemplate::forEscalation($noticeNumber);
@@ -176,7 +176,7 @@ class CaseController extends Controller
 
         $vars = [
             'tenant_name' => $case->tenant->name,
-            'landlord_name' => $case->landlordContact->name ?: 'Sir or Madam',
+            'landlord_name' => $case->landlordRecipient()?->name ?: 'Sir or Madam',
             'case_reference' => $case->url_slug,
             'property_address' => $this->formatAddress($case->property),
             'issue_description' => $case->description,
@@ -525,11 +525,26 @@ class CaseController extends Controller
         $case = DB::transaction(function () use ($validated, $previewPhotos, $userId) {
             $contact = $this->resolveLandlordContact($validated, $userId);
 
+            // Transitional: the send path now resolves the property's
+            // current contact, so the property must have one. Mirrored
+            // from the legacy row so behaviour is bit-for-bit what it was
+            // — including snag #49(a), which is fixed deliberately in the
+            // next commit with a test that fails first.
+            $property = Property::findOrFail($validated['property_id']);
+            $propertyContact = $property->currentLandlordContact
+                ?? $property->setLandlordContact([
+                    'email' => $contact->email,
+                    'name' => $contact->name,
+                    'role' => $contact->role,
+                    'organisation_name' => $contact->organisation_name,
+                ], now(), $userId);
+
             $case = RepairCase::create([
                 'url_slug' => $this->mintSlug(),
                 'tenant_user_id' => $userId,
                 'property_id' => $validated['property_id'],
                 'landlord_contact_id' => $contact->id,
+                'property_landlord_contact_id' => $propertyContact->id,
                 'category_key' => $validated['category_key'],
                 'severity' => $validated['severity'],
                 'description' => $validated['description'],

@@ -7,6 +7,7 @@ use App\Enums\SenderRole;
 use App\Mail\CaseNotice;
 use App\Models\CaseMessage;
 use App\Models\LetterTemplate;
+use App\Models\PropertyLandlordContact;
 use App\Models\RepairCase;
 use App\Models\ReplyToken;
 use App\Models\Setting;
@@ -62,6 +63,10 @@ class SendExhaustionCloser
         }
 
         return DB::transaction(function () use ($case, $template) {
+            // Same rule as SendCaseNotice: the property's CURRENT contact,
+            // resolved once so binding, freeze and envelope agree.
+            $recipient = $case->requireLandlordRecipient();
+
             $oldToken = $case->replyTokens()->whereNull('superseded_at')->first();
             if ($oldToken) {
                 $oldToken->update([
@@ -73,7 +78,7 @@ class SendExhaustionCloser
             $newToken = ReplyToken::create([
                 'case_id' => $case->id,
                 'token' => $this->tokenGenerator->generate(),
-                'bound_email' => $case->landlordContact->email,
+                'bound_email' => $recipient->email,
                 'issued_at' => now(),
             ]);
 
@@ -83,12 +88,12 @@ class SendExhaustionCloser
                 'stage_at_send' => null,
                 'subject' => null,
                 'body_raw' => '',
-                'to_address_raw' => $case->landlordContact->email,
+                'to_address_raw' => $recipient->email,
                 'sent_at' => now(),
             ]);
 
-            $caseForVars = $case->fresh()->load(['tenant', 'property', 'landlordContact']);
-            $rendered = $this->renderer->render($template, $this->buildVars($caseForVars));
+            $caseForVars = $case->fresh()->load(['tenant', 'property']);
+            $rendered = $this->renderer->render($template, $this->buildVars($caseForVars, $recipient));
 
             $message->update([
                 'letter_template_id' => $template->id,
@@ -97,7 +102,7 @@ class SendExhaustionCloser
                 'body_raw' => $rendered['body'],
             ]);
 
-            Mail::to($case->landlordContact->email)->queue(new CaseNotice(
+            Mail::to($recipient->email)->queue(new CaseNotice(
                 $caseForVars,
                 $message->fresh(),
                 $newToken,
@@ -126,11 +131,11 @@ class SendExhaustionCloser
     /**
      * @return array<string, string|int|null>
      */
-    private function buildVars(RepairCase $case): array
+    private function buildVars(RepairCase $case, PropertyLandlordContact $recipient): array
     {
         return [
             'tenant_name' => $case->tenant->name,
-            'landlord_name' => $case->landlordContact->name ?: 'Sir or Madam',
+            'landlord_name' => $recipient->name ?: 'Sir or Madam',
             'case_reference' => $case->url_slug,
             'property_address' => $this->propertyAddress($case),
             'issue_description' => $case->description,

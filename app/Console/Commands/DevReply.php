@@ -4,8 +4,8 @@ namespace App\Console\Commands;
 
 use App\Enums\LandlordContactRole;
 use App\Enums\MessageDirection;
-use App\Models\ReplyToken;
 use App\Models\RepairCase;
+use App\Models\ReplyToken;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Http\Request;
@@ -57,10 +57,10 @@ class DevReply extends Command
             config(['services.mailgun.webhook_signing_key' => $signingKey]);
         }
 
-        $from = $this->option('from') ?? $case->landlordContact->email;
+        $from = $this->option('from') ?? $case->requireLandlordRecipient()->email;
         $domain = (string) config('services.mailgun.inbound_domain');
 
-        [$bodyHtml, $bodyPlain] = $this->resolveBody($case->landlordContact->role);
+        [$bodyHtml, $bodyPlain] = $this->resolveBody($case->requireLandlordRecipient()->role);
 
         $timestamp = (string) time();
         $nonce = Str::random(50);
@@ -100,7 +100,7 @@ class DevReply extends Command
 
         $case->refresh();
         $this->line(
-            "reply_received message_id=".($message?->id ?? 'none')
+            'reply_received message_id='.($message?->id ?? 'none')
             .' quarantine='.($message?->quarantine_reason ?? 'none')
             ." from={$from} case={$case->url_slug} case_status={$case->status->value}"
         );

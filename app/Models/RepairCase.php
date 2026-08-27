@@ -6,6 +6,8 @@ use App\Enums\CaseSeverity;
 use App\Enums\CaseStatus;
 use App\Enums\ExhaustedStance;
 use App\Exceptions\InvalidCaseTransitionException;
+use Carbon\CarbonInterface;
+use Database\Factories\RepairCaseFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -14,7 +16,7 @@ use Illuminate\Support\Facades\DB;
 
 class RepairCase extends Model
 {
-    /** @use HasFactory<\Database\Factories\RepairCaseFactory> */
+    /** @use HasFactory<RepairCaseFactory> */
     use HasFactory;
 
     protected $table = 'cases';
@@ -44,6 +46,7 @@ class RepairCase extends Model
         'tenant_user_id',
         'property_id',
         'landlord_contact_id',
+        'property_landlord_contact_id',
         'category_key',
         'severity',
         'description',
@@ -90,6 +93,50 @@ class RepairCase extends Model
     public function landlordContact(): BelongsTo
     {
         return $this->belongsTo(LandlordContact::class);
+    }
+
+    /**
+     * PROVENANCE ONLY — the contact version this case opened with.
+     *
+     * Never use this to decide where a letter goes. Routing resolves the
+     * property's CURRENT contact (see landlordRecipient), or correcting a
+     * mistyped address would never reach the case's next letter, which is
+     * exactly the hole snag #24 describes.
+     */
+    public function propertyLandlordContact(): BelongsTo
+    {
+        return $this->belongsTo(PropertyLandlordContact::class);
+    }
+
+    /**
+     * The live routing target: who the NEXT letter on this case goes to.
+     *
+     * Nullable for display. Anything that actually sends should use
+     * requireLandlordRecipient() instead.
+     */
+    public function landlordRecipient(): ?PropertyLandlordContact
+    {
+        return $this->property?->currentLandlordContact;
+    }
+
+    /**
+     * As landlordRecipient(), but refuses to continue without one.
+     *
+     * A case with no current contact is broken data, and the failure mode
+     * without this is a confusing error deep in the mailer. Sending a
+     * letter to nobody is worse than failing loudly.
+     */
+    public function requireLandlordRecipient(): PropertyLandlordContact
+    {
+        $contact = $this->landlordRecipient();
+
+        if (! $contact) {
+            throw new \RuntimeException(
+                "Case {$this->url_slug} has no current landlord contact on property {$this->property_id}."
+            );
+        }
+
+        return $contact;
     }
 
     public function category(): BelongsTo
@@ -155,7 +202,7 @@ class RepairCase extends Model
      * Reads the per-case snapshot interval — the value actually governing
      * this case (B2: in-flight cases keep their clock-start snapshot).
      */
-    public function nextEscalationDate(): ?\Carbon\CarbonInterface
+    public function nextEscalationDate(): ?CarbonInterface
     {
         if (! $this->showsNextEscalation()) {
             return null;

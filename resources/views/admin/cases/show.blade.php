@@ -64,7 +64,7 @@
                 <h2 class="h6 text-muted text-uppercase">Parties</h2>
                 <p class="mb-1 small"><strong>Tenant:</strong> {{ $case->tenant?->name }} ({{ $case->tenant?->email }})</p>
                 <p class="mb-1 small"><strong>Property:</strong> {{ $case->property?->address_line1 }}, {{ $case->property?->postcode }}</p>
-                <p class="mb-0 small"><strong>Recipient:</strong> {{ $case->landlordContact?->name ?? $case->landlordContact?->email }}</p>
+                <p class="mb-0 small"><strong>Recipient:</strong> {{ $case->landlordRecipient()?->name ?? $case->landlordRecipient()?->email }}</p>
             </div>
         </div>
     </div>

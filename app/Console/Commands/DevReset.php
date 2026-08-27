@@ -39,6 +39,7 @@ class DevReset extends Command
         'silence_shadow_log',
         'magic_login_tokens',
         'cases',
+        'property_landlord_contacts',
         'properties',
         'landlord_contacts',
         // standalone attachment table (rentals removed; not yet re-wired)
