@@ -31,6 +31,14 @@ class Property extends Model
     }
 
     /**
+     * @return HasMany<RepairCase, $this>
+     */
+    public function cases(): HasMany
+    {
+        return $this->hasMany(RepairCase::class);
+    }
+
+    /**
      * Every version of this property's landlord contact, newest first.
      * This is the change history behind snag #24.
      *

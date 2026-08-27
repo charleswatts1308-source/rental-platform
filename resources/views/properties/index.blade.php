@@ -46,6 +46,7 @@
                             <td><code>{{ $property->postcode }}</code></td>
                             <td>{{ $property->created_at->format('d M Y') }}</td>
                             <td class="text-end">
+                                <a href="{{ route('properties.contact.edit', $property) }}" class="btn btn-sm btn-outline-secondary">Landlord</a>
                                 <a href="{{ route('properties.edit', $property) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
                             </td>
                         </tr>
