@@ -5,8 +5,8 @@ namespace App\Console\Commands;
 use App\Enums\CaseSeverity;
 use App\Enums\CaseStatus;
 use App\Enums\LandlordContactRole;
-use App\Models\LandlordContact;
 use App\Models\Property;
+use App\Models\PropertyLandlordContact;
 use App\Models\RepairCase;
 use App\Models\RepairCategory;
 use App\Models\User;
@@ -14,7 +14,7 @@ use Illuminate\Console\Command;
 
 /**
  * Creates repair case(s) in the initial Open state for local/staging dev,
- * including the supporting property and landlord_contact rows.
+ * including the supporting property and landlord contact rows.
  *
  * Mirrors the real CaseController::store scaffolding (tenant-owned property,
  * landlord resolved-or-created by email, case Open at stage 1 with the
@@ -52,7 +52,7 @@ class DevCase extends Command
 
         $severity = CaseSeverity::tryFrom($this->option('severity'));
         if ($severity === null) {
-            $this->error("Invalid --severity. Use one of: routine, serious, emergency.");
+            $this->error('Invalid --severity. Use one of: routine, serious, emergency.');
 
             return self::FAILURE;
         }
@@ -75,16 +75,16 @@ class DevCase extends Command
             ?? 'A repair issue at this property — placeholder description for dev tooling.';
 
         for ($i = 0; $i < $count; $i++) {
-            $landlord = $this->resolveLandlordContact($landlordEmailOpt, $role, $tenant->id);
-
             $property = Property::factory()->create([
                 'registered_by_user_id' => $tenant->id,
             ]);
 
+            $landlord = $this->resolveLandlordContact($property, $landlordEmailOpt, $role, $tenant->id);
+
             $case = RepairCase::factory()->create([
                 'tenant_user_id' => $tenant->id,
                 'property_id' => $property->id,
-                'landlord_contact_id' => $landlord->id,
+                'property_landlord_contact_id' => $landlord->id,
                 'category_key' => $category->key,
                 'severity' => $severity,
                 'description' => $description,
@@ -95,7 +95,7 @@ class DevCase extends Command
             $this->line(
                 "case_created id={$case->id} url_slug={$case->url_slug} "
                 ."tenant={$tenant->email} property_id={$property->id} "
-                ."landlord_contact_id={$landlord->id} landlord={$landlord->email} "
+                ."property_landlord_contact_id={$landlord->id} landlord={$landlord->email} "
                 ."category={$category->key} severity={$severity->value} status={$case->status->value}"
             );
         }
@@ -149,32 +149,35 @@ class DevCase extends Command
     }
 
     /**
-     * Resolve an existing landlord_contact by email (as the real controller
-     * does), otherwise create one. Without an explicit email, generates a
-     * fresh sequential landlord{N}@domain.
+     * Install the property's landlord contact, as the real create path
+     * does. Without an explicit email, generates a fresh sequential
+     * landlord{N}@domain.
+     *
+     * No find-or-create by email any more: the contact belongs to the
+     * property, and two properties sharing an address is legitimate.
      */
-    private function resolveLandlordContact(?string $emailOpt, LandlordContactRole $role, int $tenantId): LandlordContact
-    {
+    private function resolveLandlordContact(
+        Property $property,
+        ?string $emailOpt,
+        LandlordContactRole $role,
+        int $tenantId,
+    ): PropertyLandlordContact {
         $email = $emailOpt !== null
             ? strtolower(trim($emailOpt))
             : $this->nextLandlordEmail();
 
-        $existing = LandlordContact::where('email', $email)->first();
-        if ($existing !== null) {
-            return $existing;
-        }
-
-        return LandlordContact::factory()->create([
-            'email' => $email,
-            'role' => $role,
-            'invited_by_user_id' => $tenantId,
-        ]);
+        return $property->currentLandlordContact
+            ?? $property->setLandlordContact([
+                'email' => $email,
+                'name' => 'Dev Landlord',
+                'role' => $role,
+            ], now(), $tenantId);
     }
 
     private function nextLandlordEmail(): string
     {
         $n = 1;
-        while (LandlordContact::where('email', "landlord{$n}@".self::EMAIL_DOMAIN)->exists()) {
+        while (PropertyLandlordContact::where('email', "landlord{$n}@".self::EMAIL_DOMAIN)->exists()) {
             $n++;
         }
 

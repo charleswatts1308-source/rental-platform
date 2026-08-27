@@ -4,7 +4,7 @@ namespace Database\Factories;
 
 use App\Enums\CaseSeverity;
 use App\Enums\CaseStatus;
-use App\Models\LandlordContact;
+use App\Enums\LandlordContactRole;
 use App\Models\Property;
 use App\Models\RepairCase;
 use App\Models\RepairCategory;
@@ -25,7 +25,6 @@ class RepairCaseFactory extends Factory
             'url_slug' => CaseReference::generate(),
             'tenant_user_id' => User::factory(),
             'property_id' => Property::factory(),
-            'landlord_contact_id' => LandlordContact::factory(),
             'category_key' => fn () => RepairCategory::factory()->create()->key,
             'severity' => CaseSeverity::Routine,
             'description' => 'Sample issue description for test fixtures.',
@@ -42,21 +41,16 @@ class RepairCaseFactory extends Factory
      * Give the case's property a current landlord contact, and point the
      * case's provenance FK at it.
      *
-     * The new contact MIRRORS the legacy landlord_contacts row this
-     * factory still creates, so a fixture's landlord email and name are
-     * the same whichever side reads them. That is deliberate: every
-     * existing test that asserts on a recipient or a salutation keeps
-     * asserting the same value, and none of them had to be weakened to
-     * survive the move.
-     *
      * A property that already has a current contact keeps it — Model A
      * allows exactly one, and several cases on one property is the normal
-     * shape, not a conflict.
+     * shape, not a conflict. A fixture wanting a specific address sets it
+     * on the property before or after; this only guarantees the case has
+     * somewhere to send.
      */
     public function configure(): static
     {
         return $this->afterCreating(function (RepairCase $case) {
-            $case->loadMissing(['property', 'landlordContact']);
+            $case->loadMissing('property');
 
             if (! $case->property) {
                 return;
@@ -64,10 +58,10 @@ class RepairCaseFactory extends Factory
 
             $contact = $case->property->currentLandlordContact
                 ?? $case->property->setLandlordContact([
-                    'email' => $case->landlordContact?->email ?? $this->faker->unique()->safeEmail(),
-                    'name' => $case->landlordContact?->name,
-                    'role' => $case->landlordContact?->role,
-                    'organisation_name' => $case->landlordContact?->organisation_name,
+                    'email' => $this->faker->unique()->safeEmail(),
+                    'name' => $this->faker->name(),
+                    'role' => LandlordContactRole::Landlord,
+                    'organisation_name' => null,
                 ], $case->opened_at ?? now(), $case->tenant_user_id);
 
             $case->forceFill(['property_landlord_contact_id' => $contact->id])->saveQuietly();
@@ -77,7 +71,29 @@ class RepairCaseFactory extends Factory
             // caches that. Drop both relations so the caller's very first
             // read goes back to the database rather than to a stale null.
             $case->property->unsetRelation('currentLandlordContact');
-            $case->unsetRelation('property')->unsetRelation('landlordContact');
+            $case->unsetRelation('property');
+        });
+    }
+
+    /**
+     * Pin the landlord details a fixture depends on.
+     *
+     * Replaces the old `LandlordContact::factory()->create([...])` +
+     * `'landlord_contact_id' => $contact->id` pair. It OVERWRITES the
+     * contact configure() just created rather than superseding it: a
+     * fixture stating its landlord is not a correction, and it should not
+     * leave a version history behind it.
+     *
+     * @param  array<string, mixed>  $attributes
+     */
+    public function withLandlord(array $attributes): static
+    {
+        return $this->afterCreating(function (RepairCase $case) use ($attributes) {
+            $case->loadMissing('property');
+            $case->property?->currentLandlordContact?->forceFill($attributes)->save();
+
+            $case->property?->unsetRelation('currentLandlordContact');
+            $case->unsetRelation('property');
         });
     }
 }

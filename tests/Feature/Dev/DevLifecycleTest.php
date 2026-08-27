@@ -1,6 +1,6 @@
 <?php
 
-use App\Models\LandlordContact;
+use App\Models\PropertyLandlordContact;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
@@ -40,9 +40,9 @@ it('seeds every demo case against the single configured tenant and landlord emai
     $tenantEmails = User::where('is_admin', false)->pluck('email')->unique()->values()->all();
     expect($tenantEmails)->toBe(['demo-tenant@inbox.test']);
 
-    $landlordEmails = LandlordContact::pluck('email')->unique()->values()->all();
+    $landlordEmails = PropertyLandlordContact::pluck('email')->unique()->values()->all();
     expect($landlordEmails)->toBe(['demo-landlord@inbox.test']);
 
     expect(User::where('email', 'like', '%@example.test')->exists())->toBeFalse();
-    expect(LandlordContact::where('email', 'like', '%@example.test')->exists())->toBeFalse();
+    expect(PropertyLandlordContact::where('email', 'like', '%@example.test')->exists())->toBeFalse();
 });

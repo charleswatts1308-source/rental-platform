@@ -2,8 +2,9 @@
 
 use App\Enums\CaseSeverity;
 use App\Enums\CaseStatus;
-use App\Models\LandlordContact;
+use App\Enums\LandlordContactRole;
 use App\Models\Property;
+use App\Models\PropertyLandlordContact;
 use App\Models\RepairCase;
 use App\Models\User;
 use Illuminate\Database\QueryException;
@@ -26,7 +27,7 @@ it('creates a valid repair case via factory', function () {
 });
 
 it('uses the cases table', function () {
-    expect((new RepairCase())->getTable())->toBe('cases');
+    expect((new RepairCase)->getTable())->toBe('cases');
 });
 
 it('casts status to CaseStatus enum', function () {
@@ -76,20 +77,36 @@ it('belongs to a property', function () {
     expect($case->property->id)->toBe($property->id);
 });
 
-it('belongs to a landlord contact', function () {
-    $contact = LandlordContact::factory()->create();
-    $case = RepairCase::factory()->create(['landlord_contact_id' => $contact->id]);
+it('records the landlord contact version it opened with', function () {
+    $case = RepairCase::factory()->create();
 
-    expect($case->landlordContact)->toBeInstanceOf(LandlordContact::class);
-    expect($case->landlordContact->id)->toBe($contact->id);
+    expect($case->propertyLandlordContact)->toBeInstanceOf(PropertyLandlordContact::class)
+        ->and($case->propertyLandlordContact->id)
+        ->toBe($case->property->currentLandlordContact->id);
 });
 
-it('exposes a cases hasMany relationship on LandlordContact', function () {
-    $contact = LandlordContact::factory()->create();
-    RepairCase::factory()->count(3)->create(['landlord_contact_id' => $contact->id]);
+it('routes to the property current contact, not the version it opened with', function () {
+    $case = RepairCase::factory()->create();
+    $openedWith = $case->propertyLandlordContact;
 
-    expect($contact->cases)->toHaveCount(3);
-    expect($contact->cases->first())->toBeInstanceOf(RepairCase::class);
+    $case->property->setLandlordContact(
+        ['email' => 'corrected@example.com', 'role' => LandlordContactRole::Landlord],
+        now(),
+        $case->tenant_user_id,
+    );
+    $case->unsetRelation('property');
+
+    expect($case->landlordRecipient()->email)->toBe('corrected@example.com')
+        ->and($case->landlordRecipient()->id)->not->toBe($openedWith->id)
+        ->and($case->fresh()->property_landlord_contact_id)->toBe($openedWith->id);
+});
+
+it('exposes a cases hasMany relationship on Property', function () {
+    $property = Property::factory()->create();
+    RepairCase::factory()->count(3)->for($property)->create();
+
+    expect($property->cases)->toHaveCount(3);
+    expect($property->cases->first())->toBeInstanceOf(RepairCase::class);
 });
 
 it('enforces unique url_slug at the database level', function () {

@@ -1,7 +1,6 @@
 <?php
 
 use App\Enums\CaseStatus;
-use App\Models\LandlordContact;
 use App\Models\RepairCase;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -22,10 +21,8 @@ beforeEach(function () {
 function tenantOwning(CaseStatus $status, array $overrides = []): array
 {
     $tenant = User::factory()->create();
-    $contact = LandlordContact::factory()->create();
-    $case = RepairCase::factory()->create(array_merge([
+    $case = RepairCase::factory()->withLandlord([])->create(array_merge([
         'tenant_user_id' => $tenant->id,
-        'landlord_contact_id' => $contact->id,
         'status' => $status,
     ], $overrides));
 

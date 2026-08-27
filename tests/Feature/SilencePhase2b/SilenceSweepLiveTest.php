@@ -6,7 +6,6 @@ use App\Enums\SenderRole;
 use App\Mail\CaseNotice;
 use App\Mail\Notifications\AutoEscalationTenantNotice;
 use App\Models\CaseMessage;
-use App\Models\LandlordContact;
 use App\Models\LetterTemplate;
 use App\Models\Property;
 use App\Models\RepairCase;
@@ -15,9 +14,7 @@ use App\Models\SilenceShadowLog;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Schema;
 
 uses(RefreshDatabase::class);
 
@@ -32,16 +29,14 @@ const PHASE2B_SNAPSHOT = [
 function landlordSideExpiredCase(int $lettersAlreadySent = 1, int $daysAgo = 15): RepairCase
 {
     $tenant = User::factory()->create();
-    $contact = LandlordContact::factory()->create(['name' => 'Mr Landlord']);
     $property = Property::factory()->create([
         'address_line1' => '12 Test Street',
         'postcode' => 'SW1A 1AA',
     ]);
     $category = RepairCategory::factory()->create();
 
-    $case = RepairCase::factory()->create([
+    $case = RepairCase::factory()->withLandlord(['name' => 'Mr Landlord'])->create([
         'tenant_user_id' => $tenant->id,
-        'landlord_contact_id' => $contact->id,
         'property_id' => $property->id,
         'category_key' => $category->key,
         'status' => CaseStatus::AwaitingLandlord,
@@ -196,10 +191,8 @@ it('promotes transition_exhausted_intent to a real transition at counter >= max 
 
 it('tenant-side nudge verdicts now EXECUTE in Phase 3 (live; mail queued, nudge_sent event written)', function () {
     Mail::fake();
-    $contact = LandlordContact::factory()->create();
     $category = RepairCategory::factory()->create();
-    $case = RepairCase::factory()->create([
-        'landlord_contact_id' => $contact->id,
+    $case = RepairCase::factory()->withLandlord([])->create([
         'category_key' => $category->key,
         'status' => CaseStatus::AwaitingTenantReview,
         'ball_with' => 'tenant',
@@ -210,13 +203,13 @@ it('tenant-side nudge verdicts now EXECUTE in Phase 3 (live; mail queued, nudge_
 
     $this->artisan('silence:sweep')->assertSuccessful();
 
-    Mail::assertQueued(\App\Mail\Notifications\AutoEscalationTenantNotice::class);
+    Mail::assertQueued(AutoEscalationTenantNotice::class);
     $row = SilenceShadowLog::query()->where('case_id', $case->id)->sole();
     expect($row->intended_action)->toBe('send_nudge');
     expect($row->executed)->toBeTrue();
     expect($case->events()->where('event_type', 'nudge_sent')->count())->toBe(1);
     // Evidential invariant: nudges never write a case_messages row.
-    expect($case->messages()->where('direction', \App\Enums\MessageDirection::Outbound)->count())->toBe(0);
+    expect($case->messages()->where('direction', MessageDirection::Outbound)->count())->toBe(0);
 });
 
 // ─── Pretend forces full shadow ───────────────────────────────────

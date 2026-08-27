@@ -4,12 +4,12 @@ use App\Enums\CaseStatus;
 use App\Enums\MessageDirection;
 use App\Enums\SenderRole;
 use App\Models\CaseMessage;
-use App\Models\LandlordContact;
 use App\Models\RepairCase;
 use App\Models\ReplyToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 
 uses(RefreshDatabase::class);
 
@@ -44,17 +44,15 @@ function inboundPayload(string $tokenValue, array $overrides = []): array
 
 function caseWithActiveTokenIn(CaseStatus $status, ?string $tokenValue = null, ?string $landlordEmail = null): array
 {
-    $contact = LandlordContact::factory()->create([
+    $case = RepairCase::factory()->withLandlord([
         'email' => $landlordEmail ?? 'landlord@example.com',
-    ]);
-    $case = RepairCase::factory()->create([
-        'landlord_contact_id' => $contact->id,
+    ])->create([
         'status' => $status,
     ]);
     $token = ReplyToken::factory()->create([
         'case_id' => $case->id,
-        'token' => $tokenValue ?? \Illuminate\Support\Str::random(20),
-        'bound_email' => $contact->email,
+        'token' => $tokenValue ?? Str::random(20),
+        'bound_email' => $case->landlordRecipient()->email,
         'superseded_at' => null,
     ]);
 

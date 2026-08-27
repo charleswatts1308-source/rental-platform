@@ -45,7 +45,6 @@ class RepairCase extends Model
         'url_slug',
         'tenant_user_id',
         'property_id',
-        'landlord_contact_id',
         'property_landlord_contact_id',
         'category_key',
         'severity',
@@ -88,11 +87,6 @@ class RepairCase extends Model
     public function property(): BelongsTo
     {
         return $this->belongsTo(Property::class);
-    }
-
-    public function landlordContact(): BelongsTo
-    {
-        return $this->belongsTo(LandlordContact::class);
     }
 
     /**

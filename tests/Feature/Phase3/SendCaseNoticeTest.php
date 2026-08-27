@@ -6,12 +6,12 @@ use App\Enums\MessageDirection;
 use App\Enums\SenderRole;
 use App\Mail\CaseNotice;
 use App\Models\CaseMessage;
-use App\Models\LandlordContact;
 use App\Models\RepairCase;
 use App\Models\RepairCategory;
 use App\Models\ReplyToken;
 use App\Services\LetterTemplateRenderer;
 use App\Services\ReplyTokenGenerator;
+use App\Services\Silence\SilenceClock;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Mail;
@@ -25,11 +25,9 @@ function sendCaseNoticeAction(): SendCaseNotice
 
 function makeOpenCase(): RepairCase
 {
-    $contact = LandlordContact::factory()->create(['email' => 'landlord@example.com']);
     $category = RepairCategory::factory()->create();
 
-    return RepairCase::factory()->create([
-        'landlord_contact_id' => $contact->id,
+    return RepairCase::factory()->withLandlord(['email' => 'landlord@example.com'])->create([
         'category_key' => $category->key,
         'status' => CaseStatus::Open,
         'current_stage' => 1,
@@ -44,21 +42,19 @@ function makeOpenCase(): RepairCase
  */
 function makeAwaitingLandlordCaseWithActiveToken(int $currentStage = 1): RepairCase
 {
-    $contact = LandlordContact::factory()->create(['email' => 'landlord@example.com']);
     $category = RepairCategory::factory()->create();
 
-    $case = RepairCase::factory()->create([
-        'landlord_contact_id' => $contact->id,
+    $case = RepairCase::factory()->withLandlord(['email' => 'landlord@example.com'])->create([
         'category_key' => $category->key,
         'status' => CaseStatus::AwaitingLandlord,
         'current_stage' => $currentStage,
         'silence_clock_started_at' => now()->subDays(20),
-        'silence_settings_snapshot' => \App\Services\Silence\SilenceClock::snapshotCurrentSettings(),
+        'silence_settings_snapshot' => SilenceClock::snapshotCurrentSettings(),
     ]);
 
     ReplyToken::factory()->create([
         'case_id' => $case->id,
-        'bound_email' => $contact->email,
+        'bound_email' => $case->landlordRecipient()->email,
         'superseded_at' => null,
     ]);
 

@@ -41,7 +41,6 @@ class DevReset extends Command
         'cases',
         'property_landlord_contacts',
         'properties',
-        'landlord_contacts',
         // standalone attachment table (rentals removed; not yet re-wired)
         'file_attachments',
         // users + dependents
