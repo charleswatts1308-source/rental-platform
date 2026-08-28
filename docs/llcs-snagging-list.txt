@@ -2524,3 +2524,50 @@ Fix:         Sum the selection client-side and refuse when it exceeds
              into a visible failure. That is the part that removes the
              luck.
 --------------------------------------------------------------------
+#59
+Page:        Case create — preview. The preview does not show WHO the
+             letter is going to. Found 2026-08-28 by Charlie, walking
+             the property-landlord-contacts branch on the dev app.
+Severity:    minor, but it is the cheap prevention for the expensive
+             problem. #24 exists because a mistyped landlord email was
+             permanent; the preview is the last moment it costs nothing
+             to catch. The one fact that decides whether the letter
+             arrives at all is the one fact not on the page.
+Saw:         cases/preview.blade.php renders the subject, the letter
+             body and the attachment list under the heading "Notice 1 —
+             preview as the landlord will see it". The landlord's NAME
+             appears only incidentally, inside the letter's salutation.
+             The EMAIL ADDRESS appears nowhere. A tenant confirming the
+             send has no way to check the address on the screen where
+             checking is free.
+Expected:    The preview states the recipient plainly — name and email
+             address — before the letter body. "This will be sent to
+             Larry Landlord, larry@example.com."
+Status:      open — snagged 28 Aug on feature/property-landlord-contacts,
+             during the browser walk of that branch. NOT a defect
+             introduced by that branch: the preview has never shown the
+             address. The branch is simply the first time anyone looked
+             at this page while thinking about landlord addresses.
+Notes:       Same family as #46, #49, #53 and the two defects found
+             walking this branch (duplicate class attribute; the
+             "future letters will go to the new address" message on an
+             unchanged address). All of them are a surface not telling
+             the tenant the truth about what is about to happen. This
+             one is the mildest form: not a false claim, an omission.
+             Cheap to fix and it sits in the same view as #39, which
+             added the attachment list for the identical reason — a
+             tenant approving a send should be able to see what is
+             actually being sent, and to whom.
+             Worth pairing with #25 in the tenant's mind: #25 tells them
+             AFTER a letter bounced; this tells them BEFORE it is sent.
+             The second is worth more.
+Fix:         Add a recipient line to cases/preview.blade.php above the
+             letter body. The controller already resolves the contact —
+             CaseController::preview holds $property, and
+             resolveLandlordName reads the same source the send does,
+             so pass the whole contact (or its email) to the view
+             rather than just the name. Assert the email shown on the
+             preview equals case_messages.to_address_raw on the
+             resulting send, so the page cannot drift from the letter
+             the way it did in #49(b).
+--------------------------------------------------------------------

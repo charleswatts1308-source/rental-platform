@@ -5,10 +5,10 @@ The `docs/` folder has many files and many are stale — this index says
 which to trust and which to ignore, so you don't re-derive state from a
 superseded doc. It is a **router, not a record**: keep it short.
 
-**Last updated:** 2026-08-27.
+**Last updated:** 2026-08-28.
 
 **⏸ WORK IN FLIGHT — read this first.** `feature/property-landlord-contacts`
-is **built, green, unmerged and unpushed**. 9 commits, tag
+is **built, green, unmerged and unpushed**. 13 commits, tag
 `pre-property-landlord-contacts` on main. It closes **#24** and **#49**
 (both halves). Nothing is deployed. See "Resume here" below.
 
@@ -37,8 +37,8 @@ still marks the fork point.
 
 ## Resume here — property-owned landlord contacts (#24 + #49)
 
-Built 27 Aug on `feature/property-landlord-contacts`. **Suite green at
-638** (main's real baseline was 578, not the 377 that was being quoted).
+Built 27–28 Aug on `feature/property-landlord-contacts`. **Suite green at
+696** (main's real baseline was 578, not the 377 that was being quoted).
 
 The landlord contact now belongs to the **property**, versioned. Routing
 resolves the property's CURRENT contact; the case's
@@ -55,14 +55,14 @@ first** — §7 is what is NOT covered, and it is the whole of what remains.
    running it against `rental_platform` would have destroyed dev data.
    The full chain (create → backfill → drop) is exercised on SQLite every
    suite run but **never on MariaDB**. Do this on gafol.
-2. **Browser walk — DONE 28 Aug, except the JavaScript.** The full flow
-   was driven against the running app over real HTTP. It found one real
-   defect (duplicate `class` attribute, `d7aba9a` — the read-only
-   landlord panel rendered *with* the editable fields). Mailpit confirmed
-   #24 end to end: first letter to `typo@`, second to `correct@`.
-   **Still needs a human at a browser:** the create form's multi-property
-   toggle, with two properties registered, one having a landlord and one
-   not. Nothing has ever executed that script.
+2. **Browser walk — DONE 28 Aug, complete.** Driven over real HTTP, then
+   walked by Charlie in the browser including the multi-property
+   JavaScript toggle. It found **three** things: the duplicate `class`
+   attribute (`d7aba9a`), the self-referential correction events
+   (`82b7fc2`), and **#59** — the preview never shows the landlord's
+   email address. The first two are fixed; #59 is snagged, not built.
+   Mailpit confirmed #24 end to end: first letter to `typo@`, second to
+   `correct@`.
 3. **Backfill on real data.** It has only ever run against dev's 5 cases
    (3 versions, 0 orphans, clean). gafol and prod shapes are unknown from
    here. The migration prints the orphan count at migrate time — that
@@ -191,7 +191,7 @@ reference `Z229825X`. The old value was the payment/account number.
 
 **#1, #2, #7, #12, #13, #17, #18, #19, #22, #25, #26, #27, #28,
 #29, #30, #31, #32, #33, #34, #35, #36, #37, #38, #39, #40, #42, #44,
-#48, #50, #51, #52, #53, #54, #56, #57, #58.**
+#48, #50, #51, #52, #53, #54, #56, #57, #58, #59.**
 
 **BUILT, NOT MERGED, NOT DEPLOYED: #24, #49.** Still live on prod until
 `feature/property-landlord-contacts` ships. #7 is the same defect as
@@ -219,6 +219,12 @@ Closed: **#23**, **#8**, **#41**, **#43**, **#45**, **#46**, **#47**,
   of an error pass.
 - **#58** the photo check is per-file only; nothing sums the selection
   against `post_max_size`. Safe today by arithmetic, not by design.
+
+**Added 28 Aug, walking the landlord-contact branch:**
+- **#59** the create-case preview never shows the landlord's EMAIL
+  ADDRESS — only the name, and only incidentally inside the letter's
+  salutation. The preview is the last free moment to catch the typo that
+  #24 exists because of. Cheap; same view as #39, same reason.
 
 **A pattern worth naming.** #46, #49 and #53 are the same failure: a
 surface asserting something the behaviour does not honour. Three in one
