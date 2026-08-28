@@ -336,6 +336,63 @@ it('accepts a submission with no landlord fields at all once the property has a 
         ->toBe('stored@example.com');
 });
 
+/**
+ * Return the opening tag for an element by id.
+ *
+ * Used to assert there is exactly ONE class attribute on it. A literal
+ * class="..." written alongside Blade's @class directive emits the
+ * attribute twice; browsers keep the first and silently drop the second,
+ * so the d-none never applies and both blocks render at once. The page
+ * then shows a read-only "this property's landlord" panel next to an
+ * editable set of landlord fields the server will ignore. Found by
+ * walking the page in the running app — no assertion on behaviour could
+ * have caught it.
+ */
+function openingTagFor(string $html, string $id): string
+{
+    expect($html)->toMatch('/<div[^>]*id="'.$id.'"[^>]*>/');
+    preg_match('/<div[^>]*id="'.$id.'"[^>]*>/', $html, $m);
+
+    return $m[0];
+}
+
+it('renders one class attribute per landlord block, so d-none is not dropped', function () {
+    [$tenant, $property] = tenantWithProperty();
+    $property->setLandlordContact(
+        ['email' => 'stored@example.com', 'name' => 'Stored Name', 'role' => 'landlord'],
+        now(),
+        $tenant->id,
+    );
+
+    $html = $this->actingAs($tenant)->get('/cases/create')->getContent();
+
+    expect(substr_count(openingTagFor($html, 'landlord-fields'), 'class='))->toBe(1)
+        ->and(substr_count(openingTagFor($html, 'landlord-inherited'), 'class='))->toBe(1);
+});
+
+it('hides the editable landlord fields once the property has a contact', function () {
+    [$tenant, $property] = tenantWithProperty();
+    $property->setLandlordContact(
+        ['email' => 'stored@example.com', 'name' => 'Stored Name', 'role' => 'landlord'],
+        now(),
+        $tenant->id,
+    );
+
+    $html = $this->actingAs($tenant)->get('/cases/create')->getContent();
+
+    expect(openingTagFor($html, 'landlord-fields'))->toContain('d-none')
+        ->and(openingTagFor($html, 'landlord-inherited'))->not->toContain('d-none');
+});
+
+it('shows the editable landlord fields when the property has no contact', function () {
+    [$tenant, $property] = tenantWithProperty();
+
+    $html = $this->actingAs($tenant)->get('/cases/create')->getContent();
+
+    expect(openingTagFor($html, 'landlord-fields'))->not->toContain('d-none')
+        ->and(openingTagFor($html, 'landlord-inherited'))->toContain('d-none');
+});
+
 it('still requires a landlord email when the property has no contact yet', function () {
     [$tenant, $property] = tenantWithProperty();
 

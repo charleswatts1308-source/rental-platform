@@ -213,8 +213,13 @@
             @php($singleProperty = $properties->count() === 1 ? $properties->first() : null)
             @php($inheritedContact = $singleProperty?->currentLandlordContact)
 
-            <div class="col-12" id="landlord-inherited"
-                 @class(['d-none' => ! $inheritedContact])>
+            {{-- Layout classes go INSIDE @class. A literal class="..."
+                 alongside @class emits the attribute twice, and a browser
+                 keeps the first and silently drops the second — which hid
+                 nothing and showed the edit fields next to the read-only
+                 panel. Caught by walking the page, not by a test. --}}
+            <div id="landlord-inherited"
+                 @class(['col-12', 'd-none' => ! $inheritedContact])>
                 <div class="border rounded p-3 bg-light">
                     <p class="mb-1">
                         <span class="text-muted">This property&rsquo;s landlord:</span>
@@ -229,8 +234,8 @@
                 </div>
             </div>
 
-            <div class="row g-3" id="landlord-fields"
-                 @class(['d-none' => (bool) $inheritedContact])>
+            <div id="landlord-fields"
+                 @class(['row', 'g-3', 'd-none' => (bool) $inheritedContact])>
                 <div class="col-md-6">
                     <label for="landlord_email" class="form-label">Email address</label>
                     <input id="landlord_email" name="landlord_email" type="email"
