@@ -179,6 +179,100 @@ it('writes a landlord_contact_corrected event on every open case', function () {
     }
 });
 
+/*
+ * Found by Charlie walking the dev app 28 Aug: adding a postal address
+ * to an existing contact wrote five "landlord_contact_corrected" events
+ * with from and to IDENTICAL, and told him future letters would go to a
+ * new address that had not changed.
+ *
+ * The event exists to explain why letter 3 went somewhere letter 2 did
+ * not. If the routing address did not move, there is nothing to explain.
+ */
+it('writes NO correction event when only the postal address changes', function () {
+    [$tenant, $property] = tenantWithContact('same@example.com', 'Larry Landlord');
+    $case = RepairCase::factory()->for($property)->create([
+        'tenant_user_id' => $tenant->id,
+        'status' => CaseStatus::AwaitingLandlord,
+    ]);
+
+    $this->actingAs($tenant)->patch(route('properties.contact.update', $property), [
+        'email' => 'same@example.com',
+        'name' => 'Larry Landlord',
+        'role' => 'landlord',
+        'address_line1' => '95 Crescent Road',
+        'city' => 'Reading',
+    ]);
+
+    // A version IS created — the contact record genuinely changed and the
+    // history should show it. The CASES are what must stay untouched.
+    expect($property->fresh()->landlordContacts()->count())->toBe(2)
+        ->and($property->fresh()->currentLandlordContact->address_line1)->toBe('95 Crescent Road')
+        ->and(CaseEvent::where('case_id', $case->id)
+            ->where('event_type', 'landlord_contact_corrected')
+            ->count())->toBe(0);
+});
+
+it('writes NO correction event when only the landlord name changes', function () {
+    [$tenant, $property] = tenantWithContact('same@example.com', 'Old Name');
+    $case = RepairCase::factory()->for($property)->create([
+        'tenant_user_id' => $tenant->id,
+        'status' => CaseStatus::AwaitingLandlord,
+    ]);
+
+    $this->actingAs($tenant)->patch(route('properties.contact.update', $property), [
+        'email' => 'same@example.com',
+        'name' => 'New Name',
+        'role' => 'landlord',
+    ]);
+
+    expect(CaseEvent::where('case_id', $case->id)
+        ->where('event_type', 'landlord_contact_corrected')
+        ->count())->toBe(0);
+});
+
+it('never writes a correction event whose from and to are the same', function () {
+    [$tenant, $property] = tenantWithContact('same@example.com');
+    RepairCase::factory()->for($property)->create([
+        'tenant_user_id' => $tenant->id,
+        'status' => CaseStatus::AwaitingLandlord,
+    ]);
+
+    $this->actingAs($tenant)->patch(route('properties.contact.update', $property), [
+        'email' => 'same@example.com',
+        'name' => 'Larry Landlord',
+        'role' => 'landlord',
+        'city' => 'Reading',
+    ]);
+
+    $selfReferential = CaseEvent::where('event_type', 'landlord_contact_corrected')
+        ->get()
+        ->filter(fn ($e) => $e->meta['from'] === $e->meta['to']);
+
+    expect($selfReferential)->toBeEmpty();
+});
+
+it('tells the tenant letters are unchanged when the email did not move', function () {
+    [$tenant, $property] = tenantWithContact('same@example.com');
+
+    $this->actingAs($tenant)
+        ->patch(route('properties.contact.update', $property), [
+            'email' => 'same@example.com',
+            'name' => 'Larry Landlord',
+            'role' => 'landlord',
+            'city' => 'Reading',
+        ])
+        ->assertSessionHas('success', fn ($m) => str_contains($m, 'unchanged')
+            && ! str_contains($m, 'new address'));
+});
+
+it('tells the tenant letters will move when the email did change', function () {
+    [$tenant, $property] = tenantWithContact();
+
+    $this->actingAs($tenant)
+        ->patch(route('properties.contact.update', $property), correctionPayload())
+        ->assertSessionHas('success', fn ($m) => str_contains($m, 'new address'));
+});
+
 it('does not write a correction event on a closed case', function () {
     [$tenant, $property] = tenantWithContact();
     $closed = RepairCase::factory()->for($property)->create([

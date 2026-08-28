@@ -38,9 +38,15 @@ use Illuminate\View\View;
  *    guards the superseded address: a reply from the old email now
  *    quarantines rather than being accepted as the landlord's.
  *
- * What it DOES do is write a landlord_contact_corrected event on every
- * open case at the property, so the record shows the correction rather
- * than the address silently changing underneath it.
+ * What it DOES do, when the EMAIL changes, is write a
+ * landlord_contact_corrected event on every open case at the property,
+ * so the record shows the correction rather than the address silently
+ * changing underneath it.
+ *
+ * Only the email. A change to the name, role, organisation or postal
+ * address gets a version and a history entry but writes nothing onto the
+ * cases — none of those moves a letter, and "corrected, from X to X" on
+ * five open cases explains nothing while cluttering all five.
  */
 class PropertyLandlordContactController extends Controller
 {
@@ -89,7 +95,17 @@ class PropertyLandlordContactController extends Controller
 
         $now = now();
 
-        DB::transaction(function () use ($property, $validated, $email, $previous, $now, $request) {
+        // Only a changed EMAIL moves where letters go. Name, role,
+        // organisation and the postal address are all recorded on the
+        // contact but none of them reaches a recipient — the postal
+        // address never even reaches a letter. So a change to those gets
+        // a version and a history entry, but writes nothing onto the
+        // cases: a "contact corrected, from X to X" event explains
+        // nothing and clutters the evidence record of every open case at
+        // the property.
+        $addressMoved = $previous && $previous->email !== $email;
+
+        DB::transaction(function () use ($property, $validated, $email, $addressMoved, $previous, $now, $request) {
             $property->setLandlordContact([
                 'email' => $email,
                 'name' => $validated['name'] ?? null,
@@ -101,16 +117,35 @@ class PropertyLandlordContactController extends Controller
                 'postcode' => $this->normalisePostcode($validated['postcode'] ?? null),
             ], $now, $request->user()->id);
 
-            if ($previous) {
+            if ($addressMoved) {
                 $this->recordCorrectionOnOpenCases($property, $previous->email, $email, $now, $request->user()->id);
             }
         });
 
         return redirect()
             ->route('properties.contact.edit', $property)
-            ->with('success', $previous
-                ? 'Landlord details corrected. Future letters on this property will go to the new address.'
-                : 'Landlord details saved.');
+            ->with('success', $this->confirmationMessage($previous !== null, $addressMoved));
+    }
+
+    /**
+     * Say what actually happened, and nothing more.
+     *
+     * Promising "future letters will go to the new address" after a
+     * postal-address edit is a claim the system does not honour — the
+     * address did not move and every letter goes exactly where it went
+     * before.
+     */
+    private function confirmationMessage(bool $hadContact, bool $addressMoved): string
+    {
+        if (! $hadContact) {
+            return 'Landlord details saved.';
+        }
+
+        if ($addressMoved) {
+            return 'Landlord email corrected. Future letters on this property will go to the new address.';
+        }
+
+        return 'Landlord details updated. The email address is unchanged, so letters will go where they did before.';
     }
 
     /**
