@@ -55,10 +55,14 @@ first** — §7 is what is NOT covered, and it is the whole of what remains.
    running it against `rental_platform` would have destroyed dev data.
    The full chain (create → backfill → drop) is exercised on SQLite every
    suite run but **never on MariaDB**. Do this on gafol.
-2. **Browser walk — NOT DONE.** The property landlord page
-   (`/properties/{id}/landlord`) and the create form's multi-property
-   toggle have never been opened. Server-side behaviour is tested and
-   authoritative; the JS is display-only. But nobody has looked.
+2. **Browser walk — DONE 28 Aug, except the JavaScript.** The full flow
+   was driven against the running app over real HTTP. It found one real
+   defect (duplicate `class` attribute, `d7aba9a` — the read-only
+   landlord panel rendered *with* the editable fields). Mailpit confirmed
+   #24 end to end: first letter to `typo@`, second to `correct@`.
+   **Still needs a human at a browser:** the create form's multi-property
+   toggle, with two properties registered, one having a landlord and one
+   not. Nothing has ever executed that script.
 3. **Backfill on real data.** It has only ever run against dev's 5 cases
    (3 versions, 0 orphans, clean). gafol and prod shapes are unknown from
    here. The migration prints the orphan count at migrate time — that

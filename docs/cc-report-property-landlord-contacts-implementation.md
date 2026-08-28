@@ -1,6 +1,7 @@
 # Implementation report — property-owned landlord contacts (Model A)
 
-**Branch:** `feature/property-landlord-contacts` (7 commits + D0)
+**Branch:** `feature/property-landlord-contacts` (7 commits + D0, plus
+a walk fix on 28 Aug — see §10)
 **Tag on main before branching:** `pre-property-landlord-contacts`
 **Merged:** not yet. Not pushed.
 **D0:** `docs/cc-report-property-landlord-contacts-d0.md`
@@ -134,10 +135,15 @@ implementation so the history can say who made a correction.
   full chain from scratch — `landlord_contacts` created, backfilled, then
   dropped — is exercised by every SQLite suite run, but not on MariaDB.
   **Worth doing on gafol before prod.**
-- **No browser walk.** The create form's multi-property JavaScript toggle
-  and the property contact page were not opened in a browser. Server-side
-  behaviour is tested; the JS is display-only and the server is
-  authoritative either way, but the pages have not been *seen*.
+- **Browser walk: DONE 28 Aug, partially.** The whole flow was driven
+  against the running app over real HTTP with a real session — register
+  property, raise a case, correct the address, raise a second case,
+  inspect the returned HTML. See §10. **It found one real defect.** What
+  it could NOT cover, because no browser automation is available here:
+  JavaScript execution and visual layout. Specifically the create form's
+  **multi-property toggle has never been exercised** — the `data-contact-*`
+  attributes are confirmed correct in the markup, but nothing has run the
+  script. A human at a browser is still needed for that one thing.
 - **The backfill has never run on gafol or prod data.** It ran on dev's
   5 cases. Prod's shape is unknown from here — in particular the orphan
   count, which is reported at migrate time and belongs in the ledger.
@@ -173,3 +179,56 @@ was rejected on D3 grounds. What remains genuinely useful is a
 corrected address without advancing the counter. That needs a decision
 about `stage_at_send` semantics before it can be built, and that decision
 belongs against `docs/llcs-silence-model-design.md`, not here.
+
+---
+
+## 10. Browser walk — 28 Aug
+
+Driven against `artisan serve` on the dev MariaDB with a real session
+(no browser automation available, so: real HTTP, real middleware, real
+CSRF, HTML read back and inspected).
+
+Walked: register property → create form with no stored contact → stage →
+preview → confirm → property landlord page → correct the address →
+history → create form WITH a stored contact → second case submitting no
+landlord fields at all → preview → confirm → case show → properties
+index → property edit.
+
+**#24 confirmed working end to end in the real app.** Mailpit received
+two letters: the first addressed to `typo@example.com`, the second to
+`correct@example.com`, each carrying its own reply token. The correction
+changed where the next letter went and left the first one alone.
+
+Also confirmed by eye: the email normalises to lower case on save; the
+history renders newest-first with the Current badge on the right row and
+the superseded row marked "replaced"; the postal address displays and
+does not appear in the letter; the second case inherits with **no
+landlord fields submitted at all**; no error page anywhere in the walk.
+
+### The defect it found — `d7aba9a`
+
+Both landlord blocks on the create form were written as
+`class="col-12" @class([...])`. Blade's `@class` emits a full class
+attribute, so the tag carried **two**, and a browser keeps the first and
+drops the second. `d-none` never applied.
+
+A tenant on a property that already had a landlord would have seen the
+read-only "This property's landlord" panel **with the editable landlord
+fields still underneath it** — an edit the server would then ignore,
+since those fields are excluded from validation in that state.
+
+Display only: routing, validation and the letters were correct
+throughout. But it is the #46/#49/#53 pattern again — a surface claiming
+what the system will not honour — which is exactly why the walk was worth
+doing. No behavioural test could have caught it; the fix carries three
+regression tests that assert the tag rather than the styling.
+
+### Known limitation, not fixed
+
+With **JavaScript off** and **more than one property**, the create form
+renders the editable landlord fields regardless, because the server
+cannot know which property will be chosen. A tenant could type an address
+that is then ignored in favour of the stored contact. It degrades safely
+— the D13 preview renders from the stored contact, so the discrepancy is
+visible before anything is sent — but it is a live example of the same
+pattern. Flagged, not fixed; wants a decision rather than a patch.
