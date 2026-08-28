@@ -2543,7 +2543,15 @@ Saw:         cases/preview.blade.php renders the subject, the letter
 Expected:    The preview states the recipient plainly — name and email
              address — before the letter body. "This will be sent to
              Larry Landlord, larry@example.com."
-Status:      open — snagged 28 Aug on feature/property-landlord-contacts,
+Status:      CLOSED 2026-08-28 (376946b) on feature/property-landlord-contacts,
+             NOT yet merged, NOT deployed. The preview now carries a
+             recipient block above the letter: name (when given) and the
+             email address, with a line saying to check it because a
+             notice cannot be recalled. Two tests assert the previewed
+             address and case_messages.to_address_raw against the same
+             literal, so neither surface can drift without failing.
+             --- history below ---
+             was open — snagged 28 Aug on feature/property-landlord-contacts,
              during the browser walk of that branch. NOT a defect
              introduced by that branch: the preview has never shown the
              address. The branch is simply the first time anyone looked
