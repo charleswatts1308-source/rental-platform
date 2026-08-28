@@ -8,9 +8,16 @@ superseded doc. It is a **router, not a record**: keep it short.
 **Last updated:** 2026-08-28.
 
 **⏸ WORK IN FLIGHT — read this first.** `feature/property-landlord-contacts`
-is **built, green, unmerged and unpushed**. 15 commits, tag
-`pre-property-landlord-contacts` on main. It closes **#24**, **#49**
-(both halves) and **#59**. Nothing is deployed. See "Resume here" below.
+is **built, green, PUSHED, and NOT merged**. 18 commits, suite 701. Tag
+`pre-property-landlord-contacts` marks the fork point on main; both
+branch and tag are on GitHub. It closes **#24**, **#49** (both halves)
+and **#59**. **Nothing is deployed anywhere.** See "Resume here" below.
+
+**⚠ ON THE DEV BOX: do not check out `main`.** The dev MariaDB has had
+this branch's migrations run against it, so `landlord_contacts` is
+**dropped** locally. Branch code is fine with that; `main`'s code is not
+and the app will break until you switch back. Stay on the branch until
+it merges.
 
 **✅ BOTH RELEASES ARE OUT.** The delivery-event capture run was deployed,
 run and torn down the same evening — **verified gone**, not merely
@@ -28,56 +35,100 @@ holds. The earlier claim here that gafol was behind at `7507a72` was
 wrong — it had release 1 on 23 Aug and was tested on it; see the
 correction block at the top of `environment-state.md`.
 
-**One open branch:** `feature/property-landlord-contacts` (below).
-`feature/delivery-events` and `feature/delivery-capture` are both
+**One open branch:** `feature/property-landlord-contacts` (below), pushed
+28 Aug. `feature/delivery-events` and `feature/delivery-capture` are both
 deleted; everything worth keeping is on main. Tag `pre-delivery-events`
 still marks the fork point.
 
 ---
 
-## Resume here — property-owned landlord contacts (#24 + #49)
+## Resume here — property-owned landlord contacts (#24, #49, #59)
 
-Built 27–28 Aug on `feature/property-landlord-contacts`. **Suite green at
-701** (main's real baseline was 578, not the 377 that was being quoted).
+### What it is, in one paragraph
 
-The landlord contact now belongs to the **property**, versioned. Routing
-resolves the property's CURRENT contact; the case's
-`property_landlord_contact_id` is provenance and is never read for
-routing. `landlord_contacts` is dropped. `case_messages` was not touched.
+The landlord contact used to hang off the **case**, in a global table
+keyed by a unique email. It now belongs to the **property**, versioned
+over time, one current version at a time (`superseded_at IS NULL`).
+Routing always resolves the property's CURRENT contact; the case's
+`property_landlord_contact_id` records only what it opened with and is
+**never read for routing** — that distinction is the whole of why #24
+closes. `landlord_contacts` is dropped. `case_messages` was not touched:
+every sent letter keeps its frozen `to_address_raw`, `subject` and
+`body_raw`.
 
-**➡ Read `docs/cc-report-property-landlord-contacts-implementation.md`
-first** — §7 is what is NOT covered, and it is the whole of what remains.
+### ➡ THE NEXT ACTION
 
-**Before merge, in this order:**
+**`docs/gafol-deploy-plan-property-landlord-contacts.md`, step 0.**
 
-1. **`migrate:fresh` on MariaDB — NOT DONE.** The dev DB user has no
-   `CREATE DATABASE` right, so no scratch database could be made, and
-   running it against `rental_platform` would have destroyed dev data.
-   The full chain (create → backfill → drop) is exercised on SQLite every
-   suite run but **never on MariaDB**. Do this on gafol.
-2. **Browser walk — DONE 28 Aug, complete.** Driven over real HTTP, then
-   walked by Charlie in the browser including the multi-property
-   JavaScript toggle. It found **three** things: the duplicate `class`
-   attribute (`d7aba9a`), the self-referential correction events
-   (`82b7fc2`), and **#59** — the preview never showed the landlord's
-   email address. All three are now fixed; #59 was built the same day
-   (`376946b`). Mailpit confirmed #24 end to end: first letter to
-   `typo@`, second to `correct@`.
-3. **Backfill on real data.** It has only ever run against dev's 5 cases
-   (3 versions, 0 orphans, clean). gafol and prod shapes are unknown from
-   here. The migration prints the orphan count at migrate time — that
-   number belongs in the ledger.
-4. `--no-ff` merge, then ledger.
+Step 0 is `php artisan migrate:status` on gafol, compared against
+`environment-state.md`. The ledger has not been reconciled since **27
+Jun** and this branch carries five migrations including a `DROP TABLE`.
+Do not deploy onto a picture known to be wrong. Ten minutes.
 
-**Behaviour changes to expect when walking it:** a reply from a
-superseded address now quarantines; a second case at a property inherits
-its landlord and cannot override it; saving a correction sends nothing.
+The plan then covers: capture the orphan count, snapshot
+`landlord_contacts` via phpMyAdmin, deploy, migrate, `SHOW CREATE TABLE`,
+walk it, write the ledger last.
 
-**Deliberately not built:** a non-escalating "resend to the corrected
-address". Auto-sending on correction takes `SendCaseNotice`'s non-first
-branch and would escalate the case as the price of fixing a typo —
-against D3. Needs a `stage_at_send` ruling against the silence design doc
-before it can exist.
+### Two decisions waiting for Charlie
+
+1. **gafol's Plesk repo tracks `main`**, and this branch must not be
+   merged before gafol validates it. Either repoint the repo for one
+   deploy, or pull the branch by hand on the box. Merging first is
+   rejected — it inverts the gate.
+2. **`migrate:fresh` on MariaDB: recommended AGAINST**, correcting an
+   earlier framing in the implementation report. The incremental
+   migration is what prod will actually do and is where the risk lives;
+   `migrate:fresh` proves a different thing and would destroy gafol's
+   staging data including the 8 D14 live-fire cases. The SQLite suite
+   runs the full chain from scratch on every run. Reasoning in §2 of the
+   deploy plan.
+
+### Reference, in order of usefulness
+
+- `docs/gafol-deploy-plan-property-landlord-contacts.md` — what to do next
+- `docs/cc-report-property-landlord-contacts-implementation.md` — §7 is
+  what is NOT covered, §10 is the browser walk and what it found
+- `docs/cc-report-property-landlord-contacts-d0.md` — the design, and §9
+  lists seven places the original design note is wrong
+
+### What the browser walk found (all fixed)
+
+Two defects and a gap, none of which any behavioural test could catch,
+all found by using the thing:
+
+- duplicate `class` attribute meant `d-none` never applied, so the
+  read-only landlord panel rendered *with* the editable fields (`d7aba9a`)
+- adding a postal address wrote `landlord_contact_corrected` events with
+  `from` == `to` on five open cases, and claimed future letters would go
+  to a new address that had not changed (`82b7fc2`)
+- the preview never showed the landlord's email — **#59**, built same day
+  (`376946b`)
+
+All three are the same shape as #46/#49/#53: a surface claiming what the
+system does not honour. That is now five instances of one pattern.
+
+### Behaviour changes to expect
+
+- a reply from a **superseded** address is now quarantined
+- a second case at a property **inherits** its landlord and cannot
+  override it
+- saving a correction **sends nothing** and advances no counter
+
+### Deliberately not built
+
+A non-escalating "resend to the corrected address". Auto-sending on
+correction takes `SendCaseNotice`'s non-first branch, which sets
+`stage_at_send = current_stage + 1` — escalating the case as the price of
+fixing a typo, against D3. Needs a `stage_at_send` ruling against
+`llcs-silence-model-design.md` before it can exist.
+
+### One infrastructure change worth knowing
+
+`phpunit.xml` now sets `memory_limit` to 256M. The suite passed at 696
+tests and hit a hard fatal at 701 — it had been running within about a
+percent of PHP's default 128M. Confirmed **not** a leak: the full suite
+passes at 192M. If it ever fails there again, measure before raising it
+a second time.
 
 ---
 
@@ -266,8 +317,9 @@ quietly collected.
 `huk-laravel-site-install-recipe.md`; `release-attachments-and-capture.txt`
 (both releases now DONE — kept as the record of how they were run);
 `DNS records old values.txt`;
+`gafol-deploy-plan-property-landlord-contacts.md` (**the next action**);
 `cc-report-property-landlord-contacts-d0.md` +
-`...-implementation.md` (NEW 27 Aug — the #24/#49 build);
+`...-implementation.md` (the #24/#49/#59 build);
 `delivery-failure-design-question.md`; `cc-report-delivery-events-d0.md`;
 `attachment-policy-design.md`; `pre-flip-checklist.md`; `User Guides/`.
 
