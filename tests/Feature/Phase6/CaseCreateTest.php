@@ -393,6 +393,125 @@ it('shows the editable landlord fields when the property has no contact', functi
         ->and(openingTagFor($html, 'landlord-inherited'))->toContain('d-none');
 });
 
+/*
+ * Snag #59 — the preview must say WHO the notice is going to. Charlie,
+ * walking the branch: "the preview does not show the landlords email
+ * address, it would be re-assuring to do so".
+ *
+ * More than reassuring. #24 exists because a mistyped address was
+ * permanent, and the preview is the last moment catching it is free.
+ */
+it('shows the recipient email on the preview when the property has no contact yet', function () {
+    [$tenant, $property] = tenantWithProperty();
+
+    $this->actingAs($tenant)->post('/cases', validStorePayload(
+        $property->id,
+        ['landlord_email' => 'Typed@Example.com', 'landlord_name' => 'Larry Landlord']
+    ));
+
+    $this->actingAs($tenant)->get('/cases/preview')
+        ->assertOk()
+        ->assertSee('This notice will be sent to')
+        // Normalised, so what is shown is what will actually be used.
+        ->assertSee('typed@example.com')
+        ->assertSee('Larry Landlord');
+});
+
+it('shows the STORED recipient email on the preview when the property has a contact', function () {
+    [$tenant, $property] = tenantWithProperty();
+    $property->setLandlordContact(
+        ['email' => 'stored@example.com', 'name' => 'Stored Name', 'role' => 'landlord'],
+        now(),
+        $tenant->id,
+    );
+
+    $this->actingAs($tenant)->post('/cases', validStorePayload(
+        $property->id,
+        ['landlord_email' => 'typed@example.com', 'landlord_name' => 'Typed Name']
+    ));
+
+    $this->actingAs($tenant)->get('/cases/preview')
+        ->assertOk()
+        ->assertSee('stored@example.com')
+        ->assertDontSee('typed@example.com');
+});
+
+/*
+ * The guard that matters: the address shown must be the address used.
+ * A second resolver is exactly how #49(b) happened to the name, and
+ * there is no reason the address would be immune.
+ */
+/*
+ * Both sides are asserted against the SAME literal rather than by
+ * holding the rendered page and comparing it to the sent row. Same
+ * guarantee — if either surface drifts, one of the two fails — and it
+ * keeps a full HTML page out of the test's memory, which matters in a
+ * suite this size.
+ */
+it('previews the same address the notice is actually sent to', function () {
+    [$tenant, $property] = tenantWithProperty();
+
+    $this->actingAs($tenant)->post('/cases', validStorePayload(
+        $property->id,
+        ['landlord_email' => 'Recipient@Example.com']
+    ));
+
+    $this->actingAs($tenant)->get('/cases/preview')->assertSee('recipient@example.com');
+    $this->actingAs($tenant)->post('/cases/preview/confirm');
+
+    expect(RepairCase::firstOrFail()->messages()->sole()->to_address_raw)
+        ->toBe('recipient@example.com');
+});
+
+it('previews the same address the notice is sent to when the contact is inherited', function () {
+    [$tenant, $property] = tenantWithProperty();
+    $property->setLandlordContact(
+        ['email' => 'inherited@example.com', 'name' => 'Stored Name', 'role' => 'landlord'],
+        now(),
+        $tenant->id,
+    );
+
+    $this->actingAs($tenant)->post('/cases', validStorePayload(
+        $property->id,
+        ['landlord_email' => 'ignored@example.com']
+    ));
+
+    $this->actingAs($tenant)->get('/cases/preview')
+        ->assertSee('inherited@example.com')
+        ->assertDontSee('ignored@example.com');
+
+    $this->actingAs($tenant)->post('/cases/preview/confirm');
+
+    expect(RepairCase::firstOrFail()->messages()->sole()->to_address_raw)
+        ->toBe('inherited@example.com');
+});
+
+it('shows the address alone rather than "Sir or Madam" when no name was given', function () {
+    [$tenant, $property] = tenantWithProperty();
+
+    $payload = validStorePayload($property->id, ['landlord_email' => 'noname@example.com']);
+    unset($payload['landlord_name']);
+
+    $this->actingAs($tenant)->post('/cases', $payload);
+
+    // The letter still opens "Dear Sir or Madam" — that is the salutation
+    // fallback, and it legitimately appears further down the page. The
+    // recipient block must not repeat it as though it were a name, so the
+    // check is scoped to that block rather than the whole page.
+    $block = recipientBlock($this->actingAs($tenant)->get('/cases/preview')->getContent());
+
+    expect($block)->toContain('noname@example.com')
+        ->not->toContain('Sir or Madam');
+});
+
+/** Just the recipient block, so a whole page is not carried around. */
+function recipientBlock(string $html): string
+{
+    $at = strpos($html, 'This notice will be sent to');
+
+    return $at === false ? '' : substr($html, $at, 400);
+}
+
 it('still requires a landlord email when the property has no contact yet', function () {
     [$tenant, $property] = tenantWithProperty();
 

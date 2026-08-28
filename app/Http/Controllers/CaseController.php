@@ -477,14 +477,15 @@ class CaseController extends Controller
 
         $validated = $payload['validated'];
         $property = Property::findOrFail($validated['property_id']);
+        $recipient = $this->resolveLandlordFor($property, $validated);
 
         $vars = [
             'tenant_name' => $request->user()->name,
             // Snag #49(b) — this line used to read the typed name while
             // the send read the stored one. Both go through
-            // resolveLandlordName now, so the letter shown here is the
+            // resolveLandlordFor now, so the letter shown here is the
             // letter that leaves.
-            'landlord_name' => $this->resolveLandlordName($property, $validated),
+            'landlord_name' => $recipient['name'] ?: 'Sir or Madam',
             'case_reference' => '(case reference assigned on send)',
             'property_address' => $this->formatAddress($property),
             'issue_description' => $validated['description'],
@@ -512,6 +513,11 @@ class CaseController extends Controller
             'property' => $property,
             'renderedLetter' => $renderedLetter,
             'renderedAuthorisation' => $renderedAuthorisation,
+            // Snag #59 — the address is the fact that decides whether the
+            // letter arrives, and it was the one fact the preview did not
+            // show. Same source the send resolves, so the two cannot
+            // disagree.
+            'recipient' => $recipient,
             // Snag #39 — the preview is the tenant's only chance to check
             // the letter before it reaches their landlord, and photos are
             // the part they cannot take back once sent. The data was
@@ -604,26 +610,40 @@ class CaseController extends Controller
     }
 
     /**
-     * The landlord details this case will actually use, as letter vars.
+     * The landlord this case will actually be served on.
      *
      * Snag #49(b): the preview used to render the TYPED name while the
      * send rendered the STORED one, so the tenant approved a letter that
-     * was never posted. Both surfaces call this now. When the property
-     * carries a contact the typed fields do not even exist (store()
-     * excludes them); when it does not, the typed values are what version
-     * 1 will be created from. Either way there is one source.
+     * was never posted. Both surfaces resolve through here now. When the
+     * property carries a contact the typed fields do not even exist
+     * (store() excludes them); when it does not, the typed values are
+     * what version 1 will be created from. Either way there is one
+     * source.
+     *
+     * Name AND email come back together, deliberately. Snag #59 wanted
+     * the address on the preview, and resolving it separately would be
+     * re-opening #49(b) in a second place — two resolvers is exactly how
+     * the name and the address drift apart.
+     *
+     * `name` is the raw value and may be null: the preview shows the
+     * address alone rather than writing "Sir or Madam" beside it, while
+     * the letter applies that fallback in the salutation.
      *
      * @param  array<string, mixed>  $validated
+     * @return array{name: ?string, email: string}
      */
-    private function resolveLandlordName(Property $property, array $validated): string
+    private function resolveLandlordFor(Property $property, array $validated): array
     {
         $contact = $property->currentLandlordContact;
 
-        $name = $contact
-            ? $contact->name
-            : ($validated['landlord_name'] ?? null);
-
-        return $name ?: 'Sir or Madam';
+        return [
+            'name' => $contact
+                ? $contact->name
+                : ($validated['landlord_name'] ?? null),
+            'email' => $contact
+                ? $contact->email
+                : strtolower(trim($validated['landlord_email'] ?? '')),
+        ];
     }
 
     private function mintSlug(): string
