@@ -36,7 +36,18 @@ wrong — it had release 1 on 23 Aug and was tested on it; see the
 correction block at the top of `environment-state.md`.
 
 **One open branch:** `feature/property-landlord-contacts` (below), pushed
-28 Aug. `feature/delivery-events` and `feature/delivery-capture` are both
+28 Aug.
+
+**#25 IS THE NEXT BUILD, and its design is now settled** (3 Sep). D17.2
+and D17.3 were both amended — see the amendment blocks in
+`llcs-silence-model-design.md` and the 2026-09-03 ruling on #25 in the
+snagging list. Build order is D0.8 in `cc-report-delivery-events-d0.md`,
+steps 1–3 of which are DONE (#47 shipped, D17 written, capture run
+executed). Remaining: the `contact_failed` ENUM migration, the nested
+signature middleware, the event controller, then transitions + tenant
+notification + the copy option. **Still undecided, and blocking step 7:**
+which statuses may enter `contact_failed`, and whether such a case can
+later be abandoned or must sit permanently as evidence. `feature/delivery-events` and `feature/delivery-capture` are both
 deleted; everything worth keeping is on main. Tag `pre-delivery-events`
 still marks the fork point.
 
