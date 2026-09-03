@@ -704,6 +704,28 @@ Ruling:      2026-08-24 — the bounce REACTION is settled. On failed +
              still cover the parser and the nested-signature verifier
              locally; it is only the live round trip that must happen on
              prod.
+Ruling:      2026-09-03 — RECOVERY, amending step 3 above. The tenant is
+             not told to raise a new case from scratch. On the stopped
+             case they are offered a COPY — same property, category,
+             severity, description and photos — taking them into the
+             ordinary create-case flow at the preview step. They did
+             nothing wrong and should not retype a description or
+             re-upload photos; and re-entering the existing flow means no
+             second send path.
+             #24 IS NOW A PREREQUISITE for the copy option, reversing the
+             line above. A case inherits the property's CURRENT landlord
+             contact with no per-case override (Model A) and creation
+             sends immediately, so at bounce time a copy would go to the
+             address that just bounced. THE PREVIEW GUARDS IT: where the
+             resolved landlord email equals the bounced message's
+             to_address_raw, confirm is refused and the tenant is sent to
+             correct the property's landlord contact first.
+             Detection, recording, the stop and the tenant notification
+             remain independent of #24.
+             MIGRATION: one survives step 2's supersession — adding
+             contact_failed to the cases.status ENUM, per
+             2026_06_14_090000_add_escalation_exhausted_to_cases_status_enum
+             (MariaDB MODIFY, SQLite no-op). CLAUDE.md #18 check applies.
 Notes:       This is the one that matters, and it is NOT really about typos.
              The silence model's entire claim is that it can say "your
              landlord was served on the 12th and has not responded in 14

@@ -5,7 +5,7 @@ The `docs/` folder has many files and many are stale — this index says
 which to trust and which to ignore, so you don't re-derive state from a
 superseded doc. It is a **router, not a record**: keep it short.
 
-**Last updated:** 2026-08-28.
+**Last updated:** 2026-09-03.
 
 **⏸ WORK IN FLIGHT — read this first.** `feature/property-landlord-contacts`
 is **built, green, PUSHED, and NOT merged**. 18 commits, suite 701. Tag
@@ -176,6 +176,15 @@ prerequisite**. #24 is scheduled on engineering grounds alone and
 **releases separately** — it is a new table, a backfill, an FK swap and a
 `DROP TABLE`, and should not share a merge with a webhook receiver.
 Full rulings are in the snagging list under #24 and #25.
+
+**AMENDED 3 Sep.** Recovery is no longer abandon-and-re-raise. The tenant
+is offered a COPY of the bounced case and flows into the ordinary
+create-case workflow, description and photos intact (D17.3, amended).
+That makes **#24 a prerequisite for the copy option** — the copy inherits
+the property's current landlord contact, and the preview must send the
+tenant to #24's correction surface before it will confirm. Detection,
+recording, the stop and the tenant notification do NOT depend on #24 and
+can be built first.
 
 ---
 
