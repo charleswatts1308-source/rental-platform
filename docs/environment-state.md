@@ -63,7 +63,7 @@ touch of any box, per the CLAUDE.md Deployment-ledger rule.
   anywhere" note that sat here was three deploys out of date; removed
   24 Aug.
 
-## gafol — permanent staging (gafol.rent) — ✅ AT MAIN (Phase A green)
+## gafol — permanent staging (gafol.rent) — ⏸ ON A BRANCH, NOT MAIN (4 Sep 2026)
 - Box: gafol.rent is the staging domain. DB `ukrenter_gafol_db` on
   mysql01. (The stale "ukrenters.rent / HUK" label was wrong —
   ukrenters.rent was a separate earlier site scheduled for deletion.)
@@ -181,7 +181,85 @@ touch of any box, per the CLAUDE.md Deployment-ledger rule.
   pinned at 1 by decision, and **#53 is NOT armed on either box** (#53:
   removing one of several staged photos removes them all — unreachable at
   ceiling 1). Re-check this before raising the ceiling anywhere.
-- Last verified: 23 Aug 2026 (release 1 surfaces). Code at `bd80e12`, 24 Aug.
+- **Property-owned landlord contacts — pre-merge gate (4 Sep 2026).**
+  Deployed `feature/property-landlord-contacts` at **`0a7321b`** — NOT
+  main. This is the gate: gafol proves the migration chain against real
+  MariaDB before `main` ever carries it. Plan:
+  `gafol-deploy-plan-property-landlord-contacts.md`.
+  - **Deploy route:** Plesk Git. The panel only lists branches it has
+    already fetched, so pull the tracked branch (`main`) first — that
+    refresh makes the new branch selectable, and it can then be pulled
+    directly. No repo repointing, nothing to set back. Then
+    `composer install --no-dev --optimize-autoloader`, `config:cache`,
+    `route:clear`, `view:clear`.
+  - **Migrations: 5, all batch 6, all Ran.** create_property_landlord_-
+    contacts_table, add_property_landlord_contact_id_to_cases_table,
+    backfill_property_landlord_contacts,
+    make_cases_landlord_contact_id_nullable,
+    drop_landlord_contacts_table.
+  - **Backfill line, verbatim:** `backfill: 10 versions across 10
+    properties, 13 cases repointed, 0 orphan contacts will be discarded
+    with the table`, then `dropped landlord_contacts: 2 rows discarded`.
+  - **Orphan count: 0.** Nothing irreversible was lost — both old
+    contacts were reachable from cases and became property versions.
+    `landlord_contacts` was exported via phpMyAdmin before the drop and
+    kept off the box.
+  - **Before-state:** 2 landlord_contacts, 13 cases, 10 properties, all
+    13 cases carrying a resolvable landlord_contact_id.
+  - **Schema verified (Migrations rule, #18).** `SHOW CREATE TABLE` on
+    both tables: `effective_from` and `superseded_at` are plain
+    `datetime` with **no `ON UPDATE CURRENT_TIMESTAMP`**; `created_at`
+    /`updated_at` are `timestamp NULL DEFAULT NULL`, also clean →
+    **#18-clear**. `UNIQUE KEY (property_id, is_current)` present, with
+    `is_current` nullable so many superseded rows coexist and only one
+    current can. FKs to `properties` and `users` present,
+    `superseded_by_user_id` `ON DELETE SET NULL`. On `cases`:
+    `landlord_contact_id` and its FK **gone**;
+    `property_landlord_contact_id` present, nullable, FK to
+    `property_landlord_contacts`. `AUTO_INCREMENT=11` on the new table
+    cross-checks the 10 versions reported.
+  - **Data verified:** 0 cases with a null contact; no property with more
+    than one current version; all 10 backfilled rows `source =
+    'backfilled'`, `is_current = 1`, `superseded_at` null, one per
+    property, `effective_from` matching each property's first case.
+  - **Walk verified:** backfilled history labelled "Reconstructed from
+    earlier cases"; a NAME-only correction wrote no
+    `landlord_contact_corrected` events (the 28 Aug defect stays fixed);
+    the create form inherits and offers no editable landlord fields on a
+    property that has a contact; the preview shows the recipient block
+    incl. the email (#59); pre-existing cases still show their recipient;
+    corrections save and version correctly (property 10 now at v3,
+    earlier two superseded).
+  - **NOT verified — end-to-end send.** Blocked by the Mailgun sandbox's
+    authorised-recipient list. Expected per the Mail rule (staging =
+    sandbox, outbound only), not a fault and not worked around.
+  - **Queue note.** The rejected send rolled the whole case creation back
+    — `Mail::queue` sits inside `CaseController::confirm`'s
+    `DB::transaction`, so on a `sync` queue a mail failure destroys the
+    case. Safer than the alternative here (no case claiming a letter that
+    never left), but **prod may run `database` instead**, where the case
+    would commit and the failure surface only in the worker. Worth
+    confirming prod's `QUEUE_CONNECTION` — the two environments diverging
+    on that path matters evidentially and touches #25.
+  - **Ledger debt paid.** Step 0 (reconcile before deploying) was
+    SKIPPED — the deploy ran first. Reconciled afterwards against
+    `php artisan migrate:status`: **41 migrations, all Ran, none
+    pending.** Batch 6 is the five above; batch 5 is
+    `2026_08_09_120000_seed_attachments_first_notice_max_setting`, which
+    rode in with release 1 on 23 Aug. No drift found, so the skip cost
+    nothing this time — but the check is a gate precisely because that is
+    not knowable in advance.
+  - **Two fixes found during the walk are NOT on gafol:** `c5d94fa` and
+    `23b6fb3` (the "Correct it on the property" link pointed at
+    `properties.edit`, which carries no landlord details — both the
+    server-rendered href and the dropdown's `data-property-url`). Local
+    only, unpushed. gafol still misdirects that link until it is
+    redeployed.
+  - **Merge gate: not yet passed to main.** Prod is a separate decision
+    and a separate entry.
+- Last verified: 4 Sep 2026 (property-landlord-contacts gate). Code at
+  `0a7321b` on `feature/property-landlord-contacts` — **gafol is NOT on
+  main until this branch merges.**
 
 ## dotrent — preprod (dotrent.net) — 🛑 RETIRED 1 Aug 2026
 

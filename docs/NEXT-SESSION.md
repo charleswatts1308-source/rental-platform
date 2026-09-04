@@ -5,10 +5,10 @@ The `docs/` folder has many files and many are stale — this index says
 which to trust and which to ignore, so you don't re-derive state from a
 superseded doc. It is a **router, not a record**: keep it short.
 
-**Last updated:** 2026-09-03.
+**Last updated:** 2026-09-04.
 
 **⏸ WORK IN FLIGHT — read this first.** `feature/property-landlord-contacts`
-is **built, green, PUSHED, and NOT merged**. 18 commits, suite 701. Tag
+is **built, green, DEPLOYED TO GAFOL AND WALKED (4 Sep), and NOT merged**. 18 commits, suite 701. Tag
 `pre-property-landlord-contacts` marks the fork point on main; both
 branch and tag are on GitHub. It closes **#24**, **#49** (both halves)
 and **#59**. **Nothing is deployed anywhere.** See "Resume here" below.
@@ -69,34 +69,34 @@ every sent letter keeps its frozen `to_address_raw`, `subject` and
 
 ### ➡ THE NEXT ACTION
 
-**`docs/gafol-deploy-plan-property-landlord-contacts.md`, step 0.**
+**The gafol gate is PASSED.** Deployed, migrated, schema-checked and
+walked on 4 Sep — full entry in `environment-state.md`. Migrations clean,
+0 orphans, #18 clear, walk found one defect (fixed, below). The only step
+not passed is the end-to-end send, blocked by the Mailgun sandbox's
+authorised-recipient list — expected per the Mail rule, not a fault.
 
-Step 0 is `php artisan migrate:status` on gafol, compared against
-`environment-state.md`. The ledger has not been reconciled since **27
-Jun** and this branch carries five migrations including a `DROP TABLE`.
-Do not deploy onto a picture known to be wrong. Ten minutes.
+**So the next action is the `--no-ff` merge to `main`, and a tag.** But
+FIRST: four commits are local-only and unpushed — `d6f07bd`, `dc00fa1`
+(reverted by `a6a381c`), `c5d94fa` and `23b6fb3`. The last two fix a
+real defect gafol still carries. Push before merging.
 
-The plan then covers: capture the orphan count, snapshot
-`landlord_contacts` via phpMyAdmin, deploy, migrate, `SHOW CREATE TABLE`,
-walk it, write the ledger last.
+**Then:** repoint gafol's Plesk repo back to `main` and pull, so staging
+stops sitting on a branch. Prod is a separate decision and a separate
+ledger entry — do not chain them in one sitting.
 
-### Two decisions waiting for Charlie
+### The gafol deploy plan is now HISTORICAL
 
-1. **gafol's Plesk repo tracks `main`**, and this branch must not be
-   merged before gafol validates it. Either repoint the repo for one
-   deploy, or pull the branch by hand on the box. Merging first is
-   rejected — it inverts the gate.
-2. **`migrate:fresh` on MariaDB: recommended AGAINST**, correcting an
-   earlier framing in the implementation report. The incremental
-   migration is what prod will actually do and is where the risk lives;
-   `migrate:fresh` proves a different thing and would destroy gafol's
-   staging data including the 8 D14 live-fire cases. The SQLite suite
-   runs the full chain from scratch on every run. Reasoning in §2 of the
-   deploy plan.
+`docs/gafol-deploy-plan-property-landlord-contacts.md` was followed and
+is spent. Both decisions it was waiting on are settled: the branch went
+on via Plesk Git (pull the tracked branch first, which refreshes the list
+and makes the new one selectable — no repointing needed), and
+`migrate:fresh` was correctly skipped. Keep the plan as the record of how
+the gate was run; do not lead with it.
 
 ### Reference, in order of usefulness
 
-- `docs/gafol-deploy-plan-property-landlord-contacts.md` — what to do next
+- `docs/environment-state.md` — the 4 Sep gafol entry: what ran, what was
+  verified, what was not
 - `docs/cc-report-property-landlord-contacts-implementation.md` — §7 is
   what is NOT covered, §10 is the browser walk and what it found
 - `docs/cc-report-property-landlord-contacts-d0.md` — the design, and §9
@@ -292,6 +292,14 @@ Closed: **#23**, **#8**, **#41**, **#43**, **#45**, **#46**, **#47**,
   against `post_max_size`. Safe today by arithmetic, not by design.
 
 **Added 28 Aug, walking the landlord-contact branch:**
+**Added 4 Sep, walking the branch on gafol:**
+- the "Correct it on the property" link on the create-case form pointed
+  at `properties.edit`, which carries no landlord details at all — the
+  sentence told the tenant to do something the destination could not do.
+  **Fixed** (`c5d94fa`), then fixed again (`23b6fb3`) because the
+  dropdown's `data-property-url` carried the same wrong route and the JS
+  overwrote the corrected href. Seventh instance of the #46/#49/#53
+  pattern. Not deployed to gafol.
 - **#59** the create-case preview never showed the landlord's EMAIL
   ADDRESS — only the name, and only incidentally inside the letter's
   salutation. The preview is the last free moment to catch the typo that
