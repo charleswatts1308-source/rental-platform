@@ -270,6 +270,10 @@ class RepairCase extends Model
     private const TRANSITIONS = [
         'open' => [
             'awaiting_landlord' => 'notice_sent',
+            // D17.8 (#25) — the first send and this transition share one
+            // transaction, so the window is tiny; an event arriving inside
+            // it still needs somewhere to go.
+            'contact_failed' => 'delivery_failed',
         ],
         'awaiting_landlord' => [
             'awaiting_tenant_review' => 'inbound_received',
@@ -287,6 +291,9 @@ class RepairCase extends Model
             // D14 — never-engaged ladder exhaustion (design doc D5). The
             // sweep fires the landlord closer then promotes the case here.
             'escalation_exhausted' => 'case_exhausted',
+            // D17.8 (#25) — the normal arrival point for a bounce: a letter
+            // has just gone out and the case sits here.
+            'contact_failed' => 'delivery_failed',
         ],
         'awaiting_tenant_review' => [
             'awaiting_landlord' => 'tenant_replied',
@@ -294,6 +301,9 @@ class RepairCase extends Model
             'resolved' => 'case_resolved',
             'abandoned' => 'case_abandoned',
             'dormant' => 'case_dormant',
+            // D17.8 (#25) — a landlord replying to an EARLIER letter does
+            // not make a later bounced one delivered.
+            'contact_failed' => 'delivery_failed',
         ],
         'on_hold' => [
             // Tenant reply from on_hold IS the resume action (D8) — same
@@ -302,6 +312,8 @@ class RepairCase extends Model
             'awaiting_tenant_review' => 'inbound_received',
             'resolved' => 'case_resolved',
             'abandoned' => 'case_abandoned',
+            // D17.8 (#25) — a hold is a pause, not an ending.
+            'contact_failed' => 'delivery_failed',
         ],
         'dormant' => [
             // Revival within dormancy.revival_days; the window check is in
@@ -310,6 +322,8 @@ class RepairCase extends Model
             'awaiting_tenant_review' => 'inbound_received',
             'resolved' => 'case_resolved',
             'abandoned' => 'case_abandoned',
+            // D17.8 (#25) — dormant is quiet, not finished.
+            'contact_failed' => 'delivery_failed',
         ],
         'escalation_exhausted' => [
             // D14 allow-reply (design doc D5), mirroring dormant's split:
@@ -322,7 +336,19 @@ class RepairCase extends Model
             'resolved' => 'case_resolved',
             'abandoned' => 'case_abandoned',
         ],
+        // D17.8 (#25) — one exit only. The tenant may close their own
+        // case, exactly as escalation_exhausted allows; the evidence lives
+        // in case_events, not in the status, so closing retracts nothing.
+        // NO revival on reply: the address is broken, and D17.3's
+        // tenant-taken copy is the route forward.
+        'contact_failed' => [
+            'abandoned' => 'case_abandoned',
+        ],
         // resolved and abandoned are terminal — no allowed transitions out.
+        // escalation_exhausted is NOT a source of contact_failed, and nor
+        // are these two: a bounce stops a case that is still RUNNING, it
+        // does not reach back into one that has already stopped (D17.8).
+        // The case_events row is written either way.
         'resolved' => [],
         'abandoned' => [],
     ];

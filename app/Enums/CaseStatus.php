@@ -17,6 +17,13 @@ enum CaseStatus: string
     // party revives the case (D14 allow-reply); the tenant may frame the
     // outcome with a label-only stance (see App\Enums\ExhaustedStance).
     case EscalationExhausted = 'escalation_exhausted';
+    // D17 (#25) — terminal state reached when a letter to the landlord
+    // PERMANENTLY fails to deliver. A bounce is not a variant of silence,
+    // it is the opposite: silence escalates, a bounce stops the ladder and
+    // hands the problem back to the tenant. Per D17.8 the only exit is
+    // abandoned; there is no revival on reply, because the address is
+    // broken and D17.3's tenant-taken copy is the route forward.
+    case ContactFailed = 'contact_failed';
 
     /**
      * Snag #47 — status classification is EXHAUSTIVE and lives here.
@@ -52,7 +59,11 @@ enum CaseStatus: string
             self::Abandoned,
             self::Dormant,
             // D14 — terminal, sweep-inert at every stance value.
-            self::EscalationExhausted => false,
+            self::EscalationExhausted,
+            // D17.2/D17.8 — the ladder STOPS at a permanent delivery
+            // failure. Sweeping it would escalate against an address
+            // already proven dead.
+            self::ContactFailed => false,
         };
     }
 
@@ -76,7 +87,12 @@ enum CaseStatus: string
             self::Dormant,
             // D14 — terminal: the clock stops permanently at ladder
             // exhaustion. No further automatic escalation letters.
-            self::EscalationExhausted => false,
+            self::EscalationExhausted,
+            // D17 — silence must mean "delivered and not answered". A
+            // letter that never arrived cannot be answered, so counting
+            // silence against it would assert exactly the falsehood #25
+            // exists to prevent.
+            self::ContactFailed => false,
         };
     }
 
@@ -98,7 +114,12 @@ enum CaseStatus: string
             self::AwaitingTenantReview,
             self::OnHold,
             self::Dormant,
-            self::EscalationExhausted => false,
+            self::EscalationExhausted,
+            // D17.8 — terminal for escalation but NOT fully closed: the
+            // tenant may still abandon it, exactly as with
+            // escalation_exhausted. "Closed" here means no transitions
+            // out at all.
+            self::ContactFailed => false,
         };
     }
 

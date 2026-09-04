@@ -74,3 +74,15 @@ it('never sweeps or clocks a fully closed status', function () {
         expect($status->hasSilenceClock())->toBeFalse();
     }
 });
+
+it('pins contact_failed: inert to the sweep and the clock, but not fully closed', function () {
+    // D17.8 (#25). Sweeping it would escalate against an address already
+    // proven dead. Running a clock would count silence against a letter
+    // that never arrived — precisely the falsehood #25 exists to prevent.
+    expect(CaseStatus::ContactFailed->isSweepable())->toBeFalse();
+    expect(CaseStatus::ContactFailed->hasSilenceClock())->toBeFalse();
+
+    // NOT "fully closed": that means no transitions out at all, and
+    // contact_failed keeps one — the tenant may abandon it.
+    expect(CaseStatus::ContactFailed->isClosedStatus())->toBeFalse();
+});
