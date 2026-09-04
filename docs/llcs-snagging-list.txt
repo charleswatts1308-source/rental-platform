@@ -2612,3 +2612,58 @@ Fix:         Add a recipient line to cases/preview.blade.php above the
              resulting send, so the page cannot drift from the letter
              the way it did in #49(b).
 --------------------------------------------------------------------
+#60
+Page:        Case create — after the send. The tenant receives NO email
+             when they raise a case and letter 1 goes out. Noticed
+             2026-09-04 by Charlie, walking prod after the
+             property-landlord-contacts deploy — explicitly "with new
+             eyes after a week away from it".
+Severity:    design gap, not a defect. Nothing is broken and nothing
+             failed: there is no such email in the system to fail. But a
+             returning user expected one strongly enough to report it as
+             a fault, which is the useful signal here.
+Saw:         Exactly ONE tenant-facing mailable exists,
+             AutoEscalationTenantNotice, sent from three places:
+             SilenceSweep (auto-escalation, 3 call sites) and
+             HandleInboundReply (landlord replied). Nothing in
+             CaseController::confirm or SendCaseNotice sends anything to
+             the tenant. The tenant gets a flash message on the case page
+             — "Repair notice sent. The first letter is now on its way to
+             your landlord." — and then silence in their inbox.
+Expected:    Arguable both ways; that is why this is a design question
+             and not a bug. The case FOR: the tenant has just caused a
+             formal notice to go to their landlord in their name, and the
+             product's whole value is an evidential record. Their own
+             dated copy — subject, body, recipient address — is worth
+             something evidentially and reassuringly. It is also the
+             moment a wrong landlord address would be noticed, which is
+             the entire #24/#49/#59 family.
+Status:      open — snagged 4 Sep 2026.
+Notes:       The design doc is SILENT on this. It covers notifying the
+             tenant at escalations and transitions (D5, D14) and rules
+             under D2 that an undeliverable letter is the tenant's
+             business. It says nothing about a confirmation at case
+             creation. So building this needs a D-section or an explicit
+             ruling, not just a mailable — the doc is authoritative and
+             currently does not ask for it.
+             WHY IT MAY HAVE BEEN DELIBERATE: the tenant is signed in and
+             the case page carries the full record, so an email is
+             arguably redundant. Counter-argument is that the tenant does
+             not keep the case page, and the one artefact they can
+             forward, print or produce later is an email.
+             RELATED: #59 put the recipient on the PREVIEW, before the
+             send. This is the same concern one step later — what the
+             tenant holds AFTER it has gone.
+Fix:         HARD CONSTRAINT if built: mail-only. It MUST NOT create a
+             case_messages row. An outbound system row with a non-null
+             stage_at_send is the escalation counter's own predicate, so
+             a confirmation email that wrote one would inflate the ladder
+             — the same invariant AutoEscalationTenantNotice already
+             respects. See CLAUDE.md, Evidential invariants.
+             Content question to settle first: a full copy of the letter,
+             or a short "we have sent this, here is who to and when, view
+             it here" with a magic link (D12 covers magic-link sign-in for
+             tenant email arrivals). The second is cheaper and leaks less
+             into an inbox; the first is the one that has evidential
+             value on its own.
+--------------------------------------------------------------------

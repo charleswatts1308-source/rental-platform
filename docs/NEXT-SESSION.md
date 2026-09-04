@@ -269,7 +269,7 @@ reference `Z229825X`. The old value was the payment/account number.
 
 **#1, #2, #7, #12, #13, #17, #18, #19, #22, #25, #26, #27, #28,
 #29, #30, #31, #32, #33, #34, #35, #36, #37, #38, #39, #40, #42, #44,
-#48, #50, #51, #52, #53, #54, #56, #57, #58.**
+#48, #50, #51, #52, #53, #54, #56, #57, #58, #60.**
 
 **BUILT, NOT MERGED, NOT DEPLOYED: #24, #49, #59.** Still live on prod until
 `feature/property-landlord-contacts` ships. #7 is the same defect as
@@ -299,6 +299,15 @@ Closed: **#23**, **#8**, **#41**, **#43**, **#45**, **#46**, **#47**,
   against `post_max_size`. Safe today by arithmetic, not by design.
 
 **Added 28 Aug, walking the landlord-contact branch:**
+**Added 4 Sep, walking PROD after the deploy:**
+- **#60** the tenant gets **no email at all** when they raise a case and
+  letter 1 goes out. Not a defect — no such mailable exists — but Charlie
+  expected one coming back to the app "with new eyes after a week away",
+  which is the signal worth keeping. **The design doc is SILENT on it**,
+  so it needs a ruling before it can be built, and it must be mail-only
+  (a `case_messages` row would inflate the ladder). Same concern as #59
+  one step later: #59 is what the tenant sees BEFORE the send, this is
+  what they hold AFTER.
 **Added 4 Sep, walking the branch on gafol:**
 - the "Correct it on the property" link on the create-case form pointed
   at `properties.edit`, which carries no landlord details at all — the
