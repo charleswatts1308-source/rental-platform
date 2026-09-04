@@ -7,17 +7,17 @@ superseded doc. It is a **router, not a record**: keep it short.
 
 **Last updated:** 2026-09-04.
 
-**⏸ WORK IN FLIGHT — read this first.** `feature/property-landlord-contacts`
-is **built, green, DEPLOYED TO GAFOL AND WALKED (4 Sep), and NOT merged**. 18 commits, suite 701. Tag
-`pre-property-landlord-contacts` marks the fork point on main; both
-branch and tag are on GitHub. It closes **#24**, **#49** (both halves)
-and **#59**. **Nothing is deployed anywhere.** See "Resume here" below.
+**✅ SHIPPED EVERYWHERE (4 Sep).** `feature/property-landlord-contacts` is
+merged to `main` (`fb03bc9`, `--no-ff`, tag
+`post-property-landlord-contacts`, suite 703) and **deployed to gafol AND
+prod**, both walked. Closes **#24**, **#49** (both halves) and **#59**;
+**#7** dies with #49(a). Prod was walked on the real Mailgun production
+path — a letter with an attachment sent and arrived. Ledger entries for
+both boxes are in `environment-state.md`. **No work is in flight.**
 
-**⚠ ON THE DEV BOX: do not check out `main`.** The dev MariaDB has had
-this branch's migrations run against it, so `landlord_contacts` is
-**dropped** locally. Branch code is fine with that; `main`'s code is not
-and the app will break until you switch back. Stay on the branch until
-it merges.
+**The dev-box `main` warning is now VOID.** It merged, so `main` carries
+the five migrations and the dev MariaDB matches it again. Check out
+`main` freely.
 
 **✅ BOTH RELEASES ARE OUT.** The delivery-event capture run was deployed,
 run and torn down the same evening — **verified gone**, not merely
@@ -69,21 +69,24 @@ every sent letter keeps its frozen `to_address_raw`, `subject` and
 
 ### ➡ THE NEXT ACTION
 
-**The gafol gate is PASSED.** Deployed, migrated, schema-checked and
-walked on 4 Sep — full entry in `environment-state.md`. Migrations clean,
-0 orphans, #18 clear, walk found one defect (fixed, below). The only step
-not passed is the end-to-end send, blocked by the Mailgun sandbox's
-authorised-recipient list — expected per the Mail rule, not a fault.
+**#25 — the Mailgun delivery-event receiver.** The landlord-contact work
+is finished and shipped; this is the next build. Its design is settled
+(D17.2 and D17.3 were amended 3 Sep — see the amendment blocks in
+`llcs-silence-model-design.md` and the 2026-09-03 ruling on #25 in the
+snagging list). Build order is D0.8 in `cc-report-delivery-events-d0.md`,
+steps 1–3 of which are DONE (#47 shipped, D17 written, capture run
+executed). Remaining: the `contact_failed` ENUM migration, the nested
+signature middleware, the event controller, then transitions + tenant
+notification + the copy option.
 
-**So the next action is the `--no-ff` merge to `main`, and a tag.** But
-FIRST: four commits are local-only and unpushed — `d6f07bd`, `dc00fa1`
-(reverted by `a6a381c`), `c5d94fa` and `23b6fb3`. The last two fix a
-real defect gafol still carries. Push before merging.
+**Still undecided, and it blocks step 7:** which statuses may enter
+`contact_failed`, and whether such a case can later be abandoned or must
+sit permanently as evidence.
 
-**Then:** repoint gafol's Plesk repo back to `main` and pull, so staging
-stops sitting on a branch. Prod is a separate decision and a separate
-ledger entry — do not chain them in one sitting.
-
+**Two loose ends worth clearing first, both small.** Push the two local
+docs commits. And check prod's `interval_days` / `max_notices` — they may
+still be **1 / 2** from the July ladder test rather than 14 / 4, which on
+a live case means escalation every day.
 ### The gafol deploy plan is now HISTORICAL
 
 `docs/gafol-deploy-plan-property-landlord-contacts.md` was followed and
