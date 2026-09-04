@@ -589,9 +589,83 @@ touch of any box, per the CLAUDE.md Deployment-ledger rule.
     and run the suppression SQL in the release checklist against
     `charles.watts1308-t1@gmail.com` — a real July hard bounce, proven
     this evening to be still silently swallowing letters.
-- Last verified: 13 Jul 2026 (the 23 Aug attachment deploy is recorded
-  above but its verification list is outstanding; the capture run above
-  is verified complete).
+- **Property-owned landlord contacts (4 Sep 2026).** Deployed `main` at
+  **`fb03bc9`** (merge `--no-ff` of `feature/property-landlord-contacts`,
+  tag `post-property-landlord-contacts`, suite 703 on the merged main).
+  Closes **#24**, **#49(a)**, **#49(b)**, **#59**; **#7** dies with
+  #49(a). Gated on gafol first — see the gafol entry above.
+  - **DATA WIPED FIRST, by decision.** No live customer data existed, so
+    cases and properties were cleared in phpMyAdmin before the deploy
+    rather than migrated. Removed: 9 cases, 4 properties, 5
+    landlord_contacts, 23 case_messages, 194 silence_shadow_log, 18
+    magic_login_tokens (message_attachments, case_events and reply_tokens
+    were already emptied). **KEPT:** 8 users incl. the admin, and 11
+    repair_categories. This also disposed of the three capture-run test
+    cases (`9RKDKC`, `3YHRKZ`, `CZPUAD`) — that open action is closed.
+    NOTE: `TRUNCATE` was refused (#1701) on tables carrying FK children
+    even with `FOREIGN_KEY_CHECKS = 0`, which phpMyAdmin did not honour
+    across the batch. `DELETE` in child-first order worked; it does not
+    reseed AUTO_INCREMENT, so ids were reset with `ALTER TABLE`.
+  - **Consequence: the riskiest migration became a no-op.** The backfill
+    ran against empty tables and the `DROP TABLE` discarded nothing. The
+    orphan-loss risk that made this deploy delicate did not exist here.
+  - **Step 0 reconciliation:** `migrate:status` showed **35 Ran at batch
+    1** (the fresh build the ledger records) **plus batch 2**
+    (`2026_08_09_120000_seed_attachments_first_notice_max_setting`, which
+    rode in with release 1 on 23 Aug), and the **5 new ones Pending**.
+    **No drift.** Run after the pull rather than before — the pull moves
+    code only, so the reading is identical, and it names the pending set.
+  - **Deploy route:** Plesk Git pull `main`, then `composer install
+    --no-dev --optimize-autoloader`, `config:cache`, `route:clear`,
+    `view:clear`. Then `php artisan migrate --force`.
+  - **Migrations: 5, all DONE.** Both printing migrations were SILENT and
+    that is correct — the backfill returns early when there are no cases
+    and no orphans, and the drop only echoes when it discards rows.
+    Silence here is success, not a skipped step.
+  - **Schema verified (Migrations rule, #18).** `SHOW CREATE TABLE` on
+    both tables, byte-identical to gafol's: `effective_from` and
+    `superseded_at` plain `datetime` with **no `ON UPDATE
+    CURRENT_TIMESTAMP`**; `created_at`/`updated_at` `timestamp NULL
+    DEFAULT NULL` → **#18-clear**. `UNIQUE KEY (property_id,
+    is_current)` present with `is_current` nullable. All three FKs, with
+    `superseded_by_user_id` `ON DELETE SET NULL`. On `cases`:
+    `landlord_contact_id` and its FK **gone**;
+    `property_landlord_contact_id` present, nullable, FK in place.
+    `SHOW TABLES LIKE 'landlord_contacts'` returns nothing — the table is
+    gone. Checked on prod's own server, not inferred from gafol.
+  - **Walked on the real Mailgun production path (the thing gafol can
+    never show).** New property → landlord contact → case → letter 1
+    sent. **The landlord received the email, WITH an attachment, and the
+    attachment arrived intact.** Everything else in the walk good.
+  - **Found while walking: #60** — the tenant receives no email at all
+    when their case is raised. Not a defect (no such mailable exists) but
+    a design gap, raised by fresh eyes after a week away. Needs a ruling;
+    the design doc is silent.
+  - **Suppression assessment, run before the wipe.** Prod's Mailgun bounce
+    list holds two addresses: `admin@renters.rent` (unrouteable, 4 Jul —
+    that is **#48**) and `charles.watts1308-t1@gmail.com` (5.1.1, 12
+    Jul). Against all 9 cases then on prod, **only `3YHRKZ` ever used a
+    suppressed address**, and that was the capture-run case raised
+    deliberately on 23 Aug *because* it was suppressed. **No genuine case
+    ratcheted against never-transmitted letters.** The mechanism is real
+    and proven; on prod it cost nothing. That open action is closed.
+    **The suppression list lives in MAILGUN and survived the wipe** —
+    both entries are still there. Sends to either are still dropped.
+  - **NOT confirmed this session:** prod's `interval_days` /
+    `max_notices` (may still be **1 / 2** from the July ladder test
+    rather than 14 / 4 — check before any real case is left running);
+    whether `TRACK_PAGE_VIEWS` is set in prod's `.env` (the flag has
+    defaulted to OFF since the feature was built, 28 Nov 2025); and
+    prod's `QUEUE_CONNECTION` (gafol behaves as `sync` — a rejected send
+    rolls the whole case creation back; if prod is `database` the case
+    would commit and only the worker would see the failure, which matters
+    evidentially and touches #25).
+  - Orphaned attachment files from the wiped `message_attachments` rows
+    remain under `storage/` — untidy, harmless, worth sweeping.
+- Last verified: **4 Sep 2026** — property-owned landlord contacts,
+  walked end to end on the real Mailgun path incl. an attachment. Code at
+  `fb03bc9` (`main`). Prod and gafol are on the same commit; the two
+  later docs commits (`62e28a7`, `e3d29de`) are local and unpushed.
 
 ## Dead database — ukrenters_rent (DELETE AFTER go-live)
 - `ukrenters_rent` is an OLD leftover database, NOT used by any live

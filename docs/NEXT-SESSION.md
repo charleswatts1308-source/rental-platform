@@ -201,8 +201,9 @@ can be built first.
 
 ## Open actions — do these first
 
-1. **Abandon the three test cases on prod:** `9RKDKC`, `3YHRKZ`,
-   `CZPUAD`. Real cases raised for the capture run.
+1. ~~**Abandon the three test cases on prod.**~~ **DONE 4 Sep** — prod's
+   cases and properties were wiped wholesale before the deploy (no live
+   customer data existed), which disposed of all three.
 2. ~~**Run the suppression SQL.**~~ **DONE 4 Sep — and the damage is
    NIL.** Prod's suppression list holds two addresses:
    `admin@renters.rent` (unrouteable, 4 Jul — that is #48) and
@@ -220,11 +221,10 @@ can be built first.
    attachment-bearing letter sends and arrives; the 4–8MB band gives OUR
    file-named error rather than PHP's; and **an attachment-bearing letter
    spam-scored** — the one that had never been done on any path.
-4. **Reconcile the ledger against `migrate:status`.** **gafol: DONE
-   4 Sep** — 41 migrations, all Ran, none pending, no drift; recorded in
-   `environment-state.md`. **prod: still outstanding**, and it is the
-   box that matters more — do it as step 0 of the prod deploy, before
-   anything is migrated.
+4. ~~**Reconcile the ledger against `migrate:status`.**~~ **BOTH DONE
+   4 Sep.** gafol: 41 Ran, none pending. prod: 35 at batch 1 plus the
+   attachments seed at batch 2, then the five new ones. **No drift on
+   either box.** Both recorded in `environment-state.md`.
 5. **#56** — advise the ICO of renters.rent as a trading name on
    registration `Z229825X`. Admin task, not code.
 
