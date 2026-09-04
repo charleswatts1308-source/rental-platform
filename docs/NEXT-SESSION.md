@@ -7,6 +7,10 @@ superseded doc. It is a **router, not a record**: keep it short.
 
 **Last updated:** 2026-09-04.
 
+**⏸ WORK IN FLIGHT — `feature/delivery-event-receiver`.** #25 steps 4 and
+5 are BUILT, green (suite 732), committed, **NOT pushed and NOT merged**.
+Tag `pre-delivery-event-receiver` marks the fork point on main. Resume at
+**step 6** — see "#25 — resume at step 6" below.
 **✅ SHIPPED EVERYWHERE (4 Sep).** `feature/property-landlord-contacts` is
 merged to `main` (`fb03bc9`, `--no-ff`, tag
 `post-property-landlord-contacts`, suite 703) and **deployed to gafol AND
@@ -87,6 +91,47 @@ sit permanently as evidence.
 docs commits. And check prod's `interval_days` / `max_notices` — they may
 still be **1 / 2** from the July ladder test rather than 14 / 4, which on
 a live case means escalation every day.
+### #25 — resume at step 6
+
+**DONE, on `feature/delivery-event-receiver` (2 commits, suite 732):**
+- **Step 4** (`70d12ce`) — `contact_failed` status. ENUM migration with
+  the manual MariaDB check done (widened to nine values, `NOT NULL
+  DEFAULT 'open'` intact, rolled back clean, re-applied). `CaseStatus`
+  classifications and D17.8's TRANSITIONS entries, with tests asserting
+  every permitted entry, every refusal, and that `abandoned` is the ONLY
+  exit.
+- **Step 5** (`5387244`) — `VerifyMailgunEventSignature` + alias
+  `verify.mailgun.event.signature`, tested against the captured envelope
+  shape including both replay-window edges and the concatenation order.
+
+**⚠ A PREMISE IN THE REFERENCE DOC WAS WRONG, now corrected.** The D0 and
+`mailgun-delivery-event-payloads.md` both said the inbound verifier
+returns **406** on an event payload, and that Mailgun never retries a
+406, so events would vanish silently. **It returns 500** — line 39 casts
+the nested `signature` ARRAY to string, Laravel promotes the warning to
+an ErrorException. A 500 is retried for ~8 hours, so the failure would
+have been noisy, not silent. The second middleware is still needed (the
+shapes differ), but not for the stated reason. Doc corrected; the
+inbound middleware was deliberately NOT touched.
+
+**STEP 6 IS NEXT — the controller and route. Four things it needs ruled
+before or during, none of them large:**
+1. **`delivered` events** are captured per D17.7, but no `event_type`
+   name is ruled for them. `delivery_failed` is fixed by the #25 ruling;
+   its counterpart is not.
+2. **An unmatchable `case_message_id`** — what to return. Probably 200
+   with a log line, since a retry will never match either, but a 200 on
+   something we could not process deserves a deliberate decision.
+3. **Idempotency.** Mailgun can deliver the same event more than once.
+   Nothing currently dedupes, and `event-data.id` is the natural key.
+   Not mentioned in the D0.
+4. **`temporary` severity** — D17.2 says record it and take no
+   tenant-facing action. Confirm that still writes a `case_events` row
+   rather than being dropped entirely.
+
+Steps 7 (transitions, tenant notification, the D17.3 copy option) and 8
+(live proof against a dead address, on prod per the standing Mailgun
+rule) follow.
 ### The gafol deploy plan is now HISTORICAL
 
 `docs/gafol-deploy-plan-property-landlord-contacts.md` was followed and
