@@ -228,7 +228,7 @@
                     <p class="mb-1 small text-muted" data-inherited-email>{{ $inheritedContact?->email }}</p>
                     <p class="mb-0 small">
                         The notice will be served on this address.
-                        <a href="{{ $singleProperty ? route('properties.edit', $singleProperty) : route('properties.index') }}">Correct it on the property</a>
+                        <a href="{{ $singleProperty ? route('properties.contact.edit', $singleProperty) : route('properties.index') }}">Correct it on the property</a>
                         if it is wrong.
                     </p>
                 </div>

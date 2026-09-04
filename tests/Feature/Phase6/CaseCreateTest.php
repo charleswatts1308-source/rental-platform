@@ -384,6 +384,24 @@ it('hides the editable landlord fields once the property has a contact', functio
         ->and(openingTagFor($html, 'landlord-inherited'))->not->toContain('d-none');
 });
 
+it('points the correction link at the landlord contact page, not the property edit form', function () {
+    [$tenant, $property] = tenantWithProperty();
+    $property->setLandlordContact(
+        ['email' => 'stored@example.com', 'name' => 'Stored Name', 'role' => 'landlord'],
+        now(),
+        $tenant->id,
+    );
+
+    $html = $this->actingAs($tenant)->get('/cases/create')->getContent();
+
+    // "Correct it on the property" used to link to properties.edit, which
+    // does not carry the landlord contact at all — the sentence told the
+    // tenant to do something the destination could not do. Found by
+    // walking the page.
+    expect($html)->toContain(route('properties.contact.edit', $property))
+        ->and($html)->not->toContain(route('properties.edit', $property));
+});
+
 it('shows the editable landlord fields when the property has no contact', function () {
     [$tenant, $property] = tenantWithProperty();
 
