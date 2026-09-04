@@ -208,16 +208,21 @@ can be built first.
    proven on 23 Aug to be STILL silently swallowing letters. Find out
    what it has done to its cases: whether the ladder ratcheted against
    letters never transmitted.
-3. **Finish verifying the prod attachment release.** Deployed but NOT
-   verified: `/landlords` renders with ICO ref `Z229825X`; nav order;
-   admin ceiling reads 1; an attachment-bearing letter sends and
-   arrives; the 4–8MB band gives OUR file-named error, not PHP's; and
-   **spam-scoring an attachment-bearing letter, which has never been
-   done on any path.**
-4. **Reconcile the ledger against `migrate:status`** — not done since
-   27 Jun, contrary to the CLAUDE.md rule. Overdue, and now blocking:
-   the landlord-contact branch adds **five** migrations, and its drop
-   step needs to know what has actually run where.
+   **RUN IT BEFORE THE PROD DEPLOY.** The query joins
+   `landlord_contacts`, which this branch DROPS — after the deploy it
+   needs rewriting against `property_landlord_contacts`. Cheapest to run
+   it first.
+3. ~~**Finish verifying the prod attachment release.**~~ **DONE —
+   confirmed by Charlie 4 Sep.** All six checked and OK: `/landlords`
+   with ICO ref `Z229825X`; nav order; admin ceiling reads 1; an
+   attachment-bearing letter sends and arrives; the 4–8MB band gives OUR
+   file-named error rather than PHP's; and **an attachment-bearing letter
+   spam-scored** — the one that had never been done on any path.
+4. **Reconcile the ledger against `migrate:status`.** **gafol: DONE
+   4 Sep** — 41 migrations, all Ran, none pending, no drift; recorded in
+   `environment-state.md`. **prod: still outstanding**, and it is the
+   box that matters more — do it as step 0 of the prod deploy, before
+   anything is migrated.
 5. **#56** — advise the ICO of renters.rent as a trading name on
    registration `Z229825X`. Admin task, not code.
 
