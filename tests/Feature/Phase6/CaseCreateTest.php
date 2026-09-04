@@ -402,6 +402,22 @@ it('points the correction link at the landlord contact page, not the property ed
         ->and($html)->not->toContain(route('properties.edit', $property));
 });
 
+it('points the dropdown correction URL at the landlord contact page too', function () {
+    [$tenant, $first] = tenantWithProperty();
+    $second = Property::factory()->create(['registered_by_user_id' => $tenant->id]);
+
+    // With two properties the page renders a <select>, and the JS assigns
+    // each option's data-property-url to the correction link. Fixing the
+    // server-rendered href alone left this one pointing at properties.edit,
+    // so the link was correct until the tenant touched the dropdown.
+    $html = $this->actingAs($tenant)->get('/cases/create')->getContent();
+
+    foreach ([$first, $second] as $property) {
+        expect($html)->toContain('data-property-url="'.route('properties.contact.edit', $property).'"')
+            ->and($html)->not->toContain('data-property-url="'.route('properties.edit', $property).'"');
+    }
+});
+
 it('shows the editable landlord fields when the property has no contact', function () {
     [$tenant, $property] = tenantWithProperty();
 

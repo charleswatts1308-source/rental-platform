@@ -86,7 +86,7 @@
                             <option value="{{ $property->id }}" @selected(old('property_id') == $property->id)
                                     data-contact-name="{{ $property->currentLandlordContact?->name ?: $property->currentLandlordContact?->email }}"
                                     data-contact-email="{{ $property->currentLandlordContact?->email }}"
-                                    data-property-url="{{ route('properties.edit', $property) }}">
+                                    data-property-url="{{ route('properties.contact.edit', $property) }}">
                                 {{ $property->address_line1 }}@if($property->address_line2), {{ $property->address_line2 }}@endif, {{ $property->postcode }}
                             </option>
                         @endforeach
