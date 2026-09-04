@@ -63,7 +63,7 @@ touch of any box, per the CLAUDE.md Deployment-ledger rule.
   anywhere" note that sat here was three deploys out of date; removed
   24 Aug.
 
-## gafol — permanent staging (gafol.rent) — ⏸ ON A BRANCH, NOT MAIN (4 Sep 2026)
+## gafol — permanent staging (gafol.rent) — ✅ BACK ON MAIN (4 Sep 2026)
 - Box: gafol.rent is the staging domain. DB `ukrenter_gafol_db` on
   mysql01. (The stale "ukrenters.rent / HUK" label was wrong —
   ukrenters.rent was a separate earlier site scheduled for deletion.)
@@ -257,9 +257,18 @@ touch of any box, per the CLAUDE.md Deployment-ledger rule.
     redeployed.
   - **Merge gate: not yet passed to main.** Prod is a separate decision
     and a separate entry.
-- Last verified: 4 Sep 2026 (property-landlord-contacts gate). Code at
-  `0a7321b` on `feature/property-landlord-contacts` — **gafol is NOT on
-  main until this branch merges.**
+- **Back on main (4 Sep 2026, same day).** The branch merged `--no-ff` to
+  `main` (`fb03bc9`, tag `post-property-landlord-contacts`, suite 703 on
+  the merged main). gafol pulled `main` via Plesk Git + `config:cache`,
+  `route:clear`, `view:clear`. **No migrations** — all five were already
+  applied as batch 6 by the gate deploy.
+  Picks up the two fixes the walk found after the gate deploy (`c5d94fa`,
+  `23b6fb3`): the "Correct it on the property" link pointed at
+  `properties.edit`, which carries no landlord details — wrong in both the
+  server-rendered href AND the dropdown's `data-property-url`, the latter
+  overwriting the former via the toggle JS. **Both verified working on
+  gafol**, including the dropdown path. Staging-at-or-ahead holds again.
+- Last verified: 4 Sep 2026. Code at `fb03bc9` (`main`).
 
 ## dotrent — preprod (dotrent.net) — 🛑 RETIRED 1 Aug 2026
 
