@@ -651,10 +651,11 @@ touch of any box, per the CLAUDE.md Deployment-ledger rule.
     and proven; on prod it cost nothing. That open action is closed.
     **The suppression list lives in MAILGUN and survived the wipe** —
     both entries are still there. Sends to either are still dropped.
-  - **NOT confirmed this session:** prod's `interval_days` /
-    `max_notices` (may still be **1 / 2** from the July ladder test
-    rather than 14 / 4 — check before any real case is left running);
-    whether `TRACK_PAGE_VIEWS` is set in prod's `.env` (the flag has
+  - **Pacing CONFIRMED:** `interval_days` **14** / `max_notices` **4**,
+    already correct — the July 1/2 test values had been restored. The
+    case raised in the walk snapshotted 14/4 at clock start, so it does
+    not escalate for a fortnight.
+  - **NOT confirmed this session:** whether `TRACK_PAGE_VIEWS` is set in prod's `.env` (the flag has
     defaulted to OFF since the feature was built, 28 Nov 2025); and
     prod's `QUEUE_CONNECTION` (gafol behaves as `sync` — a rejected send
     rolls the whole case creation back; if prod is `database` the case

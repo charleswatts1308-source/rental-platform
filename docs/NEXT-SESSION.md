@@ -231,9 +231,13 @@ can be built first.
 5. **#56** — advise the ICO of renters.rent as a trading name on
    registration `Z229825X`. Admin task, not code.
 
-**Still outstanding from before 9 Aug, unconfirmed:** restore prod
-pacing to `interval_days` **14** / `max_notices` **4** (dropped to 1/2
-for the July ladder test); close out case 3; confirm the registration
+**Prod pacing: CONFIRMED 4 Sep** — `interval_days` **14** /
+`max_notices` **4**, already restored; the "dropped to 1/2 for the July
+ladder test" worry is closed. Note in-flight cases keep their
+`silence_settings_snapshot` from clock start regardless
+(`escalation.apply_inflight` ships off).
+
+**Still outstanding from before 9 Aug, unconfirmed:** close out case 3; confirm the registration
 allowlist; settle #27's 403 by reading the prod log.
 
 ---
