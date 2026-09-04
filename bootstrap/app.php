@@ -22,6 +22,10 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'admin' => \App\Http\Middleware\AdminMiddleware::class,
             'verify.mailgun.signature' => \App\Http\Middleware\VerifyMailgunSignature::class,
+            // #25 — delivery events nest the signature fields and arrive as
+            // JSON. A separate alias, not a widening: see
+            // VerifyMailgunEventSignature's docblock.
+            'verify.mailgun.event.signature' => \App\Http\Middleware\VerifyMailgunEventSignature::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
