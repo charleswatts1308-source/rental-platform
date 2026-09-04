@@ -685,11 +685,17 @@ Ruling:      2026-08-24 — the bounce REACTION is settled. On failed +
              bounce event cannot perturb the escalation predicate, and the
              mail-only notification keeps the same invariant (see the
              warning below).
-             STILL TO DECIDE, both small:
-             - RepairCase::TRANSITIONS must define contact_failed, not just
-               the status: which states may enter it, and whether
-               contact_failed -> abandoned is allowed or the case sits
-               permanently as evidence.
+             DECIDED 2026-09-04 (was STILL TO DECIDE) — now D17.8 in
+             the design doc:
+             - MAY enter contact_failed: open, awaiting_landlord,
+               awaiting_tenant_review, on_hold, dormant.
+             - MAY NOT (record the event, do not transition):
+               escalation_exhausted, resolved, abandoned. A bounce stops a
+               case still running; it does not reach back into one that
+               has already stopped.
+             - contact_failed -> abandoned IS allowed. No other exit, and
+               no revival on reply — the address is broken and D17.3's
+               copy is the route forward.
              - #47 is LIVE on prod, so an unclassified new status fails
                loudly rather than misbehaving quietly. Rely on that.
              TESTABILITY — SETTLED, and it is a STANDING POSITION, not a

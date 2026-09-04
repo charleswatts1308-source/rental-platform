@@ -648,6 +648,40 @@ dangerous; message columns are cheap and inert.**
 signature-verifiable record of an external event that outlives Mailgun's
 one-day log retention.
 
+**D17.8 — which statuses may enter `contact_failed`, and how it ends.**
+*Ruled by Charlie 2026-09-04.* `RepairCase::TRANSITIONS` is the single
+source of truth and only `transitionTo()` may change status, so this
+must be enumerated rather than inferred. A bounce arrives
+asynchronously, so the case may have moved on by the time the event
+lands.
+
+**MAY enter `contact_failed`** — the case is still running, and a letter
+that went nowhere stops it:
+`open`, `awaiting_landlord`, `awaiting_tenant_review`, `on_hold`,
+`dormant`.
+
+**MAY NOT — record the event, do not transition:**
+`escalation_exhausted`, `resolved`, `abandoned`. These have already
+stopped, by exhaustion or by a decision someone made. A late bounce must
+not reopen them or rewrite why they ended.
+
+**The principle:** a bounce stops a case that is still running; it does
+not reach back into one that has already stopped. Nothing is lost by the
+distinction — the `case_events` row is written either way, per D17.1 the
+record extends rather than being retracted.
+
+**Exit: `contact_failed` → `abandoned` is ALLOWED.** The tenant may close
+their own case, exactly as `escalation_exhausted` permits. The evidence
+lives in `case_events`, not in the status, so closing it retracts
+nothing. Ruled as the recoverable direction: a case stuck with no exit is
+worse than one whose exit is later reconsidered. Charlie's reasoning —
+*"I'll know better when I've used it"* — so revisit after real use rather
+than treating this as settled forever.
+
+**No other exit.** `contact_failed` does not revive on a tenant or
+landlord reply the way `dormant` and `escalation_exhausted` do. The
+address is broken; a reply from it is not expected, and D17.3's copy is
+the route forward.
 **Consequences for the model above:** the escalation counter and D3 are
 **not modified in any way** by D17. The tenant notification is
 **mail-only** and writes no `case_messages` row — an outbound system row
