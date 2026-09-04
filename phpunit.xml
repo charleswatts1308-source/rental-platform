@@ -18,6 +18,21 @@
         </include>
     </source>
     <php>
+        <!--
+            PHP's default is 128M, which was never a decision about this
+            suite — it is just the default. The suite passed at 696 tests
+            and hit a fatal at 701, so it had been running within about a
+            percent of the ceiling for some time and the next few tests
+            were always going to be the ones that tipped it, whatever they
+            happened to be.
+
+            Measured, not guessed: the full suite passes at 192M, so this
+            was marginality rather than a leak. 256M leaves real headroom
+            without being so generous that a genuine leak could hide
+            behind it. If this ever fails again, measure before raising it
+            a second time.
+        -->
+        <ini name="memory_limit" value="256M"/>
         <env name="APP_ENV" value="testing"/>
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
         <env name="BCRYPT_ROUNDS" value="4"/>

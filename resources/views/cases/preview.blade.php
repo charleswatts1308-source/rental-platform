@@ -20,6 +20,28 @@
             <h2 class="h6 text-muted text-uppercase mb-0">Notice 1 — preview as the landlord will see it</h2>
         </div>
         <div class="card-body">
+            {{-- Snag #59 — the address decides whether the letter arrives
+                 at all, and it was the one fact this page did not show:
+                 the name appeared only inside the salutation, the email
+                 nowhere. #24 exists because a mistyped address was
+                 permanent, and this is the last moment catching it is
+                 free. Given its own block rather than a muted line beside
+                 the subject, because it is the thing to CHECK, not
+                 background. --}}
+            <div class="alert alert-light border mb-3">
+                <p class="mb-1 text-muted">This notice will be sent to:</p>
+                <p class="mb-1">
+                    @if($recipient['name'])
+                        {{ $recipient['name'] }} &mdash;
+                    @endif
+                    <span class="text-break">{{ $recipient['email'] }}</span>
+                </p>
+                <p class="mb-0 small text-muted">
+                    Please check the address. Once the notice is sent it cannot be recalled,
+                    and a letter sent to the wrong address is not delivered to your landlord.
+                </p>
+            </div>
+
             @if($renderedLetter)
                 <p class="small text-muted mb-2"><strong>Subject:</strong> {{ $renderedLetter['subject'] }}</p>
                 <hr>

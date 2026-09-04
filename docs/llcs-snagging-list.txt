@@ -568,7 +568,22 @@ Saw:         The landlord contact is a property of the CASE
              losing the case reference and the record.
 Expected:    A way to correct the landlord email on an existing case, so a
              typo costs a correction rather than the whole case.
-Status:      open — snagged 18 Jul; PROMOTED 27 Jul from convenience to a
+Status:      BUILT 2026-08-27 on feature/property-landlord-contacts, NOT
+             yet merged and NOT deployed. Landlord contact now belongs to
+             the PROPERTY and is versioned; correcting it on the property
+             page inserts a new version and every subsequent letter on
+             every open case there goes to the new address. Abandon-and-
+             re-raise is no longer the only recovery.
+             Deliberately does NOT auto-send on correction — that would
+             take SendCaseNotice's non-first branch and escalate the case
+             as the price of fixing a typo, against D3. The open question
+             ("should the clock/counter reset on correction") is therefore
+             answered NO for now; a non-escalating resend is a separate
+             piece needing its own ruling. See
+             docs/cc-report-property-landlord-contacts-d0.md and
+             ...-implementation.md.
+             --- history below ---
+             was open — snagged 18 Jul; PROMOTED 27 Jul from convenience to a
              data-design item after being hit in real use (a live landlord
              email needed correcting). Now the presenting symptom of a
              deeper modelling gap: the landlord contact hangs off the CASE
@@ -689,6 +704,28 @@ Ruling:      2026-08-24 — the bounce REACTION is settled. On failed +
              still cover the parser and the nested-signature verifier
              locally; it is only the live round trip that must happen on
              prod.
+Ruling:      2026-09-03 — RECOVERY, amending step 3 above. The tenant is
+             not told to raise a new case from scratch. On the stopped
+             case they are offered a COPY — same property, category,
+             severity, description and photos — taking them into the
+             ordinary create-case flow at the preview step. They did
+             nothing wrong and should not retype a description or
+             re-upload photos; and re-entering the existing flow means no
+             second send path.
+             #24 IS NOW A PREREQUISITE for the copy option, reversing the
+             line above. A case inherits the property's CURRENT landlord
+             contact with no per-case override (Model A) and creation
+             sends immediately, so at bounce time a copy would go to the
+             address that just bounced. THE PREVIEW GUARDS IT: where the
+             resolved landlord email equals the bounced message's
+             to_address_raw, confirm is refused and the tenant is sent to
+             correct the property's landlord contact first.
+             Detection, recording, the stop and the tenant notification
+             remain independent of #24.
+             MIGRATION: one survives step 2's supersession — adding
+             contact_failed to the cases.status ENUM, per
+             2026_06_14_090000_add_escalation_exhausted_to_cases_status_enum
+             (MariaDB MODIFY, SQLite no-op). CLAUDE.md #18 check applies.
 Notes:       This is the one that matters, and it is NOT really about typos.
              The silence model's entire claim is that it can say "your
              landlord was served on the 12th and has not responded in 14
@@ -1825,7 +1862,18 @@ Saw:         Mailgun suppression list for mg.renters.rent, Bounces tab:
              nobody is told.
 Expected:    A published contact address receives mail. An admin account
              can complete a password reset.
-Status:      open — snagged 09 Aug.
+Status:      open — snagged 09 Aug. STILL PRESENT 4 Sep 2026: the
+             suppression entry is unchanged on the Bounces tab, same
+             timestamp. Blast radius now MEASURED — no case on prod has
+             ever used admin@renters.rent as a landlord, so (b) the admin
+             password reset is the only live casualty; (a) the published
+             compliance address is untouched by that and still wrong.
+             NOTE FOR ANY DATA WIPE: the suppression list lives in
+             MAILGUN, not in the database. Truncating cases/properties
+             does not clear it, and sends to this address will keep being
+             dropped. Fix the mailbox first, THEN remove the entry — a
+             removal without a mailbox simply re-suppresses on the next
+             send.
 Notes:       Where it appears:
                - resources/views/privacy.blade.php:60 — "questions about
                  this Privacy Policy or our data practices"
@@ -1931,7 +1979,24 @@ Saw:         Case VMRXZP on gafol. "Larry Landlord" was entered on the
 Expected:    The name a tenant types is the name their landlord reads,
              or they are TOLD it will not be. Whatever the preview
              shows is the letter that goes.
-Status:      open — snagged 22 Aug during the Release 1 gafol walk.
+Status:      BUILT 2026-08-27 on feature/property-landlord-contacts, NOT
+             yet merged and NOT deployed. BOTH halves closed.
+             (a) The global email key is gone — no unique index, and
+             resolveLandlordContact's find-or-create is deleted. Contacts
+             hang off the property, which is already per-tenant, so two
+             tenants at the same agency address get their own row and
+             neither names it for the other.
+             (b) Preview and send both resolve through
+             CaseController::resolveLandlordName, so the salutation shown
+             at the preview is the salutation that is sent. The landlord
+             fields are EXCLUDED from validation when the property already
+             has a contact, so only one source ever exists to read.
+             Both were confirmed to FAIL against the pre-fix commit before
+             the fix was written. The gafol reproduction (second tenant
+             types "Larry Landlord", letter must not open "Dear C Watts")
+             is now a test.
+             --- history below ---
+             was open — snagged 22 Aug during the Release 1 gafol walk.
              Testing unblocked by UPDATEing the row, or by using a
              fresh unused email per test case.
 Notes:       Live evidence for the D0 candidate in
@@ -2491,4 +2556,59 @@ Fix:         Sum the selection client-side and refuse when it exceeds
              close to post_max_size would turn a silent hosting change
              into a visible failure. That is the part that removes the
              luck.
+--------------------------------------------------------------------
+#59
+Page:        Case create — preview. The preview does not show WHO the
+             letter is going to. Found 2026-08-28 by Charlie, walking
+             the property-landlord-contacts branch on the dev app.
+Severity:    minor, but it is the cheap prevention for the expensive
+             problem. #24 exists because a mistyped landlord email was
+             permanent; the preview is the last moment it costs nothing
+             to catch. The one fact that decides whether the letter
+             arrives at all is the one fact not on the page.
+Saw:         cases/preview.blade.php renders the subject, the letter
+             body and the attachment list under the heading "Notice 1 —
+             preview as the landlord will see it". The landlord's NAME
+             appears only incidentally, inside the letter's salutation.
+             The EMAIL ADDRESS appears nowhere. A tenant confirming the
+             send has no way to check the address on the screen where
+             checking is free.
+Expected:    The preview states the recipient plainly — name and email
+             address — before the letter body. "This will be sent to
+             Larry Landlord, larry@example.com."
+Status:      CLOSED 2026-08-28 (376946b) on feature/property-landlord-contacts,
+             NOT yet merged, NOT deployed. The preview now carries a
+             recipient block above the letter: name (when given) and the
+             email address, with a line saying to check it because a
+             notice cannot be recalled. Two tests assert the previewed
+             address and case_messages.to_address_raw against the same
+             literal, so neither surface can drift without failing.
+             --- history below ---
+             was open — snagged 28 Aug on feature/property-landlord-contacts,
+             during the browser walk of that branch. NOT a defect
+             introduced by that branch: the preview has never shown the
+             address. The branch is simply the first time anyone looked
+             at this page while thinking about landlord addresses.
+Notes:       Same family as #46, #49, #53 and the two defects found
+             walking this branch (duplicate class attribute; the
+             "future letters will go to the new address" message on an
+             unchanged address). All of them are a surface not telling
+             the tenant the truth about what is about to happen. This
+             one is the mildest form: not a false claim, an omission.
+             Cheap to fix and it sits in the same view as #39, which
+             added the attachment list for the identical reason — a
+             tenant approving a send should be able to see what is
+             actually being sent, and to whom.
+             Worth pairing with #25 in the tenant's mind: #25 tells them
+             AFTER a letter bounced; this tells them BEFORE it is sent.
+             The second is worth more.
+Fix:         Add a recipient line to cases/preview.blade.php above the
+             letter body. The controller already resolves the contact —
+             CaseController::preview holds $property, and
+             resolveLandlordName reads the same source the send does,
+             so pass the whole contact (or its email) to the view
+             rather than just the name. Assert the email shown on the
+             preview equals case_messages.to_address_raw on the
+             resulting send, so the page cannot drift from the letter
+             the way it did in #49(b).
 --------------------------------------------------------------------

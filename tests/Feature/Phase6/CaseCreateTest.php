@@ -4,16 +4,17 @@ use App\Enums\CaseStatus;
 use App\Enums\MessageDirection;
 use App\Mail\CaseNotice;
 use App\Models\CaseMessage;
-use App\Models\LandlordContact;
 use App\Models\MessageAttachment;
 use App\Models\Property;
 use App\Models\RepairCase;
 use App\Models\RepairCategory;
 use App\Models\User;
+use App\Support\FileSize;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Testing\TestResponse;
 
 uses(RefreshDatabase::class);
 
@@ -54,7 +55,7 @@ function validStorePayload(int $propertyId, array $overrides = []): array
  * Most existing tests verify the end result (a created case + queued
  * notice), so the helper drives both POSTs.
  */
-function submitAndConfirm(User $tenant, array $payload): \Illuminate\Testing\TestResponse
+function submitAndConfirm(User $tenant, array $payload): TestResponse
 {
     test()->actingAs($tenant)->post('/cases', $payload);
 
@@ -185,30 +186,375 @@ it('the outbound message body carries the description via the D9 header block', 
     expect($message->body_raw)->toContain('The boiler has been silent for nine days.');
 });
 
-it('reuses an existing landlord_contact when the email matches', function () {
+/*
+ * These two replace the old landlord_contacts dedup tests. That table is
+ * no longer read by anything and is dropped in the final commit, so
+ * asserting on it would be asserting on nothing. The assertions here are
+ * strictly stronger: they check the contact the case will actually be
+ * SERVED on, which is what the old pair only stood in for.
+ */
+it('creates the property landlord contact as version 1 when the property has none', function () {
     [$tenant, $property] = tenantWithProperty();
-    $existing = LandlordContact::factory()->create(['email' => 'shared@example.com']);
 
     submitAndConfirm($tenant, validStorePayload(
         $property->id,
-        ['landlord_email' => 'SHARED@example.com']
+        ['landlord_email' => 'Fresh@Example.com', 'landlord_name' => 'Sam Owner']
     ));
 
-    expect(LandlordContact::where('email', 'shared@example.com')->count())->toBe(1);
-    expect(RepairCase::firstOrFail()->landlord_contact_id)->toBe($existing->id);
+    $contact = $property->fresh()->currentLandlordContact;
+
+    expect($contact->email)->toBe('fresh@example.com')
+        ->and($contact->name)->toBe('Sam Owner')
+        ->and($contact->created_by_user_id)->toBe($tenant->id)
+        ->and($contact->source->value)->toBe('entered')
+        ->and(RepairCase::firstOrFail()->property_landlord_contact_id)->toBe($contact->id);
 });
 
-it('creates a new landlord_contact when the email is unknown', function () {
+it('inherits the property existing contact and does NOT create a second version', function () {
     [$tenant, $property] = tenantWithProperty();
+    $existing = $property->setLandlordContact(
+        ['email' => 'stored@example.com', 'name' => 'Stored Name', 'role' => 'landlord'],
+        now(),
+        $tenant->id,
+    );
 
     submitAndConfirm($tenant, validStorePayload(
         $property->id,
-        ['landlord_email' => 'fresh@example.com', 'landlord_name' => 'Sam Owner']
+        ['landlord_email' => 'typed@example.com', 'landlord_name' => 'Typed Name']
     ));
 
-    $contact = LandlordContact::where('email', 'fresh@example.com')->firstOrFail();
-    expect($contact->name)->toBe('Sam Owner');
-    expect($contact->invited_by_user_id)->toBe($tenant->id);
+    expect($property->fresh()->landlordContacts()->count())->toBe(1)
+        ->and($property->fresh()->currentLandlordContact->id)->toBe($existing->id)
+        ->and(RepairCase::firstOrFail()->property_landlord_contact_id)->toBe($existing->id);
+});
+
+/*
+ * Snag #49(a) — the global email key is gone. Two tenants at the same
+ * agency address get their own contact, and neither names it for the
+ * other. This was impossible under the old unique index.
+ */
+it('gives two tenants their own contact for the same landlord address', function () {
+    [$tenantA, $propertyA] = tenantWithProperty();
+    [$tenantB, $propertyB] = tenantWithProperty();
+
+    submitAndConfirm($tenantA, validStorePayload(
+        $propertyA->id,
+        ['landlord_email' => 'info@agency.example', 'landlord_name' => 'Agency Desk A']
+    ));
+    submitAndConfirm($tenantB, validStorePayload(
+        $propertyB->id,
+        ['landlord_email' => 'info@agency.example', 'landlord_name' => 'Agency Desk B']
+    ));
+
+    expect($propertyA->fresh()->currentLandlordContact->name)->toBe('Agency Desk A')
+        ->and($propertyB->fresh()->currentLandlordContact->name)->toBe('Agency Desk B')
+        ->and($propertyA->fresh()->currentLandlordContact->id)
+        ->not->toBe($propertyB->fresh()->currentLandlordContact->id);
+});
+
+it('does not discard the typed landlord name when another tenant used that address first', function () {
+    [$tenantA, $propertyA] = tenantWithProperty();
+    [$tenantB, $propertyB] = tenantWithProperty();
+
+    submitAndConfirm($tenantA, validStorePayload(
+        $propertyA->id,
+        ['landlord_email' => 'shared@example.com', 'landlord_name' => 'C Watts']
+    ));
+    submitAndConfirm($tenantB, validStorePayload(
+        $propertyB->id,
+        ['landlord_email' => 'shared@example.com', 'landlord_name' => 'Larry Landlord']
+    ));
+
+    // The exact gafol reproduction: the second tenant typed "Larry
+    // Landlord" and the letter opened "Dear C Watts".
+    $secondCase = RepairCase::where('tenant_user_id', $tenantB->id)->sole();
+
+    expect($secondCase->messages()->whereNotNull('stage_at_send')->sole()->body_raw)
+        ->toContain('Larry Landlord')
+        ->not->toContain('C Watts');
+});
+
+/*
+ * Snag #49(b) — the preview and the send must render one source.
+ */
+it('previews the salutation that the sent letter actually carries', function () {
+    [$tenant, $property] = tenantWithProperty();
+    $property->setLandlordContact(
+        ['email' => 'stored@example.com', 'name' => 'Stored Name', 'role' => 'landlord'],
+        now(),
+        $tenant->id,
+    );
+
+    test()->actingAs($tenant)->post('/cases', validStorePayload(
+        $property->id,
+        ['landlord_email' => 'typed@example.com', 'landlord_name' => 'Typed Name']
+    ));
+
+    test()->actingAs($tenant)->get('/cases/preview')
+        ->assertSee('Stored Name', false)
+        ->assertDontSee('Typed Name', false);
+
+    test()->actingAs($tenant)->post('/cases/preview/confirm');
+
+    expect(RepairCase::firstOrFail()->messages()->whereNotNull('stage_at_send')->sole()->body_raw)
+        ->toContain('Stored Name')
+        ->not->toContain('Typed Name');
+});
+
+it('serves the notice on the stored address, not the typed one', function () {
+    [$tenant, $property] = tenantWithProperty();
+    $property->setLandlordContact(
+        ['email' => 'stored@example.com', 'name' => 'Stored Name', 'role' => 'landlord'],
+        now(),
+        $tenant->id,
+    );
+
+    submitAndConfirm($tenant, validStorePayload(
+        $property->id,
+        ['landlord_email' => 'typed@example.com']
+    ));
+
+    expect(RepairCase::firstOrFail()->messages()->sole()->to_address_raw)
+        ->toBe('stored@example.com');
+});
+
+it('accepts a submission with no landlord fields at all once the property has a contact', function () {
+    [$tenant, $property] = tenantWithProperty();
+    $property->setLandlordContact(
+        ['email' => 'stored@example.com', 'name' => 'Stored Name', 'role' => 'landlord'],
+        now(),
+        $tenant->id,
+    );
+
+    $payload = validStorePayload($property->id);
+    unset($payload['landlord_email'], $payload['landlord_name'], $payload['landlord_role']);
+
+    submitAndConfirm($tenant, $payload);
+
+    expect(RepairCase::count())->toBe(1)
+        ->and(RepairCase::firstOrFail()->messages()->sole()->to_address_raw)
+        ->toBe('stored@example.com');
+});
+
+/**
+ * Return the opening tag for an element by id.
+ *
+ * Used to assert there is exactly ONE class attribute on it. A literal
+ * class="..." written alongside Blade's @class directive emits the
+ * attribute twice; browsers keep the first and silently drop the second,
+ * so the d-none never applies and both blocks render at once. The page
+ * then shows a read-only "this property's landlord" panel next to an
+ * editable set of landlord fields the server will ignore. Found by
+ * walking the page in the running app — no assertion on behaviour could
+ * have caught it.
+ */
+function openingTagFor(string $html, string $id): string
+{
+    expect($html)->toMatch('/<div[^>]*id="'.$id.'"[^>]*>/');
+    preg_match('/<div[^>]*id="'.$id.'"[^>]*>/', $html, $m);
+
+    return $m[0];
+}
+
+it('renders one class attribute per landlord block, so d-none is not dropped', function () {
+    [$tenant, $property] = tenantWithProperty();
+    $property->setLandlordContact(
+        ['email' => 'stored@example.com', 'name' => 'Stored Name', 'role' => 'landlord'],
+        now(),
+        $tenant->id,
+    );
+
+    $html = $this->actingAs($tenant)->get('/cases/create')->getContent();
+
+    expect(substr_count(openingTagFor($html, 'landlord-fields'), 'class='))->toBe(1)
+        ->and(substr_count(openingTagFor($html, 'landlord-inherited'), 'class='))->toBe(1);
+});
+
+it('hides the editable landlord fields once the property has a contact', function () {
+    [$tenant, $property] = tenantWithProperty();
+    $property->setLandlordContact(
+        ['email' => 'stored@example.com', 'name' => 'Stored Name', 'role' => 'landlord'],
+        now(),
+        $tenant->id,
+    );
+
+    $html = $this->actingAs($tenant)->get('/cases/create')->getContent();
+
+    expect(openingTagFor($html, 'landlord-fields'))->toContain('d-none')
+        ->and(openingTagFor($html, 'landlord-inherited'))->not->toContain('d-none');
+});
+
+it('points the correction link at the landlord contact page, not the property edit form', function () {
+    [$tenant, $property] = tenantWithProperty();
+    $property->setLandlordContact(
+        ['email' => 'stored@example.com', 'name' => 'Stored Name', 'role' => 'landlord'],
+        now(),
+        $tenant->id,
+    );
+
+    $html = $this->actingAs($tenant)->get('/cases/create')->getContent();
+
+    // "Correct it on the property" used to link to properties.edit, which
+    // does not carry the landlord contact at all — the sentence told the
+    // tenant to do something the destination could not do. Found by
+    // walking the page.
+    expect($html)->toContain(route('properties.contact.edit', $property))
+        ->and($html)->not->toContain(route('properties.edit', $property));
+});
+
+it('points the dropdown correction URL at the landlord contact page too', function () {
+    [$tenant, $first] = tenantWithProperty();
+    $second = Property::factory()->create(['registered_by_user_id' => $tenant->id]);
+
+    // With two properties the page renders a <select>, and the JS assigns
+    // each option's data-property-url to the correction link. Fixing the
+    // server-rendered href alone left this one pointing at properties.edit,
+    // so the link was correct until the tenant touched the dropdown.
+    $html = $this->actingAs($tenant)->get('/cases/create')->getContent();
+
+    foreach ([$first, $second] as $property) {
+        expect($html)->toContain('data-property-url="'.route('properties.contact.edit', $property).'"')
+            ->and($html)->not->toContain('data-property-url="'.route('properties.edit', $property).'"');
+    }
+});
+
+it('shows the editable landlord fields when the property has no contact', function () {
+    [$tenant, $property] = tenantWithProperty();
+
+    $html = $this->actingAs($tenant)->get('/cases/create')->getContent();
+
+    expect(openingTagFor($html, 'landlord-fields'))->not->toContain('d-none')
+        ->and(openingTagFor($html, 'landlord-inherited'))->toContain('d-none');
+});
+
+/*
+ * Snag #59 — the preview must say WHO the notice is going to. Charlie,
+ * walking the branch: "the preview does not show the landlords email
+ * address, it would be re-assuring to do so".
+ *
+ * More than reassuring. #24 exists because a mistyped address was
+ * permanent, and the preview is the last moment catching it is free.
+ */
+it('shows the recipient email on the preview when the property has no contact yet', function () {
+    [$tenant, $property] = tenantWithProperty();
+
+    $this->actingAs($tenant)->post('/cases', validStorePayload(
+        $property->id,
+        ['landlord_email' => 'Typed@Example.com', 'landlord_name' => 'Larry Landlord']
+    ));
+
+    $this->actingAs($tenant)->get('/cases/preview')
+        ->assertOk()
+        ->assertSee('This notice will be sent to')
+        // Normalised, so what is shown is what will actually be used.
+        ->assertSee('typed@example.com')
+        ->assertSee('Larry Landlord');
+});
+
+it('shows the STORED recipient email on the preview when the property has a contact', function () {
+    [$tenant, $property] = tenantWithProperty();
+    $property->setLandlordContact(
+        ['email' => 'stored@example.com', 'name' => 'Stored Name', 'role' => 'landlord'],
+        now(),
+        $tenant->id,
+    );
+
+    $this->actingAs($tenant)->post('/cases', validStorePayload(
+        $property->id,
+        ['landlord_email' => 'typed@example.com', 'landlord_name' => 'Typed Name']
+    ));
+
+    $this->actingAs($tenant)->get('/cases/preview')
+        ->assertOk()
+        ->assertSee('stored@example.com')
+        ->assertDontSee('typed@example.com');
+});
+
+/*
+ * The guard that matters: the address shown must be the address used.
+ * A second resolver is exactly how #49(b) happened to the name, and
+ * there is no reason the address would be immune.
+ */
+/*
+ * Both sides are asserted against the SAME literal rather than by
+ * holding the rendered page and comparing it to the sent row. Same
+ * guarantee — if either surface drifts, one of the two fails — and it
+ * keeps a full HTML page out of the test's memory, which matters in a
+ * suite this size.
+ */
+it('previews the same address the notice is actually sent to', function () {
+    [$tenant, $property] = tenantWithProperty();
+
+    $this->actingAs($tenant)->post('/cases', validStorePayload(
+        $property->id,
+        ['landlord_email' => 'Recipient@Example.com']
+    ));
+
+    $this->actingAs($tenant)->get('/cases/preview')->assertSee('recipient@example.com');
+    $this->actingAs($tenant)->post('/cases/preview/confirm');
+
+    expect(RepairCase::firstOrFail()->messages()->sole()->to_address_raw)
+        ->toBe('recipient@example.com');
+});
+
+it('previews the same address the notice is sent to when the contact is inherited', function () {
+    [$tenant, $property] = tenantWithProperty();
+    $property->setLandlordContact(
+        ['email' => 'inherited@example.com', 'name' => 'Stored Name', 'role' => 'landlord'],
+        now(),
+        $tenant->id,
+    );
+
+    $this->actingAs($tenant)->post('/cases', validStorePayload(
+        $property->id,
+        ['landlord_email' => 'ignored@example.com']
+    ));
+
+    $this->actingAs($tenant)->get('/cases/preview')
+        ->assertSee('inherited@example.com')
+        ->assertDontSee('ignored@example.com');
+
+    $this->actingAs($tenant)->post('/cases/preview/confirm');
+
+    expect(RepairCase::firstOrFail()->messages()->sole()->to_address_raw)
+        ->toBe('inherited@example.com');
+});
+
+it('shows the address alone rather than "Sir or Madam" when no name was given', function () {
+    [$tenant, $property] = tenantWithProperty();
+
+    $payload = validStorePayload($property->id, ['landlord_email' => 'noname@example.com']);
+    unset($payload['landlord_name']);
+
+    $this->actingAs($tenant)->post('/cases', $payload);
+
+    // The letter still opens "Dear Sir or Madam" — that is the salutation
+    // fallback, and it legitimately appears further down the page. The
+    // recipient block must not repeat it as though it were a name, so the
+    // check is scoped to that block rather than the whole page.
+    $block = recipientBlock($this->actingAs($tenant)->get('/cases/preview')->getContent());
+
+    expect($block)->toContain('noname@example.com')
+        ->not->toContain('Sir or Madam');
+});
+
+/** Just the recipient block, so a whole page is not carried around. */
+function recipientBlock(string $html): string
+{
+    $at = strpos($html, 'This notice will be sent to');
+
+    return $at === false ? '' : substr($html, $at, 400);
+}
+
+it('still requires a landlord email when the property has no contact yet', function () {
+    [$tenant, $property] = tenantWithProperty();
+
+    $payload = validStorePayload($property->id);
+    unset($payload['landlord_email']);
+
+    test()->actingAs($tenant)
+        ->post('/cases', $payload)
+        ->assertSessionHasErrors('landlord_email');
 });
 
 it('rejects a property_id that belongs to another user', function () {
@@ -402,7 +748,7 @@ it('states the limit the machine will actually accept, not our own cap', functio
     [$tenant] = tenantWithProperty();
 
     $ours = 4096 * 1024;
-    $php = \App\Support\FileSize::fromIniShorthand(ini_get('upload_max_filesize'));
+    $php = FileSize::fromIniShorthand(ini_get('upload_max_filesize'));
     $effective = $php > 0 ? min($ours, $php) : $ours;
 
     $response = $this->actingAs($tenant)->get('/cases/create');
@@ -412,7 +758,7 @@ it('states the limit the machine will actually accept, not our own cap', functio
     // that cannot happen — the tenant hits a refusal the form said wouldn't
     // come. The displayed figure and the byte limit handed to the script
     // both come from the same effective value.
-    $response->assertSee('under '.\App\Support\FileSize::human($effective));
+    $response->assertSee('under '.FileSize::human($effective));
     $response->assertSee('data-photo-max-bytes="'.$effective.'"', false);
 });
 

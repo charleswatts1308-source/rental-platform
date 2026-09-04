@@ -7,7 +7,6 @@ use App\Enums\SenderRole;
 use App\Mail\CaseNotice;
 use App\Mail\Notifications\AutoEscalationTenantNotice;
 use App\Models\CaseMessage;
-use App\Models\LandlordContact;
 use App\Models\LetterTemplate;
 use App\Models\Property;
 use App\Models\RepairCase;
@@ -44,13 +43,11 @@ beforeEach(function () {
 function d14ExhaustionEligibleCase(bool $engaged = false, int $counter = 4, int $daysAgo = 20): RepairCase
 {
     $tenant = User::factory()->create();
-    $contact = LandlordContact::factory()->create(['name' => 'Mr Landlord', 'email' => 'landlord@example.com']);
     $property = Property::factory()->create(['address_line1' => '12 Test Street', 'postcode' => 'SW1A 1AA']);
     $category = RepairCategory::factory()->create();
 
-    $case = RepairCase::factory()->create([
+    $case = RepairCase::factory()->withLandlord(['name' => 'Mr Landlord', 'email' => 'landlord@example.com'])->create([
         'tenant_user_id' => $tenant->id,
-        'landlord_contact_id' => $contact->id,
         'property_id' => $property->id,
         'category_key' => $category->key,
         'status' => CaseStatus::AwaitingLandlord,
@@ -77,12 +74,10 @@ function d14ExhaustionEligibleCase(bool $engaged = false, int $counter = 4, int 
 function d14ExhaustedCase(?ExhaustedStance $stance = null): RepairCase
 {
     $tenant = User::factory()->create();
-    $contact = LandlordContact::factory()->create();
     $category = RepairCategory::factory()->create();
 
-    $case = RepairCase::factory()->create([
+    $case = RepairCase::factory()->withLandlord([])->create([
         'tenant_user_id' => $tenant->id,
-        'landlord_contact_id' => $contact->id,
         'category_key' => $category->key,
         'status' => CaseStatus::EscalationExhausted,
         'current_stage' => 4,
@@ -198,7 +193,7 @@ it('allow-reply: a LANDLORD email reply revives an exhausted case to awaiting_te
     $token = ReplyToken::factory()->create([
         'case_id' => $case->id,
         'token' => Str::random(20),
-        'bound_email' => $case->landlordContact->email,
+        'bound_email' => $case->landlordRecipient()->email,
         'superseded_at' => null,
     ]);
 
@@ -209,7 +204,7 @@ it('allow-reply: a LANDLORD email reply revives an exhausted case to awaiting_te
         'token' => $sigToken,
         'signature' => hash_hmac('sha256', $ts.$sigToken, 'test-signing-key'),
         'recipient' => $token->token.'@'.config('services.mailgun.inbound_domain'),
-        'from' => 'Mr Landlord <'.$case->landlordContact->email.'>',
+        'from' => 'Mr Landlord <'.$case->landlordRecipient()->email.'>',
         'subject' => 'Re: repair issue',
         'body-plain' => 'Sorry for the delay — I will sort it.',
         'Message-Id' => '<x@mg.example.com>',

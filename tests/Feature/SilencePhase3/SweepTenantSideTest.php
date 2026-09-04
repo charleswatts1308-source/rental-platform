@@ -4,7 +4,6 @@ use App\Enums\CaseStatus;
 use App\Enums\MessageDirection;
 use App\Mail\Notifications\AutoEscalationTenantNotice;
 use App\Models\CaseMessage;
-use App\Models\LandlordContact;
 use App\Models\RepairCase;
 use App\Models\RepairCategory;
 use App\Models\SilenceShadowLog;
@@ -21,10 +20,8 @@ beforeEach(function () {
 
 function phase3TenantSideCase(int $silenceDaysAgo): RepairCase
 {
-    $contact = LandlordContact::factory()->create();
     $category = RepairCategory::factory()->create();
-    $case = RepairCase::factory()->create([
-        'landlord_contact_id' => $contact->id,
+    $case = RepairCase::factory()->withLandlord([])->create([
         'category_key' => $category->key,
         'status' => CaseStatus::AwaitingTenantReview,
         'description' => 'Damp.',
@@ -167,10 +164,8 @@ it('dormant transition fires the dormancy_transition_notice mail', function () {
 });
 
 it('excludes dormant cases from the sweep entirely (terminal for sweep)', function () {
-    $contact = LandlordContact::factory()->create();
     $category = RepairCategory::factory()->create();
-    $case = RepairCase::factory()->create([
-        'landlord_contact_id' => $contact->id,
+    $case = RepairCase::factory()->withLandlord([])->create([
         'category_key' => $category->key,
         'description' => 'Damp.',
         'status' => CaseStatus::Dormant,
@@ -185,10 +180,8 @@ it('excludes dormant cases from the sweep entirely (terminal for sweep)', functi
 // ─── Hold-expiry absorption (ResumeFromHold) ─────────────────────
 
 it('resumes an OnHold case with past hold_until to AwaitingLandlord', function () {
-    $contact = LandlordContact::factory()->create();
     $category = RepairCategory::factory()->create();
-    $case = RepairCase::factory()->create([
-        'landlord_contact_id' => $contact->id,
+    $case = RepairCase::factory()->withLandlord([])->create([
         'category_key' => $category->key,
         'description' => 'Damp.',
         'status' => CaseStatus::OnHold,
@@ -205,10 +198,8 @@ it('resumes an OnHold case with past hold_until to AwaitingLandlord', function (
 });
 
 it('leaves an OnHold case with future hold_until alone', function () {
-    $contact = LandlordContact::factory()->create();
     $category = RepairCategory::factory()->create();
-    $case = RepairCase::factory()->create([
-        'landlord_contact_id' => $contact->id,
+    $case = RepairCase::factory()->withLandlord([])->create([
         'category_key' => $category->key,
         'description' => 'Damp.',
         'status' => CaseStatus::OnHold,

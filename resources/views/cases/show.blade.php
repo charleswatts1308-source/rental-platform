@@ -90,9 +90,10 @@
             <div class="card mb-3">
                 <div class="card-body">
                     <h2 class="h6 text-muted text-uppercase">Recipient</h2>
-                    <p class="mb-1 fw-bold">{{ $case->landlordContact->name ?? $case->landlordContact->email }}</p>
+                    @php($recipient = $case->landlordRecipient())
+                    <p class="mb-1 fw-bold">{{ $recipient?->name ?? $recipient?->email }}</p>
                     <p class="mb-0 small text-muted">
-                        {{ ucfirst($case->landlordContact->role->value) }}@if($case->landlordContact->organisation_name) — {{ $case->landlordContact->organisation_name }}@endif
+                        {{ ucfirst($recipient?->role->value) }}@if($recipient?->organisation_name) — {{ $recipient->organisation_name }}@endif
                     </p>
                 </div>
             </div>

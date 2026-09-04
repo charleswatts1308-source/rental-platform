@@ -7,9 +7,9 @@ use App\Enums\CaseSeverity;
 use App\Enums\CaseStatus;
 use App\Enums\ExhaustedStance;
 use App\Enums\LandlordContactRole;
-use App\Models\LandlordContact;
 use App\Models\LetterTemplate;
 use App\Models\Property;
+use App\Models\PropertyLandlordContact;
 use App\Models\RepairCase;
 use App\Models\RepairCategory;
 use App\Models\Setting;
@@ -79,7 +79,7 @@ class CaseController extends Controller
 
         $cases = RepairCase::query()
             ->where('tenant_user_id', $request->user()->id)
-            ->with(['property', 'landlordContact', 'category'])
+            ->with(['property', 'property.currentLandlordContact', 'category'])
             ->orderByDesc('opened_at')
             ->get();
 
@@ -93,7 +93,7 @@ class CaseController extends Controller
 
         $case->load([
             'property',
-            'landlordContact',
+            'property.currentLandlordContact',
             'category',
             'tenant',
         ]);
@@ -164,7 +164,7 @@ class CaseController extends Controller
         $case = $this->findCaseOrFail($slug);
         $this->authorize('authoriseEscalation', $case);
 
-        $case->load(['property', 'landlordContact', 'tenant']);
+        $case->load(['property', 'property.currentLandlordContact', 'tenant']);
 
         $noticeNumber = $this->silenceClock->escalationCounter($case) + 1;
         $template = LetterTemplate::forEscalation($noticeNumber);
@@ -176,7 +176,7 @@ class CaseController extends Controller
 
         $vars = [
             'tenant_name' => $case->tenant->name,
-            'landlord_name' => $case->landlordContact->name ?: 'Sir or Madam',
+            'landlord_name' => $case->landlordRecipient()?->name ?: 'Sir or Madam',
             'case_reference' => $case->url_slug,
             'property_address' => $this->formatAddress($case->property),
             'issue_description' => $case->description,
@@ -314,8 +314,12 @@ class CaseController extends Controller
     {
         $this->authorize('create', RepairCase::class);
 
+        // The current contact comes along so the form can SHOW the
+        // landlord this case will actually be served on, rather than
+        // asking for it again and then quietly ignoring the answer.
         $properties = Property::query()
             ->where('registered_by_user_id', $request->user()->id)
+            ->with('currentLandlordContact')
             ->orderBy('address_line1')
             ->get();
 
@@ -405,6 +409,15 @@ class CaseController extends Controller
 
         $userId = $request->user()->id;
 
+        // Model A: a property has one landlord contact, and a case
+        // inherits it. When the property already has one, the landlord
+        // fields are EXCLUDED rather than merely ignored — they never
+        // reach $validated, so no later step can accidentally prefer a
+        // typed value over the stored contact. That is the structural
+        // half of snag #49: the preview and the send cannot read
+        // different sources if only one source is ever present.
+        $inheritsContact = $this->propertyContactFor($request->input('property_id'), $userId) !== null;
+
         $rules = [
             'property_id' => [
                 'required',
@@ -416,10 +429,10 @@ class CaseController extends Controller
             ],
             'severity' => ['required', Rule::enum(CaseSeverity::class)],
             'description' => ['required', 'string', 'max:5000'],
-            'landlord_email' => ['required', 'email', 'max:255'],
-            'landlord_name' => ['nullable', 'string', 'max:255'],
-            'landlord_role' => ['required', Rule::enum(LandlordContactRole::class)],
-            'organisation_name' => ['nullable', 'string', 'max:255'],
+            'landlord_email' => [Rule::excludeIf($inheritsContact), 'required', 'email', 'max:255'],
+            'landlord_name' => [Rule::excludeIf($inheritsContact), 'nullable', 'string', 'max:255'],
+            'landlord_role' => [Rule::excludeIf($inheritsContact), 'required', Rule::enum(LandlordContactRole::class)],
+            'organisation_name' => [Rule::excludeIf($inheritsContact), 'nullable', 'string', 'max:255'],
             'photos' => ['nullable', 'array', 'max:'.$this->photoCeiling()],
             'photos.*' => ['file', 'mimes:jpg,jpeg,png,pdf', 'max:'.self::PHOTO_MAX_KB],
         ];
@@ -464,10 +477,15 @@ class CaseController extends Controller
 
         $validated = $payload['validated'];
         $property = Property::findOrFail($validated['property_id']);
+        $recipient = $this->resolveLandlordFor($property, $validated);
 
         $vars = [
             'tenant_name' => $request->user()->name,
-            'landlord_name' => $validated['landlord_name'] ?? 'Sir or Madam',
+            // Snag #49(b) — this line used to read the typed name while
+            // the send read the stored one. Both go through
+            // resolveLandlordFor now, so the letter shown here is the
+            // letter that leaves.
+            'landlord_name' => $recipient['name'] ?: 'Sir or Madam',
             'case_reference' => '(case reference assigned on send)',
             'property_address' => $this->formatAddress($property),
             'issue_description' => $validated['description'],
@@ -495,6 +513,11 @@ class CaseController extends Controller
             'property' => $property,
             'renderedLetter' => $renderedLetter,
             'renderedAuthorisation' => $renderedAuthorisation,
+            // Snag #59 — the address is the fact that decides whether the
+            // letter arrives, and it was the one fact the preview did not
+            // show. Same source the send resolves, so the two cannot
+            // disagree.
+            'recipient' => $recipient,
             // Snag #39 — the preview is the tenant's only chance to check
             // the letter before it reaches their landlord, and photos are
             // the part they cannot take back once sent. The data was
@@ -523,13 +546,25 @@ class CaseController extends Controller
         $previewPhotos = $payload['photos'] ?? [];
 
         $case = DB::transaction(function () use ($validated, $previewPhotos, $userId) {
-            $contact = $this->resolveLandlordContact($validated, $userId);
+            $property = Property::findOrFail($validated['property_id']);
+
+            // Inherit, or become version 1. There is no third option and
+            // no per-case override: the address on the tenancy agreement
+            // is the service address, and Model A models exactly one of
+            // them per property.
+            $propertyContact = $property->currentLandlordContact
+                ?? $property->setLandlordContact([
+                    'email' => strtolower(trim($validated['landlord_email'])),
+                    'name' => $validated['landlord_name'] ?? null,
+                    'role' => $validated['landlord_role'],
+                    'organisation_name' => $validated['organisation_name'] ?? null,
+                ], now(), $userId);
 
             $case = RepairCase::create([
                 'url_slug' => $this->mintSlug(),
                 'tenant_user_id' => $userId,
                 'property_id' => $validated['property_id'],
-                'landlord_contact_id' => $contact->id,
+                'property_landlord_contact_id' => $propertyContact->id,
                 'category_key' => $validated['category_key'],
                 'severity' => $validated['severity'],
                 'description' => $validated['description'],
@@ -556,21 +591,59 @@ class CaseController extends Controller
             ->with('success', 'Repair notice sent. The first letter is now on its way to your landlord.');
     }
 
-    private function resolveLandlordContact(array $validated, int $userId): LandlordContact
+    /**
+     * The property's current landlord contact, if it has one and the
+     * tenant owns the property. Null on any miss — an unowned or unknown
+     * property_id simply has no contact to inherit, and the property_id
+     * rule rejects it a moment later.
+     */
+    private function propertyContactFor(mixed $propertyId, int $userId): ?PropertyLandlordContact
     {
-        $email = strtolower(trim($validated['landlord_email']));
-        $existing = LandlordContact::where('email', $email)->first();
-        if ($existing) {
-            return $existing;
+        if (! is_numeric($propertyId)) {
+            return null;
         }
 
-        return LandlordContact::create([
-            'email' => $email,
-            'name' => $validated['landlord_name'] ?? null,
-            'role' => $validated['landlord_role'],
-            'organisation_name' => $validated['organisation_name'] ?? null,
-            'invited_by_user_id' => $userId,
-        ]);
+        return Property::where('id', (int) $propertyId)
+            ->where('registered_by_user_id', $userId)
+            ->first()
+            ?->currentLandlordContact;
+    }
+
+    /**
+     * The landlord this case will actually be served on.
+     *
+     * Snag #49(b): the preview used to render the TYPED name while the
+     * send rendered the STORED one, so the tenant approved a letter that
+     * was never posted. Both surfaces resolve through here now. When the
+     * property carries a contact the typed fields do not even exist
+     * (store() excludes them); when it does not, the typed values are
+     * what version 1 will be created from. Either way there is one
+     * source.
+     *
+     * Name AND email come back together, deliberately. Snag #59 wanted
+     * the address on the preview, and resolving it separately would be
+     * re-opening #49(b) in a second place — two resolvers is exactly how
+     * the name and the address drift apart.
+     *
+     * `name` is the raw value and may be null: the preview shows the
+     * address alone rather than writing "Sir or Madam" beside it, while
+     * the letter applies that fallback in the salutation.
+     *
+     * @param  array<string, mixed>  $validated
+     * @return array{name: ?string, email: string}
+     */
+    private function resolveLandlordFor(Property $property, array $validated): array
+    {
+        $contact = $property->currentLandlordContact;
+
+        return [
+            'name' => $contact
+                ? $contact->name
+                : ($validated['landlord_name'] ?? null),
+            'email' => $contact
+                ? $contact->email
+                : strtolower(trim($validated['landlord_email'] ?? '')),
+        ];
     }
 
     private function mintSlug(): string

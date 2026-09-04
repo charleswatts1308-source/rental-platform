@@ -1,14 +1,22 @@
 <?php
 
-use App\Http\Controllers\AdminController;
+use App\Enums\CaseStatus;
 use App\Http\Controllers\Admin\CaseOversightController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\TemplateController;
+use App\Http\Controllers\AdminController;
 use App\Http\Controllers\CaseController;
 use App\Http\Controllers\ContactMessageController;
+use App\Http\Controllers\MagicLinkController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PropertyController;
+use App\Http\Controllers\PropertyLandlordContactController;
 use App\Http\Controllers\Webhooks\MailgunInboundController;
+use App\Models\Property;
+use App\Models\RepairCase;
+use Carbon\Carbon;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/about', function () {
@@ -22,7 +30,7 @@ Route::get('/about', function () {
 Route::get('/landlords', fn () => view('landlords'))->name('landlords');
 
 // PWA offline fallback — served by the service worker when a navigation fails.
-Route::get('/offline', fn() => view('offline'))->name('offline');
+Route::get('/offline', fn () => view('offline'))->name('offline');
 
 Route::get('/privacy', function () {
     return view('privacy');
@@ -41,12 +49,12 @@ Route::get('/', function () {
 // Dashboard is the post-verification landing page and the site's hub: it
 // carries the "what do I do next" signposting a new tenant needs, since the
 // property-then-case ordering is otherwise left to be inferred.
-Route::get('/dashboard', function (\Illuminate\Http\Request $request) {
+Route::get('/dashboard', function (Request $request) {
     $userId = $request->user()->id;
 
-    $propertyCount = \App\Models\Property::where('registered_by_user_id', $userId)->count();
+    $propertyCount = Property::where('registered_by_user_id', $userId)->count();
 
-    $cases = \App\Models\RepairCase::query()
+    $cases = RepairCase::query()
         ->where('tenant_user_id', $userId)
         ->with(['property', 'category'])
         ->orderByDesc('opened_at')
@@ -57,7 +65,7 @@ Route::get('/dashboard', function (\Illuminate\Http\Request $request) {
         'cases' => $cases,
         // Cases where the ball is with the tenant — these are the ones the
         // user must act on, so they lead the page.
-        'needsAttention' => $cases->where('status', \App\Enums\CaseStatus::AwaitingTenantReview),
+        'needsAttention' => $cases->where('status', CaseStatus::AwaitingTenantReview),
     ]);
 })->middleware(['auth', 'verified'])->name('dashboard');
 
@@ -77,6 +85,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/properties', [PropertyController::class, 'store'])->name('properties.store');
     Route::get('/properties/{property}/edit', [PropertyController::class, 'edit'])->name('properties.edit');
     Route::patch('/properties/{property}', [PropertyController::class, 'update'])->name('properties.update');
+
+    // The landlord contact is a property of the PROPERTY, versioned.
+    // Correcting it here is the whole of snag #24 — separate from the
+    // address edit above because a correction inserts a new version and
+    // writes a case event, rather than overwriting a row.
+    Route::get('/properties/{property}/landlord', [PropertyLandlordContactController::class, 'edit'])->name('properties.contact.edit');
+    Route::patch('/properties/{property}/landlord', [PropertyLandlordContactController::class, 'update'])->name('properties.contact.update');
 
     // Repair cases (Landlord Contact Service)
     Route::get('/cases', [CaseController::class, 'index'])->name('cases.index');
@@ -100,7 +115,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         // D14 — signposting page reached from the exhausted case + notice.
         // Members-wall (auth+verified), deliberately NOT in public nav.
         // Content is a solicitor-deferred stub.
-        Route::get('/escalation-routes', fn() => view('members.escalation-routes'))->name('escalation-routes');
+        Route::get('/escalation-routes', fn () => view('members.escalation-routes'))->name('escalation-routes');
     });
 });
 
@@ -108,7 +123,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 Route::prefix('members')->name('members.')->group(function () {
     // How It Works — single public page (The Process + Whoever You Are +
     // Whatever Property + Where This Can Lead as stacked sections).
-    Route::get('/how-it-works', fn() => view('members.how-it-works'))->name('how-it-works');
+    Route::get('/how-it-works', fn () => view('members.how-it-works'))->name('how-it-works');
 });
 
 // Content archive — dev box only. Retired pages live under
@@ -129,7 +144,7 @@ if (app()->environment('local')) {
         // Filename dates also survive a fresh git clone, which rewrites every
         // mtime. Undated legacy pages fall back to mtime and settle wherever
         // they land — fine for a reference shelf.
-        $pages = collect(\Illuminate\Support\Facades\File::files(resource_path('views/content-archive')))
+        $pages = collect(File::files(resource_path('views/content-archive')))
             ->map(function ($f) {
                 $name = str_replace('.blade.php', '', $f->getFilename());
 
@@ -137,12 +152,12 @@ if (app()->environment('local')) {
                 if (preg_match('/-(\d{1,2}-[a-z]+-\d{4})$/i', $name, $m)) {
                     // strtotime handles "11-july-2026" once the hyphens go.
                     $parsed = strtotime(str_replace('-', ' ', $m[1]));
-                    $dated = $parsed ? \Carbon\Carbon::createFromTimestamp($parsed) : null;
+                    $dated = $parsed ? Carbon::createFromTimestamp($parsed) : null;
                 }
 
                 return [
                     'name' => $name,
-                    'date' => $dated ?? \Carbon\Carbon::createFromTimestamp($f->getMTime()),
+                    'date' => $dated ?? Carbon::createFromTimestamp($f->getMTime()),
                     // Distinguishes "retired on this date" from "last edited
                     // on this date" in the listing — an mtime row is a guess.
                     'dated' => $dated !== null,
@@ -192,7 +207,7 @@ Route::post('/webhooks/mailgun/inbound', MailgunInboundController::class)
 // D12 — magic-link sign-in for tenant inbox arrivals. Public route
 // (no auth middleware); the signed-URL signature and the single-use
 // + expiry checks inside the controller are the auth boundary.
-Route::get('/magic-link/{token}', [\App\Http\Controllers\MagicLinkController::class, 'consume'])
+Route::get('/magic-link/{token}', [MagicLinkController::class, 'consume'])
     ->middleware('signed')
     ->name('magic-link.consume');
 

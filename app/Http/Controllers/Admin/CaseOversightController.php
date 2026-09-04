@@ -34,7 +34,7 @@ class CaseOversightController extends Controller
 
     public function show(RepairCase $case): View
     {
-        $case->load(['property', 'tenant', 'landlordContact', 'category']);
+        $case->load(['property', 'tenant', 'property.currentLandlordContact', 'category']);
 
         $events = $case->events()
             ->with('actor')

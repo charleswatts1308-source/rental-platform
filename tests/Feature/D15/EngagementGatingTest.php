@@ -7,7 +7,6 @@ use App\Enums\SenderRole;
 use App\Mail\CaseNotice;
 use App\Mail\Notifications\AutoEscalationTenantNotice;
 use App\Models\CaseMessage;
-use App\Models\LandlordContact;
 use App\Models\Property;
 use App\Models\RepairCase;
 use App\Models\RepairCategory;
@@ -44,13 +43,11 @@ beforeEach(function () {
 function d15LandlordBallCase(bool $engaged, int $lettersSent = 1, int $daysAgo = 15): RepairCase
 {
     $tenant = User::factory()->create();
-    $contact = LandlordContact::factory()->create(['name' => 'Mr Landlord']);
     $property = Property::factory()->create(['address_line1' => '12 Test Street', 'postcode' => 'SW1A 1AA']);
     $category = RepairCategory::factory()->create();
 
-    $case = RepairCase::factory()->create([
+    $case = RepairCase::factory()->withLandlord(['name' => 'Mr Landlord'])->create([
         'tenant_user_id' => $tenant->id,
-        'landlord_contact_id' => $contact->id,
         'property_id' => $property->id,
         'category_key' => $category->key,
         'status' => CaseStatus::AwaitingLandlord,
@@ -104,16 +101,14 @@ function d15InboundPayload(string $token, array $overrides = []): array
 
 function d15CaseWithToken(string $landlordEmail = 'landlord@example.com'): array
 {
-    $contact = LandlordContact::factory()->create(['email' => $landlordEmail]);
-    $case = RepairCase::factory()->create([
-        'landlord_contact_id' => $contact->id,
+    $case = RepairCase::factory()->withLandlord(['email' => $landlordEmail])->create([
         'status' => CaseStatus::AwaitingLandlord,
         'landlord_engaged' => false,
     ]);
     $token = ReplyToken::factory()->create([
         'case_id' => $case->id,
         'token' => Str::random(20),
-        'bound_email' => $contact->email,
+        'bound_email' => $case->landlordRecipient()->email,
         'superseded_at' => null,
     ]);
 
@@ -213,16 +208,14 @@ it('does not restart the clock on an authorise-nudge — silence keeps accruing'
 
 it('the authorise-nudge shows the LANDLORD last-reply date, not a later tenant reply date', function () {
     $tenant = User::factory()->create();
-    $contact = LandlordContact::factory()->create(['name' => 'Mr Landlord']);
     $property = Property::factory()->create();
     $category = RepairCategory::factory()->create();
 
     $landlordReplyDate = Carbon::now()->subDays(25); // landlord's last inbound
     $tenantReplyDate = Carbon::now()->subDays(15);   // tenant's later "thanks"
 
-    $case = RepairCase::factory()->create([
+    $case = RepairCase::factory()->withLandlord(['name' => 'Mr Landlord'])->create([
         'tenant_user_id' => $tenant->id,
-        'landlord_contact_id' => $contact->id,
         'property_id' => $property->id,
         'category_key' => $category->key,
         'status' => CaseStatus::AwaitingLandlord,
@@ -332,11 +325,9 @@ it('a dormant engaged case still revives via tenant reply within the window (D11
     // which only fires on status UPDATE). landlord_engaged stays true across
     // revival — the one-way flag never resets.
     $tenant = User::factory()->create();
-    $contact = LandlordContact::factory()->create();
     $category = RepairCategory::factory()->create();
-    $case = RepairCase::factory()->create([
+    $case = RepairCase::factory()->withLandlord([])->create([
         'tenant_user_id' => $tenant->id,
-        'landlord_contact_id' => $contact->id,
         'category_key' => $category->key,
         'status' => CaseStatus::Dormant,
         'landlord_engaged' => true,
@@ -361,11 +352,9 @@ it('a dormant engaged case still revives via tenant reply within the window (D11
 it('HEADLINE: a thank-you reply from awaiting_tenant_review on an ENGAGED case does NOT auto-escalate', function () {
     // Landlord replied (engaged), case sits awaiting_tenant_review, ball tenant.
     $tenant = User::factory()->create();
-    $contact = LandlordContact::factory()->create(['email' => 'landlord@example.com']);
     $category = RepairCategory::factory()->create();
-    $case = RepairCase::factory()->create([
+    $case = RepairCase::factory()->withLandlord(['email' => 'landlord@example.com'])->create([
         'tenant_user_id' => $tenant->id,
-        'landlord_contact_id' => $contact->id,
         'category_key' => $category->key,
         'status' => CaseStatus::AwaitingTenantReview,
         'current_stage' => 1,

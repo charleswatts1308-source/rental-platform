@@ -3,7 +3,6 @@
 use App\Actions\HandleInboundReply;
 use App\Actions\SendCaseNotice;
 use App\Enums\CaseStatus;
-use App\Models\LandlordContact;
 use App\Models\RepairCase;
 use App\Models\RepairCategory;
 use App\Models\ReplyToken;
@@ -30,11 +29,9 @@ function sendActionForClock(): SendCaseNotice
 
 function openCaseForClock(): RepairCase
 {
-    $contact = LandlordContact::factory()->create(['email' => 'landlord@example.com']);
     $category = RepairCategory::factory()->create();
 
-    return RepairCase::factory()->create([
-        'landlord_contact_id' => $contact->id,
+    return RepairCase::factory()->withLandlord(['email' => 'landlord@example.com'])->create([
         'category_key' => $category->key,
         'status' => CaseStatus::Open,
         'current_stage' => 1,
@@ -66,10 +63,8 @@ it('it snapshots the current settings onto the case at outbound send', function 
 
 it('it snapshots the current settings onto the case at inbound landlord reply', function () {
     Mail::fake();
-    $contact = LandlordContact::factory()->create(['email' => 'landlord@example.com']);
     $category = RepairCategory::factory()->create();
-    $case = RepairCase::factory()->create([
-        'landlord_contact_id' => $contact->id,
+    $case = RepairCase::factory()->withLandlord(['email' => 'landlord@example.com'])->create([
         'category_key' => $category->key,
         'status' => CaseStatus::AwaitingLandlord,
         'ball_with' => 'landlord',
@@ -78,7 +73,7 @@ it('it snapshots the current settings onto the case at inbound landlord reply', 
     ]);
     $token = ReplyToken::factory()->create([
         'case_id' => $case->id,
-        'bound_email' => $contact->email,
+        'bound_email' => $case->landlordRecipient()->email,
         'token' => 'abcdefghij1234567890',
     ]);
 

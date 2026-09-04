@@ -4,9 +4,9 @@ use App\Enums\CaseStatus;
 use App\Enums\MessageDirection;
 use App\Enums\SenderRole;
 use App\Mail\CaseNotice;
-use App\Models\LandlordContact;
 use App\Models\RepairCase;
 use App\Models\RepairCategory;
+use App\Models\ReplyToken;
 use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -22,12 +22,10 @@ function caseFor(User $tenant, CaseStatus $status, array $overrides = []): Repai
 {
     static $n = 0;
     $n++;
-    $contact = LandlordContact::factory()->create(['email' => "landlord{$n}@example.com"]);
     $category = RepairCategory::factory()->create();
 
-    return RepairCase::factory()->create(array_merge([
+    return RepairCase::factory()->withLandlord(['email' => "landlord{$n}@example.com"])->create(array_merge([
         'tenant_user_id' => $tenant->id,
-        'landlord_contact_id' => $contact->id,
         'category_key' => $category->key,
         'description' => 'Damp in the bedroom.',
         'status' => $status,
@@ -187,9 +185,9 @@ it('queues CaseNotice mailable to the landlord on reply', function () {
 it('mints a fresh token and supersedes the old one on reply', function () {
     $tenant = User::factory()->create();
     $case = caseFor($tenant, CaseStatus::AwaitingTenantReview);
-    \App\Models\ReplyToken::factory()->create([
+    ReplyToken::factory()->create([
         'case_id' => $case->id,
-        'bound_email' => $case->landlordContact->email,
+        'bound_email' => $case->landlordRecipient()->email,
         'superseded_at' => null,
     ]);
 

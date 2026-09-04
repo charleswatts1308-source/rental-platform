@@ -562,16 +562,64 @@ informed the tenant · we stopped · a new address was given · the case
 restarted* — each separately true, each its own entry. Nothing is ever
 retracted.
 
-**D17.2 — hard stops, soft is silent.** `permanent_fail` stops the case
-and notifies the tenant. `temporary_fail` is recorded on the message and
-produces no tenant-facing action; Mailgun retries and most deliver.
+**D17.2 — hard stops, soft is silent.** A **permanent** failure stops
+the case and notifies the tenant. A **temporary** failure is recorded
+and produces no tenant-facing action; Mailgun retries and most deliver.
 
-**D17.3 — a letter-1 bounce forks.** The old case closes terminal; a new
-case is created carrying the same property, category, severity,
-description and photos. The new case has **zero message rows**, so its
-derived counter is genuinely 0 and its first letter is stage 1. **Nothing
-is reset and D3's ratchet is untouched** — the numbers are simply true.
-No link is stored between the two cases.
+*Amended 2026-09-03 against observed payloads.* This section previously
+named `permanent_fail` and `temporary_fail`. **Those events do not
+exist.** Mailgun sends one `failed` event carrying
+`severity: permanent | temporary`. A receiver keyed off the names the
+subscription UI displays would match nothing, and the ladder would run
+on regardless. **Branch on `severity`, never on the event name.**
+
+Two different things arrive as `failed`/`permanent` and are told apart
+by **`reason`**: `generic` is a real bounce that was attempted;
+`suppress-bounce` is a send Mailgun dropped without attempting, because
+the address is already on our suppression list. Both stop the case —
+neither was delivered — but only the second means earlier letters have
+been silently swallowed. `reason` is recorded on the event.
+
+**Do not infer suppression from severity.** An observed `permanent`
+carried `bounce-type: soft` (a domain that does not resolve) and did NOT
+add the address to the suppression list. Severity is a fact about this
+message; suppression is a fact about the address.
+
+Evidence: `mailgun-delivery-event-payloads.md`, three real prod sends,
+23 Aug 2026.
+
+**D17.3 — a letter-1 bounce forks, and the TENANT takes the fork.** The
+old case closes terminal. The tenant is offered a **copy** of it — same
+property, category, severity, description and photos — which they
+accept, and which drops them into the ordinary create-case flow at the
+preview step. The copy has **zero message rows**, so its derived counter
+is genuinely 0 and its first letter is stage 1. **Nothing is reset and
+D3's ratchet is untouched** — the numbers are simply true. No link is
+stored between the two cases.
+
+*Amended 2026-09-03 (ruled by Charlie).* As first written this read as
+an automatic fork at bounce time, and #24 has since made that unsafe: a
+case inherits the property's CURRENT landlord contact with no per-case
+override, and creation sends immediately (`CaseController::confirm`). At
+bounce time the property's current contact is still the address that
+bounced — so an automatic fork would send to the dead address, bounce,
+and fork again. A loop of real sends, real events and real tenant mail.
+
+Tenant-initiated closes that, and buys three things: the D13 preview
+stays in the path, so #59's landlord-email display does its job; no
+second send path is created; and nothing exists that could sit
+unclaimed forever.
+
+**The preview is the guard.** Where the resolved landlord email equals
+the address on the bounced message, the preview REFUSES to confirm and
+says so, linking to the property's landlord-contact correction. Correct
+it, return, confirm, send. A tenant who corrects the address before
+taking the copy passes straight through.
+
+**This does not make escalation contingent on tenant attention** — the
+prohibition that removed an earlier judgement step. No clock pauses and
+no case waits: the old case is already terminal, and the copy escalates
+on its own once raised.
 
 **D17.4 — mid-flow bounces are OUT OF SCOPE.** Continuing after a
 mid-ladder bounce would require re-serving the bounced rung, writing a

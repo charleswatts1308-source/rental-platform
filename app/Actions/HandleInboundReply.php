@@ -31,8 +31,14 @@ use Mews\Purifier\Facades\Purifier;
  *      validity to attackers via timing or bounce).
  *   3. Compose an inbound case_message with body_raw + body_sanitised.
  *   4. Apply sender-mismatch quarantine when the From address doesn't
- *      match the case's landlord_contact email (case-insensitive,
- *      +suffix tolerant).
+ *      match the property's CURRENT landlord contact email
+ *      (case-insensitive, +suffix tolerant).
+ *
+ *      Note the consequence of "current": after a tenant corrects a
+ *      mistyped address, a reply arriving from the OLD one no longer
+ *      matches and is quarantined. That is intended — the superseded
+ *      address is no longer the landlord of record — but it is a real
+ *      behaviour change from the per-case contact this replaced.
  *   5. Increment the reply_token use_count and update last_used_at.
  *   6. Either transition the case (awaiting_landlord, on_hold, or
  *      dormant → awaiting_tenant_review, with the canonical event
@@ -99,7 +105,7 @@ class HandleInboundReply
             $bodySanitised = $bodyHtml !== '' ? Purifier::clean($bodyHtml) : null;
 
             $fromRaw = (string) ($payload['from'] ?? '');
-            $quarantineReason = $this->resolveQuarantineReason($fromRaw, $case->landlordContact->email);
+            $quarantineReason = $this->resolveQuarantineReason($fromRaw, $case->requireLandlordRecipient()->email);
 
             $message = $case->messages()->create([
                 'direction' => MessageDirection::Inbound,
@@ -195,7 +201,7 @@ class HandleInboundReply
             return;
         }
 
-        $case->loadMissing(['tenant', 'property', 'landlordContact']);
+        $case->loadMissing(['tenant', 'property.currentLandlordContact']);
 
         $magicLink = $this->magicLinkGenerator->mintUrl(
             $case->tenant,
@@ -205,7 +211,7 @@ class HandleInboundReply
 
         $rendered = $this->renderer->render($template, [
             'tenant_name' => $case->tenant->name,
-            'landlord_name' => $case->landlordContact->name ?: 'your landlord',
+            'landlord_name' => $case->landlordRecipient()?->name ?: 'your landlord',
             'case_reference' => $case->url_slug,
             'property_address' => $this->propertyAddress($case),
             'issue_description' => $case->description,

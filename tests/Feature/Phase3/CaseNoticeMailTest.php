@@ -2,7 +2,6 @@
 
 use App\Mail\CaseNotice;
 use App\Models\CaseMessage;
-use App\Models\LandlordContact;
 use App\Models\Property;
 use App\Models\RepairCase;
 use App\Models\RepairCategory;
@@ -33,12 +32,10 @@ function makeMailFixtures(array $messageOverrides = [], ?string $tokenValue = nu
         'city' => 'London',
         'postcode' => 'SW1A 1AA',
     ]);
-    $contact = LandlordContact::factory()->create(['name' => 'Mr Landlord']);
     $category = RepairCategory::factory()->create(['label' => 'Damp and mould']);
-    $case = RepairCase::factory()->create([
+    $case = RepairCase::factory()->withLandlord(['name' => 'Mr Landlord'])->create([
         'tenant_user_id' => $tenant->id,
         'property_id' => $property->id,
-        'landlord_contact_id' => $contact->id,
         'category_key' => $category->key,
     ]);
     $token = ReplyToken::factory()->create(array_filter([

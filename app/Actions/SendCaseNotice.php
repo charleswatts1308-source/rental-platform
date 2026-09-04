@@ -10,6 +10,7 @@ use App\Mail\CaseNotice;
 use App\Models\CaseMessage;
 use App\Models\LetterTemplate;
 use App\Models\MessageAttachment;
+use App\Models\PropertyLandlordContact;
 use App\Models\RepairCase;
 use App\Models\ReplyToken;
 use App\Models\Setting;
@@ -24,8 +25,13 @@ use LogicException;
  * Orchestrates outbound mail in the tenant's name: supersede the
  * active reply token (if any), mint a new one, compose the outbound
  * case_message, render + freeze the letter, queue the mail to the
- * landlord_contact, write peripheral case_events, restart the
- * silence clock, and either transition the case or stay put.
+ * property's CURRENT landlord contact, write peripheral case_events,
+ * restart the silence clock, and either transition the case or stay put.
+ *
+ * The recipient is resolved once, at the top of the transaction, from
+ * the property — never from the case's own contact FK, which is
+ * provenance only. That is what lets a corrected address take effect on
+ * the next letter (snag #24).
  *
  * Post Phase 3 — three entry shapes, distinguished by status + the
  * `$tenantReplyBody` parameter:
@@ -82,6 +88,13 @@ class SendCaseNotice
 
             $this->assertEntryStatusAllowed($case, $isTenantReply);
 
+            // Resolved ONCE, here, so the token binding, the frozen
+            // to_address_raw and the actual envelope cannot disagree with
+            // each other. This is the property's CURRENT contact — a
+            // correction made before this send takes effect from here on,
+            // which is what closes snag #24.
+            $recipient = $case->requireLandlordRecipient();
+
             // Stage_at_send semantics (D3 counter):
             // - escalation sends (system) carry stage_at_send — they're
             //   the rows the counter is derived from.
@@ -102,7 +115,7 @@ class SendCaseNotice
             $newToken = ReplyToken::create([
                 'case_id' => $case->id,
                 'token' => $this->tokenGenerator->generate(),
-                'bound_email' => $case->landlordContact->email,
+                'bound_email' => $recipient->email,
                 'issued_at' => now(),
             ]);
 
@@ -113,7 +126,7 @@ class SendCaseNotice
                 'subject' => null,
                 'body_raw' => '',
                 'tenant_statement' => null,
-                'to_address_raw' => $case->landlordContact->email,
+                'to_address_raw' => $recipient->email,
                 'sent_at' => now(),
             ]);
 
@@ -130,13 +143,13 @@ class SendCaseNotice
                 ]);
             }
 
-            $caseForVars = $case->fresh()->load(['tenant', 'property', 'landlordContact']);
-            $vars = $this->buildLetterVars($caseForVars, $stageAtSend);
+            $caseForVars = $case->fresh()->load(['tenant', 'property']);
+            $vars = $this->buildLetterVars($caseForVars, $recipient, $stageAtSend);
 
             if ($isTenantReply) {
                 $rendered = $this->renderer->renderFreeForm(
                     $tenantReplyBody,
-                    "Reply on repair case {{case_reference}} from {{tenant_name}}",
+                    'Reply on repair case {{case_reference}} from {{tenant_name}}',
                     $vars,
                 );
 
@@ -176,7 +189,7 @@ class SendCaseNotice
             $case->silence_clock_started_at = now();
             $case->silence_settings_snapshot = SilenceClock::snapshotCurrentSettings();
 
-            Mail::to($case->landlordContact->email)->queue(new CaseNotice(
+            Mail::to($recipient->email)->queue(new CaseNotice(
                 $caseForVars,
                 $message->fresh(),
                 $newToken,
@@ -295,11 +308,11 @@ class SendCaseNotice
      *
      * @return array<string, string|int|null>
      */
-    private function buildLetterVars(RepairCase $case, ?int $noticeNumber): array
+    private function buildLetterVars(RepairCase $case, PropertyLandlordContact $recipient, ?int $noticeNumber): array
     {
         return [
             'tenant_name' => $case->tenant->name,
-            'landlord_name' => $case->landlordContact->name ?: 'Sir or Madam',
+            'landlord_name' => $recipient->name ?: 'Sir or Madam',
             'case_reference' => $case->url_slug,
             'property_address' => $this->propertyAddress($case),
             'issue_description' => $case->description,

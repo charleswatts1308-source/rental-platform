@@ -7,6 +7,7 @@ use App\Enums\SenderRole;
 use App\Models\CaseMessage;
 use App\Models\LetterTemplate;
 use App\Models\RepairCase;
+use App\Models\RepairCategory;
 use App\Services\Silence\IntendedAction;
 use App\Services\Silence\SilenceClock;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -223,10 +224,8 @@ it('tenant-side: nudge derivation is stateless — re-evaluation at the same hor
 // ─── Edge: ball-bearing status without clock-start data ─────────
 
 it('ball-bearing case without clock-start data → no_action with diagnostic reasoning', function () {
-    $contact = \App\Models\LandlordContact::factory()->create();
-    $category = \App\Models\RepairCategory::factory()->create();
-    $case = RepairCase::factory()->create([
-        'landlord_contact_id' => $contact->id,
+    $category = RepairCategory::factory()->create();
+    $case = RepairCase::factory()->withLandlord([])->create([
         'category_key' => $category->key,
         'status' => CaseStatus::AwaitingLandlord,
         'silence_clock_started_at' => null,
