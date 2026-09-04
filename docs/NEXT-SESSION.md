@@ -262,7 +262,7 @@ reference `Z229825X`. The old value was the payment/account number.
 
 **#1, #2, #7, #12, #13, #17, #18, #19, #22, #25, #26, #27, #28,
 #29, #30, #31, #32, #33, #34, #35, #36, #37, #38, #39, #40, #42, #44,
-#48, #50, #51, #52, #53, #54, #56, #57, #58, #60.**
+#48, #50, #51, #52, #53, #54, #56, #57, #58.**
 
 **BUILT, NOT MERGED, NOT DEPLOYED: #24, #49, #59.** Still live on prod until
 `feature/property-landlord-contacts` ships. #7 is the same defect as
@@ -291,14 +291,6 @@ Closed: **#23**, **#8**, **#41**, **#43**, **#45**, **#46**, **#47**,
 - **#58** the photo check is per-file only; nothing sums the selection
   against `post_max_size`. Safe today by arithmetic, not by design.
 
-**Added 4 Sep, deploying to gafol:**
-- **#60** `cases.opened_at` and the old `landlord_contacts.created_at`
-  disagree by **exactly one hour, to the second**, on two independent
-  samples — one clock is local (BST) and one is UTC. Not caused by the
-  branch; the backfill just put the two values side by side for the
-  first time. **Invisible in winter**, when the two agree. Prime suspect
-  is `opened_at`'s `DEFAULT current_timestamp()`, which evaluates in the
-  SERVER's zone rather than the app's.
 **Added 28 Aug, walking the landlord-contact branch:**
 - **#59** the create-case preview never showed the landlord's EMAIL
   ADDRESS — only the name, and only incidentally inside the letter's
