@@ -1862,7 +1862,18 @@ Saw:         Mailgun suppression list for mg.renters.rent, Bounces tab:
              nobody is told.
 Expected:    A published contact address receives mail. An admin account
              can complete a password reset.
-Status:      open — snagged 09 Aug.
+Status:      open — snagged 09 Aug. STILL PRESENT 4 Sep 2026: the
+             suppression entry is unchanged on the Bounces tab, same
+             timestamp. Blast radius now MEASURED — no case on prod has
+             ever used admin@renters.rent as a landlord, so (b) the admin
+             password reset is the only live casualty; (a) the published
+             compliance address is untouched by that and still wrong.
+             NOTE FOR ANY DATA WIPE: the suppression list lives in
+             MAILGUN, not in the database. Truncating cases/properties
+             does not clear it, and sends to this address will keep being
+             dropped. Fix the mailbox first, THEN remove the entry — a
+             removal without a mailbox simply re-suppresses on the next
+             send.
 Notes:       Where it appears:
                - resources/views/privacy.blade.php:60 — "questions about
                  this Privacy Policy or our data practices"

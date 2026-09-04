@@ -203,15 +203,17 @@ can be built first.
 
 1. **Abandon the three test cases on prod:** `9RKDKC`, `3YHRKZ`,
    `CZPUAD`. Real cases raised for the capture run.
-2. **Run the suppression SQL** (in `release-attachments-and-capture.txt`)
-   against `charles.watts1308-t1@gmail.com` — a real July hard bounce,
-   proven on 23 Aug to be STILL silently swallowing letters. Find out
-   what it has done to its cases: whether the ladder ratcheted against
-   letters never transmitted.
-   **RUN IT BEFORE THE PROD DEPLOY.** The query joins
-   `landlord_contacts`, which this branch DROPS — after the deploy it
-   needs rewriting against `property_landlord_contacts`. Cheapest to run
-   it first.
+2. ~~**Run the suppression SQL.**~~ **DONE 4 Sep — and the damage is
+   NIL.** Prod's suppression list holds two addresses:
+   `admin@renters.rent` (unrouteable, 4 Jul — that is #48) and
+   `charles.watts1308-t1@gmail.com` (5.1.1 no such account, 12 Jul).
+   Cross-referenced against all 9 prod cases: **only `3YHRKZ` ever used
+   a suppressed address**, and that is the capture-run case raised
+   deliberately on 23 Aug *because* it was suppressed. One letter,
+   dropped before any delivery attempt, as intended. **No genuine case
+   ratcheted against never-transmitted letters.** The mechanism is real
+   and proven; on prod it cost nothing. Full case table is in the 4 Sep
+   session record.
 3. ~~**Finish verifying the prod attachment release.**~~ **DONE —
    confirmed by Charlie 4 Sep.** All six checked and OK: `/landlords`
    with ICO ref `Z229825X`; nav order; admin ceiling reads 1; an
