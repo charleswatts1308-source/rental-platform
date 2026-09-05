@@ -37,12 +37,35 @@ Inbound routing carries `timestamp` / `token` / `signature` **flat at top
 level**. Event webhooks nest them under `signature`. Two different shapes,
 exactly as the D0 inferred.
 
-**Consequence, now proven rather than suspected:**
-`VerifyMailgunSignature` reads the flat fields, so an event hits its
-"Missing signature fields" branch and returns **406**. Mailgun treats 406
-as a deliberate refusal and **never retries**. Events would be discarded
-permanently and silently while the webhook looked healthy in the
-dashboard.
+**Consequence — CORRECTED 4 Sep 2026, measured rather than reasoned.**
+This section previously said `VerifyMailgunSignature` hits its "Missing
+signature fields" branch and returns **406**, and that Mailgun never
+retries a 406, so events would be discarded permanently and silently.
+
+**It does not return 406. It returns 500.** Proven by posting a real
+event envelope at it (`VerifyMailgunEventSignatureTest`). Line 39 does
+`(string) $request->input('signature', '')`, and on an event payload
+that field is an ARRAY. PHP raises "Array to string conversion", Laravel
+promotes the warning to an `ErrorException`, and the request dies before
+any signature branch is reached.
+
+**Why the correction matters, and why it does not change the plan.** The
+whole argument for a second middleware rested on 406 being a silent,
+never-retried refusal. A 500 is the opposite: Mailgun retries a 5xx for
+about eight hours, so the failure would have been noisy and visible
+rather than silent. The conclusion is unchanged — **a second middleware
+is still required**, because the flat verifier can never validate a
+nested envelope — but it is required for the plain reason that the shapes
+differ, not because of a subtle retry trap.
+
+Recorded because this file is the reference #25 gets built against, and a
+mechanism stated wrongly here would be inherited by everything built on
+it.
+
+**Note also:** an event payload could only ever reach the inbound
+verifier if the event webhook were pointed at the inbound URL — i.e.
+exactly the mistake #25 avoids by having its own route. Nothing in
+production is currently taking this path.
 
 A second middleware is therefore confirmed necessary. Verification is
 HMAC-SHA256 over `timestamp` concatenated with `token`, in that order,

@@ -114,6 +114,18 @@ class CaseController extends Controller
             'messages' => $messages,
             'quarantined' => $quarantined,
             'revivalExpired' => $this->dormantRevivalExpired($case),
+            // #25 — the event that stopped the case, so the page can say
+            // WHY rather than showing a status nobody can interpret. Null
+            // on every case that has not been stopped by a delivery
+            // failure. The cause matters: a bounce means the address can be
+            // corrected, a complaint means the letter arrived and was
+            // rejected (D17.5), and the two need different wording.
+            'contactFailure' => $case->status === CaseStatus::ContactFailed
+                ? $case->events()
+                    ->whereIn('event_type', ['delivery_failed', 'delivery_complained'])
+                    ->orderByDesc('id')
+                    ->first()
+                : null,
             // D15 — derived "tenant authorisation required" condition for
             // an engaged-then-quiet held escalation. Single source of truth
             // (SilenceClock), not a stored state (D0.3).
