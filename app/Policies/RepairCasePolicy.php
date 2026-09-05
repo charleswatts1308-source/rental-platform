@@ -114,9 +114,23 @@ class RepairCasePolicy
             ], true);
     }
 
+    /**
+     * Everything resolve() allows, PLUS contact_failed.
+     *
+     * No longer a straight delegation to resolve(). D17.8 makes
+     * contact_failed → abandoned the ONE permitted exit — ruled precisely
+     * so the tenant can close their own case — but abandon() inherited
+     * resolve()'s allow-list, which excludes it. The state machine
+     * permitted the transition and the surface offered no way to take it.
+     *
+     * contact_failed is deliberately NOT added to resolve(): a notice that
+     * never arrived cannot have led to the repair being resolved through
+     * us, and D17.8 allows exactly one exit, not two.
+     */
     public function abandon(User $user, RepairCase $case): bool
     {
-        return $this->resolve($user, $case);
+        return $this->resolve($user, $case)
+            || ($this->ownsCase($user, $case) && $case->status === CaseStatus::ContactFailed);
     }
 
     private function dormantRevivalAvailable(RepairCase $case): bool

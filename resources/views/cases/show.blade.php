@@ -102,6 +102,58 @@
         </div>
 
         <div class="col-lg-8">
+            {{-- #25 / D17 — a case stopped by a delivery failure must SAY so.
+                 Without this the tenant gets an email, clicks through, and
+                 finds a status badge reading "contact failed" with nothing
+                 to explain it — the #46/#49/#53 pattern of a surface not
+                 telling the tenant what the system has done.
+
+                 A bounce and a complaint are evidentially opposite (D17.5):
+                 a bounce proves the letter went nowhere, a complaint proves
+                 it arrived and was seen. They get different wording because
+                 one has an address to correct and the other does not. --}}
+            @if($contactFailure)
+                @php($isComplaint = $contactFailure->event_type === 'delivery_complained')
+                <div class="alert {{ $isComplaint ? 'alert-warning' : 'alert-danger' }} mb-4">
+                    <h2 class="h6 mb-2">
+                        {{ $isComplaint
+                            ? 'This notice was reported as spam'
+                            : 'This notice could not be delivered' }}
+                    </h2>
+
+                    @if($isComplaint)
+                        <p class="mb-2">
+                            Your notice reached
+                            <strong>{{ $contactFailure->meta['recipient'] ?? 'the landlord' }}</strong>
+                            and was then reported as spam by the recipient's mail provider.
+                            We have stopped this case: once an address reports our messages
+                            as spam, continuing would risk other tenants' notices being
+                            blocked too.
+                        </p>
+                        <p class="mb-0">
+                            It did arrive, and that is on the record here along with
+                            everything else. If the repair is still outstanding, contacting
+                            your landlord by another route is the next step.
+                        </p>
+                    @else
+                        <p class="mb-2">
+                            We could not deliver your notice to
+                            <strong>{{ $contactFailure->meta['recipient'] ?? 'the landlord' }}</strong>,
+                            so it has <strong>not</strong> been received. We have stopped this
+                            case rather than continuing: our notices work by recording that
+                            your landlord was contacted and did not respond, and that would
+                            not be true here.
+                        </p>
+                        <p class="mb-0">
+                            Nothing is lost — everything already on this case stays on
+                            record. Check the landlord's email address on the property; if
+                            it is wrong, correct it and raise a new case.
+                            <a href="{{ route('properties.contact.edit', $case->property) }}">Correct the landlord's details</a>.
+                        </p>
+                    @endif
+                </div>
+            @endif
+
             <h2 class="h5 mb-3">Correspondence</h2>
 
             @if($messages->isEmpty())
