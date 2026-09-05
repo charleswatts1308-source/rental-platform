@@ -7,14 +7,55 @@ superseded doc. It is a **router, not a record**: keep it short.
 
 **Last updated:** 2026-09-05.
 
-**⏸ READY TO DEPLOY — #25 release 1.** The delivery-event receiver is
-BUILT, green (suite 771), MERGED to `main` (`4eed6a8`, tag
-`post-delivery-event-receiver`) and **NOT pushed, NOT deployed anywhere**.
-**➡ `docs/release-delivery-event-receiver.md` is the runbook.** Key
-property: deploying changes NOTHING until the webhook is subscribed in
-the Mailgun dashboard, so the deploy and the switch-on are separate acts
-and rollback is a dashboard toggle.
+**⚠ MID-DEPLOY — #25 release 1 is LIVE ON PROD, with one fix not yet
+deployed.** Read this before touching anything.
 
+**What is done (5 Sep):** merged to `main`, deployed to stage AND prod,
+both migrated and schema-checked (#18 clear on both engines), the route
+answers 406 to an unsigned POST on both. **The Mailgun webhook IS
+SUBSCRIBED on prod** (`renters-prod-delivery-events`, domain-level on
+`mg.renters.rent`, four event types). Mailgun's own test webhook returned
+success, proving signature verification against a real signature.
+**Live fire PASSED** — a case to a dead domain bounced, stopped at
+`contact_failed`, and the case page showed the explanation panel
+correctly.
+
+**⚠ WHAT IS NOT DONE — the tenant email is wrong on prod right now.**
+The live fire revealed `{{failed_address}}` rendering literally in the
+notice: `failed_address` was missing from
+`LetterTemplateRenderer::WHITELIST`. **Fixed in `9645179`, committed,
+UNPUSHED and NOT DEPLOYED.** So prod currently sends a notice reading
+"we were not able to deliver your repair notice to {{failed_address}}".
+
+**➡ RESUME HERE, in order:**
+1. Push `main` (one commit ahead of origin).
+2. Deploy `9645179` to STAGE then PROD — pull, then `config:cache`,
+   `route:clear`, `view:clear`. **No migration.**
+3. Re-run the live fire on PROD: raise a case to
+   `landlord@this-domain-does-not-exist-9f3k2.com` and confirm the email
+   now names the address.
+4. The CONTROL send — a case to an address you own — confirming a
+   `delivery_confirmed` event appears and the case does NOT stop. Not yet
+   done, and it is the half that proves the good path is not caught by
+   the same net.
+5. Abandon the test cases on prod (at least one is sitting in
+   `contact_failed` from the first live fire).
+6. **Write the ledger for BOTH boxes** — not done, and per CLAUDE.md the
+   deploy is not finished until it is. Include the date the webhook was
+   subscribed.
+
+**Also outstanding, smaller:**
+- Several `Status:` lines in `llcs-snagging-list.txt` are STALE. #24,
+  #49 and #7 still read "built, not merged, not deployed" — they went to
+  prod on 4 Sep. #47 reads open but shipped in August. Offered to
+  reconcile; not yet done.
+- Cosmetic: the bounce panel on the case page ends "…raise a new case.
+  Correct the landlord's details." — the link repeats the sentence before
+  it. Fix in the same pass as the release-2 rewording.
+- **#50** came up again in the walk (severity never reaches the letter).
+  It is already snagged and is a DESIGN question — does severity change
+  the deadline, and is a tenant's self-assessment safe in an evidential
+  letter at all. Needs a ruling, not a fix.
 **✅ SHIPPED EVERYWHERE (4 Sep).** `feature/property-landlord-contacts` is
 merged to `main` (`fb03bc9`, `--no-ff`, tag
 `post-property-landlord-contacts`, suite 703) and **deployed to gafol AND
