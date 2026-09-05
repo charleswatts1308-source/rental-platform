@@ -273,7 +273,7 @@ class RepairCase extends Model
             // D17.8 (#25) — the first send and this transition share one
             // transaction, so the window is tiny; an event arriving inside
             // it still needs somewhere to go.
-            'contact_failed' => 'delivery_failed',
+            'contact_failed' => 'case_contact_failed',
         ],
         'awaiting_landlord' => [
             'awaiting_tenant_review' => 'inbound_received',
@@ -293,7 +293,7 @@ class RepairCase extends Model
             'escalation_exhausted' => 'case_exhausted',
             // D17.8 (#25) — the normal arrival point for a bounce: a letter
             // has just gone out and the case sits here.
-            'contact_failed' => 'delivery_failed',
+            'contact_failed' => 'case_contact_failed',
         ],
         'awaiting_tenant_review' => [
             'awaiting_landlord' => 'tenant_replied',
@@ -303,7 +303,7 @@ class RepairCase extends Model
             'dormant' => 'case_dormant',
             // D17.8 (#25) — a landlord replying to an EARLIER letter does
             // not make a later bounced one delivered.
-            'contact_failed' => 'delivery_failed',
+            'contact_failed' => 'case_contact_failed',
         ],
         'on_hold' => [
             // Tenant reply from on_hold IS the resume action (D8) — same
@@ -313,7 +313,7 @@ class RepairCase extends Model
             'resolved' => 'case_resolved',
             'abandoned' => 'case_abandoned',
             // D17.8 (#25) — a hold is a pause, not an ending.
-            'contact_failed' => 'delivery_failed',
+            'contact_failed' => 'case_contact_failed',
         ],
         'dormant' => [
             // Revival within dormancy.revival_days; the window check is in
@@ -323,7 +323,7 @@ class RepairCase extends Model
             'resolved' => 'case_resolved',
             'abandoned' => 'case_abandoned',
             // D17.8 (#25) — dormant is quiet, not finished.
-            'contact_failed' => 'delivery_failed',
+            'contact_failed' => 'case_contact_failed',
         ],
         'escalation_exhausted' => [
             // D14 allow-reply (design doc D5), mirroring dormant's split:

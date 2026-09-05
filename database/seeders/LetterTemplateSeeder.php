@@ -99,6 +99,22 @@ class LetterTemplateSeeder extends Seeder
                 'body' => $this->autoEscalationTenantNoticeBody(),
             ],
             [
+                'code' => 'contact_failed_bounce',
+                'description' => 'Tenant notification (#25 / D17.2) fired when a letter PERMANENTLY fails to deliver. The case stops at contact_failed. Active-row idiom.',
+                'type' => 'tenant_notification',
+                'stage' => null,
+                'subject' => 'Your notice could not be delivered — case {{case_reference}}',
+                'body' => $this->contactFailedBounceBody(),
+            ],
+            [
+                'code' => 'contact_failed_complaint',
+                'description' => 'Tenant notification (#25 / D17.5) fired when a letter is reported as spam. Distinct from the bounce notice: the letter ARRIVED, so there is no address to correct and no fork.',
+                'type' => 'tenant_notification',
+                'stage' => null,
+                'subject' => 'Your notice was reported as spam — case {{case_reference}}',
+                'body' => $this->contactFailedComplaintBody(),
+            ],
+            [
                 'code' => 'dormancy_transition_notice',
                 'description' => 'Tenant notification fired by silence:sweep on the tenant-side dormancy transition. Active-row idiom — present means send.',
                 'type' => 'tenant_notification',
@@ -298,6 +314,72 @@ HTML;
 <p><a href="{{magic_link}}" style="display: inline-block; padding: 10px 16px; background: #2563eb; color: #fff; text-decoration: none; border-radius: 4px;">Open this case</a></p>
 
 <p>If the landlord replies, the clock resets and you'll be notified. If silence continues, the next notice will be scheduled automatically.</p>
+
+<p>Best regards,<br>
+The renters.rent team</p>
+
+<hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;">
+
+<p style="font-size: 11px; color: #888;">
+This is a private message between renters.rent and you as the tenant. It is not part of the landlord-facing case correspondence.
+</p>
+HTML;
+    }
+
+    /**
+     * #25 / D17.2. A bounce means the letter went NOWHERE — the opposite
+     * of silence, so the ladder stops rather than escalating.
+     *
+     * WORDING DISCIPLINE: this must not promise the D17.3 tenant-taken
+     * copy until that is built (step 7b). Until then the honest route is
+     * correct the address, then raise a fresh case — which works today.
+     * Reword here when the copy option ships.
+     */
+    private function contactFailedBounceBody(): string
+    {
+        return <<<'HTML'
+<p>Hi {{tenant_name}},</p>
+
+<p>We were not able to deliver your repair notice to {{failed_address}}. The message was rejected by the receiving mail server, which means <strong>{{landlord_name}} has not been sent it</strong>.</p>
+
+<p>We have stopped this case rather than carrying on. Our notices work by recording that your landlord was contacted and did not respond — and that would not be true here, so we will not send further letters to an address we know does not work.</p>
+
+<p>Everything already on the case stays on record: what we sent, when we sent it, and that it could not be delivered.</p>
+
+<p><strong>What to do next.</strong> Check the landlord email address on the property. If it is wrong, correct it and raise a new case — the corrected address will be used from then on. If it looks right, it is worth confirming it with your landlord or letting agent directly.</p>
+
+<p><a href="{{magic_link}}" style="display: inline-block; padding: 10px 16px; background: #2563eb; color: #fff; text-decoration: none; border-radius: 4px;">Open this case</a></p>
+
+<p>Best regards,<br>
+The renters.rent team</p>
+
+<hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;">
+
+<p style="font-size: 11px; color: #888;">
+This is a private message between renters.rent and you as the tenant. It is not part of the landlord-facing case correspondence.
+</p>
+HTML;
+    }
+
+    /**
+     * #25 / D17.5. The evidential OPPOSITE of a bounce: a complaint proves
+     * the letter arrived and was seen. There is no address to correct, so
+     * this notice offers no correction and no fork.
+     */
+    private function contactFailedComplaintBody(): string
+    {
+        return <<<'HTML'
+<p>Hi {{tenant_name}},</p>
+
+<p>Your repair notice was delivered to {{landlord_name}} and then reported as spam by the recipient's mail provider.</p>
+
+<p>We have stopped this case. Once an address reports our messages as spam we will not keep sending to it — continuing would put every other tenant's notices at risk of being blocked too.</p>
+
+<p>This is worth knowing: it means the notice <strong>did arrive</strong>. Everything on the case stays on record, including the delivery and the report, and that record is yours to use.</p>
+
+<p>If the repair is still outstanding, contacting your landlord or letting agent by another route — post, phone, or through your tenancy agreement's stated contact — is the next step.</p>
+
+<p><a href="{{magic_link}}" style="display: inline-block; padding: 10px 16px; background: #2563eb; color: #fff; text-decoration: none; border-radius: 4px;">Open this case</a></p>
 
 <p>Best regards,<br>
 The renters.rent team</p>

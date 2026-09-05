@@ -1,19 +1,22 @@
 <?php
 
 use App\Enums\CaseStatus;
+use App\Mail\Notifications\AutoEscalationTenantNotice;
 use App\Models\CaseEvent;
 use App\Models\CaseMessage;
+use App\Models\LetterTemplate;
 use App\Models\RepairCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Mail;
 
 /**
  * #25 step 6 — the receiver writes the event into the case record.
  *
- * RECORD ONLY at this step. Reacting to a failure — the transition to
- * contact_failed, the tenant notification, the D17.3 copy — is step 7,
- * and the tests here pin that seam: a bounce arriving today must leave
- * the case's status exactly where it was.
+ * Step 7a added the reaction: a PERMANENT failure and a COMPLAINT stop
+ * the case at contact_failed and notify the tenant mail-only. A temporary
+ * failure and a delivery are recorded and nothing else happens. The
+ * D17.3 tenant-taken copy is still step 7b.
  *
  * Payload shapes are from the three real production sends captured on
  * 23 Aug 2026 (docs/mailgun-delivery-event-payloads.md), including the
@@ -255,29 +258,156 @@ it('does not record the same complaint twice', function () {
 
     expect(CaseEvent::where('event_type', 'delivery_complained')->count())->toBe(1);
 });
+
 /*
 |--------------------------------------------------------------------------
-| The seam: step 6 RECORDS, step 7 REACTS
+| Step 7a — what a failure DOES
 |--------------------------------------------------------------------------
+|
+| The step-6 tests asserting no status change are REPLACED here rather
+| than relaxed. What they pinned was correct for step 6 and is
+| deliberately different now.
+|
 */
 
-it('does not change the case status — reacting is step 7', function (string $event) {
-    // D17.5 makes a complaint terminal wherever it occurs, and D17.2 stops
-    // the case on a permanent failure. NEITHER happens yet: step 6 records,
-    // step 7 reacts. This is the seam.
+it('stops the case on a permanent failure', function () {
+    // D17.2 — a bounce is not a variant of silence, it is the opposite.
+    // Silence escalates; this must stop the ladder.
+    $message = outboundMessage();
+
+    $this->postJson('/webhooks/mailgun/events', signedEvent(failedEvent($message)))
+        ->assertOk();
+
+    expect($message->case->fresh()->status)->toBe(CaseStatus::ContactFailed);
+});
+
+it('stops the case on a complaint, wherever it occurs', function (CaseStatus $from) {
+    // D17.5 — terminal wherever it occurs, and it never forks.
+    $message = outboundMessage($from);
+
+    $this->postJson('/webhooks/mailgun/events', signedEvent(failedEvent($message, [
+        'event' => 'complained', 'severity' => null,
+    ])))->assertOk();
+
+    expect($message->case->fresh()->status)->toBe(CaseStatus::ContactFailed);
+})->with([
+    'awaiting_landlord' => [CaseStatus::AwaitingLandlord],
+    'awaiting_tenant_review' => [CaseStatus::AwaitingTenantReview],
+    'on_hold' => [CaseStatus::OnHold],
+    'dormant' => [CaseStatus::Dormant],
+]);
+
+it('does NOT stop the case on a temporary failure', function () {
+    // D17.2 — soft is silent. Mailgun retries and most deliver; alarming a
+    // tenant about a full mailbox manufactures a crisis out of a hiccup.
     $message = outboundMessage();
 
     $this->postJson('/webhooks/mailgun/events', signedEvent(failedEvent($message, [
-        'event' => $event,
+        'severity' => 'temporary',
     ])))->assertOk();
 
     expect($message->case->fresh()->status)->toBe(CaseStatus::AwaitingLandlord);
-})->with(['failed', 'complained']);
+});
+
+it('does NOT stop the case on a delivery', function () {
+    $message = outboundMessage();
+
+    $this->postJson('/webhooks/mailgun/events', signedEvent(failedEvent($message, [
+        'event' => 'delivered', 'severity' => null,
+    ])))->assertOk();
+
+    expect($message->case->fresh()->status)->toBe(CaseStatus::AwaitingLandlord);
+});
+
+it('leaves a case that has ALREADY stopped exactly as it was', function (CaseStatus $from) {
+    // D17.8 — a bounce stops a case that is still running; it does not
+    // reach back into one that has already stopped. The event is still
+    // recorded, because per D17.1 the record extends.
+    $message = outboundMessage($from);
+
+    $this->postJson('/webhooks/mailgun/events', signedEvent(failedEvent($message)))
+        ->assertOk();
+
+    expect($message->case->fresh()->status)->toBe($from)
+        ->and(CaseEvent::where('event_type', 'delivery_failed')->count())->toBe(1);
+})->with([
+    'resolved' => [CaseStatus::Resolved],
+    'abandoned' => [CaseStatus::Abandoned],
+    'escalation_exhausted' => [CaseStatus::EscalationExhausted],
+]);
+
+it('notifies the tenant, mail-only, when it stops a case', function () {
+    Mail::fake();
+    $this->seed(LetterTemplateSeeder::class);
+    $message = outboundMessage();
+
+    $this->postJson('/webhooks/mailgun/events', signedEvent(failedEvent($message)))
+        ->assertOk();
+
+    Mail::assertQueued(AutoEscalationTenantNotice::class);
+});
+
+it('sends a DIFFERENT notice for a complaint than for a bounce', function () {
+    // A bounce says the address is wrong and can be corrected. A complaint
+    // says the letter arrived and was rejected — nothing to correct, and
+    // per D17.5 no fork. Two templates, not one.
+    Mail::fake();
+    $this->seed(LetterTemplateSeeder::class);
+
+    $bounced = outboundMessage();
+    $this->postJson('/webhooks/mailgun/events', signedEvent(failedEvent($bounced)))->assertOk();
+
+    $complained = outboundMessage();
+    $this->postJson('/webhooks/mailgun/events', signedEvent(failedEvent($complained, [
+        'id' => 'complaint-x', 'event' => 'complained', 'severity' => null,
+    ])))->assertOk();
+
+    $subjects = [];
+    Mail::assertQueued(AutoEscalationTenantNotice::class, function ($mail) use (&$subjects) {
+        $subjects[] = $mail->renderedSubject;
+
+        return true;
+    });
+
+    expect($subjects)->toHaveCount(2)
+        ->and($subjects[0])->not->toBe($subjects[1]);
+});
+
+it('does not notify when a temporary failure is recorded', function () {
+    Mail::fake();
+    $this->seed(LetterTemplateSeeder::class);
+    $message = outboundMessage();
+
+    $this->postJson('/webhooks/mailgun/events', signedEvent(failedEvent($message, [
+        'severity' => 'temporary',
+    ])))->assertOk();
+
+    Mail::assertNothingQueued();
+});
+
+it('still stops the case when no active template exists to notify with', function () {
+    // Active-row idiom. Deactivating the template is a content decision,
+    // not a licence to leave a case escalating against an address proven
+    // dead. (Pest.php seeds letter_templates for every Feature test, so
+    // the row has to be deactivated rather than merely absent.)
+    Mail::fake();
+    LetterTemplate::where('code', 'contact_failed_bounce')->update(['active' => false]);
+    $message = outboundMessage();
+
+    $this->postJson('/webhooks/mailgun/events', signedEvent(failedEvent($message)))
+        ->assertOk();
+
+    expect($message->case->fresh()->status)->toBe(CaseStatus::ContactFailed);
+    Mail::assertNothingQueued();
+});
 
 it('writes NO case_messages row — the escalation counter cannot be perturbed', function () {
     // The counter is derived from outbound system rows with a non-null
     // stage_at_send. case_events is a different table precisely so that
-    // nothing recorded here can reach that predicate.
+    // nothing recorded here can reach that predicate, and the tenant
+    // notification is mail-only for the same reason.
+    Mail::fake();
+    $this->seed(LetterTemplateSeeder::class);
     $message = outboundMessage();
     $before = CaseMessage::count();
 
