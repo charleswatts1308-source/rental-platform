@@ -682,6 +682,31 @@ than treating this as settled forever.
 landlord reply the way `dormant` and `escalation_exhausted` do. The
 address is broken; a reply from it is not expected, and D17.3's copy is
 the route forward.
+**D17.9 — receiver mechanics.** *Ruled by Charlie 2026-09-05.* Four
+details the D0 left open, settled before the controller was written.
+
+**Event names.** A permanent failure writes `delivery_failed` (fixed by
+the #25 ruling). Its counterpart is **`delivery_confirmed`** — a fact
+about a mail server accepting the message, never about anyone reading
+it, per D17's wording discipline.
+
+**An event we cannot match to a message: accept it (200) and log.** Every
+outbound letter carries `case_message_id` as a Mailgun custom variable,
+but a stale or foreign event may not resolve. Returning an error would
+make Mailgun retry for hours against a payload that will never match on
+any attempt. Accept, log, do nothing.
+
+**Repeated deliveries are ignored, keyed on Mailgun's own
+`event-data.id`.** Mailgun re-sends when unsure a webhook was received.
+Without this, one bounce could write two `case_events` rows or notify a
+tenant twice. NOT in the D0 — found while building. The check is scoped
+to the case the event resolves to, so it is a small read, not a table
+scan.
+
+**A `temporary` failure still writes its `case_events` row.** D17.2 rules
+it produces no tenant-facing action; that is about the tenant, not about
+the record. Silent to the tenant, visible in the evidence — "we tried,
+here is what happened each time" is exactly what the record is for.
 **Consequences for the model above:** the escalation counter and D3 are
 **not modified in any way** by D17. The tenant notification is
 **mail-only** and writes no `case_messages` row — an outbound system row

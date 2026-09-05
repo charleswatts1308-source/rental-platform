@@ -11,6 +11,7 @@ use App\Http\Controllers\MagicLinkController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PropertyController;
 use App\Http\Controllers\PropertyLandlordContactController;
+use App\Http\Controllers\Webhooks\MailgunDeliveryEventController;
 use App\Http\Controllers\Webhooks\MailgunInboundController;
 use App\Models\Property;
 use App\Models\RepairCase;
@@ -203,6 +204,13 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
 Route::post('/webhooks/mailgun/inbound', MailgunInboundController::class)
     ->middleware('verify.mailgun.signature')
     ->name('webhooks.mailgun.inbound');
+
+// #25 — delivery events. A SECOND route, not a widening of the one above:
+// events nest the signature fields and arrive as JSON, where inbound
+// routing carries them flat and form-encoded.
+Route::post('/webhooks/mailgun/events', MailgunDeliveryEventController::class)
+    ->middleware('verify.mailgun.event.signature')
+    ->name('webhooks.mailgun.events');
 
 // D12 — magic-link sign-in for tenant inbox arrivals. Public route
 // (no auth middleware); the signed-URL signature and the single-use
