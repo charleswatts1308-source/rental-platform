@@ -338,7 +338,6 @@ it('leaves a case that has ALREADY stopped exactly as it was', function (CaseSta
 
 it('notifies the tenant, mail-only, when it stops a case', function () {
     Mail::fake();
-    $this->seed(LetterTemplateSeeder::class);
     $message = outboundMessage();
 
     $this->postJson('/webhooks/mailgun/events', signedEvent(failedEvent($message)))
@@ -352,7 +351,6 @@ it('sends a DIFFERENT notice for a complaint than for a bounce', function () {
     // says the letter arrived and was rejected — nothing to correct, and
     // per D17.5 no fork. Two templates, not one.
     Mail::fake();
-    $this->seed(LetterTemplateSeeder::class);
 
     $bounced = outboundMessage();
     $this->postJson('/webhooks/mailgun/events', signedEvent(failedEvent($bounced)))->assertOk();
@@ -373,9 +371,50 @@ it('sends a DIFFERENT notice for a complaint than for a bounce', function () {
         ->and($subjects[0])->not->toBe($subjects[1]);
 });
 
+it('renders the failed address into the notice, with nothing left unsubstituted', function () {
+    // Found on prod during the live fire: the notice went out reading
+    // "we were not able to deliver your repair notice to
+    // {{failed_address}}". LetterTemplateRenderer has a WHITELIST of
+    // permitted placeholders and leaves anything else literal — by design,
+    // so a misspelling survives to a test send rather than vanishing —
+    // and failed_address had not been added to it.
+    //
+    // The original test asserted only that a mail was queued and that the
+    // two subjects differed, which is why it passed. Asserting the body is
+    // what catches this class of defect.
+    Mail::fake();
+    $message = outboundMessage();
+
+    $this->postJson('/webhooks/mailgun/events', signedEvent(failedEvent($message, [
+        'recipient' => 'gone@nowhere.example',
+    ])))->assertOk();
+
+    Mail::assertQueued(AutoEscalationTenantNotice::class, function ($mail) {
+        expect($mail->renderedBody)->toContain('gone@nowhere.example')
+            ->and($mail->renderedBody)->not->toMatch('/\{\{\s*[a-z_]+\s*\}\}/i')
+            ->and($mail->renderedSubject)->not->toMatch('/\{\{\s*[a-z_]+\s*\}\}/i');
+
+        return true;
+    });
+});
+
+it('leaves nothing unsubstituted in the complaint notice either', function () {
+    Mail::fake();
+    $message = outboundMessage();
+
+    $this->postJson('/webhooks/mailgun/events', signedEvent(failedEvent($message, [
+        'event' => 'complained', 'severity' => null,
+    ])))->assertOk();
+
+    Mail::assertQueued(AutoEscalationTenantNotice::class, function ($mail) {
+        expect($mail->renderedBody)->not->toMatch('/\{\{\s*[a-z_]+\s*\}\}/i');
+
+        return true;
+    });
+});
+
 it('does not notify when a temporary failure is recorded', function () {
     Mail::fake();
-    $this->seed(LetterTemplateSeeder::class);
     $message = outboundMessage();
 
     $this->postJson('/webhooks/mailgun/events', signedEvent(failedEvent($message, [
@@ -407,7 +446,6 @@ it('writes NO case_messages row — the escalation counter cannot be perturbed',
     // nothing recorded here can reach that predicate, and the tenant
     // notification is mail-only for the same reason.
     Mail::fake();
-    $this->seed(LetterTemplateSeeder::class);
     $message = outboundMessage();
     $before = CaseMessage::count();
 

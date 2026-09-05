@@ -45,6 +45,11 @@ class LetterTemplateRenderer
         // D15 — date of the landlord's most recent inbound reply, passed by
         // the authorise-nudge dispatch (held engaged-then-quiet case).
         'last_reply_date',
+        // #25 / D17.2 — the address a letter could not be delivered to,
+        // passed by RecordDeliveryEvent's contact_failed notice. It is the
+        // one fact the tenant needs in order to act, so the notice is
+        // materially worse without it.
+        'failed_address',
     ];
 
     /**
