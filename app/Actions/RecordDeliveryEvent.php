@@ -40,6 +40,14 @@ class RecordDeliveryEvent
     private const EVENT_TYPES = [
         'failed' => 'delivery_failed',
         'delivered' => 'delivery_confirmed',
+        // Ruled 5 Sep. A complaint is EVIDENCE OF RECEIPT — D17.5's
+        // asymmetry: a bounce proves the letter went nowhere, a complaint
+        // proves the opposite, that it arrived and was seen. Recorded for
+        // the same reason D17.7 captures `delivered`: Mailgun's own log
+        // expires in a day, and this is a signature-verifiable record that
+        // outlives it. What a complaint DOES is step 7 (D17.5 makes it
+        // terminal wherever it occurs, and it never forks).
+        'complained' => 'delivery_complained',
     ];
 
     /**
@@ -51,11 +59,12 @@ class RecordDeliveryEvent
         $mailgunEventId = (string) ($eventData['id'] ?? '');
         $event = (string) ($eventData['event'] ?? '');
 
-        // Only the two ruled event types are written. Anything else —
-        // notably `complained`, which D17.5 makes terminal — is accepted
-        // and logged rather than guessed at. Naming and reacting to those
-        // needs its own ruling; silently inventing an event_type here
-        // would put a name in the evidence record that nobody chose.
+        // Anything outside the ruled set is accepted and logged rather
+        // than recorded. In practice that is `opened`, `clicked` and
+        // `unsubscribed`, none of which should ever arrive: we set no
+        // tracking options and no unsubscribe headers on our sends. If one
+        // does, the log line is the useful part — it means a Mailgun
+        // setting changed underneath us.
         if (! array_key_exists($event, self::EVENT_TYPES)) {
             Log::info('Mailgun delivery event ignored: unhandled type', [
                 'event' => $event,

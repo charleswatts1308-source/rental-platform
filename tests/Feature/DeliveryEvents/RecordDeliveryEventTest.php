@@ -182,10 +182,10 @@ it('accepts an event carrying no correlation variable at all', function () {
     expect(CaseEvent::count())->toBe(0);
 });
 
-it('accepts an event type it has no ruling for, and does NOT invent a name', function (string $event) {
-    // `complained` is the one that matters: D17.5 makes it terminal, but
-    // nothing has ruled its event_type or its reaction. Guessing here
-    // would put a name nobody chose into the evidence record.
+it('accepts an event type outside the ruled set, and writes nothing', function (string $event) {
+    // These should never arrive: we set no tracking options and no
+    // unsubscribe headers on our sends. If one does, the log line is the
+    // useful part — a Mailgun setting changed underneath us.
     $message = outboundMessage();
 
     $this->postJson('/webhooks/mailgun/events', signedEvent(failedEvent($message, [
@@ -194,7 +194,7 @@ it('accepts an event type it has no ruling for, and does NOT invent a name', fun
 
     expect(CaseEvent::whereIn('event_type', ['delivery_failed', 'delivery_confirmed'])->count())
         ->toBe(0);
-})->with(['complained', 'opened', 'clicked', 'unsubscribed']);
+})->with(['opened', 'clicked', 'unsubscribed']);
 
 it('accepts a body with no event-data at all', function () {
     $signingKey = (string) config('services.mailgun.webhook_signing_key');
@@ -220,20 +220,59 @@ it('refuses an unsigned event before the action ever runs', function () {
     expect(CaseEvent::count())->toBe(0);
 });
 
+it('records a complaint — the strongest evidence of receipt there is', function () {
+    // D17.5's asymmetry, and the reason this is recorded rather than
+    // ignored: a bounce proves the letter went NOWHERE; a complaint proves
+    // the opposite — it arrived, was seen, and was rejected. On a product
+    // whose claim is "your landlord was served", that is not noise.
+    $message = outboundMessage();
+
+    $this->postJson('/webhooks/mailgun/events', signedEvent(failedEvent($message, [
+        'id' => 'complaint-0001',
+        'event' => 'complained',
+        'severity' => null,
+        'reason' => null,
+        'recipient' => 'landlord@example.com',
+    ])))->assertOk();
+
+    $event = CaseEvent::where('event_type', 'delivery_complained')->sole();
+
+    expect($event->case_id)->toBe($message->case_id)
+        ->and($event->meta['case_message_id'])->toBe($message->id)
+        ->and($event->meta['mailgun_event_id'])->toBe('complaint-0001')
+        ->and($event->meta['recipient'])->toBe('landlord@example.com');
+});
+
+it('does not record the same complaint twice', function () {
+    $message = outboundMessage();
+    $payload = signedEvent(failedEvent($message, [
+        'id' => 'complaint-0002',
+        'event' => 'complained',
+    ]));
+
+    $this->postJson('/webhooks/mailgun/events', $payload)->assertOk();
+    $this->postJson('/webhooks/mailgun/events', $payload)->assertOk();
+
+    expect(CaseEvent::where('event_type', 'delivery_complained')->count())->toBe(1);
+});
 /*
 |--------------------------------------------------------------------------
 | The seam: step 6 RECORDS, step 7 REACTS
 |--------------------------------------------------------------------------
 */
 
-it('does not change the case status — reacting is step 7', function () {
+it('does not change the case status — reacting is step 7', function (string $event) {
+    // D17.5 makes a complaint terminal wherever it occurs, and D17.2 stops
+    // the case on a permanent failure. NEITHER happens yet: step 6 records,
+    // step 7 reacts. This is the seam.
     $message = outboundMessage();
 
-    $this->postJson('/webhooks/mailgun/events', signedEvent(failedEvent($message)))
-        ->assertOk();
+    $this->postJson('/webhooks/mailgun/events', signedEvent(failedEvent($message, [
+        'event' => $event,
+    ])))->assertOk();
 
     expect($message->case->fresh()->status)->toBe(CaseStatus::AwaitingLandlord);
-});
+})->with(['failed', 'complained']);
 
 it('writes NO case_messages row — the escalation counter cannot be perturbed', function () {
     // The counter is derived from outbound system rows with a non-null

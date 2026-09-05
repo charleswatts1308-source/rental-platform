@@ -688,7 +688,25 @@ details the D0 left open, settled before the controller was written.
 **Event names.** A permanent failure writes `delivery_failed` (fixed by
 the #25 ruling). Its counterpart is **`delivery_confirmed`** — a fact
 about a mail server accepting the message, never about anyone reading
-it, per D17's wording discipline.
+it, per D17's wording discipline. A complaint writes
+**`delivery_complained`**.
+
+**Complaints are RECORDED, added 5 Sep.** The receiver first ignored them
+on the grounds that D17.5's reaction was unruled. That conflated naming
+with reacting: reacting is step 7, recording never needed a ruling that
+`delivery_confirmed` did not. Two arguments settle it. D17.7 captures
+`delivered` because Mailgun's own log expires in a day and a
+signature-verifiable record outlives it — which applies harder to a
+complaint, being rarer and more consequential. And per D17.5's asymmetry
+a complaint is **evidence of receipt**: a bounce proves the letter went
+nowhere, a complaint proves it arrived and was seen. On a product whose
+claim is that the landlord was served, that is the strongest thing in the
+record, not noise.
+
+**`opened`, `clicked` and `unsubscribed` are logged, not recorded.** We
+set no tracking options and no unsubscribe headers, so none should ever
+arrive. If one does, the log line is the point — a Mailgun setting has
+changed underneath us.
 
 **An event we cannot match to a message: accept it (200) and log.** Every
 outbound letter carries `case_message_id` as a Mailgun custom variable,
