@@ -5,12 +5,16 @@ The `docs/` folder has many files and many are stale — this index says
 which to trust and which to ignore, so you don't re-derive state from a
 superseded doc. It is a **router, not a record**: keep it short.
 
-**Last updated:** 2026-09-04.
+**Last updated:** 2026-09-05.
 
-**⏸ WORK IN FLIGHT — `feature/delivery-event-receiver`.** #25 steps 4 and
-5 are BUILT, green (suite 732), committed, **NOT pushed and NOT merged**.
-Tag `pre-delivery-event-receiver` marks the fork point on main. Resume at
-**step 6** — see "#25 — resume at step 6" below.
+**⏸ READY TO DEPLOY — #25 release 1.** The delivery-event receiver is
+BUILT, green (suite 771), MERGED to `main` (`4eed6a8`, tag
+`post-delivery-event-receiver`) and **NOT pushed, NOT deployed anywhere**.
+**➡ `docs/release-delivery-event-receiver.md` is the runbook.** Key
+property: deploying changes NOTHING until the webhook is subscribed in
+the Mailgun dashboard, so the deploy and the switch-on are separate acts
+and rollback is a dashboard toggle.
+
 **✅ SHIPPED EVERYWHERE (4 Sep).** `feature/property-landlord-contacts` is
 merged to `main` (`fb03bc9`, `--no-ff`, tag
 `post-property-landlord-contacts`, suite 703) and **deployed to gafol AND
@@ -73,65 +77,56 @@ every sent letter keeps its frozen `to_address_raw`, `subject` and
 
 ### ➡ THE NEXT ACTION
 
-**#25 — the Mailgun delivery-event receiver.** The landlord-contact work
-is finished and shipped; this is the next build. Its design is settled
-(D17.2 and D17.3 were amended 3 Sep — see the amendment blocks in
-`llcs-silence-model-design.md` and the 2026-09-03 ruling on #25 in the
-snagging list). Build order is D0.8 in `cc-report-delivery-events-d0.md`,
-steps 1–3 of which are DONE (#47 shipped, D17 written, capture run
-executed). Remaining: the `contact_failed` ENUM migration, the nested
-signature middleware, the event controller, then transitions + tenant
-notification + the copy option.
+**Deploy #25 release 1 — `docs/release-delivery-event-receiver.md`.**
+It is built, merged and green; nothing more needs deciding before it
+goes. Details below.
 
-**Still undecided, and it blocks step 7:** which statuses may enter
-`contact_failed`, and whether such a case can later be abandoned or must
-sit permanently as evidence.
+### #25 — release 1 is BUILT and MERGED; deploy it
 
-**Two loose ends worth clearing first, both small.** Push the two local
-docs commits. And check prod's `interval_days` / `max_notices` — they may
-still be **1 / 2** from the July ladder test rather than 14 / 4, which on
-a live case means escalation every day.
-### #25 — resume at step 6
+**In `main` at `4eed6a8`, suite 771.** Steps 4–7a of the D0.8 build
+order: the signature verifier, the receiver route, recording of
+failures / deliveries / complaints with dedupe on Mailgun's own event id,
+the stop at `contact_failed` with a mail-only tenant notice from two
+templates, and the case-page panel explaining why a case stopped.
 
-**DONE, on `feature/delivery-event-receiver` (2 commits, suite 732):**
-- **Step 4** (`70d12ce`) — `contact_failed` status. ENUM migration with
-  the manual MariaDB check done (widened to nine values, `NOT NULL
-  DEFAULT 'open'` intact, rolled back clean, re-applied). `CaseStatus`
-  classifications and D17.8's TRANSITIONS entries, with tests asserting
-  every permitted entry, every refusal, and that `abandoned` is the ONLY
-  exit.
-- **Step 5** (`5387244`) — `VerifyMailgunEventSignature` + alias
-  `verify.mailgun.event.signature`, tested against the captured envelope
-  shape including both replay-window edges and the concatenation order.
+**➡ NEXT ACTION: `docs/release-delivery-event-receiver.md`.** gafol,
+then prod, then subscribe the webhook, then live-fire against a dead
+domain. **Prod is the ONLY place this can be proven** — the sandbox
+cannot receive webhooks, which is the standing accepted limit, not a
+thing to work around.
+
+**RELEASE 2 — the D17.3 tenant-taken copy.** A "copy this case" action
+carrying property, category, severity, description and photos into the
+ordinary create-case flow, with the preview refusing to confirm while the
+landlord email is still the bounced one. Deliberately separate: it
+reaches into the create flow, the preview and photo handling, where
+release 1 touches none of them. **When it ships, reword two surfaces** —
+the `contact_failed_bounce` template and the bounce panel in
+`cases/show.blade.php`. Both currently say "correct the address and raise
+a new case", which is honest today and will not be then.
+
+**Three defects found while building, all fixed, none catchable by a test
+written in advance:** the transition wrote the Mailgun fact twice
+(now `case_contact_failed` for the stop, distinct from `delivery_failed`
+for the event); the policy forbade the one exit D17.8 permits, so a
+tenant could not close their own stopped case; and the seed migration
+called the whole seeder and would have reverted hand-edited templates on
+any box with history.
 
 **⚠ A PREMISE IN THE REFERENCE DOC WAS WRONG, now corrected.** The D0 and
 `mailgun-delivery-event-payloads.md` both said the inbound verifier
-returns **406** on an event payload, and that Mailgun never retries a
-406, so events would vanish silently. **It returns 500** — line 39 casts
-the nested `signature` ARRAY to string, Laravel promotes the warning to
-an ErrorException. A 500 is retried for ~8 hours, so the failure would
-have been noisy, not silent. The second middleware is still needed (the
-shapes differ), but not for the stated reason. Doc corrected; the
-inbound middleware was deliberately NOT touched.
+returns **406** on an event payload, and that Mailgun never retries a 406
+so events would vanish silently. **It returns 500** — it casts the nested
+`signature` ARRAY to string and Laravel promotes the warning to an
+ErrorException. A 500 is retried for ~8 hours, so the failure would have
+been noisy. The second middleware is still needed because the shapes
+differ, but not for the stated reason. The inbound middleware was
+deliberately NOT touched.
 
-**STEP 6 IS NEXT — the controller and route. Four things it needs ruled
-before or during, none of them large:**
-1. **`delivered` events** are captured per D17.7, but no `event_type`
-   name is ruled for them. `delivery_failed` is fixed by the #25 ruling;
-   its counterpart is not.
-2. **An unmatchable `case_message_id`** — what to return. Probably 200
-   with a log line, since a retry will never match either, but a 200 on
-   something we could not process deserves a deliberate decision.
-3. **Idempotency.** Mailgun can deliver the same event more than once.
-   Nothing currently dedupes, and `event-data.id` is the natural key.
-   Not mentioned in the D0.
-4. **`temporary` severity** — D17.2 says record it and take no
-   tenant-facing action. Confirm that still writes a `case_events` row
-   rather than being dropped entirely.
-
-Steps 7 (transitions, tenant notification, the D17.3 copy option) and 8
-(live proof against a dead address, on prod per the standing Mailgun
-rule) follow.
+**STILL UNRULED:** what a complaint should DO beyond stopping the case.
+D17.5 makes it terminal and never-forking, which is built. Whether it
+should suppress the address for future cases at that property is not
+decided.
 ### The gafol deploy plan is now HISTORICAL
 
 `docs/gafol-deploy-plan-property-landlord-contacts.md` was followed and
