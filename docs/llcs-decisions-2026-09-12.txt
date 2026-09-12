@@ -216,6 +216,52 @@ discards mail. It can move later without changing anything else.
   7. #57 error pages, last.
 Then: proper start on the go-live plan.
 
+--- LANDLORD WRITTEN CHANNEL — DECIDED, minimal version ------------
+
+DECIDED: put a LINK in the letter footer and leave it there for now.
+No public form, no landlord accounts, nothing else built.
+
+Target is /landlords, NOT Contact Us. Contact Us sits behind
+['auth','verified'] and registration is allowlisted during beta, so a
+landlord clicking it hits a login wall with no way through — the
+#46/#49/#53 pattern again, a surface promising what the system will
+not honour. /landlords is public, was built for this audience, and
+already answers the question most landlords have (who are you, how do
+you have my address). Once #48 is done it carries the working admin
+address too, so the link delivers a written channel with no new page.
+
+Do it INSIDE the #61 footer edit. The footer text lives in
+database/seeders/LetterTemplateSeeder.php and appears in at least TWO
+variants (around lines 229 and 276) — one mentions routed replies, the
+shorter one does not. Removing the retaliation sentence and adding the
+link is then one pass over the seeder rather than two.
+
+Wording must keep the two routes distinct: replying to the email is
+about the REPAIR and lands in the case record; the link is for
+everything else. If both read the same, landlords use whichever comes
+first.
+
+NOT built, considered and rejected for now:
+  - a public landlord contact form (one route outside the auth group,
+    a controller method, a view, a nullable user column, honeypot and
+    rate limit). Best value if the link proves insufficient.
+  - landlord accounts. Far bigger than the problem.
+
+--- NEW SNAG TO RAISE — landlord service questions hit the tenant ---
+
+Charlie, 12 Sep: the case record will definitely collect questions
+about the SERVICE, and the tenant will not want to answer them.
+
+Agreed this is a defect, not an annoyance. A landlord replying "who
+are you, why am I getting this, take me off your list" lands in the
+case thread, and the tenant is the only person who sees it. The tenant
+can answer none of it, and being asked to is precisely the pressure
+the service exists to remove.
+
+NOT being fixed now. Raise it as a snag in the reconciliation pass.
+Note it gets MORE likely once the footer carries a link, not less,
+because the link invites landlords to engage in writing.
+
 ====================================================================
 PART 2 — STILL UNDER DISCUSSION
 ====================================================================
