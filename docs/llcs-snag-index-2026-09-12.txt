@@ -1,0 +1,55 @@
+LLCS SNAG INDEX — one line per open snag
+========================================
+
+Written: 2026-09-12. A snapshot index of docs/llcs-snagging-list.txt,
+which stays the working record. Open items only, in number order.
+
+Caveat: several Status: lines in the full list are STALE. #24, #49, #59
+and #47 still read there as built-not-shipped; all four went to
+production on 4 Sep 2026. #7 is recorded as dying with #49(a) and is
+probably already dead despite appearing below.
+
+--------------------------------------------------------------------
+#1  - nav dropdown still named after the removed rentals feature
+#2  - case page never shows the landlord's email address
+#7  - create-case form doesn't prefill a known landlord; mismatch ignored
+#12 - demo seed data reads oddly
+#13 - dev:age-clock gauge shows the wrong countdown
+#17 - dev:reset truncation order crashes on a partly-migrated database
+#18 - MariaDB ON UPDATE CURRENT_TIMESTAMP trap; fixed for one table only
+#19 - tenants cannot attach photos to replies
+#22 - no admin editor for repair categories
+#25 - delivery visibility; release 1 live, placeholder fix pending,
+      release 2 (tenant-taken copy) unbuilt
+#26 - tests anchored on UI copy can pass without checking anything
+#27 - verify link in a second browser forces a login, now failing harder
+#28 - login and register email fields blank on every fresh load
+#29 - "Members Only" banner shown to people who did nothing wrong
+#30 - Contact Us is one message in, one reply out, no thread
+#31 - deploy-checklist.md names the known-bad inbound host
+#32 - ContactReply hardcodes the apex sender, producing "on behalf of"
+#33 - temporary apex SPF record with nothing recording it is temporary
+#34 - a standing rule in CLAUDE.md contradicts the built mail setup
+#35 - local .env sends from a third-party domain
+#36 - Mailgun account tier: question only, do not action
+#37 - post-verification welcome banner has never appeared
+#38 - town names print exactly as typed, lower case on formal letters
+#39 - preview does not show the attached photos
+#40 - photo limits reject ordinary phone photos; hosting half resolved
+#42 - /landlords trading identity block still incomplete
+#44 - the "your photo is saved" cue persists when it should not
+#48 - admin@renters.rent cannot receive mail; its password reset is broken
+#50 - severity is required, reaches nobody, changes nothing; needs a ruling
+#51 - postcode format-checked but never verified; city never cross-checked
+#52 - admin case view shows a shorter address than the letter does
+#53 - Remove on one staged photo deletes them all; contained by ceiling 1
+#54 - attachment behaviour above ceiling 1 is untested
+#56 - ICO registration does not list renters.rent as a trading name
+#57 - no error views directory at all; the 413 design is parked in #57
+#58 - client photo check is per-file; nothing sums against post_max_size
+#60 - tenant gets no email when their case is raised; needs a ruling
+--------------------------------------------------------------------
+
+Closed and not listed above: #3, #5, #6, #8, #11, #23, #41, #45, #46,
+#47, #55, plus #24, #49, #59 (shipped 4 Sep). Resolved by Phase 5 (D16):
+#4, #14, #15, #16, #20, #21.
