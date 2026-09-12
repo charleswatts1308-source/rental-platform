@@ -9,8 +9,23 @@ superseded doc. It is a **router, not a record**: keep it short.
 
 **DECISIONS OF 12 SEP are in `docs/llcs-decisions-2026-09-12.txt`.** Charlie's pass over the snag index plus the discussion that followed: what was ruled, what was closed, the agreed fix-cycle order, and the questions still open. Read it with this file. The snagging list has NOT yet been reconciled against it.
 
-**⚠ MID-DEPLOY — #25 release 1 is LIVE ON PROD, with one fix not yet
-deployed.** Read this before touching anything.
+**✅ #25 RELEASE 1 IS DONE — deployed, fixed, and PROVEN BOTH WAYS on
+prod (12 Sep).** The mid-deploy warning that stood here is discharged.
+Prod and gafol are both at `01451b0`. The `failed_address` fix is live,
+the live fire was re-run and the notice now names the address, and **the
+control send finally happened**: case `BBY6GV` delivered, recorded
+`delivery_confirmed` three seconds later bound to the right letter, and
+did NOT stop. Ledger written for both boxes.
+
+**ONE THING LEFT from that deploy:** abandon the prod test cases — the
+`contact_failed` one from the live fire, and `BBY6GV`, which otherwise
+escalates to letter 2 on **26 Sep 2026** and sends real mail.
+
+**Also not re-run this deploy:** `migrate:status` on either box. No
+migration shipped, so no drift is expected, but the reconciliation rule
+asks for it at each deploy.
+
+**The historical record of that deploy follows.**
 
 **What is done (5 Sep):** merged to `main`, deployed to stage AND prod,
 both migrated and schema-checked (#18 clear on both engines), the route

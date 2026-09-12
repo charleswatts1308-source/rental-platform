@@ -268,7 +268,22 @@ touch of any box, per the CLAUDE.md Deployment-ledger rule.
   server-rendered href AND the dropdown's `data-property-url`, the latter
   overwriting the former via the toggle JS. **Both verified working on
   gafol**, including the dropdown path. Staging-at-or-ahead holds again.
-- Last verified: 4 Sep 2026. Code at `fb03bc9` (`main`).
+- **5 Sep 2026 — #25 delivery-event receiver, release 1.** Plesk Git pull
+  of `main` at `4eed6a8`, then `config:cache`, `route:clear`,
+  `view:clear`. **No migrations in this release** — it adds no tables or
+  columns. Verified: the receiver route answers **406** to an unsigned
+  POST, which is the signature verifier refusing an unauthenticated
+  caller. **Nothing further could be proven here.** The Mailgun sandbox
+  cannot receive inbound, so gafol can never take a webhook; that is the
+  standing accepted limit (CLAUDE.md, Mail), not a gap in this deploy.
+- **12 Sep 2026 — the `failed_address` whitelist fix.** Plesk Git pull of
+  `main` at `01451b0`, then `config:cache`, `route:clear`, `view:clear`.
+  **No migration.** Carries `9645179` (`failed_address` added to
+  `LetterTemplateRenderer::WHITELIST`) plus docs-only commits. Verified:
+  site loads, login works. The fix itself is not observable here — it
+  only shows in a bounce notice, and gafol cannot receive the bounce
+  event that produces one.
+- Last verified: **12 Sep 2026**. Code at `01451b0` (`main`).
 
 ## dotrent — preprod (dotrent.net) — 🛑 RETIRED 1 Aug 2026
 
@@ -663,10 +678,56 @@ touch of any box, per the CLAUDE.md Deployment-ledger rule.
     evidentially and touches #25).
   - Orphaned attachment files from the wiped `message_attachments` rows
     remain under `storage/` — untidy, harmless, worth sweeping.
-- Last verified: **4 Sep 2026** — property-owned landlord contacts,
-  walked end to end on the real Mailgun path incl. an attachment. Code at
-  `fb03bc9` (`main`). Prod and gafol are on the same commit; the two
-  later docs commits (`62e28a7`, `e3d29de`) are local and unpushed.
+- **5 Sep 2026 — #25 delivery-event receiver, release 1.** Plesk Git pull
+  of `main` at `4eed6a8`, then `config:cache`, `route:clear`,
+  `view:clear`. **No migrations in this release** — it adds no tables or
+  columns. (The `contact_failed` status is an ENUM widening that shipped
+  with the merge; see the migration set recorded above.)
+  - **Webhook SUBSCRIBED on prod, 5 Sep 2026.** Name
+    `renters-prod-delivery-events`, **domain-level** on
+    `mg.renters.rent`, four event types. Mailgun's own test webhook
+    returned success, which proves signature verification against a real
+    Mailgun signature rather than a synthetic one.
+  - Verified on deploy: the receiver route answers **406** to an unsigned
+    POST.
+  - **Live fire PASSED (5 Sep).** A case raised to
+    `landlord@this-domain-does-not-exist-9f3k2.com` bounced, the case
+    stopped at `contact_failed`, and the case page showed the explanation
+    panel.
+  - **DEFECT FOUND BY THE LIVE FIRE.** The tenant notice rendered
+    `{{failed_address}}` literally — the field was missing from
+    `LetterTemplateRenderer::WHITELIST`. Prod sent that wording from 5 to
+    12 Sep. Fixed in `9645179`; deployed 12 Sep, below.
+- **12 Sep 2026 — the `failed_address` whitelist fix, and #25 release 1
+  fully proven.** Plesk Git pull of `main` at `01451b0`, then
+  `config:cache`, `route:clear`, `view:clear`. **No migration.**
+  - **Re-ran the live fire.** The tenant notice now names the real
+    address: "We were not able to deliver your repair notice to
+    landlord@this-domain-does-not-exist-9f3k2.com." Case stopped, panel
+    correct.
+  - **THE CONTROL SEND — done at last, and it PASSED.** Case `BBY6GV`,
+    letter 1 to a real Outlook address. The case stayed at `awaiting
+    landlord`, stage 1 of 4, next escalation 26 Sep, **no bounce panel**.
+    `case_events` for that case reads `case_opened`, `token_issued`,
+    `notice_sent` (`message_id` 7), then **`delivery_confirmed` three
+    seconds later** carrying `case_message_id` 7, the Mailgun event id,
+    and the recipient. **The correlation key works on the good path, not
+    only on failure**, and a delivered letter is NOT caught by the net
+    that stops a bounced one. This is the half that had never been run.
+  - Read from the live DB `ukrenter_renters_db` via phpMyAdmin. A
+    delivery event could only exist on prod — it is the only box with the
+    webhook.
+  - **Release 1 is therefore proven in BOTH directions on production.**
+  - **Still to do from this deploy:** abandon the test cases (the
+    `contact_failed` one from the live fire, and `BBY6GV`, which will
+    otherwise escalate to letter 2 on **26 Sep 2026** and send real mail).
+  - **Surfaced, not fixed:** nothing on the case page shows a successful
+    delivery. The bounce gets a panel; the good path shows nothing. Not a
+    defect in this release, but an inherited silence worth deciding on.
+- Last verified: **12 Sep 2026** — #25 release 1 proven both ways on the
+  real Mailgun production path: a dead address stops the case with a
+  correct notice, a live address delivers and the case runs on. Code at
+  `01451b0` (`main`). **Prod and gafol are on the same commit.**
 
 ## Dead database — ukrenters_rent (DELETE AFTER go-live)
 - `ukrenters_rent` is an OLD leftover database, NOT used by any live
