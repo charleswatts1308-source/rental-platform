@@ -272,10 +272,10 @@ touch of any box, per the CLAUDE.md Deployment-ledger rule.
   of `main` at `4eed6a8`, then `config:cache`, `route:clear`,
   `view:clear`, then `migrate --force`. **TWO migrations:**
   `2026_09_04_120000_add_contact_failed_to_cases_status_enum` and
-  `2026_09_05_120000_seed_contact_failed_tenant_notices`. (An earlier
-  draft of this entry wrongly said the release carried no migrations.
-  Corrected 12 Sep. **gafol's batch numbers are unread** — `migrate:status`
-  has not been run there since this deploy.)
+  `2026_09_05_120000_seed_contact_failed_tenant_notices`. On gafol these
+  are **batch 7**. (An earlier draft of this entry wrongly said the
+  release carried no migrations. It does. Corrected 12 Sep from
+  `migrate:status` on both boxes.)
   Verified: the receiver route answers **406** to an unsigned
   POST, which is the signature verifier refusing an unauthenticated
   caller. **Nothing further could be proven here.** The Mailgun sandbox
@@ -288,6 +288,12 @@ touch of any box, per the CLAUDE.md Deployment-ledger rule.
   site loads, login works. The fix itself is not observable here — it
   only shows in a bounce notice, and gafol cannot receive the bounce
   event that produces one.
+- **`migrate:status` RECONCILED on gafol, 12 Sep 2026.** **43 Ran, none
+  Pending**, against **43** migration files in the repo. **No drift, and
+  the migration SET is identical to prod's.** Batches differ only because
+  gafol took them in more, smaller deploys — 7 batches here against
+  prod's 4. Batch numbers are per-box history, not a comparison key; the
+  set is what must match, and it does.
 - Last verified: **12 Sep 2026**. Code at `01451b0` (`main`).
 
 ## dotrent — preprod (dotrent.net) — 🛑 RETIRED 1 Aug 2026
