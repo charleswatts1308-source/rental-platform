@@ -12,6 +12,30 @@ flow), don't park it here - flag it straight away.
 To add a snag: copy the dashed block below, fill it in, leave Status as "open".
 Severity guide: cosmetic = looks off / minor = awkward / functional = wrong.
 
+TWO SECTIONS (added 2026-09-12)
+-------------------------------
+Entries tagged [SECTION 2 — DEV-FACING ONLY] on the line under their
+number are ones NO CUSTOMER EVER SEES: dev tooling, test-suite
+weaknesses, internal docs, latent schema traps. They are real and they
+stay on the list, but they do not compete with user-facing work for a
+place in a fix cycle.
+
+  SECTION 2 as at 12 Sep 2026:  #12, #13, #17, #18, #26, #31, #34
+
+Everything else is SECTION 1 — a tenant, a landlord or an admin can
+reach it.
+
+They are TAGGED IN PLACE rather than physically moved, deliberately:
+this file is referenced by number from the design doc, the reports and
+the ledger, and renumbering or reordering would break every one of
+those references.
+
+#25 was proposed for Section 2 and REJECTED on 12 Sep — a tenant reads
+the delivery-failure notice, so it is user-facing.
+
+Full record of the 12 Sep pass, including what was ruled and what is
+still open: docs/llcs-decisions-2026-09-12.txt
+
 
 #
 Page:
@@ -27,7 +51,14 @@ Page:        Main nav dropdown
 Severity:    cosmetic
 Saw:         Dropdown still titled "Your Rental Profile" after rentals removal
 Expected:    A title that fits its contents (Properties + Repair Cases only)
-Status:      open — scheduled: Phase 3 ride-along (per design update §6)
+Status:      open — DEFERRED 12 Sep 2026 into the final content change,
+             by decision. The restructure (Cases + Properties shown
+             inside Dashboard and removed from the nav, Dashboard gated
+             until registered) is a NAV REDESIGN, not a cosmetic fix.
+             STILL TO SETTLE when it is picked up: does the gate need
+             registered, or registered AND verified? Those behave
+             differently on the verification path, which is where #27
+             and #29 already misbehave.
 Notes:       Flagged during rentals removal (commit 929d2f6). Maybe "Your Tenancy".
 --------------------------------------------------------------------
 #2
@@ -35,7 +66,14 @@ Page: Cases - landlord agent email not shown
 Severity:
 Saw:
 Expected:
-Status:      open
+Status:      open — RULED 12 Sep 2026. The panel currently titled
+             "Recipient" takes its title from the contact's stored role
+             — "Landlord" or "Agent" — and shows the contact's EMAIL
+             ADDRESS. Fact established while ruling: the properties
+             table has NO email column; the only landlord email in the
+             system lives on property_landlord_contacts, which already
+             carries role ENUM('landlord','agent'). So the dynamic
+             title is buildable today with no schema change.
 Notes:
 --------------------------------------------------------------------
 #3
@@ -157,7 +195,8 @@ Saw:         When the typed landlord_email already exists in
 Expected:    On a recognised email, name field auto-fills with the existing
              landlord's name and shows a "this landlord is already in our
              system" hint (and probably becomes read-only).
-Status:      open
+Status:      CLOSED 12 Sep 2026. Landlord prefill is fixed and verified
+             by Charlie. It died with #49(a) as predicted.
 Notes:       Form is plain static HTML (resources/views/cases/create.blade.php):
              no JS, no lookup endpoint. Controller find-or-create at
              CaseController.php:262-268 silently discards form name on a hit.
@@ -275,6 +314,7 @@ Fix:         D9 picks option 2 (persist on case): add cases.description,
              the same source. Implementation in Phase 3.
 --------------------------------------------------------------------
 #12
+[SECTION 2 — DEV-FACING ONLY]
 Page:        dev:lifecycle SPECS table (DevLifecycle::SPECS) — seed data.
 Severity:    cosmetic — demo-data realism only.
 Saw:         Per-case description text doesn't match the case's repair
@@ -291,6 +331,7 @@ Notes:       Re-observed 2026-06-13 D15 gafol live-fire (dashboard
              Same root cause; not a D15 issue. Logged here, not duplicated.
 --------------------------------------------------------------------
 #13
+[SECTION 2 — DEV-FACING ONLY]
 Page:        dev:age-clock gauge / operator output.
 Severity:    cosmetic — operator-facing display, sweep logic unaffected.
 Saw:         For tenant-ball cases the gauge prints the escalation
@@ -350,6 +391,7 @@ Notes:       Confirmed 2026-06-07 gafol live-fire. Harmless while
 Fix:         Replace the literal 4 with Setting::get('escalation.max_notices').
 --------------------------------------------------------------------
 #17
+[SECTION 2 — DEV-FACING ONLY]
 Page:        dev:reset truncation list (DevReset.php) — deploy tooling.
 Severity:    minor — crashes mid-deploy on a partially-migrated DB.
 Saw:         During the 2026-06-07 gafol Phase 3 deploy, dev:reset
@@ -367,6 +409,7 @@ Fix:         Guard each truncation with Schema::hasTable($name) before
              truncating; skip-and-continue on a miss.
 --------------------------------------------------------------------
 #18
+[SECTION 2 — DEV-FACING ONLY]
 Page:        Migrations — implicit ON UPDATE CURRENT_TIMESTAMP trap on
              NOT NULL TIMESTAMP columns sitting FIRST in their table.
 Severity:    minor — latent landmine; dormant on insert-only tables.
@@ -511,9 +554,10 @@ Saw:         The D16 admin layer ships Surface A (letter templates) and
 Expected:    A "Surface D"-style read/write admin editor for repair categories
              (label, sort_order, active, requires_description), mirroring the
              Surface A/B pattern.
-Status:      open — deferred, not in D16 scope. Non-blocking: categories are
-             static reference data, seeded (11 rows via RepairCategorySeeder),
-             and the create-case dropdown reads them correctly.
+Status:      LEFT AS IS 12 Sep 2026, by decision. Editing repair
+             categories directly in the database is tolerable for a
+             single operator. Not a go-live item. Re-open only if the
+             category set starts changing often.
 Notes:       Candidate for a future admin addition alongside the deferred
              letter_templates.active toggle (NEXT-SESSION "New deferred items").
              Both are admin-surface gaps over load-bearing reference/config
@@ -568,39 +612,10 @@ Saw:         The landlord contact is a property of the CASE
              losing the case reference and the record.
 Expected:    A way to correct the landlord email on an existing case, so a
              typo costs a correction rather than the whole case.
-Status:      BUILT 2026-08-27 on feature/property-landlord-contacts, NOT
-             yet merged and NOT deployed. Landlord contact now belongs to
-             the PROPERTY and is versioned; correcting it on the property
-             page inserts a new version and every subsequent letter on
-             every open case there goes to the new address. Abandon-and-
-             re-raise is no longer the only recovery.
-             Deliberately does NOT auto-send on correction — that would
-             take SendCaseNotice's non-first branch and escalate the case
-             as the price of fixing a typo, against D3. The open question
-             ("should the clock/counter reset on correction") is therefore
-             answered NO for now; a non-escalating resend is a separate
-             piece needing its own ruling. See
-             docs/cc-report-property-landlord-contacts-d0.md and
-             ...-implementation.md.
-             --- history below ---
-             was open — snagged 18 Jul; PROMOTED 27 Jul from convenience to a
-             data-design item after being hit in real use (a live landlord
-             email needed correcting). Now the presenting symptom of a
-             deeper modelling gap: the landlord contact hangs off the CASE
-             and the property has no landlord link at all.
-             => See docs/landlord-contact-model-gap.md for the full design
-             direction (property-owned, versioned contact with change
-             history; retire the global email-keyed landlord_contacts;
-             ~5-6 focused days; D0-first, reconcile with the silence-model
-             design doc). That note SUPERSEDES the narrow "add an edit
-             button" fix sketched below — the edit path falls out of the
-             property-owned contact for free.
-             SEE #25: the reason a typo currently goes unnoticed is the
-             absence of delivery-failure detection, not the absence of an
-             edit button. Fix #25 first — it makes the typo VISIBLE, at
-             which point this becomes the ordinary convenience fix it
-             should be. Building this one alone would let a tenant correct
-             a mistake they still have no way of knowing they made.
+Status:      SHIPPED 4 Sep 2026. Merged to main (fb03bc9, --no-ff, tag
+             post-property-landlord-contacts) and deployed to gafol AND
+             prod, both walked. The "BUILT, NOT MERGED, NOT DEPLOYED"
+             text that stood here was STALE — corrected 12 Sep.
 Ruling:      2026-08-24 — #24 is INDEPENDENT of #25 and is scheduled on
              engineering grounds alone. No live pressure: there are no real
              landlords in the system, so nothing is being lost while it
@@ -657,7 +672,20 @@ Saw:         Only Mailgun's INBOUND route is consumed
 Expected:    A hard bounce marks the case as UNDELIVERED and tells the
              tenant. Silence should mean "delivered and not answered", never
              "never arrived".
-Status:      open — snagged 18 Jul.
+Status:      RELEASE 1 DONE 12 Sep 2026 — deployed to gafol and prod,
+             and PROVEN BOTH WAYS on prod. A dead address stops the case
+             with a correct tenant notice; a live address delivers,
+             records delivery_confirmed bound to the right letter, and
+             the case runs on. Ledger entries for both boxes are in
+             environment-state.md.
+             NOT a dev-facing-only item — a tenant reads the notice, so
+             it does not belong in Section 2.
+             A defect shipped with it and lived on prod 5-12 Sep:
+             {{failed_address}} rendered literally because the field was
+             missing from LetterTemplateRenderer::WHITELIST. Fixed in
+             9645179, deployed and re-fired 12 Sep.
+             RELEASE 2 — the D17.3 tenant-taken copy — is still unbuilt,
+             and two surfaces get reworded when it ships.
 Ruling:      2026-08-24 — the bounce REACTION is settled. On failed +
              severity permanent, correlated by case_message_id:
              1. RECORD the bounce as a case_events row — event_type
@@ -863,6 +891,7 @@ Fix:         LIMIT (state this in any tenant-facing wording) — bounce
              #8 as superseded by #25 — not actioned, flagged for a call.
 --------------------------------------------------------------------
 #26
+[SECTION 2 — DEV-FACING ONLY]
 Page:        Test suite — view-level assertions anchored on UI copy are
              fragile, and assertDontSee ones rot SILENTLY. Surfaced
              2026-07-18 by a one-word label rename.
@@ -1100,6 +1129,7 @@ Fix:         Minimum: add a monitored Reply-To (or a "please reply via the
              contact_messages, and drop the single-reply admin guard.
 --------------------------------------------------------------------
 #31
+[SECTION 2 — DEV-FACING ONLY]
 Page:        docs/deploy-checklist.md lines 24 and 60 — the checklist names
              a DNS domain that does not exist. Surfaced 2026-08-01 during
              the mail identity audit.
@@ -1231,6 +1261,7 @@ Fix:         After #32: change the apex TXT to v=spf1 -all, and decide on
              record moved twice.
 --------------------------------------------------------------------
 #34
+[SECTION 2 — DEV-FACING ONLY]
 Page:        CLAUDE.md, Mail section — a standing rule that contradicts the
              code. Surfaced 2026-08-01 during the mail identity audit.
 Severity:    minor — no runtime impact. Misleads the reader on a
@@ -1295,8 +1326,9 @@ Saw:         The account is on the free tier, which sends from SHARED IP
              domain reputation more heavily than Gmail does.
 Expected:    A deliberate decision on tier, made on answers rather than
              assumption.
-Status:      open — QUESTION ONLY. Nothing to build. Do not act on this
-             entry without a decision from Charlie.
+Status:      CLOSED 12 Sep 2026. Mailgun free tier is adequate, and
+             Mailgun confirm sending reputation is unaffected by tier.
+             No upgrade, no dedicated address, nothing to build.
 Notes:       Relevant history: #8 and #25 record two separate occasions
              where sends were silently blocked (Gmail 550 / 5.7.1 on the
              sandbox domain). Those were sandbox-reputation failures rather
@@ -1402,7 +1434,9 @@ Saw:         Notice 1 to the landlord renders the property address as
              opened.
 Expected:    Town renders capitalised — "Reading" — in a formal notice
              citing the Landlord and Tenant Act 1985.
-Status:      open — snagged 02 Aug.
+Status:      FOLDED INTO #51, 12 Sep 2026. Lower-case town names are
+             fixed by the postcode work rather than separately — the
+             lookup supplies a properly cased place name.
 Notes:       Why it is worth fixing rather than tolerating: this letter
              is the product's core artefact and its whole job is to be
              taken seriously by a landlord. A lower-case town name reads
@@ -1448,7 +1482,7 @@ Expected:    The preview shows what is about to be sent, attachments
              included — at minimum a count and the filenames, matching
              what _message_card.blade.php already renders after the
              fact.
-Status:      open — snagged 02 Aug.
+Status:      CLOSED 12 Sep 2026. The preview now shows attached photos.
 Notes:       The preview is the tenant's ONLY chance to check the
              letter before it goes to their landlord, and photos are
              the one part they cannot take back once sent. A tenant who
@@ -1603,9 +1637,14 @@ Expected:    The page names the trader and gives an address at which
              documents can be served, as required of a sole trader using
              a business name — and does so without exposing a home
              address.
-Status:      open — snagged 02 Aug. Page is committed and in the nav but
-             MUST NOT be deployed until this is resolved; it currently
-             renders bracketed placeholder text to the public.
+Status:      open — CORRECTED 12 Sep 2026, and it is WORSE than this
+             entry said. The status here claimed the page MUST NOT be
+             deployed. It WAS deployed, 23 Aug. The bracketed
+             placeholders are gone, but NOTHING REPLACED THEM:
+             /landlords now names no trader and gives no address for
+             service at all. That is a LIVE legal-disclosure gap on a
+             public page, and a GO-LIVE BLOCKER rather than a fix-cycle
+             item. Charlie is progressing the address purchase.
 Notes:       Why an address is not optional: a sole trader trading under
              a business name must disclose the trader's own name and an
              address for service of documents, on the website as well as
@@ -1823,11 +1862,11 @@ Saw:         Two independent deny-lists, both opt-out:
              two above are what a first look found.
 Expected:    Adding a status forces an explicit decision about it,
              rather than defaulting to the most dangerous behaviour.
-Status:      open — snagged 09 Aug. PREREQUISITE for #25: that build
-             adds a terminal `contact_failed` status, and if either
-             list were missed the sweep would keep escalating cases we
-             had just declared unreachable — reintroducing the exact
-             defect #25 exists to fix, via its own fix.
+Status:      SHIPPED. Merged to main separately (7bcab73) and live on
+             prod since the capture-run teardown redeploy in Aug 2026.
+             The "open" text that stood here was STALE — corrected
+             12 Sep. Do not plan #25 as though this still needs
+             shipping.
 Notes:       The direction of the default is the whole problem. A
              forgotten entry does not produce an inert case, it
              produces an ACTIVELY ESCALATING one. On a product whose
@@ -1868,18 +1907,23 @@ Saw:         Mailgun suppression list for mg.renters.rent, Bounces tab:
              nobody is told.
 Expected:    A published contact address receives mail. An admin account
              can complete a password reset.
-Status:      open — snagged 09 Aug. STILL PRESENT 4 Sep 2026: the
-             suppression entry is unchanged on the Bounces tab, same
-             timestamp. Blast radius now MEASURED — no case on prod has
-             ever used admin@renters.rent as a landlord, so (b) the admin
-             password reset is the only live casualty; (a) the published
-             compliance address is untouched by that and still wrong.
-             NOTE FOR ANY DATA WIPE: the suppression list lives in
-             MAILGUN, not in the database. Truncating cases/properties
-             does not clear it, and sends to this address will keep being
-             dropped. Fix the mailbox first, THEN remove the entry — a
-             removal without a mailbox simply re-suppresses on the next
-             send.
+Status:      open — APPROACH AGREED 12 Sep 2026. Use
+             admin@mg.renters.rent with a Mailgun FORWARD ROUTE to
+             Charlie's private address, collected in Outlook. NO DNS
+             change, NO hosting change, NO second mail system, no
+             mailbox to maintain. mg.renters.rent already receives
+             through Mailgun; the apex has no MX at all, which is the
+             root cause recorded below.
+             CONDITION: the admin@ route must sit AHEAD of the
+             case-reply route on priority. Case replies are
+             {token}@mg.renters.rent, so a catch-all route would swallow
+             admin@, find no token, and treat it as unmatched — the
+             failure would look exactly like today's silence.
+             Accepted cost: the published compliance address will read
+             with "mg." in the middle. A working address that looks odd
+             beats a tidy one that discards mail.
+             Steps, ordering and the test are in
+             docs/llcs-decisions-2026-09-12.txt.
 Notes:       Where it appears:
                - resources/views/privacy.blade.php:60 — "questions about
                  this Privacy Policy or our data practices"
@@ -1985,26 +2029,10 @@ Saw:         Case VMRXZP on gafol. "Larry Landlord" was entered on the
 Expected:    The name a tenant types is the name their landlord reads,
              or they are TOLD it will not be. Whatever the preview
              shows is the letter that goes.
-Status:      BUILT 2026-08-27 on feature/property-landlord-contacts, NOT
-             yet merged and NOT deployed. BOTH halves closed.
-             (a) The global email key is gone — no unique index, and
-             resolveLandlordContact's find-or-create is deleted. Contacts
-             hang off the property, which is already per-tenant, so two
-             tenants at the same agency address get their own row and
-             neither names it for the other.
-             (b) Preview and send both resolve through
-             CaseController::resolveLandlordName, so the salutation shown
-             at the preview is the salutation that is sent. The landlord
-             fields are EXCLUDED from validation when the property already
-             has a contact, so only one source ever exists to read.
-             Both were confirmed to FAIL against the pre-fix commit before
-             the fix was written. The gafol reproduction (second tenant
-             types "Larry Landlord", letter must not open "Dear C Watts")
-             is now a test.
-             --- history below ---
-             was open — snagged 22 Aug during the Release 1 gafol walk.
-             Testing unblocked by UPDATEing the row, or by using a
-             fresh unused email per test case.
+Status:      SHIPPED 4 Sep 2026, both halves. Merged to main (fb03bc9)
+             and deployed to gafol AND prod, both walked. The "BUILT,
+             NOT MERGED, NOT DEPLOYED" text that stood here was STALE —
+             corrected 12 Sep. #7 died with (a).
 Notes:       Live evidence for the D0 candidate in
              docs/landlord-contact-model-gap.md — global email-keyed
              contacts, no per-property ownership, no change history.
@@ -2060,8 +2088,14 @@ Saw:         cases.severity is an enum routine|serious|emergency
              migration, the dev:* commands, and the tenant case page.
 Expected:    Either the landlord is told how urgent the tenant says it
              is, or the tenant is not asked to say.
-Status:      open — snagged 22 Aug during the Release 1 gafol walk.
-             Pre-existing; nothing to do with attachments.
+Status:      RULED 12 Sep 2026 — DROP Severity from the UI entirely.
+             The tenant expresses urgency in their own words in the
+             issue statement. This answers the design question below:
+             severity does not change the deadline, and a tenant's
+             self-assessment does not belong in an evidential letter.
+             Note it is currently a REQUIRED field, so removal touches
+             the create form, validation, the preview and the case-page
+             display.
 Notes:       This is a DESIGN question before it is a code change, and
              it belongs to the design doc, not a brief. Adding
              {{severity}} to the whitelist is ten minutes; deciding
@@ -2112,7 +2146,20 @@ Saw:         PropertyController.php:26 POSTCODE_PATTERN is a shape
 Expected:    A postcode that does not exist is refused. A city that
              disagrees with the postcode is questioned before the
              letter carries it.
-Status:      open — snagged 22 Aug. Feature, not a regression.
+Status:      RULED 12 Sep 2026 — use postcodes.io (api.postcodes.io).
+             Third-party sharing ACCEPTED: Charlie's reasoning is that a
+             postcode carries near-zero vulnerability compared with an
+             email address. That OVERRIDES the caution recorded in Notes
+             below, which had flagged the 1 Aug DMARC precedent.
+             City handling RULED: auto-fill ONLY when the field is
+             empty; where the lookup's district disagrees with a typed
+             city, PROMPT, never overrule. The lookup returns the local
+             authority, not the Royal Mail post town.
+             Fail-open is still required. #38 folds in here.
+             History: postcodes.io was already used once, client-side,
+             on the rentals forms (5a5ab46, 28 Nov 2025), and was
+             removed as collateral when rentals was retired (929d2f6) —
+             not by any decision against the service.
 Notes:       postcodes.io is the obvious free service: UK-wide, no API
              key, no registration, open data, and it returns the
              admin_district that gives the town. Caveats to weigh
@@ -2164,7 +2211,8 @@ Saw:         admin/cases/show.blade.php:66 hardcodes
              The admin screen is where you check what a case says; it
              should not quietly show less than what was sent.
 Expected:    One address formatter, used everywhere.
-Status:      open — snagged 22 Aug.
+Status:      DROPPED 12 Sep 2026, by decision. The shorter address in
+             the admin case view is accepted as it stands.
 Notes:       Third private copy of the same logic. There is already a
              formatAddress() in CaseController (:843) and
              propertyAddress() in SendCaseNotice, SendExhaustionCloser,
@@ -2433,7 +2481,11 @@ Saw:         resources/views/errors/ does not exist. With
              writing up a repair honestly takes time.
 Expected:    An error page that says what happened in plain words,
              says whether anything was lost, and offers a route back.
-Status:      open — snagged 22 Aug. Raise-not-action, by decision.
+Status:      AGREED 12 Sep 2026 — graceful error pages ARE needed. Now
+             a BUILD item, scheduled LAST in the fix cycle because it
+             touches nothing else. The 413 design parked below is the
+             starting point; the rest of the pass is the other status
+             codes and a shared layout.
 Notes:       Sequence this AFTER #53 and #49, which are behavioural.
              Related to the 413 handler under discussion (see the
              ValidatePostSize work): that handler needs a 413 view,
@@ -2582,19 +2634,10 @@ Saw:         cases/preview.blade.php renders the subject, the letter
 Expected:    The preview states the recipient plainly — name and email
              address — before the letter body. "This will be sent to
              Larry Landlord, larry@example.com."
-Status:      CLOSED 2026-08-28 (376946b) on feature/property-landlord-contacts,
-             NOT yet merged, NOT deployed. The preview now carries a
-             recipient block above the letter: name (when given) and the
-             email address, with a line saying to check it because a
-             notice cannot be recalled. Two tests assert the previewed
-             address and case_messages.to_address_raw against the same
-             literal, so neither surface can drift without failing.
-             --- history below ---
-             was open — snagged 28 Aug on feature/property-landlord-contacts,
-             during the browser walk of that branch. NOT a defect
-             introduced by that branch: the preview has never shown the
-             address. The branch is simply the first time anyone looked
-             at this page while thinking about landlord addresses.
+Status:      CLOSED 2026-08-28 (376946b), and SHIPPED 4 Sep 2026 to
+             gafol and prod with fb03bc9. The earlier text said closed
+             on the branch and not yet deployed — stale, corrected
+             12 Sep.
 Notes:       Same family as #46, #49, #53 and the two defects found
              walking this branch (duplicate class attribute; the
              "future letters will go to the new address" message on an
@@ -2644,7 +2687,9 @@ Expected:    Arguable both ways; that is why this is a design question
              something evidentially and reassuringly. It is also the
              moment a wrong landlord address would be noticed, which is
              the entire #24/#49/#59 family.
-Status:      open — snagged 4 Sep 2026.
+Status:      open — DEFERRED 12 Sep 2026, not ruled. Charlie: "leave
+             for now". The design doc is still silent on it, and it must
+             be mail-only if it is ever built.
 Notes:       The design doc is SILENT on this. It covers notifying the
              tenant at escalations and transitions (D5, D14) and rules
              under D2 that an undeliverable letter is the tenant's
@@ -2672,4 +2717,116 @@ Fix:         HARD CONSTRAINT if built: mail-only. It MUST NOT create a
              tenant email arrivals). The second is cheaper and leaks less
              into an inbox; the first is the one that has evidential
              value on its own.
+--------------------------------------------------------------------
+#61
+Page:        Outbound landlord letters — the footer. Raised 2026-09-12
+             by Charlie, reading letter 1 on prod.
+Severity:    minor — wording, but it is wording on an evidential
+             document that a landlord reads.
+Saw:         The footer of letter 1, and of at least one other template,
+             ends:
+               "This message was sent through renters.rent on behalf of
+                the tenant. Replies are routed back to the tenant via
+                the system; please reply to this email rather than
+                emailing the tenant directly. The tenant's contact
+                details are kept private to protect against
+                retaliation."
+             The text lives in database/seeders/LetterTemplateSeeder.php
+             in at least TWO variants (around lines 229 and 276); the
+             shorter one omits the routed-replies sentence but carries
+             the same final sentence.
+Expected:    The final sentence — "The tenant's contact details are kept
+             private to protect against retaliation." — is removed. The
+             rest of the footer stands.
+Status:      AGREED 12 Sep 2026. Also agreed in the same breath: the
+             footer gains a LINK giving landlords a written channel.
+             Target is /landlords, NOT Contact Us — Contact Us sits
+             behind ['auth','verified'] and registration is allowlisted
+             during beta, so a landlord clicking it hits a login wall
+             with no way through. That would be the #46/#49/#53 pattern
+             again.
+             NOT agreed, carried separately: making the footer editable
+             via Admin/Settings. Larger than it looks, and it collides
+             with template seeding.
+Notes:       Two things make this less trivial than a text edit.
+             (1) Outbound letters are FROZEN on case_messages at send
+                 time and never re-rendered, so this changes FUTURE
+                 letters only. Anything already sent keeps the old
+                 wording. That is correct and must NOT be "fixed".
+             (2) Deployed boxes read templates from the DATABASE, and
+                 the seeder deliberately does not overwrite them —
+                 a seed migration once nearly reverted hand-edited
+                 templates. So editing the seeder changes nothing on a
+                 box with history.
+             Wording must keep the two routes distinct: replying to the
+             email is about the REPAIR and lands in the case record; the
+             link is for everything else. If both read the same,
+             landlords will use whichever comes first.
+Fix:         Edit the live templates through the ADMIN TEMPLATE EDITOR
+             (routes admin templates.edit / templates.update), NOT by
+             raw SQL — the editor writes letter_text_change_history, and
+             an unexplained wording change on an evidential letter with
+             no audit trail is exactly what you would later need to
+             explain. Update the seeder in the same pass so a fresh box
+             gets the corrected text.
+--------------------------------------------------------------------
+#62
+Page:        Case correspondence — landlord questions about the SERVICE
+             land in the case thread, where the tenant is the only
+             reader. Raised 2026-09-12 by Charlie.
+Severity:    functional — it puts the tenant in exactly the position
+             the product exists to remove them from.
+Saw:         A landlord replying to a notice can write anything. "Who
+             are you", "why am I getting this", "take me off your list"
+             are all predictable, and all land against the case as an
+             inbound landlord reply. The tenant is the only person who
+             sees them.
+Expected:    Questions about the service reach the service. The tenant
+             is not asked to answer for renters.rent.
+Status:      open — snagged 12 Sep 2026. Raised deliberately, not being
+             fixed in this cycle.
+Notes:       Charlie's words: the case record will definitely collect
+             questions about the service, and the tenant will not want
+             to answer them.
+             It gets MORE likely once #61 puts a link in the footer, not
+             less — the link invites landlords to engage in writing.
+             Related and NOT the same: #30 (Contact Us threading) serves
+             TENANTS only, because Contact Us is behind login and
+             landlords have no account. A landlord has no written
+             channel at all today except the address published on
+             /landlords, which is why #48 matters more than it looks.
+             The open question behind this entry, unanswered as at
+             12 Sep: do landlords ever get a written channel that is not
+             a case reply? If they are ever to be inside a thread they
+             need either an account or the token-in-the-reply-address
+             mechanism already built for case replies.
+Fix:         Not decided. The cheap end is wording on the letter that
+             sends service questions to the link rather than to Reply.
+             The real end is a landlord-facing channel that records what
+             was said. Do not build until the question above is answered.
+--------------------------------------------------------------------
+#63
+Page:        Outbound letters and tenant emails — the tenant's name is
+             rendered exactly as stored. Raised 2026-09-12 while walking
+             the #25 control send on prod.
+Severity:    minor — cosmetic, but on a formal legal notice.
+Saw:         Letter 1 on prod is signed "charles watts1308", and the
+             tenant notice opens "Hi charles watts1308,". The letter
+             cites section 11 of the Landlord and Tenant Act 1985 and
+             then signs off with a lower-case name carrying a number.
+Expected:    A formal notice reads as proofed. At minimum the name is
+             presented as the tenant typed it into a NAME field, rather
+             than an account handle.
+Status:      open — snagged 12 Sep 2026.
+Notes:       Same family as #38 (lower-case town names): an evidential
+             document undermined by unproofed presentation. The cause
+             here is different — this is the users.name value itself,
+             not casing applied at render time — so a title-case filter
+             is the wrong fix and would produce "Charles Watts1308".
+             The real question is whether registration should collect a
+             name suitable for correspondence.
+Fix:         Not decided. Options: validate the name at registration;
+             collect a separate correspondence name; or let the tenant
+             confirm the name that will appear on the letter, which the
+             preview is already the natural place for.
 --------------------------------------------------------------------
