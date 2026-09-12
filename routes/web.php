@@ -87,6 +87,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/properties/{property}/edit', [PropertyController::class, 'edit'])->name('properties.edit');
     Route::patch('/properties/{property}', [PropertyController::class, 'update'])->name('properties.update');
 
+    // #51: the create/edit forms ask us, not postcodes.io directly — the
+    // cache and the privacy boundary both live server-side. Throttled
+    // because it is a proxy to a free third-party service.
+    Route::get('/postcode-lookup', [PropertyController::class, 'lookupPostcode'])
+        ->middleware('throttle:30,1')
+        ->name('postcode.lookup');
+
     // The landlord contact is a property of the PROPERTY, versioned.
     // Correcting it here is the whole of snag #24 — separate from the
     // address edit above because a correction inserts a new version and

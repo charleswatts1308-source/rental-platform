@@ -50,5 +50,9 @@
         <env name="PULSE_ENABLED" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>
+        <!-- #51: OFF by default in tests so no test can ever reach the live
+             postcodes.io. The tests that exercise the lookup turn it on
+             explicitly, with the HTTP layer stubbed. -->
+        <env name="POSTCODE_LOOKUP_ENABLED" value="false"/>
     </php>
 </phpunit>

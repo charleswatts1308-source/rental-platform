@@ -3,7 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Property;
+use App\Rules\PostcodeIsReal;
+use App\Services\PostcodeLookup;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -102,6 +105,32 @@ class PropertyController extends Controller
     }
 
     /**
+     * #51. The form's postcode lookup.
+     *
+     * Deliberately proxied through us rather than called from the
+     * browser: the cache lives here, one shape of answer is returned
+     * whatever postcodes.io does, and the tenant's browser never talks
+     * to a third party directly.
+     *
+     * Returns UNKNOWN rather than an error on any failure. The form
+     * treats UNKNOWN as "say nothing", so an outage is silent rather
+     * than alarming.
+     */
+    public function lookupPostcode(Request $request, PostcodeLookup $lookup): JsonResponse
+    {
+        $postcode = (string) $request->query('postcode', '');
+
+        if (trim($postcode) === '') {
+            return response()->json([
+                'status' => PostcodeLookup::UNKNOWN,
+                'postcode' => null,
+                'district' => null,
+            ]);
+        }
+
+        return response()->json($lookup->lookup($postcode));
+    }
+    /**
      * @return array<string, mixed>
      */
     private function validatePayload(Request $request): array
@@ -110,7 +139,15 @@ class PropertyController extends Controller
             'address_line1' => ['required', 'string', 'max:255'],
             'address_line2' => ['nullable', 'string', 'max:255'],
             'city' => ['required', 'string', 'max:100'],
-            'postcode' => ['required', 'string', 'max:20', 'regex:'.self::POSTCODE_PATTERN],
+            // #51: shape first, then existence. The existence check fails
+            // OPEN — see the PostcodeIsReal rule.
+            'postcode' => [
+                'required',
+                'string',
+                'max:20',
+                'regex:'.self::POSTCODE_PATTERN,
+                app(PostcodeIsReal::class),
+            ],
         ], [
             'postcode.regex' => 'Enter a valid UK postcode (for example, M1 1AA).',
         ]);

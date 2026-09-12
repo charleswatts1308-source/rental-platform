@@ -48,4 +48,27 @@ return [
         ],
     ],
 
+
+    /*
+    |--------------------------------------------------------------------------
+    | Postcode lookup (#51)
+    |--------------------------------------------------------------------------
+    |
+    | postcodes.io. Free, UK-wide, no API key, no registration, open data.
+    | Defaults are PRODUCTION-SAFE: enabled, short timeouts, long cache.
+    |
+    | `enabled` is a kill switch, not a feature flag. Turning it off falls
+    | straight back to the shape regex — the same behaviour the form had
+    | before #51 — because the lookup must never be the reason a tenant
+    | cannot register a property.
+    |
+    */
+
+    'postcodes' => [
+        'enabled' => env('POSTCODE_LOOKUP_ENABLED', true),
+        'base_url' => env('POSTCODE_LOOKUP_BASE_URL', 'https://api.postcodes.io'),
+        'timeout' => env('POSTCODE_LOOKUP_TIMEOUT', 3),
+        'connect_timeout' => env('POSTCODE_LOOKUP_CONNECT_TIMEOUT', 2),
+        'cache_days' => env('POSTCODE_LOOKUP_CACHE_DAYS', 30),
+    ],
 ];
