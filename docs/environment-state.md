@@ -270,8 +270,13 @@ touch of any box, per the CLAUDE.md Deployment-ledger rule.
   gafol**, including the dropdown path. Staging-at-or-ahead holds again.
 - **5 Sep 2026 — #25 delivery-event receiver, release 1.** Plesk Git pull
   of `main` at `4eed6a8`, then `config:cache`, `route:clear`,
-  `view:clear`. **No migrations in this release** — it adds no tables or
-  columns. Verified: the receiver route answers **406** to an unsigned
+  `view:clear`, then `migrate --force`. **TWO migrations:**
+  `2026_09_04_120000_add_contact_failed_to_cases_status_enum` and
+  `2026_09_05_120000_seed_contact_failed_tenant_notices`. (An earlier
+  draft of this entry wrongly said the release carried no migrations.
+  Corrected 12 Sep. **gafol's batch numbers are unread** — `migrate:status`
+  has not been run there since this deploy.)
+  Verified: the receiver route answers **406** to an unsigned
   POST, which is the signature verifier refusing an unauthenticated
   caller. **Nothing further could be proven here.** The Mailgun sandbox
   cannot receive inbound, so gafol can never take a webhook; that is the
@@ -680,9 +685,12 @@ touch of any box, per the CLAUDE.md Deployment-ledger rule.
     remain under `storage/` — untidy, harmless, worth sweeping.
 - **5 Sep 2026 — #25 delivery-event receiver, release 1.** Plesk Git pull
   of `main` at `4eed6a8`, then `config:cache`, `route:clear`,
-  `view:clear`. **No migrations in this release** — it adds no tables or
-  columns. (The `contact_failed` status is an ENUM widening that shipped
-  with the merge; see the migration set recorded above.)
+  `view:clear`, then `migrate --force`. **TWO migrations:**
+  `2026_09_04_120000_add_contact_failed_to_cases_status_enum` and
+  `2026_09_05_120000_seed_contact_failed_tenant_notices`. On prod these
+  are **batch 4**. (An earlier draft of this entry wrongly said the
+  release carried no migrations. It does. Corrected 12 Sep from
+  `migrate:status` on prod.)
   - **Webhook SUBSCRIBED on prod, 5 Sep 2026.** Name
     `renters-prod-delivery-events`, **domain-level** on
     `mg.renters.rent`, four event types. Mailgun's own test webhook
@@ -724,6 +732,14 @@ touch of any box, per the CLAUDE.md Deployment-ledger rule.
   - **Surfaced, not fixed:** nothing on the case page shows a successful
     delivery. The bounce gets a panel; the good path shows nothing. Not a
     defect in this release, but an inherited silence worth deciding on.
+- **`migrate:status` RECONCILED on prod, 12 Sep 2026.** **43 Ran, none
+  Pending**, against **43** migration files in the repo. **No drift.**
+  Batches: 1 for the original 35, 2 for the attachments seed, 3 for the
+  five property-landlord-contact migrations, 4 for the two #25 ones.
+  (Repo note: `ls database/migrations` shows 44 entries because of a
+  stray nested `database/migrations/database/migrations/` holding one
+  old-style file, `2025_Nov_24_create_uploaded_files_table.php`. Laravel
+  does not recurse, so it has never run anywhere. Junk, worth deleting.)
 - Last verified: **12 Sep 2026** — #25 release 1 proven both ways on the
   real Mailgun production path: a dead address stops the case with a
   correct notice, a live address delivers and the case runs on. Code at
