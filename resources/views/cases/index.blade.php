@@ -28,7 +28,6 @@
                         <th scope="col">Reference</th>
                         <th scope="col">Property</th>
                         <th scope="col">Issue</th>
-                        <th scope="col">Severity</th>
                         <th scope="col">Stage</th>
                         <th scope="col">Status</th>
                         <th scope="col">Opened</th>
@@ -43,9 +42,6 @@
                                 <span class="text-muted">{{ $case->property->postcode }}</span>
                             </td>
                             <td>{{ $case->category?->label ?? $case->category_key }}</td>
-                            <td>
-                                <span class="badge bg-secondary text-uppercase">{{ $case->severity->value }}</span>
-                            </td>
                             <td>{{ $case->current_stage }}</td>
                             <td>
                                 <span class="badge bg-info text-dark">{{ str_replace('_', ' ', $case->status->value) }}</span>

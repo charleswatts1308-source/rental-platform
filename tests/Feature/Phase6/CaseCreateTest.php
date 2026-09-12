@@ -611,7 +611,6 @@ it('rejects a payload with missing required fields', function () {
     $response->assertSessionHasErrors([
         'property_id',
         'category_key',
-        'severity',
         'description',
         'landlord_email',
         'landlord_role',

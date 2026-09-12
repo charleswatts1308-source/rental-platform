@@ -51,8 +51,6 @@
                         {{-- #16 — denominator reads the live ladder length, not a literal 4. --}}
                         <dd class="col-7">{{ $case->current_stage }} of {{ \App\Models\Setting::get('escalation.max_notices', 4) }}</dd>
 
-                        <dt class="col-5">Severity</dt>
-                        <dd class="col-7">{{ ucfirst($case->severity->value) }}</dd>
 
                         <dt class="col-5">Issue</dt>
                         <dd class="col-7">{{ $case->category?->label ?? $case->category_key }}</dd>

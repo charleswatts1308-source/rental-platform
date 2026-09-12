@@ -94,24 +94,13 @@
                 </div>
             @endif
 
-            <div class="col-md-8">
+            <div class="col-12">
                 <label for="category_key" class="form-label">Repair category</label>
                 <select id="category_key" name="category_key" class="form-select @error('category_key') is-invalid @enderror" required>
                     <option value="">— select a category —</option>
                     @foreach($categories as $category)
                         <option value="{{ $category->key }}" @selected(old('category_key') === $category->key)>
                             {{ $category->label }}
-                        </option>
-                    @endforeach
-                </select>
-            </div>
-
-            <div class="col-md-4">
-                <label for="severity" class="form-label">Severity</label>
-                <select id="severity" name="severity" class="form-select @error('severity') is-invalid @enderror" required>
-                    @foreach($severities as $severity)
-                        <option value="{{ $severity->value }}" @selected(old('severity', 'routine') === $severity->value)>
-                            {{ ucfirst($severity->value) }}
                         </option>
                     @endforeach
                 </select>

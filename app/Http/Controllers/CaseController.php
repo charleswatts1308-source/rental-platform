@@ -380,7 +380,6 @@ class CaseController extends Controller
         return view('cases.create', [
             'properties' => $properties,
             'categories' => $categories,
-            'severities' => CaseSeverity::cases(),
             'roles' => LandlordContactRole::cases(),
             'stagedPhotos' => $stagedPhotos,
             'photoCeiling' => $this->photoCeiling(),
@@ -439,7 +438,6 @@ class CaseController extends Controller
                 'required',
                 Rule::exists('repair_categories', 'key')->where('active', true),
             ],
-            'severity' => ['required', Rule::enum(CaseSeverity::class)],
             'description' => ['required', 'string', 'max:5000'],
             'landlord_email' => [Rule::excludeIf($inheritsContact), 'required', 'email', 'max:255'],
             'landlord_name' => [Rule::excludeIf($inheritsContact), 'nullable', 'string', 'max:255'],
@@ -578,7 +576,10 @@ class CaseController extends Controller
                 'property_id' => $validated['property_id'],
                 'property_landlord_contact_id' => $propertyContact->id,
                 'category_key' => $validated['category_key'],
-                'severity' => $validated['severity'],
+                // #50: severity is no longer collected. The column stays,
+                // fixed at Routine, so nothing reading it breaks and no
+                // migration destroys the values already stored.
+                'severity' => CaseSeverity::Routine,
                 'description' => $validated['description'],
                 'status' => CaseStatus::Open,
                 'current_stage' => 1,
