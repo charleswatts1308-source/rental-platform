@@ -1,0 +1,291 @@
+LLCS DECISIONS — session of 2026-09-12
+======================================
+
+Charlie's pass over the snag index, and the discussion that followed.
+Source: "llcs-snag-index-2026-09-12 WITH CW COMMENTS.docx", plus the
+discussion in session.
+
+This file is the RECORD of what was decided. The snagging list is still
+the working list; the decisions below have NOT yet been edited into it.
+That reconciliation pass is the next documentation job.
+
+====================================================================
+PART 1 — DECIDED
+====================================================================
+
+--- Items that LEAVE the list -------------------------------------
+
+#7   CLOSED. Landlord prefill is fixed and verified by Charlie.
+     Confirms the earlier suspicion that it died with #49(a).
+
+#39  CLOSED. The preview now shows attached photos.
+
+#52  DROPPED by decision. The admin case view showing a shorter
+     address than the letter is accepted as-is.
+
+#36  CLOSED. Mailgun free tier is adequate. Mailgun confirm sending
+     reputation is unaffected by tier. No upgrade, nothing to build.
+
+#22  LEFT AS IS, deliberately. Editing repair categories in the
+     database is tolerable for a single operator. Not a go-live item.
+
+#38  FOLDED INTO #51. Lower-case town names are fixed by the postcode
+     work, not separately.
+
+--- Rulings that unblock build ------------------------------------
+
+#50  RULED: drop Severity from the UI entirely. The tenant expresses
+     urgency in their own words in the issue statement.
+     Consequence: severity is currently a REQUIRED field. Removing it
+     touches the create form, validation, the preview and the stored
+     column. It reaches no letter today, so no template changes.
+
+#51  RULED: use postcodes.io (api.postcodes.io). Free, UK-wide, no API
+     key, no registration, open data.
+     - Third-party sharing ACCEPTED. Charlie's reasoning: a postcode
+       carries near-zero vulnerability compared with an email address.
+       This overrides the caution recorded in the snag, which had
+       flagged the 1 Aug DMARC precedent.
+     - City: AUTO-FILL ONLY WHEN THE FIELD IS EMPTY. Where the
+       lookup's district disagrees with a typed city, PROMPT, do not
+       overrule. The lookup returns the local authority, not the Royal
+       Mail post town, so an equality check would reject correct
+       addresses.
+     - Fail-open still required. A lookup outage must never block a
+       tenant registering a property or raising a case.
+     - History: postcodes.io was already used once, client-side, on
+       the rentals forms (commit 5a5ab46, 28 Nov 2025). It was removed
+       as collateral when rentals was retired (929d2f6), not by any
+       decision against the service.
+
+#60  LEAVE FOR NOW. No tenant email on case creation. Deferred, not
+     ruled, not closed.
+
+#57  AGREED — graceful error pages are needed. Becomes a build item,
+     scheduled LAST in the cycle because it touches nothing else. The
+     413 design is already written inside the #57 entry.
+
+#61  NEW SNAG, AGREED. The letter footer ends:
+       "The tenant's contact details are kept private to protect
+        against retaliation."
+     Remove that final sentence. The rest of the footer stands.
+     Consequence: outbound letters are FROZEN on case_messages at send
+     time and never re-rendered, so this changes FUTURE letters only.
+     Anything already sent keeps the old wording. That is correct and
+     must not be "fixed".
+     Charlie's second thought — making the footer editable via
+     Admin/Settings — is NOT agreed and is carried in Part 2.
+
+#1   DEFERRED into the final content change, by decision. The
+     restructure (Cases and Properties shown inside Dashboard and
+     removed from the nav, Dashboard gated until registered) is a nav
+     redesign, not a cosmetic fix. Out of this cycle.
+     STILL TO SETTLE when it is picked up: what gates the Dashboard —
+     registered, or registered AND verified. Those behave differently
+     on the verification path, which is where #27 and #29 misbehave.
+
+#2   RULED: the case page panel currently titled "Recipient" takes its
+     title from the contact's stored role — "Landlord" or "Agent" —
+     and shows the contact's email address.
+     Fact established: the properties table has NO email column. The
+     only landlord email in the system lives on
+     property_landlord_contacts, which already carries
+     role ENUM('landlord','agent'). So "the property email address"
+     and "the landlord contact held against the property" are the same
+     field, and the dynamic title is buildable today.
+
+--- #25, retagged -------------------------------------------------
+
+#25  NOT a dev-only item. Charlie's note tagged it for section 2; on
+     discussion, agreed it is user-facing and mid-deploy. Production
+     is currently emailing tenants a notice reading "we were not able
+     to deliver your repair notice to {{failed_address}}".
+     The fix is committed (9645179), unpushed, undeployed. It leads
+     the fix cycle.
+
+--- Work UNITS, not individual snags ------------------------------
+
+ATTACHMENTS as one pass:        #40, #44, #53, #54, #58
+REGISTRATION / VERIFICATION /
+LOGIN as one pass:              #37, and by argument #27, #28, #29
+     Reasoning: they sit on the same path. Testing them piecemeal is
+     how #37 shipped broken.
+     Recorded on #27: the observed error is "403 This action is
+     unauthorized." That matches the long-outstanding item to settle
+     #27's 403 by reading the production log.
+
+--- Snag list RESTRUCTURE -----------------------------------------
+
+A SECTION 2 for dev-facing-only items, agreed in principle:
+     #12, #13, #17, #18, #26, #31, #34
+     NOT #25 (see above).
+Do it in the SAME pass that reconciles the stale Status lines, so the
+list is restructured once. That pass must also correct #42, whose
+Status line still says the page must not be deployed.
+
+--- #30 Contact Us — MODEL CHOSEN ---------------------------------
+
+Charlie's model, agreed: posts and replies recorded in a table, with
+the respective participant notified by email when a new post goes in.
+
+Consequence that CHANGES the earlier assessment: email is a
+NOTIFICATION, not the transport. Nothing is received, so this is
+outbound only, so it CAN be tested on staging. The earlier warning
+that a threaded Contact Us must be proven on production applied to an
+inbound-email design and does NOT apply to this one.
+
+Today's table is one row per enquiry: subject, message, a single
+admin_reply, replied_at. One slot for one answer, which is why a
+second exchange has nowhere to go. The model turns that row into a
+conversation header with posts in a second table, author and body per
+row; the existing message and reply migrate in as the first two posts.
+
+Contact Us sits behind ['auth','verified'], so every participant has
+an account and can be linked to the thread. That removes the hardest
+problem in the design — how an anonymous enquirer would ever see a
+reply.
+
+Build note: a new table means a manual MariaDB check before merge, per
+CLAUDE.md. SQLite cannot show the ON UPDATE CURRENT_TIMESTAMP trap.
+
+--- #48 admin address — APPROACH AGREED ---------------------------
+
+Use admin@mg.renters.rent with a Mailgun FORWARD ROUTE to Charlie's
+private address, collected in Outlook. Same pattern as the Plesk
+forward used on the other site. NO DNS change, NO hosting change, NO
+second mail system, no mailbox to maintain.
+
+Why this works: mg.renters.rent already receives through Mailgun. The
+apex renters.rent has no MX at all, which is why mail to
+admin@renters.rent hits the web server and vanishes.
+
+CONDITION — route ordering. Case reply addresses are
+{token}@mg.renters.rent. If the existing Mailgun route matches
+everything arriving at that subdomain, it will swallow admin@ too,
+hand it to the inbound controller, match no token, and treat it as an
+unmatched message. The admin@ route must sit AHEAD of the case-reply
+route on priority.
+TO CHECK in the Mailgun dashboard: is the existing route a catch-all,
+or does it only match token-shaped addresses?
+
+Steps, in order:
+  1. Mailgun route: recipient admin@mg.renters.rent, forward to the
+     private address, priority above the case-reply route.
+  2. One row on production: change the admin account's login email to
+     that address. Password reset then works.
+  3. Two published pages repointed: privacy.blade.php:60 and
+     cookies.blade.php:85 name the old address as the data-protection
+     contact.
+  4. Two dev seeders: DevReset.php:56 and DevLifecycle.php:29 create
+     the admin with the old address.
+  5. LAST, and only after the new address is proven: clear the
+     Mailgun suppression entry for admin@renters.rent. Clearing it
+     first simply re-suppresses on the next send.
+Test: send from an outside account and confirm it lands in Outlook,
+then run a password reset on the admin account and confirm the link
+arrives.
+
+Accepted cost: the published compliance address will read with "mg."
+in the middle. A working address that looks odd beats a tidy one that
+discards mail. It can move later without changing anything else.
+
+--- #42 and #56 ---------------------------------------------------
+
+#42  NOTED, Charlie will progress. Not code — a purchase and a
+     decision. A mail-forwarding or virtual office address, roughly
+     20-50 pounds a year, removes the home-address exposure.
+     CORRECTION TO THE SNAG: its Status line says the page must not be
+     deployed. It WAS deployed, 23 Aug. The bracketed placeholders are
+     gone, but nothing replaced them — /landlords now names no trader
+     and gives no address for service. That is a live legal-disclosure
+     gap, and a go-live blocker rather than a fix-cycle item.
+
+#56  TO BE DONE. Advise the ICO that renters.rent is a trading name on
+     registration Z229825X. Admin task, not code.
+
+--- FIX CYCLE ORDER, agreed ---------------------------------------
+
+  1. Push and deploy the pending production fix (9645179), then the
+     outstanding #25 close-out: the control send, abandoning the test
+     cases, and the ledger for both boxes.
+  2. #50 severity removal.
+  3. #61 letter footer sentence.
+  4. #51 postcodes.io + city.
+  5. Attachments pass (#40, #44, #53, #54, #58).
+  6. Registration / verification / login pass (#37, #27, #28, #29).
+  7. #57 error pages, last.
+Then: proper start on the go-live plan.
+
+====================================================================
+PART 2 — STILL UNDER DISCUSSION
+====================================================================
+
+THE OPEN QUESTION CHARLIE IS THINKING ABOUT (paused at lunch, 12 Sep):
+
+  Do landlords ever get a written channel that is NOT a case reply?
+
+  Today they do not. Contact Us is behind login and landlords have no
+  account, so a landlord with a general question — why am I receiving
+  these, or a data-protection request — has only the address published
+  on /landlords. That makes admin@ the single front door for every
+  landlord enquiry that is not a case reply, which raises its
+  importance well above tidiness.
+
+  This decides whether admin@ is a STOPGAP or the PERMANENT front
+  door, and whether the threaded Contact Us is tenant-only forever.
+  If landlords are ever to be inside a thread they need either an
+  account or the token-in-the-reply-address mechanism already built
+  for case replies.
+
+CONTACT US, details not settled:
+  - May a customer post again without waiting for an answer? Free
+    posting is more natural and makes the record honest; reply-only is
+    tidier but stops a customer adding "it happened again".
+  - What does the notification email contain? A link and a subject
+    keeps the thread as the real record; including the message text
+    makes email the conversation and the thread a copy.
+  - What happens when someone hits reply in Outlook anyway, because
+    they will? Either point the reply address at the forwarded admin
+    address, or say in the email that replies are not read. Silently
+    discarding them is the thing being fixed, so it cannot be the
+    answer.
+
+ADMIN MAIL, not settled:
+  - Should Outlook SEND AS admin@ through Mailgun's sending
+    credentials, so Charlie's private address stays out of the
+    headers? Forwarding alone means a reply from Outlook exposes the
+    private address to landlords and data subjects. Same exposure
+    argument as #42, applied to email instead of post.
+  - The apex mail posture (#33) is now DEFERRED, not decided. Using
+    the mg. address means no apex decision is needed today. #33 still
+    contemplates a null MX so that apex mail fails cleanly; that
+    remains open and should be taken together with #33's SPF
+    tightening.
+
+#61 SECOND HALF, not agreed:
+  - Making the letter footer editable via Admin/Settings. Much larger
+    than removing a sentence, and it collides with template seeding,
+    which has already once tried to overwrite hand-edited templates.
+    Raise as its own snag if wanted.
+
+CARRIED FORWARD, unruled from before today:
+  - What a spam COMPLAINT should do beyond stopping the case. D17.5
+    makes it terminal and never-forking, which is built. Whether it
+    should suppress the address for future cases at that property is
+    undecided.
+  - #60, deferred rather than ruled.
+
+====================================================================
+PART 3 — NOT CHANGED TODAY
+====================================================================
+
+No code was changed. No snag entries were edited.
+
+STILL PENDING FROM THE MID-DEPLOY, unchanged by today:
+  - main is ahead of origin and UNPUSHED.
+  - 9645179 is not deployed to either box.
+  - The control send (a delivery_confirmed event on a good address)
+    has never been run. It is the half that proves the good path is
+    not caught by the same net.
+  - The deployment ledger for both boxes is unwritten. Per CLAUDE.md
+    the deploy is not finished until it exists.

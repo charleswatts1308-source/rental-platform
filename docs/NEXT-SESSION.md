@@ -5,7 +5,9 @@ The `docs/` folder has many files and many are stale — this index says
 which to trust and which to ignore, so you don't re-derive state from a
 superseded doc. It is a **router, not a record**: keep it short.
 
-**Last updated:** 2026-09-05.
+**Last updated:** 2026-09-12.
+
+**DECISIONS OF 12 SEP are in `docs/llcs-decisions-2026-09-12.txt`.** Charlie's pass over the snag index plus the discussion that followed: what was ruled, what was closed, the agreed fix-cycle order, and the questions still open. Read it with this file. The snagging list has NOT yet been reconciled against it.
 
 **⚠ MID-DEPLOY — #25 release 1 is LIVE ON PROD, with one fix not yet
 deployed.** Read this before touching anything.
