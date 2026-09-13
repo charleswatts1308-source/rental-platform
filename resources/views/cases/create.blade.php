@@ -168,6 +168,12 @@
                     <ul id="photo-list" class="list-unstyled small mt-2 mb-0">
                         @foreach($stagedPhotos as $photo)
                             <li data-staged="1" class="d-flex align-items-center gap-2 mb-1">
+                                {{-- #53: the keep instruction rides INSIDE the row.
+                                     Remove deletes the row, which takes this input
+                                     with it, so the server is told precisely which
+                                     photo went. It used to be one flag for the whole
+                                     set, so removing one of two removed both. --}}
+                                <input type="hidden" name="keep_staged_photos[]" value="{{ $photo['path'] }}">
                                 <span>{{ $photo['original_filename'] ?? basename($photo['path']) }}</span>
                                 <span class="text-muted">({{ \App\Support\FileSize::human((int) ($photo['size_bytes'] ?? 0)) }})</span>
                                 <span class="badge text-bg-light">attached</span>
@@ -176,12 +182,13 @@
                         @endforeach
                     </ul>
 
-                    {{-- Defaults ON whenever a staged set exists, so the safe
-                         outcome — the evidence survives the round-trip —
-                         is what happens with no JavaScript at all. Only
-                         choosing new files or clicking Remove turns it off. --}}
-                    <input type="hidden" id="keep-staged-photos" name="keep_staged_photos"
-                           value="{{ count($stagedPhotos) > 0 ? 1 : 0 }}">
+                    {{-- The sentinel. Without it, removing EVERY row would leave
+                         the field absent, and absent means KEEP EVERYTHING — the
+                         safe default that stops a forgetful caller wiping a
+                         tenant's evidence. This empty entry keeps the field
+                         present so "remove them all" can still be said. It sits
+                         outside the list, so no Remove click can take it. --}}
+                    <input type="hidden" name="keep_staged_photos[]" value="">
                 @endif
             </div>
 
@@ -312,7 +319,6 @@
 
     const maxBytes = parseInt(input.dataset.photoMaxBytes || '0', 10);
 
-    const keepFlag = document.getElementById('keep-staged-photos');
     const errorBox = document.getElementById('photo-errors');
 
     function stagedRows() {
@@ -320,11 +326,20 @@
     }
 
     // Staged photos are the server's, not this script's — we hold no File
-    // objects for them. Dropping them is therefore a server instruction
-    // (the keep flag), not a DataTransfer edit.
+    // objects for them. Dropping them is therefore a server instruction,
+    // not a DataTransfer edit. #53: each row carries its own hidden
+    // keep_staged_photos[] input, so removing the row IS the instruction
+    // and nothing else has to be kept in step.
     function dropStaged() {
         stagedRows().forEach(row => row.remove());
-        if (keepFlag) keepFlag.value = '0';
+    }
+
+    // #53: remove ONE. The old handler called dropStaged() for any Remove
+    // button, ignoring which row was clicked, so the control said "remove
+    // this photo" and the system heard "remove all photos".
+    function dropOneStaged(button) {
+        const row = button.closest('[data-staged]');
+        if (row) row.remove();
     }
 
     // A validation error from the previous request describes files that are
@@ -353,7 +368,7 @@
 
     list.addEventListener('click', function (event) {
         if (!event.target.matches('[data-remove-staged]')) return;
-        dropStaged();
+        dropOneStaged(event.target);
         clearErrors();
         render();
     });

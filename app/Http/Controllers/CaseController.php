@@ -709,25 +709,62 @@ class CaseController extends Controller
             }
 
             return $this->stagePreviewPhotos($incoming, $userId);
+
         }
-
-        // ABSENT means keep. Only an explicit "0" — which the form's script
-        // sets when the tenant chooses new files or clicks Remove — drops
-        // them. Defaulting the other way would make every caller that
-        // forgets the field silently discard a tenant's evidence, which is
-        // the failure mode this whole design exists to prevent.
-        $keepStaged = ! $request->has('keep_staged_photos')
-            || $request->boolean('keep_staged_photos');
-
-        if ($staged && $keepStaged) {
+        // #53 — the keep instruction is PER FILE, not one boolean for the
+        // set. It used to be a single flag, so Remove on one of two staged
+        // photos removed both: the control said "remove this photo" and
+        // the server heard "remove all photos". There was no per-file
+        // identity in the instruction, so it could not have honoured a
+        // partial removal even if the script had asked for one.
+        //
+        // Three shapes are accepted, and the ABSENT-MEANS-KEEP default
+        // survives all of them, because a caller that forgets the field
+        // must not be able to wipe a tenant's evidence:
+        //
+        //   absent          -> keep everything
+        //   array of paths  -> keep exactly those, discard the rest
+        //   "1" / "0"       -> the old all-or-nothing form, still honoured
+        //
+        if (! $request->has('keep_staged_photos')) {
             return $staged;
         }
 
-        if ($staged) {
+        $keep = $request->input('keep_staged_photos');
+
+        if (! is_array($keep)) {
+            // Legacy scalar form.
+            if ($request->boolean('keep_staged_photos')) {
+                return $staged;
+            }
+
             $this->discardStagedPhotos($payload);
+
+            return [];
         }
 
-        return [];
+        $keepPaths = array_filter(array_map(
+            fn ($path) => is_string($path) ? $path : null,
+            $keep,
+        ));
+
+        $survivors = array_values(array_filter(
+            $staged,
+            fn ($photo) => isset($photo['path']) && in_array($photo['path'], $keepPaths, true),
+        ));
+
+        $dropped = array_values(array_filter(
+            $staged,
+            fn ($photo) => ! isset($photo['path']) || ! in_array($photo['path'], $keepPaths, true),
+        ));
+
+        // Only the dropped files are deleted. The survivors have to still
+        // be on disk when the letter is built.
+        if ($dropped !== []) {
+            $this->discardStagedPhotos(['photos' => $dropped]);
+        }
+
+        return $survivors;
     }
 
     /**

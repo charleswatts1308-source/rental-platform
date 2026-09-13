@@ -121,9 +121,12 @@ it('Edit round-trip — GET /cases/create after staging re-fills the form from t
     // the tenant can see WHICH evidence is attached.
     $response->assertSee('damp.jpg');
     $response->assertSee('attached');
-    // And the keep flag rides along so a resubmit carries it forward.
-    $response->assertSee('name="keep_staged_photos"', false);
-    $response->assertSee('value="1"', false);
+    // And the keep instruction rides along so a resubmit carries it
+    // forward. #53 made it per-file: each row carries the staged PATH it
+    // stands for, rather than one boolean for the whole set.
+    $response->assertSee('name="keep_staged_photos[]"', false);
+    $payload = session('cases.preview.payload');
+    $response->assertSee('value="'.$payload['photos'][0]['path'].'"', false);
 });
 
 it('Edit round-trip does not leak another tenant\'s staged draft', function () {
@@ -918,4 +921,165 @@ it('redirects guests away from POST /cases', function () {
     $response = $this->post('/cases', []);
 
     $response->assertRedirect('/login');
+});
+
+/*
+ * #53 — Remove on ONE of two staged photos removed BOTH.
+ *
+ * The keep instruction was a single boolean for the whole set, so the
+ * control said "remove this photo" and the server heard "remove all
+ * photos". It could not have honoured a partial removal even if the
+ * script had asked for one: there was no per-file identity in the
+ * instruction.
+ *
+ * These tests run AT CEILING 2 AND 3 deliberately. Every existing
+ * attachment test uses a single staged photo, where all-or-nothing and
+ * per-file are indistinguishable — which is exactly why the suite was
+ * green while the defect shipped.
+ */
+
+it('#53 — removing one of two staged photos keeps the other', function () {
+    [$tenant, $property] = tenantWithProperty();
+
+    allowPhotoCeiling(2);
+
+    $this->actingAs($tenant)->post('/cases', validStorePayload($property->id) + [
+        'photos' => [
+            UploadedFile::fake()->image('kitchen.jpg'),
+            UploadedFile::fake()->image('bathroom.jpg'),
+        ],
+    ]);
+
+    $staged = session('cases.preview.payload')['photos'];
+    expect($staged)->toHaveCount(2);
+
+    // The form sends back the paths of the rows that SURVIVED. Removing
+    // the first row means its input goes with it; the sentinel keeps the
+    // field present.
+    $this->actingAs($tenant)->post('/cases', validStorePayload($property->id) + [
+        'keep_staged_photos' => ['', $staged[1]['path']],
+    ]);
+
+    $this->actingAs($tenant)->post('/cases/preview/confirm');
+
+    $message = CaseMessage::where('direction', MessageDirection::Outbound)->firstOrFail();
+    $attachments = MessageAttachment::where('case_message_id', $message->id)->get();
+
+    expect($attachments)->toHaveCount(1);
+    expect($attachments->first()->original_filename)->toBe('bathroom.jpg');
+});
+
+it('#53 — the removed file is deleted from disk, the survivor is not', function () {
+    [$tenant, $property] = tenantWithProperty();
+
+    allowPhotoCeiling(2);
+
+    $this->actingAs($tenant)->post('/cases', validStorePayload($property->id) + [
+        'photos' => [
+            UploadedFile::fake()->image('kitchen.jpg'),
+            UploadedFile::fake()->image('bathroom.jpg'),
+        ],
+    ]);
+
+    $staged = session('cases.preview.payload')['photos'];
+    $dropped = $staged[0]['path'];
+    $kept = $staged[1]['path'];
+
+    $this->actingAs($tenant)->post('/cases', validStorePayload($property->id) + [
+        'keep_staged_photos' => ['', $kept],
+    ]);
+
+    expect(Storage::disk('local')->exists($dropped))->toBeFalse();
+    expect(Storage::disk('local')->exists($kept))->toBeTrue();
+});
+
+it('#53 — removing every staged photo still removes them all', function () {
+    [$tenant, $property] = tenantWithProperty();
+
+    allowPhotoCeiling(3);
+
+    $this->actingAs($tenant)->post('/cases', validStorePayload($property->id) + [
+        'photos' => [
+            UploadedFile::fake()->image('one.jpg'),
+            UploadedFile::fake()->image('two.jpg'),
+        ],
+    ]);
+
+    // Every row gone: only the sentinel is left. The field is PRESENT and
+    // empty, which is how "remove them all" is said now that absence means
+    // keep everything.
+    $this->actingAs($tenant)->post('/cases', validStorePayload($property->id) + [
+        'keep_staged_photos' => [''],
+    ]);
+
+    $this->actingAs($tenant)->post('/cases/preview/confirm');
+
+    $message = CaseMessage::where('direction', MessageDirection::Outbound)->firstOrFail();
+    expect(MessageAttachment::where('case_message_id', $message->id)->count())->toBe(0);
+});
+
+it('#53 — an ABSENT keep instruction still keeps everything', function () {
+    [$tenant, $property] = tenantWithProperty();
+
+    allowPhotoCeiling(2);
+
+    $this->actingAs($tenant)->post('/cases', validStorePayload($property->id) + [
+        'photos' => [
+            UploadedFile::fake()->image('one.jpg'),
+            UploadedFile::fake()->image('two.jpg'),
+        ],
+    ]);
+
+    // No keep field at all. A caller that forgets it must not be able to
+    // wipe a tenant's evidence — the whole reason the default is KEEP.
+    $this->actingAs($tenant)->post('/cases', validStorePayload($property->id));
+
+    $this->actingAs($tenant)->post('/cases/preview/confirm');
+
+    $message = CaseMessage::where('direction', MessageDirection::Outbound)->firstOrFail();
+    expect(MessageAttachment::where('case_message_id', $message->id)->count())->toBe(2);
+});
+
+it('#53 — a path that was never staged cannot smuggle a file in', function () {
+    [$tenant, $property] = tenantWithProperty();
+
+    allowPhotoCeiling(2);
+
+    $this->actingAs($tenant)->post('/cases', validStorePayload($property->id) + [
+        'photos' => [UploadedFile::fake()->image('one.jpg')],
+    ]);
+
+    // The instruction is intersected AGAINST the staged set, never used as
+    // a source of truth of its own.
+    $this->actingAs($tenant)->post('/cases', validStorePayload($property->id) + [
+        'keep_staged_photos' => ['', 'preview-photos/999/not-mine.jpg'],
+    ]);
+
+    $this->actingAs($tenant)->post('/cases/preview/confirm');
+
+    $message = CaseMessage::where('direction', MessageDirection::Outbound)->firstOrFail();
+    expect(MessageAttachment::where('case_message_id', $message->id)->count())->toBe(0);
+});
+
+it('#53 — the form renders one keep input per staged photo, plus the sentinel', function () {
+    [$tenant, $property] = tenantWithProperty();
+
+    allowPhotoCeiling(2);
+
+    $this->actingAs($tenant)->post('/cases', validStorePayload($property->id) + [
+        'photos' => [
+            UploadedFile::fake()->image('one.jpg'),
+            UploadedFile::fake()->image('two.jpg'),
+        ],
+    ]);
+
+    $staged = session('cases.preview.payload')['photos'];
+
+    $response = $this->actingAs($tenant)->get('/cases/create?resume=1');
+
+    $response->assertOk();
+    $response->assertSee('value="'.$staged[0]['path'].'"', false);
+    $response->assertSee('value="'.$staged[1]['path'].'"', false);
+    // The sentinel, which is what keeps "remove them all" sayable.
+    $response->assertSee('name="keep_staged_photos[]" value=""', false);
 });
