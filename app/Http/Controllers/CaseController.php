@@ -385,6 +385,7 @@ class CaseController extends Controller
             'photoCeiling' => $this->photoCeiling(),
             'photoMaxBytes' => $this->effectivePhotoMaxBytes(),
             'photoMaxLabel' => FileSize::human($this->effectivePhotoMaxBytes()),
+            'photoTotalMaxBytes' => $this->effectivePhotoTotalBytes(),
         ]);
     }
 
@@ -788,6 +789,45 @@ class CaseController extends Controller
         $php = FileSize::fromIniShorthand(ini_get('upload_max_filesize'));
 
         return $php > 0 ? min($ours, $php) : $ours;
+    }
+
+    /**
+     * #58 — the budget for the WHOLE selection, in bytes.
+     *
+     * The per-file limit was never the binding constraint on a multi-photo
+     * selection. PHP refuses the entire request when the multipart body
+     * exceeds post_max_size, and it does so before any validation runs, so
+     * the tenant loses the whole submission and the application never
+     * learns it happened.
+     *
+     * Until now that was safe by ARITHMETIC rather than by design: a
+     * ceiling of 3 and a per-file cap of 4MB comes to about 12MB against a
+     * 16M post_max_size. Neither number is controlled or watched by this
+     * application — post_max_size lives in the hosting panel, subscription
+     * wide, and has already been changed once mid-project without the app
+     * knowing. Lower it to 8M and that 12MB becomes a silent 413.
+     *
+     * So the sum is now checked against the real limit, with a reserve for
+     * the description field, the landlord fields and multipart overhead.
+     * Returns 0 when post_max_size is unreadable or unlimited, which the
+     * form treats as "no total check" — the per-file rule still applies.
+     */
+    private function effectivePhotoTotalBytes(): int
+    {
+        $postMax = FileSize::fromIniShorthand(ini_get('post_max_size'));
+
+        if ($postMax <= 0) {
+            return 0; // 0 or -1 means unlimited. Nothing to guard against.
+        }
+
+        // The rest of the form is small — a description capped at 5000
+        // characters plus a handful of short fields — but multipart
+        // boundaries and header lines are not free, and being wrong here
+        // costs the tenant their whole submission. A megabyte of headroom
+        // is cheap insurance against a limit nobody in this codebase sets.
+        $reserve = 1024 * 1024;
+
+        return max(0, $postMax - $reserve);
     }
 
     /**

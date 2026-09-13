@@ -140,6 +140,7 @@
                            accept=".jpg,.jpeg,.png,.pdf"
                            data-photo-ceiling="{{ $photoCeiling }}"
                            data-photo-max-bytes="{{ $photoMaxBytes }}"
+                           data-photo-total-max-bytes="{{ $photoTotalMaxBytes }}"
                            class="form-control @error('photos') is-invalid @enderror @error('photos.*') is-invalid @enderror">
                     <div class="form-text">
                         JPG, PNG, or PDF. Each file must be under {{ $photoMaxLabel }}.
@@ -318,6 +319,9 @@
     if (!ceiling) return;
 
     const maxBytes = parseInt(input.dataset.photoMaxBytes || '0', 10);
+    // #58: the budget for the WHOLE selection. 0 means no total limit is
+    // knowable, in which case only the per-file rule applies.
+    const totalMaxBytes = parseInt(input.dataset.photoTotalMaxBytes || '0', 10);
 
     const errorBox = document.getElementById('photo-errors');
 
@@ -459,10 +463,38 @@
         const usable = maxBytes > 0 ? incoming.filter(f => f.size <= maxBytes) : incoming;
 
         const room = ceiling - chosen.length;
-        const accepted = usable.slice(0, Math.max(0, room));
+        const withinCount = usable.slice(0, Math.max(0, room));
+
+        // #58 — the TOTAL matters as much as each file. PHP refuses a
+        // multipart body over post_max_size before any validation runs, so
+        // an over-budget selection costs the tenant the entire submission
+        // and the application never learns it happened. Accept files while
+        // the running total fits and refuse the rest here, where it can be
+        // explained, rather than at a 413 that cannot.
+        let runningTotal = chosen.reduce((sum, f) => sum + f.size, 0);
+        const accepted = [];
+        const tooMuchTogether = [];
+
+        withinCount.forEach(function (file) {
+            if (totalMaxBytes > 0 && runningTotal + file.size > totalMaxBytes) {
+                tooMuchTogether.push(file);
+                return;
+            }
+
+            runningTotal += file.size;
+            accepted.push(file);
+        });
+
         chosen = chosen.concat(accepted);
 
         const problems = [];
+
+        tooMuchTogether.forEach(function (file) {
+            problems.push(
+                'Photo "' + file.name + '" would take the total over ' + humanSize(totalMaxBytes) +
+                ', which is the most this form can send at once. It has not been attached.'
+            );
+        });
 
         tooBig.forEach(function (file) {
             problems.push(
@@ -471,7 +503,10 @@
             );
         });
 
-        if (usable.length > accepted.length) {
+        // Compared against withinCount, not accepted: a file left out for
+        // the TOTAL has already been explained above, and saying it was
+        // also refused for the count would be a second, wrong reason.
+        if (usable.length > withinCount.length) {
             problems.push(
                 'You can attach up to ' + ceiling + (ceiling === 1 ? ' photo' : ' photos') +
                 '. Remove one first if you want to swap it for a different photo.'
