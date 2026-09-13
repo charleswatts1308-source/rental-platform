@@ -17,6 +17,7 @@ use App\Services\LetterTemplateRenderer;
 use App\Services\Silence\SilenceClock;
 use App\Support\CaseReference;
 use App\Support\FileSize;
+use App\Support\PhotoLimits;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -59,7 +60,7 @@ class CaseController extends Controller
      * which is snag #41's failure mode. The deliverability lever is the
      * COUNT, which is configurable, and later the resize option (R7).
      */
-    private const PHOTO_MAX_KB = 4096;
+    private const PHOTO_MAX_KB = PhotoLimits::PER_FILE_KB;
 
     /**
      * Ceiling fallback when the setting row is missing. Matches the
@@ -785,10 +786,7 @@ class CaseController extends Controller
      */
     private function effectivePhotoMaxBytes(): int
     {
-        $ours = self::PHOTO_MAX_KB * 1024;
-        $php = FileSize::fromIniShorthand(ini_get('upload_max_filesize'));
-
-        return $php > 0 ? min($ours, $php) : $ours;
+        return PhotoLimits::perFileBytes();
     }
 
     /**
@@ -814,20 +812,7 @@ class CaseController extends Controller
      */
     private function effectivePhotoTotalBytes(): int
     {
-        $postMax = FileSize::fromIniShorthand(ini_get('post_max_size'));
-
-        if ($postMax <= 0) {
-            return 0; // 0 or -1 means unlimited. Nothing to guard against.
-        }
-
-        // The rest of the form is small — a description capped at 5000
-        // characters plus a handful of short fields — but multipart
-        // boundaries and header lines are not free, and being wrong here
-        // costs the tenant their whole submission. A megabyte of headroom
-        // is cheap insurance against a limit nobody in this codebase sets.
-        $reserve = 1024 * 1024;
-
-        return max(0, $postMax - $reserve);
+        return PhotoLimits::totalBytes();
     }
 
     /**
