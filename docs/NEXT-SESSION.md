@@ -5,9 +5,42 @@ The `docs/` folder has many files and many are stale — this index says
 which to trust and which to ignore, so you don't re-derive state from a
 superseded doc. It is a **router, not a record**: keep it short.
 
-**Last updated:** 2026-09-12.
+**Last updated:** 2026-09-13.
 
-**DECISIONS OF 12 SEP are in `docs/llcs-decisions-2026-09-12.txt`.** Charlie's pass over the snag index plus the discussion that followed: what was ruled, what was closed, the agreed fix-cycle order, and the questions still open. Read it with this file. The snagging list has NOT yet been reconciled against it.
+**DECISIONS OF 12 SEP are in `docs/llcs-decisions-2026-09-12.txt`.** Charlie's pass over the snag index plus the discussion that followed: what was ruled, what was closed, the agreed fix-cycle order, and the questions still open. Read it with this file. **The snagging list HAS now been reconciled against it** (`7fdebb4`), including new snags #61, #62 and #63, and a Section 2 tag for dev-facing-only entries.
+
+**➡ WORK IN FLIGHT: `feature/fix-cycle-sep-2026`, pushed 13 Sep, NOT
+MERGED.** Branched from `main` at `7fdebb4`; fork point tagged
+`pre-fix-cycle-sep-2026`. Six commits, suite **803 green**. Nothing is
+deployed from it — both boxes still run `01451b0`.
+
+Built, each with tests: **#50** severity off the UI; **#2** landlord
+email on the case page with the panel titled by role; **#51**
+postcodes.io existence check + town reconciliation; **#53** Remove on one
+staged photo no longer removes both (verified failing against the old
+code first); **#58** the form sums the selection against `post_max_size`;
+**#57** error pages for 404, 413, 419, 500.
+
+**FLAGGED, not slipped in:** the photo limits moved off
+`CaseController`'s private const into `App\Support\PhotoLimits`, because
+the 413 view has to state the same figures the form advertises and could
+not reach them. The controller delegates.
+
+**BEFORE MERGE:** the implementation report is NOT written, and per
+CLAUDE.md it stops the phase. Nothing on this branch has been walked in a
+browser — all six are behavioural or visual and need it.
+
+**REMAINING in the cycle, all needing Charlie:** **#61** (wording pasted
+through the ADMIN TEMPLATE EDITOR, not SQL — the editor writes
+`letter_text_change_history` and these are evidential letters, and the
+footer also gains the /landlords link); the rest of the attachments pass
+(**#40, #44, #54**) which needs the ceiling raised and a deliberate walk;
+and registration/verification/login (**#37, #27, #28, #29**) as one unit.
+
+**Still open from the 12 Sep discussion:** whether landlords ever get a
+written channel that is not a case reply. That decides whether `admin@`
+is a stopgap or the permanent front door, and whether the threaded
+Contact Us is tenant-only forever. See **#62**.
 
 **✅ #25 RELEASE 1 IS DONE — deployed, fixed, and PROVEN BOTH WAYS on
 prod (12 Sep).** The mid-deploy warning that stood here is discharged.
@@ -37,42 +70,11 @@ success, proving signature verification against a real signature.
 `contact_failed`, and the case page showed the explanation panel
 correctly.
 
-**⚠ WHAT IS NOT DONE — the tenant email is wrong on prod right now.**
-The live fire revealed `{{failed_address}}` rendering literally in the
-notice: `failed_address` was missing from
-`LetterTemplateRenderer::WHITELIST`. **Fixed in `9645179`, committed,
-UNPUSHED and NOT DEPLOYED.** So prod currently sends a notice reading
-"we were not able to deliver your repair notice to {{failed_address}}".
-
-**➡ RESUME HERE, in order:**
-1. Push `main` (one commit ahead of origin).
-2. Deploy `9645179` to STAGE then PROD — pull, then `config:cache`,
-   `route:clear`, `view:clear`. **No migration.**
-3. Re-run the live fire on PROD: raise a case to
-   `landlord@this-domain-does-not-exist-9f3k2.com` and confirm the email
-   now names the address.
-4. The CONTROL send — a case to an address you own — confirming a
-   `delivery_confirmed` event appears and the case does NOT stop. Not yet
-   done, and it is the half that proves the good path is not caught by
-   the same net.
-5. Abandon the test cases on prod (at least one is sitting in
-   `contact_failed` from the first live fire).
-6. **Write the ledger for BOTH boxes** — not done, and per CLAUDE.md the
-   deploy is not finished until it is. Include the date the webhook was
-   subscribed.
-
 **Also outstanding, smaller:**
-- Several `Status:` lines in `llcs-snagging-list.txt` are STALE. #24,
-  #49 and #7 still read "built, not merged, not deployed" — they went to
-  prod on 4 Sep. #47 reads open but shipped in August. Offered to
-  reconcile; not yet done.
 - Cosmetic: the bounce panel on the case page ends "…raise a new case.
   Correct the landlord's details." — the link repeats the sentence before
+
   it. Fix in the same pass as the release-2 rewording.
-- **#50** came up again in the walk (severity never reaches the letter).
-  It is already snagged and is a DESIGN question — does severity change
-  the deadline, and is a tenant's self-assessment safe in an evidential
-  letter at all. Needs a ruling, not a fix.
 **✅ SHIPPED EVERYWHERE (4 Sep).** `feature/property-landlord-contacts` is
 merged to `main` (`fb03bc9`, `--no-ff`, tag
 `post-property-landlord-contacts`, suite 703) and **deployed to gafol AND
