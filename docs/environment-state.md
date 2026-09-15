@@ -30,12 +30,12 @@ truth and this file is their mirror. Proven on 24 Aug when
 `migrate --force` on gafol returned **`Nothing to migrate`** for a 9 Aug
 migration that a box sitting at 1 Aug code could not have run.
 
-**✅ PROD RECONCILED 15 Sep 2026 — the item open since 27 Jun is
-CLEARED for prod.** 43 migrations Ran, none pending, against 43 files in
-the repo. Exact match. **gafol is still outstanding**: no migration has
-shipped since its last figure (41 Ran, 4 Sep), so no drift is expected,
-but the rule asks for the check and not for the inference. Do it at the
-next touch of that box.
+**✅ BOTH BOXES RECONCILED 15 Sep 2026 — the item open since 27 Jun is
+CLEARED.** prod and gafol each report **43 migrations Ran, none
+pending**, against **43 files in the repo**. Identical sets. Batch
+numbers differ (prod 4, gafol 7) because gafol was deployed more
+incrementally — a batch records when a migration ran on that box, not
+what ran, so that is not drift and should not be "fixed".
 
 ---
 
@@ -102,9 +102,19 @@ next touch of that box.
 - **Retaliation sentence (#61) REMOVED** from both templates through the
   admin template editor, which writes `letter_text_change_history`. Both
   `landlord_wakeup_generic` and `exhaustion_landlord_closer`.
-- **Not done:** `migrate:status` still not re-run (see the header's
-  standing note). No migration shipped, so no drift is expected, but the
-  reconciliation rule asks for it and it remains outstanding.
+- **✅ RECONCILED AGAINST `migrate:status`, 15 Sep 2026.** **43
+  migrations, all Ran, none pending** — the IDENTICAL SET to prod, and
+  matching the 43 migration files in the repo.
+  - **Batch numbers differ from prod and that is not drift.** gafol
+    shows **7** batches where prod shows **4**, because gafol was
+    deployed more incrementally. A batch records WHEN a migration ran on
+    that box, not WHAT ran. The names and the count are what must match,
+    and they do.
+  - The previous figure in this file (**41 Ran, 4 Sep**) was simply
+    older, not wrong: the two extra are the 4–5 Sep delivery-event pair,
+    which shipped after it was written.
+  - **Both boxes are now reconciled**, which closes the standing item
+    open since 27 Jun.
 - **Standing limit, unchanged:** gafol's Mailgun is the sandbox —
   outbound only. A reply sends and is recorded; nothing can come back in.
   Inbound and webhook work is proven on prod, by decision (CLAUDE.md).

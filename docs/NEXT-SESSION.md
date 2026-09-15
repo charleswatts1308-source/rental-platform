@@ -66,10 +66,10 @@ Three were defects no test would have found:
 
 ## Open actions
 
-1. **gafol has not been reconciled against `migrate:status`.** No
-   migration has shipped since its last figure (41 Ran, 4 Sep), so no
-   drift is expected — but the rule asks for the check, not the
-   inference. Do it at the next touch of that box.
+1. ~~**gafol reconciled against `migrate:status`.**~~ **DONE 15 Sep** —
+   43 Ran, none pending, identical set to prod. Both boxes are now
+   reconciled and the item open since 27 Jun is closed. (Batch numbers
+   differ between the boxes; that is deployment history, not drift.)
 2. **The dev box still carries the retaliation sentence** (#61) in its
    templates. The seeder change only reaches a fresh install, and
    deliberately so. Two templates: `landlord_wakeup_generic` and
