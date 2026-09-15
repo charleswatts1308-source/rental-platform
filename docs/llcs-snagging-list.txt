@@ -3125,7 +3125,9 @@ Severity:    minor — the second click works. It reads as an
 Saw:         Fill the form, click Register, nothing happens. Click
              again, it submits.
 Expected:    One click.
-Status:      FIXED SAME DAY, 15 Sep 2026, in the same pass as #66.
+Status:      FIXED SAME DAY, 15 Sep 2026, in the same pass as #66, and
+             WALKED AND PASSED the same day by Charlie on dev — one
+             click on Register. Not yet deployed.
 Notes:       Not a double-submit guard and nothing to do with the
              server. The #51 postcode lookup fires when focus LEAVES the
              postcode field, which is what clicking the button does. The
