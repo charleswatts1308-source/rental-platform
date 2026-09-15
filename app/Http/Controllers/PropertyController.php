@@ -53,11 +53,7 @@ class PropertyController extends Controller
 
         $validated = $this->validatePayload($request);
 
-        // Was this their first? Checked BEFORE the insert, since the answer
-        // decides where we send them next.
-        $isFirstProperty = ! Property::where('registered_by_user_id', $request->user()->id)->exists();
-
-        Property::create([
+        $property = Property::create([
             'address_line1' => $validated['address_line1'],
             'address_line2' => $validated['address_line2'] ?? null,
             'city' => $validated['city'],
@@ -65,18 +61,20 @@ class PropertyController extends Controller
             'registered_by_user_id' => $request->user()->id,
         ]);
 
-        // First property means the user is mid-onboarding — registering it is
-        // a step toward raising a case, not the goal — so carry them straight
-        // on. A later property is property management, so stay on the list.
-        if ($isFirstProperty) {
-            return redirect()
-                ->route('cases.create')
-                ->with('success', 'Property registered. Now you can raise your first repair case.');
-        }
-
+        // Snag #66. The landlord belongs to the PROPERTY, so it is asked for
+        // with the property — not buried in the create-case form, where what
+        // the user types silently becomes this property's permanent landlord
+        // without looking like a property decision.
+        //
+        // No first-property branch. It used to send a first property to
+        // raise-a-case and later ones to the list; ruled 15 Sep that a second
+        // property is rare enough not to warrant its own path, which removes
+        // the branch rather than adding a third case to it. The landlord page
+        // itself decides what comes next: newly set -> on to raise-a-case,
+        // corrected later -> stay put.
         return redirect()
-            ->route('properties.index')
-            ->with('success', 'Property registered.');
+            ->route('properties.contact.edit', $property)
+            ->with('success', 'Property registered. Now add your landlord or agent, so we know who to write to.');
     }
 
     public function edit(Property $property): View

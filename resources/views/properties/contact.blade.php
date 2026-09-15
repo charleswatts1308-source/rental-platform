@@ -30,14 +30,30 @@
 
     {{-- Says plainly what saving does and does not do. A tenant correcting
          a typo needs to know that letters already sent are unaffected —
-         they are the record, and they are not being rewritten. --}}
+         they are the record, and they are not being rewritten.
+
+         Split for #66: a property with no landlord yet is someone being
+         walked through onboarding, and the correction wording ("correcting
+         it", "letters already sent") describes things that have not
+         happened. Telling a new user their sent letters are safe when they
+         have none is the surface-claims-what-is-not-true pattern again. --}}
     <div class="alert alert-light border">
-        <p class="mb-1">This is the address repair notices for this property are served on.</p>
-        <p class="mb-0 small text-muted">
-            Correcting it changes where the <strong>next</strong> letter goes on every
-            open case here. Letters already sent are unchanged — they stay on record
-            exactly as they were sent. Nothing is sent when you save.
-        </p>
+        @if($contact)
+            <p class="mb-1">This is the address repair notices for this property are served on.</p>
+            <p class="mb-0 small text-muted">
+                Correcting it changes where the <strong>next</strong> letter goes on every
+                open case here. Letters already sent are unchanged — they stay on record
+                exactly as they were sent. Nothing is sent when you save.
+            </p>
+        @else
+            <p class="mb-1">Who should repair notices for this property be sent to?</p>
+            <p class="mb-0 small text-muted">
+                This is your landlord, or the letting agent who manages the property —
+                whoever you would normally chase about a repair. We write to them on your
+                behalf; your own contact details are never shared with them.
+                Nothing is sent when you save.
+            </p>
+        @endif
     </div>
 
     <form method="POST" action="{{ route('properties.contact.update', $property) }}" class="row g-3">
