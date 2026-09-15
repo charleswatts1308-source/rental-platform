@@ -7,389 +7,91 @@ superseded doc. It is a **router, not a record**: keep it short.
 
 **Last updated:** 2026-09-15.
 
-**DECISIONS OF 12 SEP are in `docs/llcs-decisions-2026-09-12.txt`.** Charlie's pass over the snag index plus the discussion that followed: what was ruled, what was closed, the agreed fix-cycle order, and the questions still open. Read it with this file. **The snagging list HAS now been reconciled against it** (`7fdebb4`), including new snags #61, #62 and #63, and a Section 2 tag for dev-facing-only entries.
-
-**✅ THE SEPTEMBER FIX CYCLE IS MERGED.** `feature/fix-cycle-sep-2026`
-merged to `main` 15 Sep, `--no-ff`, fork point tagged
-`pre-fix-cycle-sep-2026`. 46 commits, suite **861 green** (803 at fork).
-**No migrations at all** — nothing on it creates or alters a table, so
-the CLAUDE.md MariaDB check is not triggered. Every fix was walked in a
-browser on dev by Charlie.
-
-**➡ READ `docs/cc-report-fix-cycle-sep-2026-implementation.md` FIRST**
-if you are picking this area up. It carries the test deltas (one
-assertion INVERTED, twenty repointed, none weakened), the three defects
-worth knowing about, and what "closed" means for #54.
-
-**Twenty-one snags closed:** #2, #27, #40, #44, #50, #51, #53, #54, #57,
-#58, #61, #64, #65, #66, #67, #68, #69, #70, #71, #72, #73. Plus **#19**
-(attachments on tenant replies), open since the June live-fire.
-
-**Ten of those were raised BY the walk** (#64–#73), and three were
-defects no test would have found: a double-click on Send posted two
-evidential letters and was unguarded on the escalation path (#71);
-choosing a replacement photo wiped the ones the tenant kept (#72); and
-replies shared letter 1's attachment ceiling, against the design doc
-(#73).
-
-**✅ DEPLOYED TO BOTH BOXES, 15 Sep 2026.** gafol and renters.rent are
-both on **`12646e7`**, confirmed off the Plesk panel, and both walked.
-Ledger written for both (`docs/environment-state.md`). No migrations
-shipped, so nothing to migrate anywhere.
-
-**PROD RECONCILED against `migrate:status`** — 43 Ran, none pending,
-against 43 files. That clears the ledger item open since **27 June**.
-**gafol is still unreconciled**; no migration has shipped since its last
-figure, so no drift is expected, but the rule asks for the check and not
-for the inference. Do it at the next touch of that box.
-
-**ATTACHMENT CEILINGS, both boxes: letter 1 = `0`, replies = `3`.** A
-deliberate reduction — prod ran at 1 from 23 Aug. Photos are refused on
-the cold first letter and allowed, up to three, once the landlord has
-engaged (#73). **The consequence, written down so it is not rediscovered
-as a bug:** a tenant whose landlord never replies never attaches a
-photograph at all, and the case escalates on the description alone. The
-create-case form says so, and only in this configuration.
-
-**`BBY6GV` IS ABANDONED.** The 26 Sep real-mail warning is discharged.
-
-**Retaliation sentence (#61): done on prod AND gafol.** Still present on
-the DEV box's database — the seeder change only reaches a fresh install,
-deliberately, so dev keeps the old wording until someone edits it or
-reseeds. Two templates carry it: `landlord_wakeup_generic` and
-`exhaustion_landlord_closer`.
-**Still open from the 12 Sep discussion:** whether landlords ever get a
-written channel that is not a case reply. That decides whether `admin@`
-is a stopgap or the permanent front door, and whether the threaded
-Contact Us is tenant-only forever. See **#62**.
-
-**✅ #25 RELEASE 1 IS DONE — deployed, fixed, and PROVEN BOTH WAYS on
-prod (12 Sep).** The mid-deploy warning that stood here is discharged.
-Prod and gafol are both at `01451b0`. The `failed_address` fix is live,
-the live fire was re-run and the notice now names the address, and **the
-control send finally happened**: case `BBY6GV` delivered, recorded
-`delivery_confirmed` three seconds later bound to the right letter, and
-did NOT stop. Ledger written for both boxes.
-
-**ONE THING LEFT from that deploy:** abandon the prod test cases — the
-`contact_failed` one from the live fire, and `BBY6GV`, which otherwise
-escalates to letter 2 on **26 Sep 2026** and sends real mail.
-
-**Also not re-run this deploy:** `migrate:status` on either box. No
-migration shipped, so no drift is expected, but the reconciliation rule
-asks for it at each deploy.
-
-**The historical record of that deploy follows.**
-
-**What is done (5 Sep):** merged to `main`, deployed to stage AND prod,
-both migrated and schema-checked (#18 clear on both engines), the route
-answers 406 to an unsigned POST on both. **The Mailgun webhook IS
-SUBSCRIBED on prod** (`renters-prod-delivery-events`, domain-level on
-`mg.renters.rent`, four event types). Mailgun's own test webhook returned
-success, proving signature verification against a real signature.
-**Live fire PASSED** — a case to a dead domain bounced, stopped at
-`contact_failed`, and the case page showed the explanation panel
-correctly.
-
-**Also outstanding, smaller:**
-- Cosmetic: the bounce panel on the case page ends "…raise a new case.
-  Correct the landlord's details." — the link repeats the sentence before
-
-  it. Fix in the same pass as the release-2 rewording.
-**✅ SHIPPED EVERYWHERE (4 Sep).** `feature/property-landlord-contacts` is
-merged to `main` (`fb03bc9`, `--no-ff`, tag
-`post-property-landlord-contacts`, suite 703) and **deployed to gafol AND
-prod**, both walked. Closes **#24**, **#49** (both halves) and **#59**;
-**#7** dies with #49(a). Prod was walked on the real Mailgun production
-path — a letter with an attachment sent and arrived. Ledger entries for
-both boxes are in `environment-state.md`. **No work is in flight.**
-
-**The dev-box `main` warning is now VOID.** It merged, so `main` carries
-the five migrations and the dev MariaDB matches it again. Check out
-`main` freely.
-
-**✅ BOTH RELEASES ARE OUT.** The delivery-event capture run was deployed,
-run and torn down the same evening — **verified gone**, not merely
-disabled.
-
-**renters.rent runs `02f1505`** (confirmed off Plesk, 24 Aug). This file
-previously said `65540e1` — that was release 1's commit, and the
-capture-run teardown redeployed `main` over it the same evening without
-recording where it landed. `02f1505` is a docs commit, so prod's code is
-exactly `a70065b`, and it carries **#47** (`7bcab73`).
-**prod and gafol are code-identical** — `02f1505..bd80e12` is docs-only.
-
-**gafol is CURRENT** at `bd80e12` (pulled 24 Aug). Staging-at-or-ahead
-holds. The earlier claim here that gafol was behind at `7507a72` was
-wrong — it had release 1 on 23 Aug and was tested on it; see the
-correction block at the top of `environment-state.md`.
-
-**One open branch:** `feature/property-landlord-contacts` (below), pushed
-28 Aug.
-
-**#25 IS THE NEXT BUILD, and its design is now settled** (3 Sep). D17.2
-and D17.3 were both amended — see the amendment blocks in
-`llcs-silence-model-design.md` and the 2026-09-03 ruling on #25 in the
-snagging list. Build order is D0.8 in `cc-report-delivery-events-d0.md`,
-steps 1–3 of which are DONE (#47 shipped, D17 written, capture run
-executed). Remaining: the `contact_failed` ENUM migration, the nested
-signature middleware, the event controller, then transitions + tenant
-notification + the copy option. **Still undecided, and blocking step 7:**
-which statuses may enter `contact_failed`, and whether such a case can
-later be abandoned or must sit permanently as evidence. `feature/delivery-events` and `feature/delivery-capture` are both
-deleted; everything worth keeping is on main. Tag `pre-delivery-events`
-still marks the fork point.
+> **Pruned 15 Sep 2026.** This file had grown to 542 lines of discharged
+> history — the #24/#49/#59 build, the 23 Aug capture run, the #25
+> releases, four completed open-actions. All of it is recorded properly
+> elsewhere (`environment-state.md`, the `cc-report-*` files,
+> `mailgun-delivery-event-payloads.md`) and none of it was steering the
+> next action, so it is gone from here rather than duplicated. Its own
+> maintenance rule asks for exactly that.
 
 ---
 
-## Resume here — property-owned landlord contacts (#24, #49, #59)
+## Where everything is, right now
 
-### What it is, in one paragraph
+- **`main` = `72b0d8e`.** Local and origin level; nothing exists only on
+  the dev box.
+- **gafol.rent AND renters.rent are both on `12646e7`**, the September
+  fix-cycle merge (tag `post-fix-cycle-sep-2026`). Both walked. Ledger
+  written for both.
+- **Suite: 861 green.**
+- **No work in flight.** No branch is unmerged. `main` is safe to check
+  out and build from.
 
-The landlord contact used to hang off the **case**, in a global table
-keyed by a unique email. It now belongs to the **property**, versioned
-over time, one current version at a time (`superseded_at IS NULL`).
-Routing always resolves the property's CURRENT contact; the case's
-`property_landlord_contact_id` records only what it opened with and is
-**never read for routing** — that distinction is the whole of why #24
-closes. `landlord_contacts` is dropped. `case_messages` was not touched:
-every sent letter keeps its frozen `to_address_raw`, `subject` and
-`body_raw`.
-
-### ➡ THE NEXT ACTION
-
-**Deploy #25 release 1 — `docs/release-delivery-event-receiver.md`.**
-It is built, merged and green; nothing more needs deciding before it
-goes. Details below.
-
-### #25 — release 1 is BUILT and MERGED; deploy it
-
-**In `main` at `4eed6a8`, suite 771.** Steps 4–7a of the D0.8 build
-order: the signature verifier, the receiver route, recording of
-failures / deliveries / complaints with dedupe on Mailgun's own event id,
-the stop at `contact_failed` with a mail-only tenant notice from two
-templates, and the case-page panel explaining why a case stopped.
-
-**➡ NEXT ACTION: `docs/release-delivery-event-receiver.md`.** gafol,
-then prod, then subscribe the webhook, then live-fire against a dead
-domain. **Prod is the ONLY place this can be proven** — the sandbox
-cannot receive webhooks, which is the standing accepted limit, not a
-thing to work around.
-
-**RELEASE 2 — the D17.3 tenant-taken copy.** A "copy this case" action
-carrying property, category, severity, description and photos into the
-ordinary create-case flow, with the preview refusing to confirm while the
-landlord email is still the bounced one. Deliberately separate: it
-reaches into the create flow, the preview and photo handling, where
-release 1 touches none of them. **When it ships, reword two surfaces** —
-the `contact_failed_bounce` template and the bounce panel in
-`cases/show.blade.php`. Both currently say "correct the address and raise
-a new case", which is honest today and will not be then.
-
-**Three defects found while building, all fixed, none catchable by a test
-written in advance:** the transition wrote the Mailgun fact twice
-(now `case_contact_failed` for the stop, distinct from `delivery_failed`
-for the event); the policy forbade the one exit D17.8 permits, so a
-tenant could not close their own stopped case; and the seed migration
-called the whole seeder and would have reverted hand-edited templates on
-any box with history.
-
-**⚠ A PREMISE IN THE REFERENCE DOC WAS WRONG, now corrected.** The D0 and
-`mailgun-delivery-event-payloads.md` both said the inbound verifier
-returns **406** on an event payload, and that Mailgun never retries a 406
-so events would vanish silently. **It returns 500** — it casts the nested
-`signature` ARRAY to string and Laravel promotes the warning to an
-ErrorException. A 500 is retried for ~8 hours, so the failure would have
-been noisy. The second middleware is still needed because the shapes
-differ, but not for the stated reason. The inbound middleware was
-deliberately NOT touched.
-
-**STILL UNRULED:** what a complaint should DO beyond stopping the case.
-D17.5 makes it terminal and never-forking, which is built. Whether it
-should suppress the address for future cases at that property is not
-decided.
-### The gafol deploy plan is now HISTORICAL
-
-`docs/gafol-deploy-plan-property-landlord-contacts.md` was followed and
-is spent. Both decisions it was waiting on are settled: the branch went
-on via Plesk Git (pull the tracked branch first, which refreshes the list
-and makes the new one selectable — no repointing needed), and
-`migrate:fresh` was correctly skipped. Keep the plan as the record of how
-the gate was run; do not lead with it.
-
-### Reference, in order of usefulness
-
-- `docs/environment-state.md` — the 4 Sep gafol entry: what ran, what was
-  verified, what was not
-- `docs/cc-report-property-landlord-contacts-implementation.md` — §7 is
-  what is NOT covered, §10 is the browser walk and what it found
-- `docs/cc-report-property-landlord-contacts-d0.md` — the design, and §9
-  lists seven places the original design note is wrong
-
-### What the browser walk found (all fixed)
-
-Two defects and a gap, none of which any behavioural test could catch,
-all found by using the thing:
-
-- duplicate `class` attribute meant `d-none` never applied, so the
-  read-only landlord panel rendered *with* the editable fields (`d7aba9a`)
-- adding a postal address wrote `landlord_contact_corrected` events with
-  `from` == `to` on five open cases, and claimed future letters would go
-  to a new address that had not changed (`82b7fc2`)
-- the preview never showed the landlord's email — **#59**, built same day
-  (`376946b`)
-
-All three are the same shape as #46/#49/#53: a surface claiming what the
-system does not honour. That is now five instances of one pattern.
-
-### Behaviour changes to expect
-
-- a reply from a **superseded** address is now quarantined
-- a second case at a property **inherits** its landlord and cannot
-  override it
-- saving a correction **sends nothing** and advances no counter
-
-### Deliberately not built
-
-A non-escalating "resend to the corrected address". Auto-sending on
-correction takes `SendCaseNotice`'s non-first branch, which sets
-`stage_at_send = current_stage + 1` — escalating the case as the price of
-fixing a typo, against D3. Needs a `stage_at_send` ruling against
-`llcs-silence-model-design.md` before it can exist.
-
-### One infrastructure change worth knowing
-
-`phpunit.xml` now sets `memory_limit` to 256M. The suite passed at 696
-tests and hit a hard fatal at 701 — it had been running within about a
-percent of PHP's default 128M. Confirmed **not** a leak: the full suite
-passes at 192M. If it ever fails there again, measure before raising it
-a second time.
+**Attachment ceilings, both boxes: letter 1 = `0`, replies = `3`.** Set
+15 Sep, deliberately (#73). Photos are refused on the cold first letter
+and allowed, up to three, once the landlord has engaged. **The
+consequence, so it is not rediscovered as a bug:** a tenant whose
+landlord never replies never attaches a photograph at all, and the case
+escalates on the description alone. The create-case form says so, and
+only in this configuration.
 
 ---
 
-## The one thing that changed everything on 23–24 Aug
+## The September fix cycle — what it did
 
-**#25 is unblocked and specified.** The capture run answered every
-question it existed to answer, from observed bytes rather than
-documentation.
+**➡ `docs/cc-report-fix-cycle-sep-2026-implementation.md` is the record.**
+Read it before touching cases, attachments, replies or verification. It
+carries the test deltas (one assertion **inverted**, twenty repointed,
+none weakened), the three defects worth knowing about, and what "closed"
+means for #54.
 
-**➡ `docs/mailgun-delivery-event-payloads.md` is the reference the
-receiver gets built against.** Read it before writing a line of #25.
+Twenty-one snags closed, plus **#19** (attachments on tenant replies,
+open since the June live-fire). **Ten of the twenty-one were raised BY
+walking the app**, which is the argument for walking it.
 
-Headlines:
-- The event signature is **nested**; our existing middleware reads the
-  flat inbound shape, returns **406**, and Mailgun treats 406 as a
-  deliberate refusal and **never retries**. A second middleware is
-  confirmed necessary.
-- Payloads are **JSON**, not form-encoded like the inbound route.
-- **There is no `permanent_fail` event.** It is `failed` +
-  `severity: permanent|temporary`. A parser keyed off the name the
-  subscription UI uses would silently match nothing.
-- A real bounce and a suppressed-address drop are BOTH
-  `failed`/`permanent`. The discriminator is **`reason`** —
-  `generic` vs `suppress-bounce`.
-- **Our correlation key works.** Every outbound letter now carries
-  `case_message_id` as a Mailgun custom variable (`a70065b`), and all
-  three real sends came back with it. The receiver can bind an event to
-  its `case_messages` row directly.
+Three were defects no test would have found:
 
-**Agreed ruling on what a detected bounce should DO:** a bounce is not a
-variant of silence, it is the opposite. Silence escalates; a bounce must
-**stop the ladder** and hand the problem back to the tenant. The
-`contact_failed` status is the right shape.
-
-**RULED 24 Aug — the bounce reaction, and #24's relationship to it.** On
-a permanent failure: **record** the bounce as a `case_events` row (it is
-part of the evidence record), **stop** the case with
-`transitionTo(contact_failed)`, and **notify the tenant mail-only** —
-the letter bounced, the case is stopped, correct the address and raise a
-new case. Nothing further.
-
-That recovery is abandon-and-re-raise, which **works today**, so #25
-promises nothing the system cannot deliver and **#24 is NOT a
-prerequisite**. #24 is scheduled on engineering grounds alone and
-**releases separately** — it is a new table, a backfill, an FK swap and a
-`DROP TABLE`, and should not share a merge with a webhook receiver.
-Full rulings are in the snagging list under #24 and #25.
-
-**AMENDED 3 Sep.** Recovery is no longer abandon-and-re-raise. The tenant
-is offered a COPY of the bounced case and flows into the ordinary
-create-case workflow, description and photos intact (D17.3, amended).
-That makes **#24 a prerequisite for the copy option** — the copy inherits
-the property's current landlord contact, and the preview must send the
-tenant to #24's correction surface before it will confirm. Detection,
-recording, the stop and the tenant notification do NOT depend on #24 and
-can be built first.
+- **#71** — a double-click on Send posted two evidential letters, and was
+  unguarded on the escalation path, where the counter never resets (D3).
+- **#72** — choosing a replacement photo wiped the ones the tenant kept.
+  A deliberate rule with a test pinning it, correct at ceiling 1 and
+  wrong the moment the ceiling rose. The first defect #54's coverage gap
+  actually hid.
+- **#73** — replies shared letter 1's attachment ceiling, against the
+  design doc. Surfaced through a sentence Charlie asked for, not through
+  code.
 
 ---
 
-## Open actions — do these first
+## Open actions
 
-1. ~~**Abandon the three test cases on prod.**~~ **DONE 4 Sep** — prod's
-   cases and properties were wiped wholesale before the deploy (no live
-   customer data existed), which disposed of all three.
-2. ~~**Run the suppression SQL.**~~ **DONE 4 Sep — and the damage is
-   NIL.** Prod's suppression list holds two addresses:
-   `admin@renters.rent` (unrouteable, 4 Jul — that is #48) and
-   `charles.watts1308-t1@gmail.com` (5.1.1 no such account, 12 Jul).
-   Cross-referenced against all 9 prod cases: **only `3YHRKZ` ever used
-   a suppressed address**, and that is the capture-run case raised
-   deliberately on 23 Aug *because* it was suppressed. One letter,
-   dropped before any delivery attempt, as intended. **No genuine case
-   ratcheted against never-transmitted letters.** The mechanism is real
-   and proven; on prod it cost nothing. Full case table is in the 4 Sep
-   session record.
-3. ~~**Finish verifying the prod attachment release.**~~ **DONE —
-   confirmed by Charlie 4 Sep.** All six checked and OK: `/landlords`
-   with ICO ref `Z229825X`; nav order; admin ceiling reads 1; an
-   attachment-bearing letter sends and arrives; the 4–8MB band gives OUR
-   file-named error rather than PHP's; and **an attachment-bearing letter
-   spam-scored** — the one that had never been done on any path.
-4. ~~**Reconcile the ledger against `migrate:status`.**~~ **BOTH DONE
-   4 Sep.** gafol: 41 Ran, none pending. prod: 35 at batch 1 plus the
-   attachments seed at batch 2, then the five new ones. **No drift on
-   either box.** Both recorded in `environment-state.md`.
-5. **#56** — advise the ICO of renters.rent as a trading name on
+1. **gafol has not been reconciled against `migrate:status`.** No
+   migration has shipped since its last figure (41 Ran, 4 Sep), so no
+   drift is expected — but the rule asks for the check, not the
+   inference. Do it at the next touch of that box.
+2. **The dev box still carries the retaliation sentence** (#61) in its
+   templates. The seeder change only reaches a fresh install, and
+   deliberately so. Two templates: `landlord_wakeup_generic` and
+   `exhaustion_landlord_closer`.
+3. **#48 — `admin@renters.rent` cannot receive mail**, so its password
+   reset is broken. Open since July, approach agreed 12 Sep, unbuilt.
+   The one open item with real consequences.
+4. **#56** — advise the ICO of renters.rent as a trading name on
    registration `Z229825X`. Admin task, not code.
+5. **Older, unconfirmed since before 9 Aug:** close out case 3; confirm
+   the registration allowlist.
 
-**Prod pacing: CONFIRMED 4 Sep** — `interval_days` **14** /
-`max_notices` **4**, already restored; the "dropped to 1/2 for the July
-ladder test" worry is closed. Note in-flight cases keep their
+**Two decisions are blocking builds:** **#60** (a tenant gets no email at
+all when their case opens and letter 1 goes out — the design doc is
+SILENT, so it needs a ruling, and it must be mail-only or it inflates the
+ladder) and **#62** (landlords have no written channel that is not a case
+reply — this decides whether `admin@` is a stopgap or the front door).
+
+**Prod pacing, confirmed 4 Sep:** `interval_days` **14**,
+`max_notices` **4**. In-flight cases keep their
 `silence_settings_snapshot` from clock start regardless
 (`escalation.apply_inflight` ships off).
-
-**Still outstanding from before 9 Aug, unconfirmed:** close out case 3; confirm the registration
-allowlist; settle #27's 403 by reading the prod log.
-
----
-
-## What shipped 23 Aug
-
-**Release 1 — attachment policy + more.** Wider than its name: also the
-new public `/landlords` page, the nav change, and the cases content line.
-**Ships at ceiling 1 BY DECISION**, not by default — ceiling 1 is the
-tested capability (#54), and #53 is unreachable at 1 and armed above it.
-**Do not raise the ceiling until #53 is fixed.**
-
-**Release 2 — capture run.** On, three real sends, off, same evening.
-Findings above.
-
-**#47 merged to main separately** (`7bcab73`) so the disposable branch
-could be deleted without destroying it. Exhaustive status classification;
-prerequisite for #25, which adds a `contact_failed` status. **It is
-already LIVE on prod** — it rode in on the capture-run teardown redeploy.
-Do not plan #25 as though #47 still needs shipping.
-
-**Mailgun webhooks are ALWAYS tested on live** — standing position, ruled
-24 Aug. The sandbox cannot do inbound, so gafol can never receive one;
-that limit is known and accepted, not worked around. Release 2 was
-deployed to gafol first, correctly, and simply could not be exercised
-there. Don't build a synthetic test path to dodge this, and don't treat
-"unstageable" as a blocker. The 23 Aug capture run is the pattern: deploy
-behind a token, exercise with real sends, tear down and verify gone.
-
-**#55 fixed and shipped** — `/landlords` now publishes the real ICO
-reference `Z229825X`. The old value was the payment/account number.
 
 ---
 
@@ -405,124 +107,65 @@ reading `open — cosmetic` (or, for #21, carrying a design question). The
 two documents disagree and neither is obviously right. NOT silently
 picked either way on 15 Sep; whoever next touches D16 territory should
 read the six and settle it. Until then treat them as open, because the
-list is the record and the router is the index.
+list is the record and this file is only the index.
 
-**CLOSED BY THE SEPTEMBER FIX CYCLE — 21**, all now live on both boxes:
-#2, #27, #40, #44, #50, #51, #53, #54, #57, #58, #61, #64, #65, #66,
-#67, #68, #69, #70, #71, #72, #73 — plus **#19**, attachments on tenant
-replies, open since the June live-fire.
+**What the 25 actually are:**
+- **Dev-facing only, nobody sees them:** #9, #10, #12, #13, #17, #18,
+  #26, #31, #34, #35, #43. Eleven of the twenty-five.
+- **Admin tasks, not code:** #48, #56.
+- **Needs a ruling first:** #60, #62.
+- **Real user-facing work:** #1 (nav restructure), **#25 release 2** (the
+  tenant-taken copy of a bounced case — the largest remaining piece),
+  #28, #29, #30, #37, #42, #63.
 
-**Closed earlier:** #3, #5, #6, #7, #8, #11, #22, #23, #24, #36, #38,
-#39, #41, #45, #46, #47, #49, #52, #55, #59.
-
-**Of the 25 genuinely open, what they actually are:**
-- **Dev-facing only (Section 2), nobody sees them:** #12, #13, #17, #18,
-  #26, #31, #34 — and #9, #10, #35, #43 are the same shape.
-- **Admin tasks, not code:** #56 (ICO trading name), #48 (`admin@` cannot
-  receive mail — the one with real consequences, since its password reset
-  is broken).
-- **Needs a RULING before anything can be built:** #60 (no email to the
-  tenant when a case opens), #62 (landlords have no written channel that
-  is not a case reply), #21 if it survives the dispute above.
-- **Real user-facing work:** #1 (nav restructure), #25 release 2 (the
-  tenant-taken copy of a bounced case), #28, #29, #30, #37, #42, #63.
-
-**Added 22–23 Aug, walking the releases:**
-- **#49** the preview shows one landlord name and the letter sends
-  another. **Needs a REPEAT landlord email** — the first case against an
-  address is correct, later ones aren't — and it affects **all four
-  letters**, not just the first. Live on prod.
-- **#50** severity is a REQUIRED field that reaches nobody and changes
-  nothing. Design question, not a whitelist edit.
-- **#51** postcode is format-checked but never verified to exist, and
-  nothing cross-checks the city. A notice went out naming the wrong town.
-- **#52** the admin case view shows a shorter address than the letter.
-- **#53** Remove on one of several staged photos deletes them all.
-  **A defect in this release**, not a pre-existing one. Contained by
-  ceiling 1.
-- **#54** attachment coverage above ceiling 1 is incomplete. Scope call.
-- **#57** no `resources/views/errors/` at all — **the 413 design is
-  finished and parked inside this entry**, ready to build with the rest
-  of an error pass.
-- **#58** the photo check is per-file only; nothing sums the selection
-  against `post_max_size`. Safe today by arithmetic, not by design.
-
-**Added 28 Aug, walking the landlord-contact branch:**
-**Added 4 Sep, walking PROD after the deploy:**
-- **#60** the tenant gets **no email at all** when they raise a case and
-  letter 1 goes out. Not a defect — no such mailable exists — but Charlie
-  expected one coming back to the app "with new eyes after a week away",
-  which is the signal worth keeping. **The design doc is SILENT on it**,
-  so it needs a ruling before it can be built, and it must be mail-only
-  (a `case_messages` row would inflate the ladder). Same concern as #59
-  one step later: #59 is what the tenant sees BEFORE the send, this is
-  what they hold AFTER.
-**Added 4 Sep, walking the branch on gafol:**
-- the "Correct it on the property" link on the create-case form pointed
-  at `properties.edit`, which carries no landlord details at all — the
-  sentence told the tenant to do something the destination could not do.
-  **Fixed** (`c5d94fa`), then fixed again (`23b6fb3`) because the
-  dropdown's `data-property-url` carried the same wrong route and the JS
-  overwrote the corrected href. Seventh instance of the #46/#49/#53
-  pattern. Not deployed to gafol.
-- **#59** the create-case preview never showed the landlord's EMAIL
-  ADDRESS — only the name, and only incidentally inside the letter's
-  salutation. The preview is the last free moment to catch the typo that
-  #24 exists because of. **Built same day** (376946b).
-
-**A pattern worth naming.** #46, #49 and #53 are the same failure: a
-surface asserting something the behaviour does not honour. Three in one
-feature area. Standing rule now: **no surface may claim what the system
-cannot deliver.**
-
-**A second pattern, from git.** Three separate pieces of permanent work
-(#47, the D0 report, snag #48) accumulated on a branch created for a
-throwaway purpose, whose written teardown would have destroyed all three.
-Check before deleting a branch; check what a "temporary" branch has
-quietly collected.
+**Closed by the September cycle:** #2, #19, #27, #40, #44, #50, #51, #53,
+#54, #57, #58, #61, #64, #65, #66, #67, #68, #69, #70, #71, #72, #73.
 
 ---
 
 ## Read in this order
 
-1. **/CLAUDE.md** — working agreements. Carries the Migrations rule
-   (manual MariaDB check before merge) and the Deployment-ledger rule.
+1. **/CLAUDE.md** — working agreements. The Migrations rule (manual
+   MariaDB check before merge) and the Deployment-ledger rule.
 2. **docs/environment-state.md** — the ledger; current truth of what is
    deployed where.
-3. **docs/mailgun-delivery-event-payloads.md** — the #25 receiver's
-   specification, from observed bytes. NEW 23 Aug.
-4. **docs/llcs-silence-model-design.md** — AUTHORITATIVE design
-   (D1–D17). Wins over any brief.
-5. **docs/llcs-snagging-list.txt** — the running to-do list.
-6. **docs/huk-laravel-site-install-recipe.md** — the sibling-site build.
-   **STEP 1b is new**: where PHP limits actually live (CloudLinux PHP
-   Selector → Options, subscription-wide), that Plesk's per-domain PHP
-   Settings page is inert for every directive, and that artisan is never
-   a valid way to read them — CLI and web load separate ini files.
+3. **docs/llcs-silence-model-design.md** — AUTHORITATIVE design
+   (D1–D17). Wins over any brief. Worth knowing it can be diverged from
+   without anyone noticing: #73 was exactly that.
+4. **docs/llcs-snagging-list.txt** — the running to-do list.
+5. **docs/cc-report-fix-cycle-sep-2026-implementation.md** — the most
+   recent phase, and the shape of the current code.
+6. **docs/mailgun-delivery-event-payloads.md** — the #25 receiver's
+   specification, from observed bytes.
+7. **docs/huk-laravel-site-install-recipe.md** — the sibling-site build.
+   **STEP 1b**: where PHP limits actually live (CloudLinux PHP Selector →
+   Options, subscription-wide), that Plesk's per-domain PHP Settings page
+   is inert for every directive, and that artisan is never a valid way to
+   read them — CLI and web load separate ini files.
 
 ---
 
 ## Doc status map (design doc + ledger win when in doubt)
 
 **LIVE — trust these:** `CLAUDE.md`; `environment-state.md`;
-`llcs-silence-model-design.md` (authoritative);
-`mailgun-delivery-event-payloads.md`; `llcs-snagging-list.txt`;
-`huk-laravel-site-install-recipe.md`; `release-attachments-and-capture.txt`
-(both releases now DONE — kept as the record of how they were run);
-`DNS records old values.txt`;
-`gafol-deploy-plan-property-landlord-contacts.md` (**the next action**);
-`cc-report-property-landlord-contacts-d0.md` +
-`...-implementation.md` (the #24/#49/#59 build);
-`delivery-failure-design-question.md`; `cc-report-delivery-events-d0.md`;
-`attachment-policy-design.md`; `pre-flip-checklist.md`; `User Guides/`.
+`llcs-silence-model-design.md` (authoritative); `llcs-snagging-list.txt`;
+`cc-report-fix-cycle-sep-2026-implementation.md`;
+`mailgun-delivery-event-payloads.md`; `attachment-policy-design.md`;
+`huk-laravel-site-install-recipe.md`; `llcs-decisions-2026-09-12.txt`;
+`DNS records old values.txt`; `pre-flip-checklist.md`; `User Guides/`.
 
-**HISTORICAL — accurate for their phase, don't lead with them:**
-`d16-cc-brief.md`, the D14/D15 briefs/reports/runbooks, the
-phase-1/2a/2b/3 briefs + runbooks + write-ups, `dotrent-deploy-plan.md`,
-`landlord-contact-model-gap.md` (**superseded for build direction by the
-D0 report — the D0 lists seven places the note is wrong, starting with
-routing. Keep it as the record of how Model A was reached; do not build
-from it**).
+**HISTORICAL — accurate for their phase, don't lead with them:** the
+`cc-report-property-landlord-contacts-*` pair (#24/#49/#59);
+`cc-report-delivery-events-d0.md` and
+`release-delivery-event-receiver.md` (#25 release 1);
+`gafol-deploy-plan-property-landlord-contacts.md`;
+`release-attachments-and-capture.txt`;
+`delivery-failure-design-question.md`; `d16-cc-brief.md`; the D14/D15
+briefs/reports/runbooks; the phase-1/2a/2b/3 briefs + runbooks +
+write-ups; `dotrent-deploy-plan.md`; `landlord-contact-model-gap.md`
+(**superseded for build direction — the D0 report lists seven places it
+is wrong, starting with routing. Keep it as the record of how Model A was
+reached; do not build from it**).
 
 **ARCHIVE — ignore for current work:** `LLCS Version 1/`,
 `LLCS old docs 3 May 1150/`, `landlord-contact-service-*.md`.
@@ -534,9 +177,28 @@ known-bad `inbox.renters.rent` value — snag #31)**, `huk-*`, `chats/*`,
 
 ---
 
+## How Charlie works, if you are new to this
+
+He directs, I implement. He tests in a browser and reports what he sees;
+the productive mode is to diagnose and fix in the same turn so he can
+retest immediately, rather than describing and waiting. Ten of the
+twenty-one snags this cycle closed were found that way.
+
+Two things that do not lapse in that mode: every fix gets a snagging-list
+entry even when it is fixed the same day, and the phase report gates the
+merge.
+
+Answer him with symptom, cost, and whether it is worth fixing now — not
+code paths, not framework internals, not file:line. He does not know the
+codebase and is not a PHP developer. The mechanism belongs in the snag
+entry, which is mine to read.
+
+---
+
 ## Maintenance rule
 
-When a phase closes: move its brief/report/runbook to HISTORICAL,
-repoint the parked-state block, prune resolved snags. Keep this file to
-one screen. On any deploy, the LAST step is writing
+When a phase closes: move its brief/report/runbook to HISTORICAL, repoint
+the state block, prune resolved snags. **Keep this file to one screen** —
+it was allowed to reach 542 lines before 15 Sep, which is how a router
+becomes a record nobody trusts. On any deploy, the LAST step is writing
 `environment-state.md`.
