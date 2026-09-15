@@ -1038,6 +1038,25 @@ Fix:         Move verify-email/{id}/{hash} out of the `auth` group so a guest
              end identically — verified, logged in, on the dashboard,
              same thank-you message. No login demand, no 403, no silent
              landing.
+             RULED 15 Sep 2026 by Charlie: the emailed link SIGNS THE
+             USER IN. "Login is a hassle and there are no crown jewels
+             here to steal." The July security note — acceptable for a
+             private beta, reconsider before opening registration wide —
+             is hereby OVERRIDDEN as the standing position, not merely
+             unaddressed.
+             The trade-off was put to him and accepted: anyone holding
+             the email can enter the account by clicking it (forwarded
+             message, shared mailbox), bounded by the link's 60-minute
+             expiry (Laravel default; nothing is set in config/auth.php).
+             My one recorded reservation, raised and not disputed: the
+             account is not empty. It holds the tenant's home address
+             and their dispute with their landlord — the very thing this
+             product promises to keep private FROM that landlord. A
+             landlord who obtains a forwarded verification email inside
+             the hour gets exactly that. Judged acceptable at beta scale.
+             REVISIT TRIGGER: if this is still the design when
+             registration opens to the public, raise it again rather
+             than letting it ride on this ruling.
 --------------------------------------------------------------------
 #28
 Page:        Login + Register forms — the email field is blank on every fresh
