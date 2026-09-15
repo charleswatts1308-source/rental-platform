@@ -410,9 +410,10 @@ whether landlords ever get a written channel that is not a case reply;
 **#63** the tenant's name renders exactly as stored, so a formal notice
 signs off "charles watts1308".
 
-**Added 15 Sep:** **#64** no show/hide toggle on any password field.
-Six Breeze views; one shared component, not six edits. Scheduled to
-ride with the #37/#27/#28/#29 registration/verification/login pass.
+**Added 15 Sep:** **#64** no show/hide toggle on any password field;
+**#65** the same-browser verification path verifies the user and then
+shows no confirmation, because a stale `url.intended` swallows the
+`?verified=1` flag. Both belong with the #37/#27/#28/#29 pass.
 
 **Added 22–23 Aug, walking the releases:**
 - **#49** the preview shows one landlord name and the letter sends

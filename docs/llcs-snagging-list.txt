@@ -2867,3 +2867,77 @@ Fix:         A Blade component wrapping the input with a button that
              readers and defaulting to hidden. Bootstrap input-group,
              no new dependency. Never persist the revealed state.
 --------------------------------------------------------------------
+#65
+Page:        Email verification — the same-browser path verifies the
+             user and then shows them NOTHING. Found 2026-09-15 by
+             Charlie, walking registration on the dev box.
+Severity:    minor — verification itself completes correctly. What is
+             lost is the confirmation, on the one path most real users
+             will take.
+Saw:         Register on dev, then click the Mailpit verification link
+             in the SAME browser. Lands on the dashboard with no success
+             message and no thank-you. Doing the same registration but
+             pasting the link into a DIFFERENT browser (Chrome ->
+             Firefox) asks for a login, and THEN shows the "Welcome —
+             and thanks for registering!" banner correctly.
+             So the awkward cross-browser route confirms, and the direct
+             route does not.
+Expected:    A user who verifies is told they have verified, on every
+             route that gets them there.
+Status:      open — snagged 15 Sep 2026.
+Notes:       CAUSE IS ESTABLISHED, not suspected.
+             Registration logs the user in and redirects to /dashboard
+             (RegisteredUserController.php, end of store()). They are
+             not verified yet, so EnsureEmailIsVerified bounces them to
+             the verify-email notice using Redirect::guest(), which
+             STORES url.intended = /dashboard in the session.
+             Clicking the link in the same browser reuses that session,
+             so VerifyEmailController takes its Auth::check() branch:
+                 return redirect()->intended(route('dashboard',
+                     absolute: false).'?verified=1');
+             intended() PREFERS the stored value and discards its own
+             argument. Stored value is plain /dashboard with no query
+             string, so ?verified=1 never arrives and
+             dashboard.blade.php's @if(request()->boolean('verified'))
+             is false. No banner.
+             The cross-browser route works only by accident: the guest
+             is bounced to /login, which stores the verify URL as
+             intended; logging in CONSUMES it; by the time the
+             controller's intended() runs the slot is empty, so the
+             argument is used and the query string survives.
+             SEPARATE FROM #27. #27 is the login bounce itself and
+             proposes moving the route out of the `auth` group. That
+             fix does NOT fix this — a same-browser click still carries
+             the stale url.intended and still loses the banner.
+             Also note: the "Email verified successfully! Welcome to
+             Renters." and "Email already verified!" flashes further
+             down VerifyEmailController are UNREACHABLE, for the reason
+             #27 records. The banner seen in the cross-browser walk is
+             the ?verified=1 one in dashboard.blade.php, not either of
+             those.
+             PROD BEHAVES DIFFERENTLY AGAIN, and not predictably:
+             Outlook desktop opens links in the OS DEFAULT browser. If
+             that is the browser used to register, the user gets this
+             silent path; if not, they get #27's bounce or the 2 Aug
+             403. Which of the three a real user meets depends on their
+             machine, not on our code.
+             CHARLIE'S OWN MACHINE, confirmed 15 Sep: Outlook opens
+             links in EDGE, and web access to the app is ALWAYS Chrome.
+             So Charlie will never meet this snag on prod — he registers
+             in Chrome and the link opens in Edge, which is #27 every
+             time. That is consistent with the 2 Aug prod 403 (registered
+             in Firefox, link opened in Edge). It also means this snag
+             cannot be walked on prod by Charlie at all: reproducing it
+             needs the link opened in the SAME browser, i.e. pasted into
+             Chrome by hand, exactly as done on dev.
+Fix:         Do not rely on intended() to carry the flag. Either forget
+             the intended URL before redirecting, or pass the
+             confirmation as a flash (->with('status', ...)), which
+             survives regardless of where the redirect lands — the
+             dashboard already renders session('status') immediately
+             below the ?verified=1 block. Flash is the better shape: it
+             also covers the case where intended points somewhere other
+             than the dashboard. Test BOTH routes, same-browser and
+             guest, and assert the message is present.
+             Belongs with the #37/#27/#28/#29 registration pass.
+--------------------------------------------------------------------
