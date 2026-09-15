@@ -2450,6 +2450,19 @@ Status:      open — recorded 22 Aug. Deliberate scope call, not a
                  other two should survive and be named).
              WIDENED the same day: #19 gave replies attachments, so every
              row above now has two places to be walked, not one.
+             CLOSED 15 Sep 2026. Charlie walked the Edit round-trip,
+             sequential selection, remove-then-add and the
+             oversize-with-survivors case on both forms, at ceiling 3,
+             and was satisfied: "the actual perms are many - but I'm
+             happy it passes the remove and add that i have done".
+             RECORDED HONESTLY: the permutation space is not exhausted
+             and never will be — that was always this entry's point. It
+             is closed on the JUDGEMENT that the centre is proven and
+             the edges are no longer where the risk lives, not on a
+             claim that every combination has been seen.
+             The cycle earned it: walking this matrix is what found #72
+             (new files wiping the staged set), which was the defect
+             this gap had been hiding since the ceiling rose above 1.
 Notes:       The important observation is that the matrix is almost
              ENTIRELY a ceiling >= 2 matrix. At ceiling 1 it collapses:
              one photo means no partial removal (#53 unreachable), no
@@ -3469,8 +3482,10 @@ Fix:         Done. survivingStagedPhotos() decides what lives (the #53
              the validation rule. Tests in
              tests/Feature/Phase6/CaseCreateTest.php cover add, remove-
              then-replace, and the whole-set ceiling.
-             STILL TO WALK: the browser half. The tests prove the
-             server; the picker script is only exercised by a human.
+             WALKED AND PASSED 15 Sep 2026 by Charlie, on both forms:
+             add, remove, add again. The browser half is the part tests
+             cannot reach, so this is the assurance that matters. Not
+             yet deployed.
 --------------------------------------------------------------------
 #73
              [SECTION 2 — DEV-FACING ONLY until the setting is used]
@@ -3519,6 +3534,9 @@ Fix:         Done. New setting attachments.reply_max, offered in the
              and reply validation read it. Tests in
              tests/Feature/ReplyAttachmentsTest.php cover the two
              ceilings independently and both states of the promise.
+             WALKED AND PASSED 15 Sep 2026 by Charlie: "that seems a good
+             solution", tested alongside the #72 add/remove/add walk.
+             Not yet deployed.
              TO DO ON DEPLOY: the new key needs seeding on gafol and
              prod, or replyCeiling() quietly keeps following letter 1 —
              correct, but not what an admin editing the field would
