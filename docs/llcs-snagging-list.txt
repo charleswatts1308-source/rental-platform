@@ -2564,14 +2564,15 @@ Saw:         resources/views/errors/ does not exist. With
              writing up a repair honestly takes time.
 Expected:    An error page that says what happened in plain words,
              says whether anything was lost, and offers a route back.
-Status:      PARTLY WALKED 15 Sep 2026. Charlie confirmed the 404 page
-             on dev. The 413, 419 and 500 pages are BUILT BUT UNPROVEN —
-             none has been seen by a human. Recorded as unproven rather
-             than assumed good: 419 needs an expired session, 413 needs
-             JavaScript disabled now that the form refuses an over-budget
-             selection client-side (#58/#68), and 500 has no natural
-             trigger at all. A dev-only route that renders each on demand
-             was offered 15 Sep and not yet taken up.
+Status:      WALKED AND PASSED IN FULL 15 Sep 2026. All four pages seen
+             by Charlie on dev — 404 in normal use, and 413, 419 and 500
+             via the dev-only route built the same day. Not yet deployed.
+             The earlier note that three were built but unproven is
+             DISCHARGED, and the route is the reason: 419 needs an
+             expired session, 413 needs JavaScript disabled now the form
+             refuses an over-budget selection first, and 500 has no
+             natural trigger, so without /dev/errors they would have
+             shipped unseen.
              AGREED 12 Sep 2026 — graceful error pages ARE needed. Now
              a BUILD item, scheduled LAST in the fix cycle because it
              touches nothing else. The 413 design parked below is the
