@@ -1,10 +1,20 @@
 @php
     use App\Enums\CaseStatus;
     use App\Models\Setting;
+    use App\Support\PhotoLimits;
 
     $holdMaxDays = (int) Setting::get('hold.max_days', 60);
     $holdMaxDate = now()->addDays($holdMaxDays)->toDateString();
     $revivalDays = (int) Setting::get('dormancy.revival_days', 90);
+
+    // #19 — read from PhotoLimits, the same source the create form and the
+    // 413 page use. Deriving them here from Setting would put a second copy
+    // of the rules in a view, which is how two surfaces come to advertise
+    // different limits for the same upload.
+    $replyPhotoCeiling = PhotoLimits::ceiling();
+    $replyPhotoMaxLabel = PhotoLimits::perFileLabel();
+    $replyPhotoTotalBytes = PhotoLimits::totalBytes();
+    $replyPhotoTotalLabel = PhotoLimits::totalLabel();
 @endphp
 <div class="card">
     <div class="card-body">
@@ -50,11 +60,52 @@
         @endif
 
         @can('reply', $case)
-            <form method="POST" action="{{ route('cases.reply', $case->url_slug) }}" class="mb-3">
+            {{-- enctype is not optional: without it the browser posts the
+                 filenames and not the files, and the reply would send with
+                 the tenant believing photos went with it. --}}
+            <form method="POST" action="{{ route('cases.reply', $case->url_slug) }}"
+                  enctype="multipart/form-data" class="mb-3">
                 @csrf
                 <label for="reply_body" class="form-label small">Reply to your landlord</label>
                 <textarea id="reply_body" name="body" rows="4" required maxlength="10000"
                           class="form-control form-control-sm mb-2">{{ old('body') }}</textarea>
+
+                {{-- #19. Raised in the June live-fire by a tenant wanting to
+                     show a worsening problem rather than describe it, and
+                     asked for again 15 Sep 2026.
+
+                     At ceiling 0 the input is absent and SAYS SO, the same
+                     as the create form: an input that simply vanishes leaves
+                     a tenant with nothing to read and looks like a fault. --}}
+                @if($replyPhotoCeiling > 0)
+                    <label for="reply_photos" class="form-label small">Photos (optional)</label>
+                    <input id="reply_photos" name="photos[]" type="file" multiple
+                           accept=".jpg,.jpeg,.png,.pdf"
+                           class="form-control form-control-sm @error('photos') is-invalid @enderror @error('photos.*') is-invalid @enderror">
+                    <div class="form-text small mb-2">
+                        @include('partials.photo-limits', [
+                            'ceiling' => $replyPhotoCeiling,
+                            'perFileLabel' => $replyPhotoMaxLabel,
+                            'totalBytes' => $replyPhotoTotalBytes,
+                            'totalLabel' => $replyPhotoTotalLabel,
+                        ])
+                    </div>
+                @else
+                    <p class="form-text small mb-2">
+                        Photos can&rsquo;t be attached at the moment — please describe the
+                        problem in the message instead.
+                    </p>
+                @endif
+
+                @foreach($errors->get('photos') as $message)
+                    <div class="text-danger small mb-1">{{ $message }}</div>
+                @endforeach
+                @foreach($errors->get('photos.*') as $messages)
+                    @foreach((array) $messages as $message)
+                        <div class="text-danger small mb-1">{{ $message }}</div>
+                    @endforeach
+                @endforeach
+
                 <button type="submit" class="btn btn-primary w-100">Send reply</button>
             </form>
         @endcan

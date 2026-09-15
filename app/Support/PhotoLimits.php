@@ -2,6 +2,8 @@
 
 namespace App\Support;
 
+use App\Models\Setting;
+
 /**
  * The photo limits, in one place.
  *
@@ -18,6 +20,34 @@ namespace App\Support;
  */
 class PhotoLimits
 {
+    /**
+     * Default when the setting is absent.
+     */
+    public const COUNT_DEFAULT = 1;
+
+    /**
+     * The live attachment ceiling for letter 1.
+     *
+     * Read LIVE, never snapshotted — deliberately the opposite of the
+     * escalation intervals (D4), because the whole purpose of this key is
+     * reacting to a deliverability problem now, across cases already
+     * running (docs/attachment-policy-design.md R3).
+     *
+     * Clamped to the range the admin surface offers, so a value edited
+     * directly in the database cannot widen the ceiling past the design.
+     *
+     * Moved here from CaseController for #19: the reply form needs the
+     * same number the create form uses, and a second copy of
+     * "Setting::get, clamp to 0..3" in a view is how the two would come to
+     * disagree about how many photos a tenant may attach.
+     */
+    public static function ceiling(): int
+    {
+        $value = Setting::get('attachments.first_notice_max', self::COUNT_DEFAULT);
+
+        return max(0, min(3, (int) $value));
+    }
+
     /**
      * Our own per-file cap, before PHP's is taken into account.
      */

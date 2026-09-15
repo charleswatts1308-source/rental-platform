@@ -480,9 +480,38 @@ Notes:       Surfaced by real usage in the live-fire, not by a test gap.
              → CaseNotice::attachments). A tenant-reply version reuses the
              same SendCaseNotice attachmentInputs parameter, which the
              reply path currently calls without attachments.
-Fix:         Add a file input to the reply form + photo validation/staging
-             in CaseController::reply, thread attachmentInputs into the
-             tenant-reply SendCaseNotice call. Reuses existing helpers.
+Status note: BUILT 15 Sep 2026, on feature/fix-cycle-sep-2026, at
+             Charlie's ask ("I am still hoping that i will be able to use
+             the ad hoc reply to landlord and attach more photos" — "I'd
+             like to get it done now"). Not yet deployed, not yet walked.
+Fix:         DONE, and it did reuse the existing helpers as predicted.
+             A file input on the reply form, the SAME validation rules and
+             the SAME per-file error wording as the create form, and the
+             files threaded into the attachmentInputs parameter the reply
+             path was already calling empty.
+             THREE THINGS WORTH KNOWING:
+             (1) Reply photos are stored straight into cases/{id}/ rather
+                 than through the preview staging folder. A reply has no
+                 preview to return from, and SilenceSweep deletes preview
+                 folders over 24h old (#45) — staging would have invented a
+                 window in which a reply could lose its evidence.
+             (2) The ceiling moved from a private method on CaseController
+                 into PhotoLimits::ceiling(). The reply form needs the same
+                 number the create form uses, and a second copy of
+                 "Setting::get, clamp 0..3" in a view is how two surfaces
+                 come to advertise different limits. Same reasoning as #57
+                 moving the sizes there.
+             (3) The limits sentence itself is now one partial included by
+                 both forms (partials/photo-limits.blade.php), for the same
+                 reason — #68 was one surface short of the truth.
+             Tests: tests/Feature/ReplyAttachmentsTest.php — attaches,
+             sends with none, refuses over-ceiling and sends nothing,
+             refuses a non-photo, names the tenant's own file in the
+             error, renders the field with enctype, and explains itself at
+             ceiling 0.
+             STILL TO WALK: this widens #54's untested matrix rather than
+             reusing proven ground — there are now TWO places to attach
+             from. Charlie is testing at ceiling 3.
 --------------------------------------------------------------------
 #20
 Page:        D9 description header block — dark mode (authorise-preview

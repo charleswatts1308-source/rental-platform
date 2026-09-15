@@ -148,15 +148,12 @@
                          Raised 15 Sep by Charlie: "the UI does not mention any
                          max limit". --}}
                     <div class="form-text">
-                        JPG, PNG or PDF.
-                        Up to <strong>{{ $photoCeiling }}</strong> {{ $photoCeiling === 1 ? 'file' : 'files' }},
-                        {{-- An inline @if is a trap here: Blade does not
-                             recognise @endif when it is stuck straight onto a
-                             word, so "together@endif" compiled as literal text
-                             and the @if never closed — every render of this
-                             page died on a parse error. A ternary says the
-                             same thing with nothing left to close. --}}
-                        each under <strong>{{ $photoMaxLabel }}</strong>{!! $photoTotalMaxBytes > 0 ? ', and <strong>'.e($photoTotalLabel).'</strong> for all of them together' : '' !!}.
+                        @include('partials.photo-limits', [
+                            'ceiling' => $photoCeiling,
+                            'perFileLabel' => $photoMaxLabel,
+                            'totalBytes' => $photoTotalMaxBytes,
+                            'totalLabel' => $photoTotalLabel,
+                        ])
                     </div>
 
                     {{-- Photo errors live here rather than only in the summary

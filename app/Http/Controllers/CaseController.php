@@ -149,13 +149,34 @@ class CaseController extends Controller
         $case = $this->findCaseOrFail($slug);
         $this->authorize('reply', $case);
 
-        $validated = $request->validate([
+        // #19 — a tenant replying about a worsening problem wants to show
+        // it, not describe it. Same rules as the create form, from the same
+        // helpers, so the two cannot drift: a reply that advertised
+        // different limits from the form it sits next to would be the
+        // surface-disagrees-with-surface pattern again.
+        $rules = [
             'body' => ['required', 'string', 'min:1', 'max:10000'],
-        ]);
+            'photos' => ['nullable', 'array', 'max:'.$this->photoCeiling()],
+            'photos.*' => ['file', 'mimes:jpg,jpeg,png,pdf', 'max:'.self::PHOTO_MAX_KB],
+        ];
+
+        [$photoMessages, $photoAttributes] = $this->photoValidationCopy($request);
+
+        $validated = $request->validate($rules, $photoMessages, $photoAttributes);
+
+        // Straight to cases/{id}/, NOT through the preview staging folder.
+        // A reply has no preview step to come back from, and the daily
+        // sweep deletes preview folders over 24h old (#45) — staging here
+        // would invent a window in which a reply could lose its evidence.
+        $attachmentInputs = $this->storeReplyPhotos(
+            $request->file('photos', []) ?? [],
+            $case->id,
+        );
 
         $this->sendCaseNotice->execute(
             $case,
             actorUserId: $request->user()->id,
+            attachmentInputs: $attachmentInputs,
             tenantReplyBody: $validated['body'],
         );
 
@@ -833,9 +854,7 @@ class CaseController extends Controller
      */
     private function photoCeiling(): int
     {
-        $value = Setting::get('attachments.first_notice_max', self::PHOTO_COUNT_DEFAULT);
-
-        return max(0, min(3, (int) $value));
+        return PhotoLimits::ceiling();
     }
 
     /**
@@ -922,6 +941,43 @@ class CaseController extends Controller
 
             $path = $file->storeAs(
                 "cases/preview/{$userId}/{$previewId}",
+                Str::random(20).'.'.$file->getClientOriginalExtension(),
+                self::PHOTO_DISK,
+            );
+
+            $stored[] = [
+                'disk' => self::PHOTO_DISK,
+                'path' => $path,
+                'original_filename' => $file->getClientOriginalName(),
+                'mime_type' => $file->getMimeType() ?? 'application/octet-stream',
+                'size_bytes' => $file->getSize() ?: 0,
+            ];
+        }
+
+        return $stored;
+    }
+
+    /**
+     * Store reply attachments straight into the case folder — #19.
+     *
+     * Mirrors stagePreviewPhotos + promotePreviewPhotos, minus the staging
+     * step: the create flow needs a preview the tenant can come back from,
+     * a reply does not. Returns the same shape SendCaseNotice expects.
+     *
+     * @param  array<int, mixed>  $files
+     * @return array<int, array{disk: string, path: string, original_filename: string, mime_type: string, size_bytes: int}>
+     */
+    private function storeReplyPhotos(array $files, int $caseId): array
+    {
+        $stored = [];
+
+        foreach ($files as $file) {
+            if (! $file instanceof UploadedFile || ! $file->isValid()) {
+                continue;
+            }
+
+            $path = $file->storeAs(
+                "cases/{$caseId}",
                 Str::random(20).'.'.$file->getClientOriginalExtension(),
                 self::PHOTO_DISK,
             );
