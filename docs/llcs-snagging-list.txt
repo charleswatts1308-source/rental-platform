@@ -509,9 +509,15 @@ Fix:         DONE, and it did reuse the existing helpers as predicted.
              refuses a non-photo, names the tenant's own file in the
              error, renders the field with enctype, and explains itself at
              ceiling 0.
-             STILL TO WALK: this widens #54's untested matrix rather than
-             reusing proven ground — there are now TWO places to attach
-             from. Charlie is testing at ceiling 3.
+             WALKED AND PASSED 15 Sep 2026 by Charlie, on dev at
+             ceiling 3: an ad-hoc reply to case 4WKXDQ with three files.
+             "The attachments worked fine." Not yet deployed.
+             It still widens #54's untested matrix — there are now TWO
+             places to attach from — but the main path is proven.
+             Two observations came out of the same walk and are snagged
+             separately: #69 (a reply sends with no preview, where
+             letter 1 has one) and #70 (the case page sidebar is narrow
+             on a desktop now the reply form carries a picker).
 --------------------------------------------------------------------
 #20
 Page:        D9 description header block — dark mode (authorise-preview
@@ -3163,4 +3169,82 @@ Notes:       The figure was already computed and already quoted on the
 Fix:         Done. The form states count, per-file and total, all from
              the same values the machine enforces. Test in
              tests/Feature/Phase6/CaseCreateTest.php.
+--------------------------------------------------------------------
+#69
+Page:        Case page — an ad-hoc reply to the landlord sends with NO
+             preview, where letter 1 has one. Raised 2026-09-15 by
+             Charlie, immediately after walking #19: "I was
+             subconsciously expecting a preview as with letter 1".
+Severity:    design question, NOT a defect. Nothing is wrong today; the
+             two paths simply differ and the difference was not a
+             decision anyone took.
+Saw:         Raising a case goes description -> PREVIEW -> confirm, and
+             the preview shows the letter as the landlord will see it
+             (D13). Replying from the case page sends immediately on
+             one button press. Now that a reply can carry photos (#19)
+             the asymmetry is sharper: the tenant commits attachments
+             to an evidential record without seeing what goes.
+Expected:    Undecided — that is the point of this entry.
+Status:      open — snagged 15 Sep 2026. NEEDS A RULING before anything
+             is built.
+Notes:       Arguments FOR a reply preview:
+             - the reply is frozen on case_messages and served on the
+               landlord exactly like a notice; it is evidence, not chat;
+             - #19 just added attachments, and attachments are the thing
+               a tenant would most want to check before sending;
+             - the tenant's expectation is already set by letter 1, and
+               a product that previews one outbound letter but not
+               another teaches nothing consistent.
+             Arguments AGAINST:
+             - D13's preview exists to carry the AUTHORISATION wording
+               for a formal notice. A reply is the tenant's own words to
+               a landlord who has engaged; it is closer to an email than
+               to serving notice;
+             - the reply box is deliberately light-touch — the case page
+               says "You can send extra information at any time";
+             - a preview step is where drafts go to die. Friction on a
+               reply may simply mean fewer replies.
+             A MIDDLE OPTION worth considering before the full preview:
+             list the chosen files and require nothing else. That is
+             already built as of 15 Sep — the tenant now sees filenames
+             and sizes before pressing send. It may be that this was the
+             whole of the real want, and a full letter preview is not
+             needed.
+             Check against docs/llcs-silence-model-design.md before
+             ruling: the design doc is authoritative over any brief, and
+             D8 (tenant reply) / D13 (preview) are the two clauses in
+             play. If the doc is silent, say so in the ruling rather
+             than inferring.
+Fix:         Not decided. Do not build until ruled.
+--------------------------------------------------------------------
+#70
+Page:        Case page — the left-hand pane is narrow on a desktop.
+             Raised 2026-09-15 by Charlie, walking #19.
+Severity:    minor — cosmetic/usability. Nothing is unusable.
+Saw:         cases/show.blade.php splits col-lg-4 (case facts + action
+             panel, including the reply form) against col-lg-8
+             (correspondence). A third of the width was fine when the
+             reply was a text box and two buttons. It now carries a file
+             input, a limits sentence, a list of chosen files with
+             Remove controls, and an error area.
+Expected:    Enough room to use the reply form comfortably on a desktop.
+Notes:       Charlie'S OWN OBSERVATION, and it is correct: "I expect it
+             would become column on phone". It does — col-lg-* is full
+             width below the lg breakpoint, so the phone layout stacks
+             and is not the problem. The desktop is.
+             Two candidate fixes, put to Charlie 15 Sep:
+             (a) widen the sidebar (col-lg-4 -> col-lg-5, main 8 -> 7).
+                 Smallest change, nothing moves.
+             (b) move the reply form OUT of the sidebar and into the
+                 main column beneath the correspondence, leaving the
+                 sidebar for case facts and the other actions. Better
+                 reading order — read the thread, reply beneath it — but
+                 a larger rearrangement.
+             Note (b) interacts with #69: if a reply ever gains a
+             preview, the reply form stops being a sidebar widget
+             altogether and (b) becomes the obvious shape. Worth ruling
+             #69 first if it is going to be ruled at all.
+Status:      open — snagged 15 Sep 2026, awaiting Charlie's choice of
+             (a) or (b).
+Fix:         Whichever of (a) or (b) is chosen.
 --------------------------------------------------------------------
