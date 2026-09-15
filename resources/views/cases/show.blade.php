@@ -175,6 +175,10 @@
                 @endforeach
             @endif
 
+            {{-- #70(b): the reply form lives HERE, beneath the thread it
+                 answers, rather than in the sidebar. Read, then reply. --}}
+            @include('cases._reply_form')
+
             @if($quarantined->isNotEmpty())
                 <div class="alert alert-warning mt-4">
                     <h3 class="h6 mb-2">Unverified messages</h3>

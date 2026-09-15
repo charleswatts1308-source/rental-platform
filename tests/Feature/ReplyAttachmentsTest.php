@@ -220,3 +220,43 @@ it('carries the same accumulate-and-total behaviour on both forms', function () 
     expect($replyHtml)->toContain($marker);
     expect($createHtml)->toContain($marker);
 });
+
+/**
+ * #70(b) — the reply form sits in the main column beneath the
+ * correspondence, not in the sidebar. It was a sidebar widget when it was
+ * a text box and a button; #19 gave it a picker and a file list, and a
+ * third of the page is not enough room for that.
+ *
+ * Asserted by ORDER rather than by markup: the form must come after the
+ * thread it answers. That survives restyling and fails if anyone moves it
+ * back above the correspondence or into the sidebar block.
+ */
+it('puts the reply form after the correspondence, not in the sidebar', function () {
+    $tenant = User::factory()->create();
+    $case = repliableCase($tenant);
+
+    $html = $this->actingAs($tenant)
+        ->get(route('cases.show', $case->url_slug))
+        ->assertOk()
+        ->getContent();
+
+    $actions = strpos($html, 'Available actions');
+    $correspondence = strpos($html, 'Correspondence');
+    $replyForm = strpos($html, 'name="photos[]"');
+
+    expect($actions)->toBeLessThan($correspondence);
+    expect($correspondence)->toBeLessThan($replyForm);
+});
+
+it('keeps the other case actions in the sidebar', function () {
+    $tenant = User::factory()->create();
+    $case = repliableCase($tenant);
+
+    $html = $this->actingAs($tenant)
+        ->get(route('cases.show', $case->url_slug))
+        ->assertOk()
+        ->getContent();
+
+    // Pause and the rest did NOT move — only the reply did.
+    expect(strpos($html, 'Pause case'))->toBeLessThan(strpos($html, 'Correspondence'));
+});

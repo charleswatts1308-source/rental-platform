@@ -3244,7 +3244,23 @@ Notes:       Charlie'S OWN OBSERVATION, and it is correct: "I expect it
              preview, the reply form stops being a sidebar widget
              altogether and (b) becomes the obvious shape. Worth ruling
              #69 first if it is going to be ruled at all.
-Status:      open — snagged 15 Sep 2026, awaiting Charlie's choice of
-             (a) or (b).
-Fix:         Whichever of (a) or (b) is chosen.
+Status:      RULED AND BUILT 15 Sep 2026. Charlie chose (b): "lets
+             move it as you suggest — move the reply form out of the
+             sidebar into the main column". Not yet walked, not yet
+             deployed.
+Fix:         DONE. The reply form is its own partial
+             (cases/_reply_form.blade.php), included from the main column
+             directly beneath the correspondence. The action panel keeps
+             pause, resolve, abandon and the escalation review — only the
+             reply moved.
+             Resized with it: the sidebar's small controls and
+             full-width button were right in a third of the page and odd
+             across a whole column, so the textarea grows, the button
+             becomes a normal button, and the block gains a heading now
+             that it is a section rather than one item in a list of
+             actions.
+             Tests assert POSITION BY ORDER rather than by markup — the
+             form must come after the thread it answers — so restyling
+             does not break them but moving it back does. A second test
+             pins that the other actions did NOT move.
 --------------------------------------------------------------------
