@@ -7,8 +7,9 @@ table is the source of truth; this file is reconciled against
 **Reconcile status:** **dotrent retired 1 Aug 2026** (see its entry — the
 record is kept, the box is gone). **gafol at `12646e7`** (15 Sep — the
 September fix cycle; read off the Plesk Git panel and confirmed).
-**renters.rent at `02f1505`** (23 Aug — read off the Plesk Git panel and
-CONFIRMED 24 Aug). This is the commit the capture-run teardown left prod
+**renters.rent at `12646e7`** (15 Sep — the September fix cycle, read off
+the Plesk Git panel and confirmed). The `02f1505` history below is kept
+as the record of how the header came to be wrong twice in August. This is the commit the capture-run teardown left prod
 on when it redeployed `main`; the teardown never recorded it, and the
 header carried release 1's `65540e1` for a day instead. `02f1505` is
 itself a docs commit, so prod's **code** content is exactly `a70065b`.
@@ -29,9 +30,12 @@ truth and this file is their mirror. Proven on 24 Aug when
 `migrate --force` on gafol returned **`Nothing to migrate`** for a 9 Aug
 migration that a box sitting at 1 Aug code could not have run.
 
-**Still not reconciled against `migrate:status` since 27 Jun.** Two
-months overdue, and NOT cleared by the 24 Aug pull. Do it at the next
-touch of any box, per the CLAUDE.md Deployment-ledger rule.
+**✅ PROD RECONCILED 15 Sep 2026 — the item open since 27 Jun is
+CLEARED for prod.** 43 migrations Ran, none pending, against 43 files in
+the repo. Exact match. **gafol is still outstanding**: no migration has
+shipped since its last figure (41 Ran, 4 Sep), so no drift is expected,
+but the rule asks for the check and not for the inference. Do it at the
+next touch of that box.
 
 ---
 
@@ -88,9 +92,13 @@ touch of any box, per the CLAUDE.md Deployment-ledger rule.
     save, locking an admin out of editing any setting.
 - **Settings now set on gafol:** letter-1 ceiling **0**, reply ceiling
   **3**. That is #73's configuration deliberately — photos refused on the
-  cold first letter, allowed once the landlord has engaged — and it means
-  gafol no longer mirrors prod's attachment behaviour. Worth knowing
-  before anyone tests attachments here and reads the result as prod's.
+  cold first letter, allowed once the landlord has engaged.
+  - **Correction, same day:** an earlier draft of this entry said gafol
+    "no longer mirrors prod's attachment behaviour". That was written
+    before prod was set, and prod was then set to the SAME pair. The two
+    boxes do mirror each other. Recorded rather than silently edited,
+    because this file's own header carries two August cases of a figure
+    being corrected from a stale reading instead of from the box.
 - **Retaliation sentence (#61) REMOVED** from both templates through the
   admin template editor, which writes `letter_text_change_history`. Both
   `landlord_wakeup_generic` and `exhaustion_landlord_closer`.
@@ -424,6 +432,63 @@ touch of any box, per the CLAUDE.md Deployment-ledger rule.
   (staging), renters.rent (production), and main.
 
 ## renters.rent — production (NEW sibling build) — ✅ LIVE (hardening green)
+
+### Deploy 15 Sep 2026 — September fix cycle
+
+- **Landed: `12646e7`** (merge of `feature/fix-cycle-sep-2026`, tag
+  `post-fix-cycle-sep-2026`). Confirmed off the Plesk Git panel.
+- **Route:** Plesk Git pull, then `composer install --no-dev
+  --optimize-autoloader`, `config:cache`, `route:clear`, `view:clear`.
+  All clean.
+  - Worth recording WHY the composer step is not optional on this
+    release even though it installed nothing: it adds new classes
+    (`PhotoLimits`, `PostcodeLookup`, `PostcodeIsReal`) and the optimised
+    autoloader keeps a prebuilt map. Skipping it risks a 500 on the
+    create-case form rather than anything that announces itself.
+- **MIGRATIONS: NONE in this release.** Nothing on the branch creates or
+  alters a table, so no `migrate --force` was run and the CLAUDE.md
+  MariaDB check is not triggered.
+- **✅ RECONCILED AGAINST `migrate:status`, 15 Sep 2026 — and this
+  clears the standing item open since 27 Jun.** Prod reports **43
+  migrations, all Ran, none pending**, against **43 migration files in
+  the repo**. Exact match, no drift, nothing orphaned.
+  - Batches read as the deployment history they are: **[1]** the
+    original build through D16; **[2]** the attachments setting seed
+    (9 Aug); **[3]** the five property-landlord-contacts migrations
+    (27 Aug, shipped 4 Sep); **[4]** the two delivery-event migrations
+    (4–5 Sep).
+  - **gafol has NOT been reconciled** in this round. Its last figure
+    (41 Ran, 4 Sep) predates nothing — no migration has shipped since —
+    but the rule asks for the check itself, so it stays outstanding
+    there.
+- **Verified on prod by Charlie:** the reply preview (#69), the password
+  reveal (#64), and the settings form saving with `attachments.reply_max`
+  having had no stored row.
+- **Attachment ceilings now set on prod: letter 1 = `0`, replies = `3`.**
+  Gafol is set to the same, so the two boxes DO still mirror each other.
+  - This is a deliberate reduction: prod ran at **1** for letter 1 from
+    23 Aug. Photos are now refused on the first letter entirely and
+    allowed, up to three, on a reply.
+  - The reasoning is #73's and the attachment policy's: a ceiling of 0
+    exists on deliverability grounds, and the risk is a COLD letter to a
+    stranger carrying an attachment. Once the landlord has written back,
+    that risk has largely gone.
+  - **The consequence worth knowing before anyone reads this as odd:** a
+    tenant whose landlord never replies never gets to attach a photograph
+    at all. The case escalates through the full ladder carrying the
+    description alone. That is the accepted cost of the setting, not an
+    oversight — but it is the thing to revisit first if evidence quality
+    is ever the complaint.
+  - The create-case form tells the tenant so, and only in this
+    configuration: "You'll be able to attach photos once your landlord
+    replies." The sentence is conditional on the reply ceiling being
+    above 0, so it cannot become a lie by a later settings change.
+- **`BBY6GV` ABANDONED**, 15 Sep. It was the #25 control-send test case
+  and would have escalated to letter 2 on **26 Sep 2026**, sending real
+  mail to a real address. The standing warning about it is discharged.
+- **Retaliation sentence (#61):** removed from prod's templates earlier
+  on 15 Sep through the admin template editor, which writes
+  `letter_text_change_history`.
 - Box: renters.rent, a NEW site on the LX (`ukrenters.rent`) Linux
   subscription — its own folder alongside `dotrent.net` and `gafol.rent`.
   Built FRESH from the rental-platform repo (Git deploy, `main`) rather
