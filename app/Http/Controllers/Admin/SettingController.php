@@ -57,6 +57,17 @@ class SettingController extends Controller
                     .'setting, because no one is present to choose them. A change here applies to cases '
                     .'started afterwards; photos already staged by a tenant mid-flight are always honoured.',
             ],
+            [
+                'key' => 'attachments.reply_max',
+                'label' => 'Photos a tenant may attach to a reply',
+                'type' => 'range',
+                'min' => 0,
+                'max' => 3,
+                'help' => 'Separate from letter 1 on purpose. A ceiling of 0 exists on deliverability '
+                    .'grounds, and the risk is a cold letter to a stranger carrying an attachment — once '
+                    .'the landlord has written back, that risk has largely gone. So letter 1 can refuse '
+                    .'photos while replies allow them. Left unset, this follows the letter-1 ceiling.',
+            ],
         ];
     }
 

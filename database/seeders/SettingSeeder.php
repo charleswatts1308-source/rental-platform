@@ -56,6 +56,16 @@ class SettingSeeder extends Seeder
             // Ships at 1 on deliverability grounds; raise at will. Stages 2-4
             // never attach at any value.
             'attachments.first_notice_max' => '1',
+
+            // #73 — replies carry their OWN ceiling, as
+            // docs/attachment-policy-design.md always said. A ceiling of 0
+            // exists on deliverability grounds, and that risk is a cold
+            // letter to a stranger; once the landlord has written back it
+            // has largely gone, so an installation can refuse photos on
+            // letter 1 and allow them on replies. Ships at the same value
+            // as letter 1, so nothing changes until someone decides it
+            // should.
+            'attachments.reply_max' => '1',
         ];
 
         foreach ($defaults as $key => $value) {

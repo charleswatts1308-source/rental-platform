@@ -144,6 +144,9 @@ function validSettingsPayload(array $overrides = []): array
         'hold_max_days' => 60,
         'escalation_apply_inflight' => '0',
         'attachments_first_notice_max' => 1,
+        // #73 — tenant replies carry their own ceiling, as the attachment
+        // policy always said they should.
+        'attachments_reply_max' => 1,
     ], $overrides);
 }
 

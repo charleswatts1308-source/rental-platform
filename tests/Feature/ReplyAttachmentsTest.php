@@ -31,6 +31,8 @@ beforeEach(function () {
     Mail::fake();
     Storage::fake('local');
     Setting::updateOrCreate(['key' => 'attachments.first_notice_max'], ['value' => '3']);
+    // #73 — the reply carries its OWN ceiling now.
+    Setting::updateOrCreate(['key' => 'attachments.reply_max'], ['value' => '3']);
 });
 
 function repliableCase(User $tenant): RepairCase
@@ -158,8 +160,8 @@ it('offers the photo field on the case page, with the same limits as the create 
     expect($html)->toContain('each under <strong>'.\App\Support\PhotoLimits::perFileLabel().'</strong>');
 });
 
-it('says why, rather than showing nothing, when the ceiling is zero', function () {
-    Setting::updateOrCreate(['key' => 'attachments.first_notice_max'], ['value' => '0']);
+it('says why, rather than showing nothing, when the REPLY ceiling is zero', function () {
+    Setting::updateOrCreate(['key' => 'attachments.reply_max'], ['value' => '0']);
 
     $tenant = User::factory()->create();
     $case = repliableCase($tenant);
@@ -213,4 +215,44 @@ it('keeps the other case actions in the sidebar', function () {
     $html = $this->actingAs($tenant)->get(route('cases.show', $case->url_slug))->assertOk()->getContent();
 
     expect(strpos($html, 'Pause case'))->toBeLessThan(strpos($html, 'Correspondence'));
+});
+
+/**
+ * #73 — the two ceilings are independent, which is the whole point.
+ *
+ * A ceiling of 0 exists on deliverability grounds, and the risk it guards
+ * against is a COLD letter to a stranger carrying an attachment. Once the
+ * landlord has written back, that risk has largely gone. So an
+ * installation can refuse photos on letter 1 and still allow them on a
+ * reply — and only because that is true may the create form promise it.
+ */
+it('still offers photos on a reply when letter 1 refuses them', function () {
+    Setting::updateOrCreate(['key' => 'attachments.first_notice_max'], ['value' => '0']);
+    Setting::updateOrCreate(['key' => 'attachments.reply_max'], ['value' => '3']);
+
+    $tenant = User::factory()->create();
+    $case = repliableCase($tenant);
+
+    $html = $this->actingAs($tenant)->get(route('cases.show', $case->url_slug))->assertOk()->getContent();
+
+    expect($html)->toContain('name="photos[]"');
+    expect($html)->toMatch('/Up to <strong>3<\/strong> files/');
+});
+
+it('promises photos later on the create form ONLY when a reply could carry them', function () {
+    $tenant = User::factory()->create();
+    \App\Models\Property::factory()->create(['registered_by_user_id' => $tenant->id]);
+
+    $promise = 'able to attach photos once your landlord replies';
+
+    Setting::updateOrCreate(['key' => 'attachments.first_notice_max'], ['value' => '0']);
+    Setting::updateOrCreate(['key' => 'attachments.reply_max'], ['value' => '3']);
+
+    expect($this->actingAs($tenant)->get('/cases/create')->getContent())->toContain($promise);
+
+    // Both off: the promise would be false, so it is not made. A surface
+    // must not claim what the system cannot deliver.
+    Setting::updateOrCreate(['key' => 'attachments.reply_max'], ['value' => '0']);
+
+    expect($this->actingAs($tenant)->get('/cases/create')->getContent())->not->toContain($promise);
 });

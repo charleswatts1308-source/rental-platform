@@ -3472,3 +3472,55 @@ Fix:         Done. survivingStagedPhotos() decides what lives (the #53
              STILL TO WALK: the browser half. The tests prove the
              server; the picker script is only exercised by a human.
 --------------------------------------------------------------------
+#73
+             [SECTION 2 — DEV-FACING ONLY until the setting is used]
+Page:        Attachment ceilings — tenant replies shared letter 1's
+             ceiling, so switching photos off for letter 1 switched them
+             off everywhere. Found 2026-09-15 while checking whether a
+             message Charlie asked for would be TRUE.
+Severity:    minor as behaviour, but it is a DIVERGENCE FROM THE DESIGN
+             DOC, which CLAUDE.md makes authoritative over any brief or
+             implementation.
+Saw:         docs/attachment-policy-design.md has listed letter 1 and
+             tenant replies as two separately configurable ceilings
+             since 9 Aug 2026. #19 (built 15 Sep) reused the letter-1
+             setting for replies — the one named first_notice_max —
+             collapsing the two.
+Expected:    What the design doc says: two ceilings, independently set.
+Status:      FIXED SAME DAY, 15 Sep 2026, in the same pass as the
+             wording that exposed it.
+Notes:       IT SURFACED THROUGH A SENTENCE. Charlie asked for the
+             ceiling-0 message on the create form to say photos would be
+             possible once the landlord replied. Under one shared
+             ceiling that sentence was false, and his own standing rule
+             is that no surface may claim what the system cannot
+             deliver. Making the sentence honest and fixing the
+             divergence turned out to be the same job.
+             THE REASONING IS THE DESIGN'S OWN. A ceiling of 0 exists on
+             deliverability grounds, and the risk it guards is a COLD
+             letter to a stranger carrying an attachment. Once the
+             landlord has written back the thread is established and
+             that risk has largely gone — so refusing photos on letter 1
+             while allowing them on replies is a coherent position, and
+             one an installation may now take.
+             Charlie arrived at this from the wording alone, without
+             knowing the doc said it.
+             SAFE ON EXISTING BOXES: PhotoLimits::replyCeiling() falls
+             back to the letter-1 ceiling when the new key is absent, so
+             prod and gafol behave exactly as they do today until
+             someone sets it. The seeder ships it at the same value as
+             letter 1 for the same reason.
+             The promise on the create form is CONDITIONAL on the reply
+             ceiling being above 0, so it is never shown when it would
+             be untrue. Both branches are tested.
+Fix:         Done. New setting attachments.reply_max, offered in the
+             admin settings editor with its own help text;
+             PhotoLimits::replyCeiling() with a fallback; the reply form
+             and reply validation read it. Tests in
+             tests/Feature/ReplyAttachmentsTest.php cover the two
+             ceilings independently and both states of the promise.
+             TO DO ON DEPLOY: the new key needs seeding on gafol and
+             prod, or replyCeiling() quietly keeps following letter 1 —
+             correct, but not what an admin editing the field would
+             expect. Note it in the deployment ledger.
+--------------------------------------------------------------------

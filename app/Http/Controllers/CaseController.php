@@ -200,7 +200,7 @@ class CaseController extends Controller
             && (int) ($p['case_id'] ?? 0) === $case->id
                 ? ($p['photos'] ?? [])
                 : [];
-        $photoRoom = $this->remainingPhotoRoom($request, $stagedNow);
+        $photoRoom = $this->remainingPhotoRoom($request, $stagedNow, PhotoLimits::replyCeiling());
 
         $rules = [
             'body' => ['required', 'string', 'min:1', 'max:10000'],
@@ -947,9 +947,9 @@ class CaseController extends Controller
      *
      * @param  array<int, array<string, mixed>>  $staged
      */
-    private function remainingPhotoRoom(Request $request, array $staged): int
+    private function remainingPhotoRoom(Request $request, array $staged, ?int $ceiling = null): int
     {
-        return max(0, $this->photoCeiling() - count($this->survivingStagedPhotos($request, $staged)));
+        return max(0, ($ceiling ?? $this->photoCeiling()) - count($this->survivingStagedPhotos($request, $staged)));
     }
     /**
      * The per-file size the machine will ACTUALLY accept, in bytes.
@@ -1030,9 +1030,9 @@ class CaseController extends Controller
      *
      * @return array{0: array<string, string>, 1: array<string, string>}
      */
-    private function photoValidationCopy(Request $request, ?int $room = null): array
+    private function photoValidationCopy(Request $request, ?int $room = null, ?int $ceiling = null): array
     {
-        $ceiling = $this->photoCeiling();
+        $ceiling = $ceiling ?? $this->photoCeiling();
         // #72 — when some photos are already attached, the message has to
         // say how many MORE may be added, or it reads as a contradiction:
         // "you can attach up to 3" over a form that already holds two.

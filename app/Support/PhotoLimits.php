@@ -49,6 +49,38 @@ class PhotoLimits
     }
 
     /**
+     * The ceiling for a tenant REPLY — #73.
+     *
+     * A separate setting, because docs/attachment-policy-design.md always
+     * listed it as one: its table gives letter 1 and tenant replies their
+     * own configurable ceilings. #19 reused the letter-1 setting — the one
+     * named first_notice_max — which collapsed the two and made a ceiling
+     * of 0 switch photos off everywhere.
+     *
+     * The distinction is the whole point of the setting. A ceiling of 0
+     * exists on DELIVERABILITY grounds, and the risk it guards against is
+     * a cold letter to a stranger carrying an attachment. Once the
+     * landlord has written back the thread is established and that risk
+     * has largely gone — so an installation can sensibly refuse photos on
+     * letter 1 and allow them on replies. Charlie, 15 Sep 2026, arriving
+     * at the same place from the wording: the ceiling-0 message should
+     * tell the tenant photos become possible once the landlord replies,
+     * which is only honest if it is true.
+     *
+     * Defaults to the letter-1 ceiling when unset, so an existing box
+     * behaves exactly as it did until someone deliberately changes it.
+     */
+    public static function replyCeiling(): int
+    {
+        $value = Setting::get('attachments.reply_max');
+
+        if ($value === null || $value === '') {
+            return self::ceiling();
+        }
+
+        return max(0, min(3, (int) $value));
+    }
+    /**
      * Our own per-file cap, before PHP's is taken into account.
      */
     public const PER_FILE_KB = 4096;

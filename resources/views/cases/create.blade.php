@@ -132,6 +132,15 @@
                         attachments off for now to make sure letters reach landlords' inboxes.
                         Please describe the problem in as much detail as you can instead; the
                         letter still carries your full description.
+                        @if(\App\Support\PhotoLimits::replyCeiling() > 0)
+                            {{-- #73 — asked for by Charlie 15 Sep 2026, and only
+                                 shown when it is TRUE. The reply ceiling is a
+                                 separate setting now, so this sentence appears
+                                 exactly when a tenant really will be able to
+                                 attach photos later, and stays away when both
+                                 ceilings are 0. --}}
+                            <strong>You'll be able to attach photos once your landlord replies.</strong>
+                        @endif
                     </div>
                 @else
                     <label for="photos" class="form-label">Photos (optional)</label>

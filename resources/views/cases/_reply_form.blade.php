@@ -5,7 +5,10 @@
     // page use. Deriving them here from Setting would put a second copy of
     // the rules in a view, which is how two surfaces come to advertise
     // different limits for the same upload.
-    $replyPhotoCeiling = PhotoLimits::ceiling();
+    // #73 — the reply has its OWN ceiling. Letter 1 may refuse photos on
+    // deliverability grounds while a reply, into a thread the landlord has
+    // already answered, allows them.
+    $replyPhotoCeiling = PhotoLimits::replyCeiling();
     $replyPhotoMaxLabel = PhotoLimits::perFileLabel();
     $replyPhotoPerFileBytes = PhotoLimits::perFileBytes();
     $replyPhotoTotalBytes = PhotoLimits::totalBytes();
@@ -90,9 +93,13 @@
                     @endforeach
                 </ul>
             @else
+                {{-- No forward promise here: this IS the reply, so there is
+                     no later moment to point the tenant at. The create form
+                     can honestly say "once your landlord replies"; this one
+                     cannot, and must not borrow the wording. --}}
                 <p class="form-text mb-2">
                     Photos can&rsquo;t be attached at the moment — please describe the
-                    problem in the message instead.
+                    problem in your message instead.
                 </p>
             @endif
 
