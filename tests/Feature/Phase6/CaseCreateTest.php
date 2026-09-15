@@ -1105,3 +1105,40 @@ it('has no retaliation sentence left in any seeded letter template', function ()
     // not a footer removal.
     expect($seeder)->toContain('This message was sent through renters.rent on behalf of the tenant.');
 });
+
+/**
+ * #2, second half. The case page was titled by the contact's stored role
+ * on 12 Sep; the create-case panel was not, and still said "This
+ * property's landlord" after Charlie set the contact to Agent (found
+ * 15 Sep, walking dev). A surface contradicting what the user entered
+ * one screen earlier is the #46/#49/#53 pattern.
+ */
+it('titles the create-case panel by the contact role, not always "landlord"', function () {
+    $tenant = User::factory()->create(['email_verified_at' => now()]);
+    $property = Property::factory()->create(['registered_by_user_id' => $tenant->id]);
+
+    $property->setLandlordContact([
+        'email' => 'agent@example.com',
+        'name' => 'Some Agent',
+        'role' => 'agent',
+    ], now(), $tenant->id);
+
+    $html = $this->actingAs($tenant)->get('/cases/create')->getContent();
+
+    expect($html)->toContain('This property&rsquo;s agent:');
+    expect($html)->not->toContain('This property&rsquo;s landlord:');
+});
+
+it('still says landlord when the contact is a landlord', function () {
+    $tenant = User::factory()->create(['email_verified_at' => now()]);
+    $property = Property::factory()->create(['registered_by_user_id' => $tenant->id]);
+
+    $property->setLandlordContact([
+        'email' => 'landlord@example.com',
+        'role' => 'landlord',
+    ], now(), $tenant->id);
+
+    $html = $this->actingAs($tenant)->get('/cases/create')->getContent();
+
+    expect($html)->toContain('This property&rsquo;s landlord:');
+});

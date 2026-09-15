@@ -86,6 +86,7 @@
                             <option value="{{ $property->id }}" @selected(old('property_id') == $property->id)
                                     data-contact-name="{{ $property->currentLandlordContact?->name ?: $property->currentLandlordContact?->email }}"
                                     data-contact-email="{{ $property->currentLandlordContact?->email }}"
+                                    data-contact-role="{{ $property->currentLandlordContact?->role->value }}"
                                     data-property-url="{{ route('properties.contact.edit', $property) }}">
                                 {{ $property->address_line1 }}@if($property->address_line2), {{ $property->address_line2 }}@endif, {{ $property->postcode }}
                             </option>
@@ -219,7 +220,12 @@
                  @class(['col-12', 'd-none' => ! $inheritedContact])>
                 <div class="border rounded p-3 bg-light">
                     <p class="mb-1">
-                        <span class="text-muted">This property&rsquo;s landlord:</span>
+                        {{-- Titled by the contact's STORED ROLE, the same way
+                             the case page is (#2). Hardcoding "landlord" told a
+                             tenant who had just set the contact to Agent that it
+                             was a landlord — a surface contradicting what the
+                             user had entered one screen earlier. --}}
+                        <span class="text-muted" data-inherited-role>This property&rsquo;s {{ $inheritedContact?->role->value ?: "landlord" }}:</span>
                         <span class="fw-semibold" data-inherited-name>{{ $inheritedContact?->name ?: $inheritedContact?->email }}</span>
                     </p>
                     <p class="mb-1 small text-muted" data-inherited-email>{{ $inheritedContact?->email }}</p>
@@ -542,6 +548,7 @@
 
     const nameEl = inherited.querySelector('[data-inherited-name]');
     const emailEl = inherited.querySelector('[data-inherited-email]');
+    const roleEl = inherited.querySelector('[data-inherited-role]');
     const linkEl = inherited.querySelector('a');
     const required = ['landlord_email', 'landlord_role'];
 
@@ -553,6 +560,14 @@
             nameEl.textContent = option.dataset.contactName || email;
             emailEl.textContent = email;
             linkEl.href = option.dataset.propertyUrl;
+
+            // Relabel as well as refill: switching to a property whose
+            // contact is an agent must not leave the previous property's
+            // word standing.
+            if (roleEl) {
+                const role = option.dataset.contactRole || 'landlord';
+                roleEl.textContent = 'This property’s ' + role + ':';
+            }
         }
 
         inherited.classList.toggle('d-none', !email);

@@ -66,6 +66,16 @@ Page: Cases - landlord agent email not shown
 Severity:
 Saw:
 Expected:
+Status:      SECOND HALF FOUND AND FIXED 15 Sep 2026. Charlie set a
+             property's contact to AGENT, raised a case, and the
+             create-case panel still read "This property's landlord".
+             The 12 Sep fix titled the CASE PAGE by role and left the
+             create-case panel hardcoded — so the first screen after
+             choosing Agent contradicted the choice. Both the
+             server-rendered title and the JS that relabels it when the
+             property dropdown changes now follow the stored role.
+             Tests in tests/Feature/Phase6/CaseCreateTest.php cover
+             agent and landlord.
 Status:      open — RULED 12 Sep 2026. The panel currently titled
              "Recipient" takes its title from the contact's stored role
              — "Landlord" or "Agent" — and shows the contact's EMAIL
