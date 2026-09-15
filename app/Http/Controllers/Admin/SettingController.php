@@ -27,7 +27,7 @@ class SettingController extends Controller
      * Form field names can't contain dots (PHP mangles them), so each maps
      * to an underscore-safe field via fieldName().
      *
-     * @return list<array{key: string, label: string, type: 'int'|'flag'|'range', min?: int, max?: int, help?: string}>
+     * @return list<array{key: string, label: string, type: 'int'|'flag'|'range', min?: int, max?: int, help?: string, default?: string}>
      */
     private function editableSettings(): array
     {
@@ -63,6 +63,10 @@ class SettingController extends Controller
                 'type' => 'range',
                 'min' => 0,
                 'max' => 3,
+                // Matches PhotoLimits::replyCeiling()'s own fallback, so the
+                // form shows what the app is actually doing on a box where
+                // the key has not been stored yet.
+                'default' => (string) \App\Support\PhotoLimits::ceiling(),
                 'help' => 'Separate from letter 1 on purpose. A ceiling of 0 exists on deliverability '
                     .'grounds, and the risk is a cold letter to a stranger carrying an attachment — once '
                     .'the landlord has written back, that risk has largely gone. So letter 1 can refuse '
@@ -80,7 +84,13 @@ class SettingController extends Controller
     {
         $settings = array_map(function (array $spec): array {
             $spec['field'] = $this->fieldName($spec['key']);
-            $spec['value'] = (string) (Setting::get($spec['key']) ?? '');
+            // A key that has never been stored renders with its DEFAULT,
+            // not blank. Every field on this form is required, so a blank
+            // one would refuse the whole save — meaning a newly deployed
+            // setting could lock an admin out of editing any of the
+            // others until somebody seeded a row by hand. Found before
+            // deploying #73 rather than after.
+            $spec['value'] = (string) (Setting::get($spec['key']) ?? ($spec['default'] ?? ''));
 
             return $spec;
         }, $this->editableSettings());
