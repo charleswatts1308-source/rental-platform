@@ -395,49 +395,37 @@ reference `Z229825X`. The old value was the payment/account number.
 
 ## Snags — open
 
-**OPEN — #1, #2, #12, #13, #17, #18, #19, #25, #26, #27, #28, #29,
-#30, #31, #32, #33, #34, #35, #37, #40, #42, #44, #48, #50, #51, #53,
-#54, #56, #57, #58, #60, #61, #62, #63, #64, #65, #66.**
+**OPEN, and confident — 25:** #1, #9, #10, #12, #13, #17, #18, #25
+(release 2 only), #26, #28, #29, #30, #31, #32, #33, #34, #35, #37, #42,
+#43, #48, #56, #60, #62, #63.
 
-**BUILT ON `feature/fix-cycle-sep-2026`, NOT MERGED, NOT DEPLOYED:
-#2, #50, #51, #53, #57, #58.** They stay listed open above for exactly
-that reason — both boxes still run `01451b0` and still carry all six.
+**⚠ DISPUTED — 6: #4, #14, #15, #16, #20, #21.** This router has said
+since Phase 5 that D16 resolved them. The snagging list still has all six
+reading `open — cosmetic` (or, for #21, carrying a design question). The
+two documents disagree and neither is obviously right. NOT silently
+picked either way on 15 Sep; whoever next touches D16 territory should
+read the six and settle it. Until then treat them as open, because the
+list is the record and the router is the index.
 
-**#25 IS PART DONE.** Release 1 is deployed and proven both ways on
-prod; release 2 (the tenant-taken copy, D17.3) is not built. It stays
-open until that ships.
+**CLOSED BY THE SEPTEMBER FIX CYCLE — 21**, all now live on both boxes:
+#2, #27, #40, #44, #50, #51, #53, #54, #57, #58, #61, #64, #65, #66,
+#67, #68, #69, #70, #71, #72, #73 — plus **#19**, attachments on tenant
+replies, open since the June live-fire.
 
-**Closed since this block was last written:** **#7** (12 Sep — landlord
-prefill fixed and verified; it died with #49(a) as predicted), **#36**
-(12 Sep — Mailgun free tier is adequate), **#39** (12 Sep — the preview
-now shows attached photos). **#38** was FOLDED INTO **#51**. **#52**
-was DROPPED 12 Sep by decision. **#22** was LEFT AS IS 12 Sep by
-decision.
+**Closed earlier:** #3, #5, #6, #7, #8, #11, #22, #23, #24, #36, #38,
+#39, #41, #45, #46, #47, #49, #52, #55, #59.
 
-**Closed earlier:** **#8**, **#23**, **#24**, **#41**, **#43**, **#45**,
-**#46**, **#47**, **#49**, **#55**, **#59**. Resolved by Phase 5 (D16):
-#4, #14, #15, #16, #20, #21.
-
-**⚠ The line that stood here — "BUILT, NOT MERGED, NOT DEPLOYED: #24,
-#49, #59 … still live on prod" — was STALE.** All three shipped to main
-and to both boxes on 4 Sep (`fb03bc9`). Nothing from that set is
-outstanding.
-
-**Added 12 Sep, from Charlie's pass over the index:** **#61** letter
-wording, to go through the ADMIN TEMPLATE EDITOR rather than SQL;
-**#62** landlord questions about the SERVICE land in the case thread
-where the tenant is the only reader — the open question behind it is
-whether landlords ever get a written channel that is not a case reply;
-**#63** the tenant's name renders exactly as stored, so a formal notice
-signs off "charles watts1308".
-
-**Added 15 Sep:** **#64** no show/hide toggle on any password field;
-**#65** the same-browser verification path verifies the user and then
-shows no confirmation, because a stale `url.intended` swallows the
-`?verified=1` flag. Both belong with the #37/#27/#28/#29 pass.
-**#66** landlord details are asked for on the Raise a Case form rather
-than after registering the property they belong to — ruled the same
-day that a second property needs no special handling.
+**Of the 25 genuinely open, what they actually are:**
+- **Dev-facing only (Section 2), nobody sees them:** #12, #13, #17, #18,
+  #26, #31, #34 — and #9, #10, #35, #43 are the same shape.
+- **Admin tasks, not code:** #56 (ICO trading name), #48 (`admin@` cannot
+  receive mail — the one with real consequences, since its password reset
+  is broken).
+- **Needs a RULING before anything can be built:** #60 (no email to the
+  tenant when a case opens), #62 (landlords have no written channel that
+  is not a case reply), #21 if it survives the dispute above.
+- **Real user-facing work:** #1 (nav restructure), #25 release 2 (the
+  tenant-taken copy of a bounced case), #28, #29, #30, #37, #42, #63.
 
 **Added 22–23 Aug, walking the releases:**
 - **#49** the preview shows one landlord name and the letter sends

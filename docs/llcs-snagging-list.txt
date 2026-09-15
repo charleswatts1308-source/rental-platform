@@ -66,7 +66,10 @@ Page: Cases - landlord agent email not shown
 Severity:
 Saw:
 Expected:
-Status:      SECOND HALF FOUND AND FIXED 15 Sep 2026. Charlie set a
+Status:      SHIPPED 15 Sep 2026 — merged to main (`12646e7`, tag
+             post-fix-cycle-sep-2026) and DEPLOYED to gafol and
+             renters.rent, both walked. Ledger: environment-state.md.
+             SECOND HALF FOUND AND FIXED 15 Sep 2026. Charlie set a
              property's contact to AGENT, raised a case, and the
              create-case panel still read "This property's landlord".
              The 12 Sep fix titled the CASE PAGE by role and left the
@@ -471,7 +474,10 @@ Expected:    Tenant replies should accept attachments (same JPG/PNG/PDF
              outbound tenant case_messages row and dispatched on the
              CaseNotice to the landlord — mirroring the create-case
              attachment path that already exists.
-Status:      open — deferred feature, phase TBD. Explicitly OUT OF SCOPE
+Status:      SHIPPED 15 Sep 2026 — merged to main (`12646e7`, tag
+             post-fix-cycle-sep-2026) and DEPLOYED to gafol and
+             renters.rent, both walked. Ledger: environment-state.md.
+             open — deferred feature, phase TBD. Explicitly OUT OF SCOPE
              for Phase 3 (the brief lists "attachments on tenant replies"
              under untouched).
 Notes:       Surfaced by real usage in the live-fire, not by a test gap.
@@ -1007,7 +1013,10 @@ Saw:         Register in Chrome (session lives in Chrome). Outlook opens the
 Expected:    A signed verification link clicked from the user's own inbox
              should verify AND log them in, landing them on the dashboard in
              whatever browser opened it — no login step.
-Status:      open — snagged 25 Jul. Deferred deliberately (discussed, chose
+Status:      SHIPPED 15 Sep 2026 — merged to main (`12646e7`, tag
+             post-fix-cycle-sep-2026) and DEPLOYED to gafol and
+             renters.rent, both walked. Ledger: environment-state.md.
+             open — snagged 25 Jul. Deferred deliberately (discussed, chose
              not to build yet). Present-day workaround: copy the link out of
              Outlook and paste it into Chrome, where the session already
              exists.
@@ -2184,7 +2193,10 @@ Saw:         cases.severity is an enum routine|serious|emergency
              migration, the dev:* commands, and the tenant case page.
 Expected:    Either the landlord is told how urgent the tenant says it
              is, or the tenant is not asked to say.
-Status:      RULED 12 Sep 2026 — DROP Severity from the UI entirely.
+Status:      SHIPPED 15 Sep 2026 — merged to main (`12646e7`, tag
+             post-fix-cycle-sep-2026) and DEPLOYED to gafol and
+             renters.rent, both walked. Ledger: environment-state.md.
+             RULED 12 Sep 2026 — DROP Severity from the UI entirely.
              WALKED AND PASSED 15 Sep 2026 by Charlie, on dev,
              against feature/fix-cycle-sep-2026. Not yet deployed.
              The tenant expresses urgency in their own words in the
@@ -2244,7 +2256,10 @@ Saw:         PropertyController.php:26 POSTCODE_PATTERN is a shape
 Expected:    A postcode that does not exist is refused. A city that
              disagrees with the postcode is questioned before the
              letter carries it.
-Status:      RULED 12 Sep 2026 — use postcodes.io (api.postcodes.io).
+Status:      SHIPPED 15 Sep 2026 — merged to main (`12646e7`, tag
+             post-fix-cycle-sep-2026) and DEPLOYED to gafol and
+             renters.rent, both walked. Ledger: environment-state.md.
+             RULED 12 Sep 2026 — use postcodes.io (api.postcodes.io).
              WALKED AND PASSED 15 Sep 2026 by Charlie, on dev,
              against feature/fix-cycle-sep-2026. Not yet deployed.
              Third-party sharing ACCEPTED: Charlie's reasoning is that a
@@ -2355,7 +2370,10 @@ Saw:         The staged set is all-or-nothing on BOTH sides, while the
              hears "remove all photos".
 Expected:    Remove on one staged photo removes that photo. The others
              survive the round-trip.
-Status:      FIXED and WALKED. Passed 15 Sep 2026 by Charlie on dev,
+Status:      SHIPPED 15 Sep 2026 — merged to main (`12646e7`, tag
+             post-fix-cycle-sep-2026) and DEPLOYED to gafol and
+             renters.rent, both walked. Ledger: environment-state.md.
+             FIXED and WALKED. Passed 15 Sep 2026 by Charlie on dev,
              at ceiling 3 — the configuration in which this snag is
              reachable at all. Not yet deployed.
              open — snagged 22 Aug during the Release 1 gafol walk.
@@ -2614,7 +2632,10 @@ Saw:         resources/views/errors/ does not exist. With
              writing up a repair honestly takes time.
 Expected:    An error page that says what happened in plain words,
              says whether anything was lost, and offers a route back.
-Status:      WALKED AND PASSED IN FULL 15 Sep 2026. All four pages seen
+Status:      SHIPPED 15 Sep 2026 — merged to main (`12646e7`, tag
+             post-fix-cycle-sep-2026) and DEPLOYED to gafol and
+             renters.rent, both walked. Ledger: environment-state.md.
+             WALKED AND PASSED IN FULL 15 Sep 2026. All four pages seen
              by Charlie on dev — 404 in normal use, and 413, 419 and 500
              via the dev-only route built the same day. Not yet deployed.
              The earlier note that three were built but unproven is
@@ -2730,7 +2751,10 @@ Expected:    The form refuses a selection the server cannot receive,
              for the same reason it already refuses an oversize single
              file: losing the whole submission to a 413 is a worse
              outcome than being told at selection time.
-Status:      FIXED and WALKED. Passed 15 Sep 2026 by Charlie on dev.
+Status:      SHIPPED 15 Sep 2026 — merged to main (`12646e7`, tag
+             post-fix-cycle-sep-2026) and DEPLOYED to gafol and
+             renters.rent, both walked. Ledger: environment-state.md.
+             FIXED and WALKED. Passed 15 Sep 2026 by Charlie on dev.
              Not yet deployed.
              open — snagged 22 Aug. Raise-not-action, by decision.
              Moot at ceiling 1 (#54).
@@ -2886,7 +2910,10 @@ RULED:       15 Sep 2026 by Charlie — "please remove it regardless of
 Expected:    The final sentence — "The tenant's contact details are kept
              private to protect against retaliation." — is removed. The
              rest of the footer stands.
-Status:      AGREED 12 Sep 2026. Also agreed in the same breath: the
+Status:      SHIPPED 15 Sep 2026 — merged to main (`12646e7`, tag
+             post-fix-cycle-sep-2026) and DEPLOYED to gafol and
+             renters.rent, both walked. Ledger: environment-state.md.
+             AGREED 12 Sep 2026. Also agreed in the same breath: the
              footer gains a LINK giving landlords a written channel.
              Target is /landlords, NOT Contact Us — Contact Us sits
              behind ['auth','verified'] and registration is allowlisted
@@ -3004,7 +3031,10 @@ Saw:         Every password input is type="password" with no way to
              indistinguishable from a wrong password.
 Expected:    A show/hide toggle on the field, so what is about to be
              submitted can be read back before submitting.
-Status:      FIXED AND WALKED 15 Sep 2026 by Charlie, on dev. Not yet
+Status:      SHIPPED 15 Sep 2026 — merged to main (`12646e7`, tag
+             post-fix-cycle-sep-2026) and DEPLOYED to gafol and
+             renters.rent, both walked. Ledger: environment-state.md.
+             FIXED AND WALKED 15 Sep 2026 by Charlie, on dev. Not yet
              deployed.
 Notes:       NINE inputs, not six — six VIEWS, but register, reset and
              change-password each carry two or three.
@@ -3070,7 +3100,10 @@ Saw:         Register on dev, then click the Mailpit verification link
              route does not.
 Expected:    A user who verifies is told they have verified, on every
              route that gets them there.
-Status:      open — snagged 15 Sep 2026.
+Status:      SHIPPED 15 Sep 2026 — merged to main (`12646e7`, tag
+             post-fix-cycle-sep-2026) and DEPLOYED to gafol and
+             renters.rent, both walked. Ledger: environment-state.md.
+             open — snagged 15 Sep 2026.
              WALKED AND PASSED 15 Sep 2026 by Charlie, together with
              #27 — the same two runs. Not yet deployed.
 Notes:       CAUSE IS ESTABLISHED, not suspected.
@@ -3153,7 +3186,10 @@ Saw:         Register, verify, land on the dashboard, invited to
 Expected:    Register property -> landlord details -> raise case. The
              landlord belongs to the property, so it is asked for with
              the property.
-Status:      open — snagged 15 Sep 2026. RULED in the same breath: no
+Status:      SHIPPED 15 Sep 2026 — merged to main (`12646e7`, tag
+             post-fix-cycle-sep-2026) and DEPLOYED to gafol and
+             renters.rent, both walked. Ledger: environment-state.md.
+             open — snagged 15 Sep 2026. RULED in the same breath: no
              special handling for a SECOND property. Charlie: "in real
              life it will be a rare event and we need not worry much
              about it now." The landlord step simply always follows
@@ -3203,7 +3239,10 @@ Severity:    minor — the second click works. It reads as an
 Saw:         Fill the form, click Register, nothing happens. Click
              again, it submits.
 Expected:    One click.
-Status:      FIXED SAME DAY, 15 Sep 2026, in the same pass as #66, and
+Status:      SHIPPED 15 Sep 2026 — merged to main (`12646e7`, tag
+             post-fix-cycle-sep-2026) and DEPLOYED to gafol and
+             renters.rent, both walked. Ledger: environment-state.md.
+             FIXED SAME DAY, 15 Sep 2026, in the same pass as #66, and
              WALKED AND PASSED the same day by Charlie on dev — one
              click on Register. Not yet deployed.
 Notes:       Not a double-submit guard and nothing to do with the
@@ -3242,7 +3281,10 @@ Saw:         The label carried the count in a bracket ("Photos
              reason the form never gave.
 Expected:    Every limit the machine enforces is stated where the files
              are chosen.
-Status:      FIXED SAME DAY, 15 Sep 2026, and WALKED AND PASSED the
+Status:      SHIPPED 15 Sep 2026 — merged to main (`12646e7`, tag
+             post-fix-cycle-sep-2026) and DEPLOYED to gafol and
+             renters.rent, both walked. Ledger: environment-state.md.
+             FIXED SAME DAY, 15 Sep 2026, and WALKED AND PASSED the
              same day by Charlie on dev. Not yet deployed.
 Notes:       The figure was already computed and already quoted on the
              413 page (#57). Only the form was silent, so the two
@@ -3279,7 +3321,10 @@ Saw:         Raising a case goes description -> PREVIEW -> confirm, and
              the asymmetry is sharper: the tenant commits attachments
              to an evidential record without seeing what goes.
 Expected:    Undecided — that is the point of this entry.
-Status:      RULED, BUILT AND WALKED 15 Sep 2026. Charlie: "replies
+Status:      SHIPPED 15 Sep 2026 — merged to main (`12646e7`, tag
+             post-fix-cycle-sep-2026) and DEPLOYED to gafol and
+             renters.rent, both walked. Ledger: environment-state.md.
+             RULED, BUILT AND WALKED 15 Sep 2026. Charlie: "replies
              should get preview, no reason why not and it makes for
              consistency", then "preview is good, thanks". Not yet
              deployed.
@@ -3381,7 +3426,10 @@ Notes:       Charlie'S OWN OBSERVATION, and it is correct: "I expect it
              preview, the reply form stops being a sidebar widget
              altogether and (b) becomes the obvious shape. Worth ruling
              #69 first if it is going to be ruled at all.
-Status:      RULED AND BUILT 15 Sep 2026. Charlie chose (b): "lets
+Status:      SHIPPED 15 Sep 2026 — merged to main (`12646e7`, tag
+             post-fix-cycle-sep-2026) and DEPLOYED to gafol and
+             renters.rent, both walked. Ledger: environment-state.md.
+             RULED AND BUILT 15 Sep 2026. Charlie chose (b): "lets
              move it as you suggest — move the reply form out of the
              sidebar into the main column". Not yet walked, not yet
              deployed.
@@ -3416,7 +3464,10 @@ Saw:         Case LYE62E on dev: two outbound rows a second apart
              would have received the same message twice.
 Expected:    One press, one letter. Two presses of the same button on
              the same page, still one letter.
-Status:      FIXED SAME DAY, 15 Sep 2026.
+Status:      SHIPPED 15 Sep 2026 — merged to main (`12646e7`, tag
+             post-fix-cycle-sep-2026) and DEPLOYED to gafol and
+             renters.rent, both walked. Ledger: environment-state.md.
+             FIXED SAME DAY, 15 Sep 2026.
 Notes:       BLAST RADIUS, established before fixing rather than after:
              - REPLY: reproduced, two rows, two letters.
              - CREATE-CASE CONFIRM: safe already, but BY ACCIDENT. The
@@ -3478,7 +3529,10 @@ Saw:         Stage three photos, preview, Edit, Remove one, pick a
              with one photo where the tenant believes it carries three.
 Expected:    New files ADD to whatever survived the removals, up to the
              ceiling.
-Status:      FIXED SAME DAY, 15 Sep 2026.
+Status:      SHIPPED 15 Sep 2026 — merged to main (`12646e7`, tag
+             post-fix-cycle-sep-2026) and DEPLOYED to gafol and
+             renters.rent, both walked. Ledger: environment-state.md.
+             FIXED SAME DAY, 15 Sep 2026.
 Notes:       THIS WAS A DELIBERATE RULE, not an accident, and the test
              suite pinned it: a test literally named "#46 — newly chosen
              photos REPLACE the staged set rather than adding to it".
@@ -3530,7 +3584,10 @@ Saw:         docs/attachment-policy-design.md has listed letter 1 and
              setting for replies — the one named first_notice_max —
              collapsing the two.
 Expected:    What the design doc says: two ceilings, independently set.
-Status:      FIXED SAME DAY, 15 Sep 2026, in the same pass as the
+Status:      SHIPPED 15 Sep 2026 — merged to main (`12646e7`, tag
+             post-fix-cycle-sep-2026) and DEPLOYED to gafol and
+             renters.rent, both walked. Ledger: environment-state.md.
+             FIXED SAME DAY, 15 Sep 2026, in the same pass as the
              wording that exposed it.
 Notes:       IT SURFACED THROUGH A SENTENCE. Charlie asked for the
              ceiling-0 message on the create form to say photos would be
