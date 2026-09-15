@@ -5,7 +5,8 @@ table is the source of truth; this file is reconciled against
 `php artisan migrate:status` at each deploy (CLAUDE.md "Deployment ledger").
 
 **Reconcile status:** **dotrent retired 1 Aug 2026** (see its entry — the
-record is kept, the box is gone). **gafol at `bd80e12`** (24 Aug).
+record is kept, the box is gone). **gafol at `12646e7`** (15 Sep — the
+September fix cycle; read off the Plesk Git panel and confirmed).
 **renters.rent at `02f1505`** (23 Aug — read off the Plesk Git panel and
 CONFIRMED 24 Aug). This is the commit the capture-run teardown left prod
 on when it redeployed `main`; the teardown never recorded it, and the
@@ -64,6 +65,41 @@ touch of any box, per the CLAUDE.md Deployment-ledger rule.
   24 Aug.
 
 ## gafol — permanent staging (gafol.rent) — ✅ BACK ON MAIN (4 Sep 2026)
+
+### Deploy 15 Sep 2026 — September fix cycle
+
+- **Landed: `12646e7`** (merge of `feature/fix-cycle-sep-2026`, tag
+  `post-fix-cycle-sep-2026`). Confirmed off the Plesk Git panel by
+  Charlie, not inferred from this file — the 23 Aug mistake in the header
+  above is why that distinction is written down every time.
+- **Route:** Plesk Git pull, then `composer install --no-dev
+  --optimize-autoloader`, `config:cache`, `route:clear`, `view:clear`.
+  All four clean.
+- **MIGRATIONS: NONE.** The release creates and alters nothing, so no
+  `migrate --force` was run and the CLAUDE.md MariaDB check is not
+  triggered. Stated rather than left to be inferred from silence.
+- **Verified on the box by Charlie:**
+  - the reply flow shows its preview before sending (#69);
+  - the password reveal eye is present (#64);
+  - **Admin → Settings loads and SAVES** with `attachments.reply_max`
+    having no stored row. This is the box that proves the fix made an
+    hour before deploy: every field on that form is required, so without
+    a default the field would have rendered blank and refused the whole
+    save, locking an admin out of editing any setting.
+- **Settings now set on gafol:** letter-1 ceiling **0**, reply ceiling
+  **3**. That is #73's configuration deliberately — photos refused on the
+  cold first letter, allowed once the landlord has engaged — and it means
+  gafol no longer mirrors prod's attachment behaviour. Worth knowing
+  before anyone tests attachments here and reads the result as prod's.
+- **Retaliation sentence (#61) REMOVED** from both templates through the
+  admin template editor, which writes `letter_text_change_history`. Both
+  `landlord_wakeup_generic` and `exhaustion_landlord_closer`.
+- **Not done:** `migrate:status` still not re-run (see the header's
+  standing note). No migration shipped, so no drift is expected, but the
+  reconciliation rule asks for it and it remains outstanding.
+- **Standing limit, unchanged:** gafol's Mailgun is the sandbox —
+  outbound only. A reply sends and is recorded; nothing can come back in.
+  Inbound and webhook work is proven on prod, by decision (CLAUDE.md).
 - Box: gafol.rent is the staging domain. DB `ukrenter_gafol_db` on
   mysql01. (The stale "ukrenters.rent / HUK" label was wrong —
   ukrenters.rent was a separate earlier site scheduled for deletion.)
