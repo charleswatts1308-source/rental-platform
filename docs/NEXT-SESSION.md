@@ -70,10 +70,10 @@ Three were defects no test would have found:
    43 Ran, none pending, identical set to prod. Both boxes are now
    reconciled and the item open since 27 Jun is closed. (Batch numbers
    differ between the boxes; that is deployment history, not drift.)
-2. **The dev box still carries the retaliation sentence** (#61) in its
-   templates. The seeder change only reaches a fresh install, and
-   deliberately so. Two templates: `landlord_wakeup_generic` and
-   `exhaustion_landlord_closer`.
+2. ~~**The dev box still carries the retaliation sentence.**~~ **DONE
+   15 Sep** — #61 is now clear on ALL THREE environments (prod, gafol,
+   dev), verified by querying the templates rather than by trusting the
+   edit. A fresh install gets the corrected text from the seeder.
 3. **#48 — `admin@renters.rent` cannot receive mail**, so its password
    reset is broken. Open since July, approach agreed 12 Sep, unbuilt.
    The one open item with real consequences.
