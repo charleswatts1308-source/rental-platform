@@ -2974,3 +2974,56 @@ Fix:         Do not rely on intended() to carry the flag. Either forget
              demand, no 403, no silent landing. If the two routes do not
              look the same to the user, it is not fixed.
 --------------------------------------------------------------------
+#66
+Page:        Onboarding order — landlord details are collected on the
+             RAISE A CASE form, not after registering the property they
+             belong to. Raised 2026-09-15 by Charlie, walking a fresh
+             registration on dev.
+Severity:    minor — nothing is lost and nothing breaks. It is the
+             wrong place to ask, and it hides a property-level decision
+             on a case-level screen.
+Saw:         Register, verify, land on the dashboard, invited to
+             register a property, do so — and are taken straight to
+             Raise a Case. The property form never mentions the
+             landlord. Charlie's words: "so missed out Landlord details,
+             which is apparent now I'm on Raise A case."
+Expected:    Register property -> landlord details -> raise case. The
+             landlord belongs to the property, so it is asked for with
+             the property.
+Status:      open — snagged 15 Sep 2026. RULED in the same breath: no
+             special handling for a SECOND property. Charlie: "in real
+             life it will be a rare event and we need not worry much
+             about it now." The landlord step simply always follows
+             registering a property.
+Notes:       Nothing is actually missed today — the landlord fields are
+             on the create-case form and are required when the property
+             has none, so the user cannot get past them. This is about
+             ORDER, not a gap.
+             The real cost is concealment. What the user types into
+             those fields on the case form becomes THE PROPERTY'S
+             landlord, inherited by every future case at that address.
+             That is a property decision taken on a case screen, and it
+             does not look like one.
+             A dedicated property-level landlord page already exists and
+             is reachable from the property. It is simply not part of
+             the sign-up journey, so a new user never meets it. The
+             surface to send them to already exists.
+             SIMPLIFIES rather than complicates: the property save
+             currently BRANCHES on whether this is the user's first
+             property, sending the first to Raise a Case and later ones
+             to the property list. The ruling above removes the need for
+             that branch — everyone goes to the landlord step next.
+             Related: #2 (the case page panel titled by role) and #59
+             (the preview showing the landlord email) are both about the
+             same thing one step later — making the landlord visible at
+             the moment it matters. This is the earliest such moment.
+Fix:         After saving a property, send the user to that property's
+             landlord page instead of to Raise a Case or the property
+             list. Then on to Raise a Case. Drop the first-property
+             branch. The create-case form keeps its landlord fields as
+             the fallback for any property that still has none — do not
+             remove them, they are the safety net for properties
+             registered before this change.
+             ACCEPTANCE TEST: register, verify, add a property, and be
+             asked for the landlord BEFORE reaching Raise a Case.
+--------------------------------------------------------------------

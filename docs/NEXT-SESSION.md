@@ -376,7 +376,7 @@ reference `Z229825X`. The old value was the payment/account number.
 
 **OPEN — #1, #2, #12, #13, #17, #18, #19, #25, #26, #27, #28, #29,
 #30, #31, #32, #33, #34, #35, #37, #40, #42, #44, #48, #50, #51, #53,
-#54, #56, #57, #58, #60, #61, #62, #63, #64.**
+#54, #56, #57, #58, #60, #61, #62, #63, #64, #65, #66.**
 
 **BUILT ON `feature/fix-cycle-sep-2026`, NOT MERGED, NOT DEPLOYED:
 #2, #50, #51, #53, #57, #58.** They stay listed open above for exactly
@@ -414,6 +414,9 @@ signs off "charles watts1308".
 **#65** the same-browser verification path verifies the user and then
 shows no confirmation, because a stale `url.intended` swallows the
 `?verified=1` flag. Both belong with the #37/#27/#28/#29 pass.
+**#66** landlord details are asked for on the Raise a Case form rather
+than after registering the property they belong to — ruled the same
+day that a second property needs no special handling.
 
 **Added 22–23 Aug, walking the releases:**
 - **#49** the preview shows one landlord name and the letter sends
