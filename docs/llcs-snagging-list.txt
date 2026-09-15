@@ -3004,8 +3004,26 @@ Saw:         Every password input is type="password" with no way to
              indistinguishable from a wrong password.
 Expected:    A show/hide toggle on the field, so what is about to be
              submitted can be read back before submitting.
-Status:      open — snagged 15 Sep 2026.
-Notes:       Six views carry a password input:
+Status:      FIXED 15 Sep 2026. Not yet walked, not yet deployed.
+Notes:       NINE inputs, not six — six VIEWS, but register, reset and
+             change-password each carry two or three.
+             Applied from ONE place rather than to each field: a script
+             in the app layout finds every password input on the page.
+             That was the snag's own argument (six edits is how the
+             sixth gets missed) taken one step further — a password
+             field added later is covered without anyone remembering.
+             THE DELETE-ACCOUNT FIELD IS INCLUDED, the call Charlie was
+             asked to make: same person, same keyboard, and a mistyped
+             password there simply means the deletion does not happen.
+             ONE THING THAT COULD HAVE GONE SILENTLY WRONG: the obvious
+             implementation wraps each input in a Bootstrap input-group.
+             That would have moved the input out of the sibling
+             relationship Bootstrap uses to show validation messages
+             (.is-invalid ~ .invalid-feedback), killing the error text on
+             login and registration while looking perfectly fine. The
+             button is inserted as a SIBLING instead, and a test asserts
+             a password validation error still appears.
+             Six views carry a password input:
                resources/views/auth/login.blade.php
                resources/views/auth/register.blade.php
                resources/views/auth/reset-password.blade.php

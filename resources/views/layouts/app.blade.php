@@ -314,5 +314,10 @@
          send twice. The server-side one-time token is the real guard;
          this stops the user ever reaching it. --}}
     @include('partials.submit-once')
+
+    {{-- #64 — show/hide on every password field, from one place. Nine of
+         them across six views; six separate edits is how the sixth gets
+         missed. --}}
+    @include('partials.password-reveal')
 </body>
 </html>
