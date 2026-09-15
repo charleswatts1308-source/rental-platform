@@ -12,13 +12,14 @@
     dropdown was on 4 Sep. Doing it here also means any password field
     added later is covered without anyone remembering to.
 
-    THE BUTTON IS A SIBLING of the input, deliberately, not an input-group
-    wrapper. Bootstrap shows a validation message with `.is-invalid ~
-    .invalid-feedback`; moving the input inside a wrapper would take it out
-    of that sibling relationship and silently kill the error messages on
-    login and registration. A general sibling selector does not care that
-    the button sits between them, so this arrangement leaves validation
-    exactly as it was.
+    THE VALIDATION MESSAGE HAS TO COME WITH IT. Bootstrap shows the
+    message with `.is-invalid ~ .invalid-feedback`, so wrapping the input
+    in an input-group and leaving the message outside would take the two
+    out of that sibling relationship and silently kill the error text on
+    login and registration — looking perfectly fine while doing it. The
+    message is moved into the group alongside the input, which is what
+    Bootstrap's own input-group validation expects, and `has-validation`
+    goes on the group so the corners still meet.
 
     ENHANCEMENT ONLY. With no JavaScript every field behaves as it did
     before: masked, and working.
@@ -31,26 +32,48 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         input.dataset.revealReady = '1';
 
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.className = 'btn btn-link btn-sm p-0 mt-1';
-        button.textContent = 'Show password';
-
-        // The field may have no id (the delete-account one is the only
-        // labelled-by-placeholder case), so fall back to a generated one
-        // rather than pointing aria-controls at nothing.
         if (! input.id) {
             input.id = 'password-field-' + index;
         }
+
+        // The validation message, if this field has one rendered.
+        const feedback = input.nextElementSibling
+            && input.nextElementSibling.classList.contains('invalid-feedback')
+                ? input.nextElementSibling
+                : null;
+
+        const group = document.createElement('div');
+        group.className = feedback ? 'input-group has-validation' : 'input-group';
+
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'btn btn-outline-secondary';
         button.setAttribute('aria-controls', input.id);
         button.setAttribute('aria-pressed', 'false');
+        button.setAttribute('aria-label', 'Show password');
+        button.title = 'Show password';
+        button.innerHTML = '<i class="bi bi-eye" aria-hidden="true"></i>';
+
+        input.insertAdjacentElement('beforebegin', group);
+        group.appendChild(input);
+        group.appendChild(button);
+
+        // Order inside the group matters: input, button, THEN the
+        // message, so the sibling selector still finds it.
+        if (feedback) {
+            group.appendChild(feedback);
+        }
 
         button.addEventListener('click', function () {
             const revealed = input.type === 'text';
 
             input.type = revealed ? 'password' : 'text';
-            button.textContent = revealed ? 'Show password' : 'Hide password';
+            button.innerHTML = revealed
+                ? '<i class="bi bi-eye" aria-hidden="true"></i>'
+                : '<i class="bi bi-eye-slash" aria-hidden="true"></i>';
             button.setAttribute('aria-pressed', revealed ? 'false' : 'true');
+            button.setAttribute('aria-label', revealed ? 'Show password' : 'Hide password');
+            button.title = revealed ? 'Show password' : 'Hide password';
 
             // Keep the caret where it was: flipping the type moves it to
             // the start in some browsers, which is maddening mid-word.
@@ -63,10 +86,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 // types. Nothing here is worth an exception.
             }
         });
-
-        // Straight after the input, and BEFORE any validation message, so
-        // the error still reads as the last thing under the field.
-        input.insertAdjacentElement('afterend', button);
     });
 });
 </script>

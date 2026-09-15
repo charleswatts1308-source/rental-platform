@@ -3021,8 +3021,16 @@ Notes:       NINE inputs, not six — six VIEWS, but register, reset and
              relationship Bootstrap uses to show validation messages
              (.is-invalid ~ .invalid-feedback), killing the error text on
              login and registration while looking perfectly fine. The
-             button is inserted as a SIBLING instead, and a test asserts
-             a password validation error still appears.
+             message is moved INTO the input-group alongside the input,
+             which is what Bootstrap's own input-group validation expects,
+             and a test asserts a password validation error still appears.
+             THE FIRST VERSION WAS A TEXT LINK under the field and was
+             rejected within a minute — Charlie: "i was expecting a
+             whizzy little icon". He was right: an eye icon is the
+             convention on every login form anyone has used, and a text
+             link reads as homemade. Bootstrap Icons is already loaded
+             from the CDN in the layout, so bi-eye / bi-eye-slash cost
+             nothing.
              Six views carry a password input:
                resources/views/auth/login.blade.php
                resources/views/auth/register.blade.php

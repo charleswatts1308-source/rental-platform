@@ -20,7 +20,7 @@ uses(RefreshDatabase::class);
  * test fails if a new one appears anywhere without the script.
  */
 it('carries the reveal script on every page with a password field', function (string $path) {
-    $this->get($path)->assertOk()->assertSee('Show password', false);
+    $this->get($path)->assertOk()->assertSee('bi bi-eye', false);
 })->with([
     'login' => '/login',
     'register' => '/register',
@@ -31,9 +31,9 @@ it('carries it on the signed-in password pages too', function () {
     $user = User::factory()->create(['email_verified_at' => now()]);
 
     // Change password and delete account both live on the profile page.
-    $this->actingAs($user)->get('/profile')->assertOk()->assertSee('Show password', false);
+    $this->actingAs($user)->get('/profile')->assertOk()->assertSee('bi bi-eye', false);
 
-    $this->actingAs($user)->get('/confirm-password')->assertOk()->assertSee('Show password', false);
+    $this->actingAs($user)->get('/confirm-password')->assertOk()->assertSee('bi bi-eye', false);
 });
 
 /**
@@ -80,4 +80,8 @@ it('does not reveal anything by default', function () {
     // nothing remembers the choice.
     expect($html)->toContain('type="password"');
     expect($html)->toContain("aria-pressed', 'false'");
+    // And it is the eye icon, not a text link — the convention people
+    // already recognise from every other login form.
+    expect($html)->toContain("bi bi-eye");
+    expect($html)->toContain("bi-eye-slash");
 });
