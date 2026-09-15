@@ -33,7 +33,7 @@ it('exhausted case page still offers reply, resolve and abandon (D14 preserved)'
 
     $this->actingAs($tenant)->get("/cases/{$case->url_slug}")
         ->assertOk()
-        ->assertSee('Send reply')
+        ->assertSee('Preview reply')  // #69: the reply is previewed before it is sent
         ->assertSee('Mark resolved')
         ->assertSee('Abandon this case');
 });

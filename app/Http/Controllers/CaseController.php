@@ -62,6 +62,9 @@ class CaseController extends Controller
      */
     private const PHOTO_MAX_KB = PhotoLimits::PER_FILE_KB;
 
+    /** #69 — the staged reply awaiting its preview confirmation. */
+    private const REPLY_PREVIEW_KEY = 'cases.reply_preview';
+
     /** #71 — one-time send tokens live under this session prefix. */
     private const SEND_TOKEN_PREFIX = 'cases.send_token.';
 
@@ -113,10 +116,29 @@ class CaseController extends Controller
             ->orderBy('created_at')
             ->get();
 
+        // #69 — a staged reply is offered back ONLY on a return via Edit
+        // (?resume=1). On any other visit it is cleared, for the reason #44
+        // records: a plain visit cannot otherwise be told apart from coming
+        // back to finish a draft, and a stale reply would sit waiting to be
+        // sent on a case the tenant has long moved on from.
+        $resumeReply = null;
+        $stagedReply = session(self::REPLY_PREVIEW_KEY);
+        $ownsStaged = $stagedReply
+            && (int) ($stagedReply['user_id'] ?? 0) === request()->user()->id
+            && (int) ($stagedReply['case_id'] ?? 0) === $case->id;
+
+        if ($ownsStaged && request()->boolean('resume')) {
+            $resumeReply = $stagedReply;
+        } elseif ($ownsStaged) {
+            $this->discardStagedPhotos(['photos' => $stagedReply['photos'] ?? []]);
+            session()->forget(self::REPLY_PREVIEW_KEY);
+        }
+
         return view('cases.show', [
             'case' => $case,
             'messages' => $messages,
             'quarantined' => $quarantined,
+            'resumeReply' => $resumeReply,
             'revivalExpired' => $this->dormantRevivalExpired($case),
             // #25 — the event that stopped the case, so the page can say
             // WHY rather than showing a status nobody can interpret. Null
@@ -147,6 +169,82 @@ class CaseController extends Controller
      * Policy enforces the availability gate; this controller delegates
      * to SendCaseNotice's $isTenantReply branch.
      */
+    /**
+     * #69 — stage a reply and show the tenant what will be sent.
+     *
+     * Charlie, 15 Sep 2026: "replies should get preview, no reason why not
+     * and it makes for consistency". He is right on the consistency, and
+     * there is a stronger reason than that: a reply is rendered into the
+     * same letter, frozen on case_messages and served on the landlord
+     * exactly like a notice. Since #19 it can carry photographs. It is
+     * evidence, not chat.
+     *
+     * Checked against the design doc before building, as CLAUDE.md
+     * requires. D8 (tenant reply) is silent on previews. D13 previews
+     * letter 1 because "case creation is the one moment a preview costs
+     * nothing — the tenant is present and acting", which is equally true
+     * of a reply. D13 DOES reject per-letter approval, but explicitly for
+     * sweep-sent escalation, on the grounds that gating automatic
+     * escalation on the tenant's attention reintroduces the disease the
+     * silence model cured. A letter the tenant has just written is the
+     * opposite case. No conflict.
+     */
+    public function replyPreview(Request $request, string $slug): RedirectResponse|View
+    {
+        $case = $this->findCaseOrFail($slug);
+        $this->authorize('reply', $case);
+
+        $rules = [
+            'body' => ['required', 'string', 'min:1', 'max:10000'],
+            'photos' => ['nullable', 'array', 'max:'.$this->photoCeiling()],
+            'photos.*' => ['file', 'mimes:jpg,jpeg,png,pdf', 'max:'.self::PHOTO_MAX_KB],
+        ];
+
+        [$photoMessages, $photoAttributes] = $this->photoValidationCopy($request);
+        $validated = $request->validate($rules, $photoMessages, $photoAttributes);
+
+        // Staged, not stored straight into the case folder as the
+        // pre-preview version did. A preview can be abandoned, and the
+        // daily sweep already clears preview folders over 24h old (#45) —
+        // so staging is what stops an abandoned reply leaving files behind
+        // for ever. The promote step on confirm handles a swept file by
+        // skipping and logging, exactly as the create flow does.
+        $photos = $this->resolveStagedReplyPhotos($request, $case);
+
+        session()->put(self::REPLY_PREVIEW_KEY, [
+            'user_id' => $request->user()->id,
+            'case_id' => $case->id,
+            'body' => $validated['body'],
+            'photos' => $photos,
+            'staged_at' => now()->toIso8601String(),
+        ]);
+
+        $case->load(['property', 'property.currentLandlordContact', 'tenant']);
+
+        $rendered = $this->renderer->renderFreeForm(
+            $validated['body'],
+            'Reply on repair case {{case_reference}} from {{tenant_name}}',
+            [
+                'tenant_name' => $case->tenant->name,
+                'landlord_name' => $case->landlordRecipient()?->name ?: 'Sir or Madam',
+                'case_reference' => $case->url_slug,
+                'property_address' => $this->formatAddress($case->property),
+                'issue_description' => $case->description,
+            ],
+        );
+
+        return view('cases.reply-preview', [
+            'case' => $case,
+            'rendered' => $rendered,
+            'photos' => $photos,
+            'recipient' => $case->landlordRecipient(),
+        ]);
+    }
+
+    /**
+     * Send the previewed reply. #69 made this the CONFIRM step; it no
+     * longer reads the form directly.
+     */
     public function reply(Request $request, string $slug): RedirectResponse
     {
         $case = $this->findCaseOrFail($slug);
@@ -167,36 +265,29 @@ class CaseController extends Controller
                 ->with('success', 'Reply sent to your landlord.');
         }
 
-        // #19 — a tenant replying about a worsening problem wants to show
-        // it, not describe it. Same rules as the create form, from the same
-        // helpers, so the two cannot drift: a reply that advertised
-        // different limits from the form it sits next to would be the
-        // surface-disagrees-with-surface pattern again.
-        $rules = [
-            'body' => ['required', 'string', 'min:1', 'max:10000'],
-            'photos' => ['nullable', 'array', 'max:'.$this->photoCeiling()],
-            'photos.*' => ['file', 'mimes:jpg,jpeg,png,pdf', 'max:'.self::PHOTO_MAX_KB],
-        ];
+        $payload = session(self::REPLY_PREVIEW_KEY);
 
-        [$photoMessages, $photoAttributes] = $this->photoValidationCopy($request);
+        // Expired, cleared, or belonging to another user or another case.
+        // Sending "whatever is in the session" would be how one case's
+        // reply lands on another.
+        if (! $payload
+            || (int) ($payload['user_id'] ?? 0) !== $request->user()->id
+            || (int) ($payload['case_id'] ?? 0) !== $case->id) {
+            return redirect()
+                ->route('cases.show', $case->url_slug)
+                ->with('error', 'Your reply has expired — please write it again.');
+        }
 
-        $validated = $request->validate($rules, $photoMessages, $photoAttributes);
-
-        // Straight to cases/{id}/, NOT through the preview staging folder.
-        // A reply has no preview step to come back from, and the daily
-        // sweep deletes preview folders over 24h old (#45) — staging here
-        // would invent a window in which a reply could lose its evidence.
-        $attachmentInputs = $this->storeReplyPhotos(
-            $request->file('photos', []) ?? [],
-            $case->id,
-        );
+        $attachmentInputs = $this->promotePreviewPhotos($payload['photos'] ?? [], $case->id);
 
         $this->sendCaseNotice->execute(
             $case,
             actorUserId: $request->user()->id,
             attachmentInputs: $attachmentInputs,
-            tenantReplyBody: $validated['body'],
+            tenantReplyBody: $payload['body'],
         );
+
+        session()->forget(self::REPLY_PREVIEW_KEY);
 
         return redirect()
             ->route('cases.show', $case->url_slug)
@@ -987,16 +1078,6 @@ class CaseController extends Controller
     }
 
     /**
-     * Store reply attachments straight into the case folder — #19.
-     *
-     * Mirrors stagePreviewPhotos + promotePreviewPhotos, minus the staging
-     * step: the create flow needs a preview the tenant can come back from,
-     * a reply does not. Returns the same shape SendCaseNotice expects.
-     *
-     * @param  array<int, mixed>  $files
-     * @return array<int, array{disk: string, path: string, original_filename: string, mime_type: string, size_bytes: int}>
-     */
-    /**
      * Mint a one-time token for a form that SENDS something — #71.
      *
      * Charlie double-clicked Send on a reply (15 Sep 2026) and case
@@ -1034,35 +1115,67 @@ class CaseController extends Controller
             return true;
         }
 
-        $expected = $action.':'.$caseId;
-
-        return session()->pull(self::SEND_TOKEN_PREFIX.$token) === $expected;
+        return session()->pull(self::SEND_TOKEN_PREFIX.$token) === $action.':'.$caseId;
     }
-    private function storeReplyPhotos(array $files, int $caseId): array
-    {
-        $stored = [];
 
-        foreach ($files as $file) {
-            if (! $file instanceof UploadedFile || ! $file->isValid()) {
-                continue;
+    /**
+     * Stage a reply's photos, honouring anything already staged — #69.
+     *
+     * The same shape as resolveStagedPhotos() for the create flow, and the
+     * same two rules, because a tenant who has just used one form should
+     * not find the other behaves differently:
+     *
+     *   choosing new files REPLACES the staged set;
+     *   choosing none KEEPS what is staged.
+     *
+     * Absent-means-keep matters here for the same reason it does in #53: a
+     * caller that forgets the field must not be able to wipe evidence.
+     *
+     * @return array<int, array{disk: string, path: string, original_filename: string, mime_type: string, size_bytes: int}>
+     */
+    private function resolveStagedReplyPhotos(Request $request, RepairCase $case): array
+    {
+        $incoming = $request->file('photos', []) ?? [];
+        $payload = session(self::REPLY_PREVIEW_KEY);
+
+        $ownsPayload = $payload
+            && (int) ($payload['user_id'] ?? 0) === $request->user()->id
+            && (int) ($payload['case_id'] ?? 0) === $case->id;
+
+        $staged = $ownsPayload ? ($payload['photos'] ?? []) : [];
+
+        if (count($incoming) > 0) {
+            if ($staged) {
+                $this->discardStagedPhotos(['photos' => $staged]);
             }
 
-            $path = $file->storeAs(
-                "cases/{$caseId}",
-                Str::random(20).'.'.$file->getClientOriginalExtension(),
-                self::PHOTO_DISK,
-            );
-
-            $stored[] = [
-                'disk' => self::PHOTO_DISK,
-                'path' => $path,
-                'original_filename' => $file->getClientOriginalName(),
-                'mime_type' => $file->getMimeType() ?? 'application/octet-stream',
-                'size_bytes' => $file->getSize() ?: 0,
-            ];
+            return $this->stagePreviewPhotos($incoming, $request->user()->id);
         }
 
-        return $stored;
+        // #53's per-file keep instruction, on this form too. Absent means
+        // keep everything; an array names exactly what survives.
+        $keep = $request->input('keep_staged_photos');
+
+        if ($keep === null) {
+            return $staged;
+        }
+
+        $keepPaths = is_array($keep) ? $keep : [];
+        $kept = array_values(array_filter(
+            $staged,
+            fn ($photo) => in_array($photo['path'] ?? '', $keepPaths, true),
+        ));
+
+        $dropped = array_values(array_filter(
+            $staged,
+            fn ($photo) => ! in_array($photo['path'] ?? '', $keepPaths, true),
+        ));
+
+        if ($dropped) {
+            $this->discardStagedPhotos(['photos' => $dropped]);
+        }
+
+        return $kept;
     }
 
     /**

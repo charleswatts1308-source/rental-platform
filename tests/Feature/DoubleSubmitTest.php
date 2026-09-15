@@ -29,6 +29,10 @@ uses(RefreshDatabase::class);
  * disables the button; the server refuses the repeat. A double-submit
  * that never touches the script — two tabs, a resubmitted back button —
  * still has to be refused.
+ *
+ * Since #69 the reply is previewed first, so the token now lives on the
+ * preview's confirm button rather than on the reply form. That is where a
+ * double-click actually happens: the button that sends.
  */
 beforeEach(function () {
     Mail::fake();
@@ -48,86 +52,102 @@ function replyableCaseFor(User $tenant): RepairCase
     ]);
 }
 
-/** Read the token the page actually rendered, as a second click would. */
-function sendTokenFrom(string $html): string
+/** Stage a reply and hand back the token the preview rendered. */
+function stageReply(User $tenant, RepairCase $case, string $body): string
 {
+    $html = test()->actingAs($tenant)
+        ->post(route('cases.reply.preview', $case->url_slug), ['body' => $body])
+        ->assertOk()
+        ->getContent();
+
     expect($html)->toContain('name="send_token"');
     preg_match('/name="send_token"\s*\n?\s*value="([^"]+)"/', $html, $m);
 
     return $m[1] ?? '';
 }
 
-it('writes ONE outbound row when the same reply is posted twice', function () {
+function outboundCount(RepairCase $case): int
+{
+    return CaseMessage::where('case_id', $case->id)
+        ->where('direction', MessageDirection::Outbound)
+        ->count();
+}
+
+it('writes ONE outbound row when the confirm is posted twice', function () {
     $tenant = User::factory()->create();
     $case = replyableCaseFor($tenant);
 
-    $html = $this->actingAs($tenant)->get(route('cases.show', $case->url_slug))->getContent();
-    $token = sendTokenFrom($html);
+    $token = stageReply($tenant, $case, 'The leak is worse today.');
     expect($token)->not->toBe('');
 
-    $payload = ['body' => 'The leak is worse today.', 'send_token' => $token];
+    $this->actingAs($tenant)->post(route('cases.reply', $case->url_slug), ['send_token' => $token]);
+    $this->actingAs($tenant)->post(route('cases.reply', $case->url_slug), ['send_token' => $token]);
 
-    $this->actingAs($tenant)->post(route('cases.reply', $case->url_slug), $payload);
-    $this->actingAs($tenant)->post(route('cases.reply', $case->url_slug), $payload);
-
-    expect(CaseMessage::where('case_id', $case->id)
-        ->where('direction', MessageDirection::Outbound)
-        ->count())->toBe(1);
+    expect(outboundCount($case))->toBe(1);
 });
 
 it('tells the tenant their reply was sent, rather than reporting a failure', function () {
     $tenant = User::factory()->create();
     $case = replyableCaseFor($tenant);
 
-    $html = $this->actingAs($tenant)->get(route('cases.show', $case->url_slug))->getContent();
-    $payload = ['body' => 'Still leaking.', 'send_token' => sendTokenFrom($html)];
+    $token = stageReply($tenant, $case, 'Still leaking.');
 
-    $this->actingAs($tenant)->post(route('cases.reply', $case->url_slug), $payload);
+    $this->actingAs($tenant)->post(route('cases.reply', $case->url_slug), ['send_token' => $token]);
 
     // The tenant pressed send once as far as they are concerned, and it
     // DID go. An error here would be a lie.
     $this->actingAs($tenant)
-        ->post(route('cases.reply', $case->url_slug), $payload)
+        ->post(route('cases.reply', $case->url_slug), ['send_token' => $token])
         ->assertRedirect(route('cases.show', $case->url_slug))
         ->assertSessionHas('success')
         ->assertSessionHasNoErrors();
 });
 
-it('still allows a genuine second reply from a freshly loaded page', function () {
+it('still allows a genuine second reply, staged afresh', function () {
     $tenant = User::factory()->create();
     $case = replyableCaseFor($tenant);
 
-    $first = sendTokenFrom($this->actingAs($tenant)->get(route('cases.show', $case->url_slug))->getContent());
-    $this->actingAs($tenant)->post(route('cases.reply', $case->url_slug), [
-        'body' => 'First message.', 'send_token' => $first,
-    ]);
+    $first = stageReply($tenant, $case, 'First message.');
+    $this->actingAs($tenant)->post(route('cases.reply', $case->url_slug), ['send_token' => $first]);
 
-    $second = sendTokenFrom($this->actingAs($tenant)->get(route('cases.show', $case->url_slug))->getContent());
+    $second = stageReply($tenant, $case, 'Second message, sent deliberately.');
     expect($second)->not->toBe($first);
 
-    $this->actingAs($tenant)->post(route('cases.reply', $case->url_slug), [
-        'body' => 'Second message, sent deliberately.', 'send_token' => $second,
-    ]);
+    $this->actingAs($tenant)->post(route('cases.reply', $case->url_slug), ['send_token' => $second]);
 
-    expect(CaseMessage::where('case_id', $case->id)
-        ->where('direction', MessageDirection::Outbound)
-        ->count())->toBe(2);
+    expect(outboundCount($case))->toBe(2);
 });
 
-it('does not refuse a reply that carries no token at all', function () {
+/**
+ * #69's own guard, which matters as much as the token: the confirm reads
+ * the staged reply out of the session, so a confirm with nothing staged
+ * must not send an empty letter or somebody else's.
+ */
+it('refuses a confirm with no staged reply behind it', function () {
     $tenant = User::factory()->create();
     $case = replyableCaseFor($tenant);
 
-    // A page rendered before #71, or a cleared session. Losing a tenant's
-    // genuine message is worse than the duplicate this guards against, so
-    // an absent token is treated as valid.
-    $this->actingAs($tenant)->post(route('cases.reply', $case->url_slug), [
-        'body' => 'No token on this one.',
-    ])->assertRedirect();
+    $this->actingAs($tenant)
+        ->post(route('cases.reply', $case->url_slug), [])
+        ->assertRedirect(route('cases.show', $case->url_slug))
+        ->assertSessionHas('error');
 
-    expect(CaseMessage::where('case_id', $case->id)
-        ->where('direction', MessageDirection::Outbound)
-        ->count())->toBe(1);
+    expect(outboundCount($case))->toBe(0);
+});
+
+it('does not send one tenant\'s staged reply on another tenant\'s case', function () {
+    $tenant = User::factory()->create();
+    $caseA = replyableCaseFor($tenant);
+    $caseB = replyableCaseFor($tenant);
+
+    $token = stageReply($tenant, $caseA, 'This belongs to case A.');
+
+    // Same session, same tenant, wrong case.
+    $this->actingAs($tenant)
+        ->post(route('cases.reply', $caseB->url_slug), ['send_token' => $token])
+        ->assertRedirect(route('cases.show', $caseB->url_slug));
+
+    expect(outboundCount($caseB))->toBe(0);
 });
 
 it('puts the submit-once script on the page', function () {
@@ -136,6 +156,6 @@ it('puts the submit-once script on the page', function () {
 
     $html = $this->actingAs($tenant)->get(route('cases.show', $case->url_slug))->getContent();
 
-    expect($html)->toContain("form[method=\"POST\"]");
+    expect($html)->toContain('form[method="POST"]');
     expect($html)->toContain('button.disabled = true');
 });

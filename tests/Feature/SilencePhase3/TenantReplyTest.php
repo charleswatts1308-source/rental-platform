@@ -39,9 +39,7 @@ it('allows reply from awaiting_tenant_review', function () {
     $tenant = User::factory()->create();
     $case = caseFor($tenant, CaseStatus::AwaitingTenantReview);
 
-    $response = $this->actingAs($tenant)->post("/cases/{$case->url_slug}/reply", [
-        'body' => 'Thanks — please book the inspection this week.',
-    ]);
+    $response = sendTenantReply($tenant, $case, 'Thanks — please book the inspection this week.');
 
     $response->assertRedirect("/cases/{$case->url_slug}");
     expect($case->fresh()->status)->toBe(CaseStatus::AwaitingLandlord);
@@ -51,9 +49,7 @@ it('allows reply from awaiting_landlord (self-target add-info)', function () {
     $tenant = User::factory()->create();
     $case = caseFor($tenant, CaseStatus::AwaitingLandlord);
 
-    $response = $this->actingAs($tenant)->post("/cases/{$case->url_slug}/reply", [
-        'body' => 'Adding photos of the new patch.',
-    ]);
+    $response = sendTenantReply($tenant, $case, 'Adding photos of the new patch.');
 
     $response->assertRedirect("/cases/{$case->url_slug}");
     expect($case->fresh()->status)->toBe(CaseStatus::AwaitingLandlord);
@@ -63,9 +59,7 @@ it('allows reply from on_hold (resume action)', function () {
     $tenant = User::factory()->create();
     $case = caseFor($tenant, CaseStatus::OnHold, ['hold_until' => now()->addDays(14)]);
 
-    $response = $this->actingAs($tenant)->post("/cases/{$case->url_slug}/reply", [
-        'body' => 'Unpausing — issue persists.',
-    ]);
+    $response = sendTenantReply($tenant, $case, 'Unpausing — issue persists.');
 
     $response->assertRedirect("/cases/{$case->url_slug}");
     expect($case->fresh()->status)->toBe(CaseStatus::AwaitingLandlord);
@@ -77,9 +71,7 @@ it('allows reply from dormant within the revival window', function () {
         'dormant_at' => now()->subDays(30),
     ]);
 
-    $response = $this->actingAs($tenant)->post("/cases/{$case->url_slug}/reply", [
-        'body' => 'Sorry — issue is back, can we continue.',
-    ]);
+    $response = sendTenantReply($tenant, $case, 'Sorry — issue is back, can we continue.');
 
     $response->assertRedirect("/cases/{$case->url_slug}");
     expect($case->fresh()->status)->toBe(CaseStatus::AwaitingLandlord);
@@ -143,9 +135,7 @@ it('validates body is required and non-empty', function () {
     $tenant = User::factory()->create();
     $case = caseFor($tenant, CaseStatus::AwaitingTenantReview);
 
-    $response = $this->actingAs($tenant)->post("/cases/{$case->url_slug}/reply", [
-        'body' => '',
-    ]);
+    $response = sendTenantReply($tenant, $case, '');
 
     $response->assertSessionHasErrors('body');
 });
@@ -156,9 +146,7 @@ it('writes a tenant-sender outbound case_messages row with stage_at_send null', 
     $tenant = User::factory()->create();
     $case = caseFor($tenant, CaseStatus::AwaitingTenantReview);
 
-    $this->actingAs($tenant)->post("/cases/{$case->url_slug}/reply", [
-        'body' => 'Some reply text — verbatim and frozen.',
-    ]);
+    sendTenantReply($tenant, $case, 'Some reply text — verbatim and frozen.');
 
     $message = $case->messages()
         ->where('direction', MessageDirection::Outbound)
@@ -175,9 +163,7 @@ it('queues CaseNotice mailable to the landlord on reply', function () {
     $tenant = User::factory()->create();
     $case = caseFor($tenant, CaseStatus::AwaitingTenantReview);
 
-    $this->actingAs($tenant)->post("/cases/{$case->url_slug}/reply", [
-        'body' => 'Pls hurry.',
-    ]);
+    sendTenantReply($tenant, $case, 'Pls hurry.');
 
     Mail::assertQueued(CaseNotice::class);
 });
@@ -191,9 +177,7 @@ it('mints a fresh token and supersedes the old one on reply', function () {
         'superseded_at' => null,
     ]);
 
-    $this->actingAs($tenant)->post("/cases/{$case->url_slug}/reply", [
-        'body' => 'Pls hurry.',
-    ]);
+    sendTenantReply($tenant, $case, 'Pls hurry.');
 
     expect($case->replyTokens()->whereNull('superseded_at')->count())->toBe(1);
     expect($case->replyTokens()->whereNotNull('superseded_at')->count())->toBe(1);
@@ -206,9 +190,7 @@ it('restarts the silence clock (ball→landlord, snapshot refresh)', function ()
         'silence_clock_started_at' => now()->subDays(5),
     ]);
 
-    $this->actingAs($tenant)->post("/cases/{$case->url_slug}/reply", [
-        'body' => 'Reply.',
-    ]);
+    sendTenantReply($tenant, $case, 'Reply.');
 
     $fresh = $case->fresh();
     expect($fresh->ball_with)->toBe('landlord');
@@ -220,9 +202,7 @@ it('writes tenant_replied as the canonical event when transitioning', function (
     $tenant = User::factory()->create();
     $case = caseFor($tenant, CaseStatus::AwaitingTenantReview);
 
-    $this->actingAs($tenant)->post("/cases/{$case->url_slug}/reply", [
-        'body' => 'Pls hurry.',
-    ]);
+    sendTenantReply($tenant, $case, 'Pls hurry.');
 
     expect($case->events()->where('event_type', 'tenant_replied')->count())->toBe(1);
 });
@@ -231,9 +211,7 @@ it('writes tenant_replied explicitly on the self-send branch (AwaitingLandlord)'
     $tenant = User::factory()->create();
     $case = caseFor($tenant, CaseStatus::AwaitingLandlord);
 
-    $this->actingAs($tenant)->post("/cases/{$case->url_slug}/reply", [
-        'body' => 'Adding info.',
-    ]);
+    sendTenantReply($tenant, $case, 'Adding info.');
 
     expect($case->fresh()->status)->toBe(CaseStatus::AwaitingLandlord);
     expect($case->events()->where('event_type', 'tenant_replied')->count())->toBe(1);

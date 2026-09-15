@@ -3239,8 +3239,20 @@ Saw:         Raising a case goes description -> PREVIEW -> confirm, and
              the asymmetry is sharper: the tenant commits attachments
              to an evidential record without seeing what goes.
 Expected:    Undecided — that is the point of this entry.
-Status:      open — snagged 15 Sep 2026. NEEDS A RULING before anything
-             is built.
+Status:      RULED AND BUILT 15 Sep 2026. Charlie: "replies should get
+             preview, no reason why not and it makes for consistency".
+             Not yet walked, not yet deployed.
+             CHECKED AGAINST THE DESIGN DOC FIRST, as CLAUDE.md requires,
+             and the result is worth recording because one line looks
+             like a conflict and is not. D8 (tenant reply) is SILENT on
+             previews. D13 previews letter 1 because "case creation is
+             the one moment a preview costs nothing — the tenant is
+             present and acting", which is equally true of a reply. D13
+             DOES explicitly reject per-letter tenant approval, but for
+             SWEEP-SENT escalation, on the grounds that gating automatic
+             escalation on the tenant's attention reintroduces the
+             disease the silence model cured. A letter the tenant has
+             just written is the opposite case. No conflict.
 Notes:       Arguments FOR a reply preview:
              - the reply is frozen on case_messages and served on the
                landlord exactly like a notice; it is evidence, not chat;
@@ -3269,7 +3281,37 @@ Notes:       Arguments FOR a reply preview:
              D8 (tenant reply) / D13 (preview) are the two clauses in
              play. If the doc is silent, say so in the ruling rather
              than inferring.
-Fix:         Not decided. Do not build until ruled.
+Fix:         DONE. Write -> preview -> confirm, the same three steps as
+             raising a case, and deliberately the same shape on screen so
+             a tenant who has seen one recognises the other.
+             The preview shows the rendered letter as the landlord will
+             see it, NAMES the recipient and address (the last free
+             moment to notice a corrected contact, the #59 argument one
+             step later), lists the attachments — and says "No photos
+             attached" when there are none, because the mirror of #39 is
+             showing nothing and letting a tenant assume theirs went.
+             THREE CONSEQUENCES worth knowing:
+             (1) Reply photos are STAGED again rather than written
+                 straight to the case folder as #19 left them. A preview
+                 can be abandoned, and the daily sweep already clears
+                 preview folders over 24h old (#45), so staging is what
+                 stops an abandoned reply leaving files behind for ever.
+             (2) Edit carries ?resume=1, the same signal the create-case
+                 Edit link uses, and a plain visit to the case page
+                 clears the staged reply — #44's rule, applied here
+                 before it could become #44's bug.
+             (3) The #71 send token moved from the reply form to the
+                 preview's confirm button, which is where a double-click
+                 actually happens now.
+             Sixteen existing tests posted straight at cases.reply, which
+             is only the confirm step now. They were REPOINTED through a
+             shared sendTenantReply() helper in tests/Pest.php rather
+             than weakened — every one still asserts what it asserted
+             before, and now exercises the token on the real path too.
+             The "forbids reply from ..." tests were deliberately left
+             posting DIRECTLY at cases.reply: they assert the SEND
+             endpoint is gated, which is worth keeping pointed at the
+             send endpoint rather than at the preview in front of it.
 --------------------------------------------------------------------
 #70
 Page:        Case page — the left-hand pane is narrow on a desktop.

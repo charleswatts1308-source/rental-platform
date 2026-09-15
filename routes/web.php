@@ -108,6 +108,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/cases/preview', [CaseController::class, 'preview'])->name('cases.preview');
     Route::post('/cases/preview/confirm', [CaseController::class, 'confirm'])->name('cases.confirm');
     Route::get('/cases/{slug}', [CaseController::class, 'show'])->name('cases.show');
+    // #69 — a reply is previewed before it is sent, the same as letter 1.
+    // The reply is frozen on case_messages and served on the landlord
+    // exactly like a notice; it is evidence, not chat, and since #19 it can
+    // carry photographs. D13 previews letter 1 because "the tenant is
+    // present and acting", which is equally true here. D13's rejection of
+    // per-letter approval is about SWEEP-SENT escalation, not about a
+    // letter the tenant has just written.
+    Route::post('/cases/{slug}/reply/preview', [CaseController::class, 'replyPreview'])->name('cases.reply.preview');
     Route::post('/cases/{slug}/reply', [CaseController::class, 'reply'])->name('cases.reply');
     // D15 — engagement-gated escalation: tenant authorises a withheld notice.
     Route::get('/cases/{slug}/authorise', [CaseController::class, 'escalationPreview'])->name('cases.escalate.preview');

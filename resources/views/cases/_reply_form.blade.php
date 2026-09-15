@@ -10,6 +10,14 @@
     $replyPhotoPerFileBytes = PhotoLimits::perFileBytes();
     $replyPhotoTotalBytes = PhotoLimits::totalBytes();
     $replyPhotoTotalLabel = PhotoLimits::totalLabel();
+
+    // #69 — returning from the preview via Edit. ?resume=1 is the same
+    // signal the create-case Edit link carries, and for the same reason
+    // (#44): a plain visit to this page must not be mistaken for coming
+    // back to finish a draft, or a stale reply sits waiting to be sent on
+    // a case the tenant has moved on from.
+    $stagedReplyBody = $resumeReply['body'] ?? null;
+    $stagedReplyPhotos = $resumeReply['photos'] ?? [];
 @endphp
 {{--
     The reply form, moved out of the action-panel sidebar into the main
@@ -22,20 +30,18 @@
     reply beneath it.
 --}}
     @can('reply', $case)
-        <h2 class="h5 mt-4 mb-3">Reply to your landlord</h2>
+        <h2 id="reply" class="h5 mt-4 mb-3">Reply to your landlord</h2>
         {{-- enctype is not optional: without it the browser posts the
              filenames and not the files, and the reply would send with
              the tenant believing photos went with it. --}}
-        <form method="POST" action="{{ route('cases.reply', $case->url_slug) }}"
+        <form method="POST" action="{{ route('cases.reply.preview', $case->url_slug) }}"
               enctype="multipart/form-data" class="mb-3">
             @csrf
-            {{-- #71 — one-time token. A double-click on Send used to write
-                 two evidential rows and post two letters. --}}
-            <input type="hidden" name="send_token"
-                   value="{{ \App\Http\Controllers\CaseController::mintSendToken('reply', $case->id) }}">
+            {{-- No send token here: this form now leads to a preview, and
+                 the token belongs on the button that actually sends (#71). --}}
             <label for="reply_body" class="form-label">Your message</label>
-            <textarea id="reply_body" name="body" rows="4" required maxlength="10000"
-                      class="form-control form-control-sm mb-2">{{ old('body') }}</textarea>
+            <textarea id="reply_body" name="body" rows="5" required maxlength="10000"
+                      class="form-control mb-2">{{ old('body', $stagedReplyBody) }}</textarea>
 
             {{-- #19. Raised in the June live-fire by a tenant wanting to
                  show a worsening problem rather than describe it, and
@@ -66,7 +72,23 @@
                      form uses, so a reply cannot tell the tenant
                      something different about the same upload. --}}
                 <div id="reply-photo-errors"></div>
-                <ul id="reply-photo-list" class="list-unstyled small mt-1 mb-3"></ul>
+                <ul id="reply-photo-list" class="list-unstyled small mt-1 mb-3">
+                    @foreach($stagedReplyPhotos as $photo)
+                        {{-- #46's lesson on this form: a browser cannot re-seed
+                             a file input, so coming back from the preview would
+                             otherwise show an empty picker over photos that ARE
+                             still attached. Each row carries its own keep
+                             instruction (#53), so removing the row IS the
+                             instruction. --}}
+                        <li data-staged="1" class="d-flex align-items-center gap-2 mb-1">
+                            <input type="hidden" name="keep_staged_photos[]" value="{{ $photo['path'] }}">
+                            <span>{{ $photo['original_filename'] }}</span>
+                            <span class="text-muted">({{ \App\Support\FileSize::human((int) $photo['size_bytes']) }})</span>
+                            <span class="text-muted">attached</span>
+                            <button type="button" data-remove-staged class="btn btn-link btn-sm p-0 text-danger">Remove</button>
+                        </li>
+                    @endforeach
+                </ul>
             @else
                 <p class="form-text mb-2">
                     Photos can&rsquo;t be attached at the moment — please describe the
@@ -83,7 +105,7 @@
                 @endforeach
             @endforeach
 
-            <button type="submit" class="btn btn-primary">Send reply</button>
+            <button type="submit" class="btn btn-primary">Preview reply</button>
         </form>
 
         @if($replyPhotoCeiling > 0)

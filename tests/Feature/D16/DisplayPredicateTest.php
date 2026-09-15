@@ -190,7 +190,7 @@ it('tenant page on exhausted: no escalation line + #21 panel (reply/resolve/aban
         ->assertOk()
         ->assertDontSee('Next escalation')
         ->assertDontSee('Next notice (with your go-ahead)')
-        ->assertSee('Send reply')
+        ->assertSee('Preview reply')  // #69: the reply is previewed before it is sent
         ->assertSee('Mark resolved')
         ->assertSee('Abandon this case')
         ->assertDontSee('How do you see this case?');
