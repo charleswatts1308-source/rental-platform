@@ -2830,3 +2830,40 @@ Fix:         Not decided. Options: validate the name at registration;
              confirm the name that will appear on the letter, which the
              preview is already the natural place for.
 --------------------------------------------------------------------
+#64
+Page:        All password fields — login, register, reset password,
+             confirm password, change password, and the delete-account
+             confirmation. Raised 2026-09-15 by Charlie.
+Severity:    minor — no data is wrong, but it costs a failed login or a
+             failed registration every time a password is mistyped, and
+             the user cannot tell which.
+Saw:         Every password input is type="password" with no way to
+             reveal what was typed. On registration the password and
+             its confirmation are both masked, so a typo is only
+             discoverable by the mismatch error, which does not say
+             where the mismatch is. On login a mistype is
+             indistinguishable from a wrong password.
+Expected:    A show/hide toggle on the field, so what is about to be
+             submitted can be read back before submitting.
+Status:      open — snagged 15 Sep 2026.
+Notes:       Six views carry a password input:
+               resources/views/auth/login.blade.php
+               resources/views/auth/register.blade.php
+               resources/views/auth/reset-password.blade.php
+               resources/views/auth/confirm-password.blade.php
+               resources/views/profile/partials/update-password-form.blade.php
+               resources/views/profile/partials/delete-user-form.blade.php
+             They are Breeze stock, so the fix is one shared component
+             used six times, not six edits — otherwise the sixth gets
+             missed the way the create-case dropdown did on 4 Sep.
+             Sits naturally with #37/#27/#28/#29, the
+             registration/verification/login unit already scheduled in
+             this fix cycle. Do it in that pass rather than alone.
+             The delete-account field is the one place to think twice:
+             revealing a password on a destructive confirmation is
+             defensible but is a deliberate call, not a default.
+Fix:         A Blade component wrapping the input with a button that
+             flips type between password and text, labelled for screen
+             readers and defaulting to hidden. Bootstrap input-group,
+             no new dependency. Never persist the revealed state.
+--------------------------------------------------------------------
