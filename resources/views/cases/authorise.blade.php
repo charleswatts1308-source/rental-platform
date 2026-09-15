@@ -41,6 +41,11 @@
         <a href="{{ route('cases.show', $case->url_slug) }}" class="btn btn-outline-secondary">Not now</a>
         <form method="POST" action="{{ route('cases.escalate.authorise', $case->url_slug) }}" class="d-inline">
             @csrf
+            {{-- #71 — one-time token. A duplicate escalation letter advances
+                 the ladder, and the counter derived from these rows never
+                 resets (D3). There is no way back from a double-click. --}}
+            <input type="hidden" name="send_token"
+                   value="{{ \App\Http\Controllers\CaseController::mintSendToken('escalate', $case->id) }}">
             <button type="submit" class="btn btn-primary">Confirm and send notice {{ $noticeNumber }}</button>
         </form>
     </div>

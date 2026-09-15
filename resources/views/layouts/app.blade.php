@@ -309,5 +309,10 @@
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     @yield('scripts')
+
+    {{-- #71 — every POST form on every page, so a double-click cannot
+         send twice. The server-side one-time token is the real guard;
+         this stops the user ever reaching it. --}}
+    @include('partials.submit-once')
 </body>
 </html>

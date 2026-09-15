@@ -29,6 +29,10 @@
         <form method="POST" action="{{ route('cases.reply', $case->url_slug) }}"
               enctype="multipart/form-data" class="mb-3">
             @csrf
+            {{-- #71 — one-time token. A double-click on Send used to write
+                 two evidential rows and post two letters. --}}
+            <input type="hidden" name="send_token"
+                   value="{{ \App\Http\Controllers\CaseController::mintSendToken('reply', $case->id) }}">
             <label for="reply_body" class="form-label">Your message</label>
             <textarea id="reply_body" name="body" rows="4" required maxlength="10000"
                       class="form-control form-control-sm mb-2">{{ old('body') }}</textarea>

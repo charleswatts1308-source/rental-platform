@@ -3264,3 +3264,62 @@ Fix:         DONE. The reply form is its own partial
              does not break them but moving it back does. A second test
              pins that the other actions did NOT move.
 --------------------------------------------------------------------
+#71
+Page:        Case page reply — a DOUBLE-CLICK on Send posts the letter
+             twice. Found 2026-09-15 by Charlie, by accident: "funny
+             thing i double clicked on send by mistake and did send 2
+             emails to mailpit".
+Severity:    functional, and on the escalation path SERIOUS. Outbound
+             rows are the evidence record, not a log of attempts.
+Saw:         Case LYE62E on dev: two outbound rows a second apart
+             (msg 13 at 14:28:26, msg 14 at 14:28:27), each with the
+             same attachment, and two letters in Mailpit. The landlord
+             would have received the same message twice.
+Expected:    One press, one letter. Two presses of the same button on
+             the same page, still one letter.
+Status:      FIXED SAME DAY, 15 Sep 2026.
+Notes:       BLAST RADIUS, established before fixing rather than after:
+             - REPLY: reproduced, two rows, two letters.
+             - CREATE-CASE CONFIRM: safe already, but BY ACCIDENT. The
+               draft is pulled out of the session on first confirm, so a
+               second request finds no draft and is sent back to the
+               form. Worth knowing it was luck, not design.
+             - ESCALATION AUTHORISE: was not explicitly guarded. The
+               policy would very likely have refused a second attempt,
+               because the first send clears the held condition — but
+               "very likely" is not a standard to apply here. A
+               duplicate escalation letter ADVANCES THE LADDER, the
+               counter is derived from these rows and never resets (D3
+               ratchet), and there is no way back from it. Now guarded
+               explicitly.
+             TWO LAYERS, and the distinction matters:
+             (1) the browser disables the submit button once a form is
+                 on its way. This is the comfort. It re-enables after ten
+                 seconds so a stalled connection cannot leave a tenant
+                 unable to send at all, and it is bound to the submit
+                 EVENT, which a browser-rejected form never fires — so a
+                 blank required field does not strand the button.
+             (2) the server consumes a one-time token minted when the
+                 page rendered. This is the guarantee. A double-submit
+                 that never touches the script — two tabs, a resubmitted
+                 back button, a reloaded POST — still has to be refused,
+                 and is.
+             A DELIBERATE CHOICE INSIDE (2): a request carrying NO token
+             is allowed through. A page rendered before this shipped, or
+             a cleared session, would otherwise cost a tenant their
+             message — worse than the duplicate being guarded against.
+             The token only has to catch the second of two submits from
+             one rendered page, and for that it need not be mandatory.
+             A SECOND DELIBERATE CHOICE: the refused duplicate redirects
+             with the SUCCESS message, not an error. The tenant pressed
+             send once as far as they are concerned, and their reply did
+             go. Reporting a failure would be false.
+Fix:         Done. resources/views/partials/submit-once.blade.php in the
+             layout; mintSendToken/consumeSendToken on CaseController,
+             used by the reply form and the escalation authorise form.
+             Tests in tests/Feature/DoubleSubmitTest.php.
+             NOT DONE, and recorded rather than assumed: every other POST
+             form in the app gets layer (1) automatically, but only reply
+             and escalation carry a token. Anything else that becomes
+             evidentially important should get one.
+--------------------------------------------------------------------

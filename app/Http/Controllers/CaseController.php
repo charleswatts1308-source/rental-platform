@@ -62,6 +62,9 @@ class CaseController extends Controller
      */
     private const PHOTO_MAX_KB = PhotoLimits::PER_FILE_KB;
 
+    /** #71 — one-time send tokens live under this session prefix. */
+    private const SEND_TOKEN_PREFIX = 'cases.send_token.';
+
     /**
      * Ceiling fallback when the setting row is missing. Matches the
      * seeded default; deliberately conservative.
@@ -148,6 +151,21 @@ class CaseController extends Controller
     {
         $case = $this->findCaseOrFail($slug);
         $this->authorize('reply', $case);
+
+        // #71 — a double-click on Send used to write TWO evidential rows
+        // and post TWO letters. The form carries a one-time token minted
+        // when the page rendered; the first submit consumes it and the
+        // second finds nothing. Deliberately server-side: disabling the
+        // button in the browser is the comfort, this is the guarantee.
+        //
+        // Not a validation error. The tenant pressed send once as far as
+        // they are concerned, and their reply DID go — telling them
+        // something failed would be false.
+        if (! $this->consumeSendToken($request, 'reply', $case->id)) {
+            return redirect()
+                ->route('cases.show', $case->url_slug)
+                ->with('success', 'Reply sent to your landlord.');
+        }
 
         // #19 — a tenant replying about a worsening problem wants to show
         // it, not describe it. Same rules as the create form, from the same
@@ -241,6 +259,17 @@ class CaseController extends Controller
     {
         $case = $this->findCaseOrFail($slug);
         $this->authorize('authoriseEscalation', $case);
+
+        // #71. The policy would very likely refuse a second authorisation
+        // anyway, because the first send clears the held condition — but
+        // "very likely" is not good enough here. A duplicate escalation
+        // letter advances the ladder, the counter is DERIVED from these
+        // rows and never resets (D3), and there is no way back from it.
+        if (! $this->consumeSendToken($request, 'escalate', $case->id)) {
+            return redirect()
+                ->route('cases.show', $case->url_slug)
+                ->with('success', 'The next notice has been sent to your landlord.');
+        }
 
         $this->sendCaseNotice->execute($case, actorUserId: $request->user()->id);
 
@@ -967,6 +996,48 @@ class CaseController extends Controller
      * @param  array<int, mixed>  $files
      * @return array<int, array{disk: string, path: string, original_filename: string, mime_type: string, size_bytes: int}>
      */
+    /**
+     * Mint a one-time token for a form that SENDS something — #71.
+     *
+     * Charlie double-clicked Send on a reply (15 Sep 2026) and case
+     * LYE62E took two outbound rows a second apart, and the landlord two
+     * letters. Outbound rows are the evidence record; a duplicate is not
+     * a cosmetic problem.
+     *
+     * Keyed by the token itself rather than by case, so two tabs on the
+     * same case each hold a live token instead of the second render
+     * invalidating the first.
+     */
+    public static function mintSendToken(string $action, int $caseId): string
+    {
+        $token = Str::random(32);
+        session()->put(self::SEND_TOKEN_PREFIX.$token, $action.':'.$caseId);
+
+        return $token;
+    }
+
+    /**
+     * Consume it. True means "this is the first submit, go ahead".
+     *
+     * A missing token means the form was rendered before #71 shipped, or
+     * the session was cleared. Treated as VALID: refusing a genuine reply
+     * because a token went missing would cost a tenant their message,
+     * which is worse than the duplicate this guards against. The token
+     * only ever has to catch the second of two submits from the same
+     * rendered page, and for that it does not need to be mandatory.
+     */
+    private function consumeSendToken(Request $request, string $action, int $caseId): bool
+    {
+        $token = (string) $request->input('send_token', '');
+
+        if ($token === '') {
+            return true;
+        }
+
+        $expected = $action.':'.$caseId;
+
+        return session()->pull(self::SEND_TOKEN_PREFIX.$token) === $expected;
+    }
     private function storeReplyPhotos(array $files, int $caseId): array
     {
         $stored = [];
