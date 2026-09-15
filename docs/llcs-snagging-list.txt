@@ -76,6 +76,8 @@ Status:      SECOND HALF FOUND AND FIXED 15 Sep 2026. Charlie set a
              property dropdown changes now follow the stored role.
              Tests in tests/Feature/Phase6/CaseCreateTest.php cover
              agent and landlord.
+             WALKED AND PASSED 15 Sep 2026 by Charlie, on dev. Not yet
+             deployed.
 Status:      open — RULED 12 Sep 2026. The panel currently titled
              "Recipient" takes its title from the contact's stored role
              — "Landlord" or "Agent" — and shows the contact's EMAIL
