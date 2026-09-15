@@ -170,3 +170,53 @@ it('says why, rather than showing nothing, when the ceiling is zero', function (
     expect($html)->not->toContain('name="photos[]"');
     expect($html)->toContain('Photos can&rsquo;t be attached at the moment');
 });
+
+/**
+ * Charlie, 15 Sep: "the attachments are not being listed as in the create
+ * case page". The reply form took files but showed nothing back, so a
+ * tenant could not see what they had chosen before sending — on the one
+ * form whose whole purpose is evidence.
+ *
+ * Fixed by SHARING the create form's picker rather than writing a second
+ * one. These assertions pin that it is genuinely the same partial on both
+ * forms: a reply that refused a file for a different reason, or quoted a
+ * different size, would be the drift #68 was.
+ */
+it('lists the chosen files on the reply form, using the same picker as the create form', function () {
+    $tenant = User::factory()->create();
+    $case = repliableCase($tenant);
+
+    $html = $this->actingAs($tenant)
+        ->get(route('cases.show', $case->url_slug))
+        ->assertOk()
+        ->getContent();
+
+    // Somewhere to list them, somewhere to explain a refusal.
+    expect($html)->toContain('id="reply-photo-list"');
+    expect($html)->toContain('id="reply-photo-errors"');
+
+    // The picker is wired to THIS form's ids.
+    expect($html)->toContain('document.getElementById("reply_photos")');
+    expect($html)->toContain('document.getElementById("reply-photo-list")');
+
+    // And it is handed the same numbers the server enforces.
+    expect($html)->toContain('data-photo-ceiling="3"');
+    expect($html)->toContain('data-photo-max-bytes="'.\App\Support\PhotoLimits::perFileBytes().'"');
+});
+
+it('carries the same accumulate-and-total behaviour on both forms', function () {
+    $tenant = User::factory()->create();
+    $case = repliableCase($tenant);
+
+    $replyHtml = $this->actingAs($tenant)
+        ->get(route('cases.show', $case->url_slug))->getContent();
+    $createHtml = $this->actingAs($tenant)
+        ->get('/cases/create')->getContent();
+
+    // A sentence from the shared picker, on both pages. If someone forks
+    // the script, one of these stops matching.
+    $marker = 'would take the total over';
+
+    expect($replyHtml)->toContain($marker);
+    expect($createHtml)->toContain($marker);
+});

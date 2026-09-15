@@ -13,6 +13,7 @@
     // different limits for the same upload.
     $replyPhotoCeiling = PhotoLimits::ceiling();
     $replyPhotoMaxLabel = PhotoLimits::perFileLabel();
+    $replyPhotoPerFileBytes = PhotoLimits::perFileBytes();
     $replyPhotoTotalBytes = PhotoLimits::totalBytes();
     $replyPhotoTotalLabel = PhotoLimits::totalLabel();
 @endphp
@@ -81,8 +82,11 @@
                     <label for="reply_photos" class="form-label small">Photos (optional)</label>
                     <input id="reply_photos" name="photos[]" type="file" multiple
                            accept=".jpg,.jpeg,.png,.pdf"
+                           data-photo-ceiling="{{ $replyPhotoCeiling }}"
+                           data-photo-max-bytes="{{ $replyPhotoPerFileBytes }}"
+                           data-photo-total-max-bytes="{{ $replyPhotoTotalBytes }}"
                            class="form-control form-control-sm @error('photos') is-invalid @enderror @error('photos.*') is-invalid @enderror">
-                    <div class="form-text small mb-2">
+                    <div class="form-text small mb-1">
                         @include('partials.photo-limits', [
                             'ceiling' => $replyPhotoCeiling,
                             'perFileLabel' => $replyPhotoMaxLabel,
@@ -90,6 +94,13 @@
                             'totalLabel' => $replyPhotoTotalLabel,
                         ])
                     </div>
+
+                    {{-- Client-side problems render here, and the chosen
+                         files are listed below — the same partial the create
+                         form uses, so a reply cannot tell the tenant
+                         something different about the same upload. --}}
+                    <div id="reply-photo-errors"></div>
+                    <ul id="reply-photo-list" class="list-unstyled small mt-1 mb-2"></ul>
                 @else
                     <p class="form-text small mb-2">
                         Photos can&rsquo;t be attached at the moment — please describe the
@@ -108,6 +119,14 @@
 
                 <button type="submit" class="btn btn-primary w-100">Send reply</button>
             </form>
+
+            @if($replyPhotoCeiling > 0)
+                @include('partials.photo-picker', [
+                    'inputId' => 'reply_photos',
+                    'listId' => 'reply-photo-list',
+                    'errorsId' => 'reply-photo-errors',
+                ])
+            @endif
         @endcan
 
         @if($case->status === CaseStatus::Dormant && ($revivalExpired ?? false))
