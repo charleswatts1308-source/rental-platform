@@ -122,5 +122,24 @@ it('puts the postcode before the city and says the city may be filled in', funct
     $html = $this->actingAs($user)->get('/properties/create')->getContent();
 
     expect(strpos($html, 'for="postcode"'))->toBeLessThan(strpos($html, 'for="city"'));
-    expect($html)->toContain('Enter the postcode first and we will fill this in where we can.');
+    expect($html)->toContain('Type the postcode above, then click in this box and we will fill it in for you.');
+});
+
+/**
+ * The town sits BENEATH the postcode, not beside it, and the help text
+ * tells the user what to DO rather than describing what might happen
+ * (both asked for 15 Sep). The column break is what stacks them while
+ * letting each keep its own width.
+ */
+it('stacks the town beneath the postcode rather than alongside it', function () {
+    $user = User::factory()->create();
+
+    $html = $this->actingAs($user)->get('/properties/create')->getContent();
+
+    $postcodeAt = strpos($html, 'for="postcode"');
+    $breakAt = strpos($html, '<div class="w-100"></div>');
+    $cityAt = strpos($html, 'for="city"');
+
+    expect($postcodeAt)->toBeLessThan($breakAt);
+    expect($breakAt)->toBeLessThan($cityAt);
 });

@@ -129,7 +129,7 @@
             // not read as one. The server-side rule is looser for the
             // same reason.
             'notFoundMessage' => 'We could not find that postcode. That is fine if the address is not in the UK.',
-            'cityHelp' => 'Filled in from the postcode where we can.',
+            'cityHelp' => 'Type the postcode above, then click in this box and we will fill it in for you.',
         ])
 
         <div class="col-12 d-flex gap-2 mt-4">

@@ -20,5 +20,5 @@
     // The property is where the TENANT lives, so a postcode that does not
     // exist is a typo and worth saying so.
     'notFoundMessage' => 'We could not find that postcode. Please check it.',
-    'cityHelp' => 'Enter the postcode first and we will fill this in where we can.',
+    'cityHelp' => 'Type the postcode above, then click in this box and we will fill it in for you.',
 ])

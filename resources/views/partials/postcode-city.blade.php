@@ -44,6 +44,11 @@
     <div id="postcode-hint" class="form-text" style="min-height:1.5rem"></div>
 </div>
 
+{{-- Forces the town onto its own row BENEATH the postcode rather than
+     beside it (asked for 15 Sep). Bootstrap's column break, so the two
+     keep their own widths instead of both being stretched full-width. --}}
+<div class="w-100"></div>
+
 <div class="col-md-8">
     <label for="city" class="form-label">{{ $cityLabel }}</label>
     <input id="city" name="city" type="text" maxlength="100"
