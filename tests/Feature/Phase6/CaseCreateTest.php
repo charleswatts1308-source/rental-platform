@@ -1083,3 +1083,25 @@ it('#53 — the form renders one keep input per staged photo, plus the sentinel'
     // The sentinel, which is what keeps "remove them all" sayable.
     $response->assertSee('name="keep_staged_photos[]" value=""', false);
 });
+
+/**
+ * #61 — the retaliation sentence is gone from the seeded footers.
+ *
+ * Charlie, 15 Sep: remove it regardless of any replacement text. The
+ * /landlords link agreed alongside it on 12 Sep is NOT blocked on this
+ * and is not built here.
+ *
+ * Asserted against the seeder's own output because that is the only
+ * copy this repo controls. Deployed boxes read templates from the
+ * database and the seeder deliberately does not overwrite them, so this
+ * test says a FRESH box is clean — it says nothing about dev, gafol or
+ * prod, each of which needs the admin template editor.
+ */
+it('has no retaliation sentence left in any seeded letter template', function () {
+    $seeder = file_get_contents(database_path('seeders/LetterTemplateSeeder.php'));
+
+    expect($seeder)->not->toContain('retaliation');
+    // The rest of the footer must survive — this is a sentence removal,
+    // not a footer removal.
+    expect($seeder)->toContain('This message was sent through renters.rent on behalf of the tenant.');
+});

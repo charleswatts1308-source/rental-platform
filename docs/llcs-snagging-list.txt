@@ -2760,6 +2760,10 @@ Saw:         The footer of letter 1, and of at least one other template,
              in at least TWO variants (around lines 229 and 276); the
              shorter one omits the routed-replies sentence but carries
              the same final sentence.
+RULED:       15 Sep 2026 by Charlie — "please remove it regardless of
+             any replacement text." The removal does NOT wait on the
+             /landlords link agreed alongside it on 12 Sep; that is now
+             carried separately.
 Expected:    The final sentence — "The tenant's contact details are kept
              private to protect against retaliation." — is removed. The
              rest of the footer stands.
@@ -2787,13 +2791,21 @@ Notes:       Two things make this less trivial than a text edit.
              email is about the REPAIR and lands in the case record; the
              link is for everything else. If both read the same,
              landlords will use whichever comes first.
-Fix:         Edit the live templates through the ADMIN TEMPLATE EDITOR
+Fix:         SEEDER DONE 15 Sep 2026 — the sentence is out of both
+             footer variants, so a fresh box is clean. The rest of each
+             footer stands. Test pins it in
+             tests/Feature/Phase6/CaseCreateTest.php.
+             STILL TO DO, and it is the part that matters: dev, gafol
+             and prod all read templates from the DATABASE, which the
+             seeder does not overwrite, so all three still send the old
+             wording. Each needs the change made through the ADMIN
+             TEMPLATE EDITOR
              (routes admin templates.edit / templates.update), NOT by
              raw SQL — the editor writes letter_text_change_history, and
              an unexplained wording change on an evidential letter with
              no audit trail is exactly what you would later need to
-             explain. Update the seeder in the same pass so a fresh box
-             gets the corrected text.
+             explain. The seeder half of that instruction is now done.
+
 --------------------------------------------------------------------
 #62
 Page:        Case correspondence — landlord questions about the SERVICE
