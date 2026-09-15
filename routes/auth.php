@@ -11,6 +11,31 @@ use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use Illuminate\Support\Facades\Route;
 
+/**
+ * Deliberately OUTSIDE both the `guest` and `auth` groups — snags #27 and
+ * #65, ruled 15 Sep 2026.
+ *
+ * `auth` turned a click from the user's own inbox into a login demand
+ * whenever the link opened in a browser without a session — which, with
+ * Outlook opening links in Edge, is the normal case rather than the odd
+ * one. Worse, if that browser happened to hold a session for somebody
+ * else, the request got past `auth` and died at a 403 (observed on prod
+ * 2 Aug 2026), which reads as broken rather than as a step to complete.
+ *
+ * `guest` would be no better: it would lock out the same-browser click,
+ * which is the other half of the acceptance test.
+ *
+ * The link identifies its owner on its own — `signed` proves it was
+ * issued by us and has not expired, and the controller checks the hash
+ * against the user's current email — so the session it arrives with is
+ * irrelevant. RULED, with the trade-off accepted: possession of the
+ * email within its 60-minute life grants a session. Revisit before
+ * registration opens to the public.
+ */
+Route::get('verify-email/{id}/{hash}', VerifyEmailController::class)
+    ->middleware(['signed', 'throttle:6,1'])
+    ->name('verification.verify');
+
 Route::middleware('guest')->group(function () {
     Route::get('register', [RegisteredUserController::class, 'create'])
         ->name('register');
@@ -38,10 +63,6 @@ Route::middleware('guest')->group(function () {
 Route::middleware('auth')->group(function () {
     Route::get('verify-email', EmailVerificationPromptController::class)
         ->name('verification.notice');
-
-    Route::get('verify-email/{id}/{hash}', VerifyEmailController::class)
-        ->middleware(['signed', 'throttle:6,1'])
-        ->name('verification.verify');
 
     Route::post('email/verification-notification', [EmailVerificationNotificationController::class, 'store'])
         ->middleware('throttle:6,1')

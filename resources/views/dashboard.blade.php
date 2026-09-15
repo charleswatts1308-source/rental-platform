@@ -7,14 +7,11 @@
 
     <h1 class="mb-4">Your dashboard</h1>
 
-    @if(request()->boolean('verified'))
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            <strong>Welcome — and thanks for registering!</strong>
-            Your email address is verified and your account is ready to go.
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    @endif
-
+    {{-- #65: the "you are verified" confirmation used to ride on a
+         ?verified=1 query string, which the same-browser route silently
+         dropped, so the commonest path through registration ended in
+         silence. It is flashed now, like every other confirmation on
+         this page, and read below. --}}
     @if(session('status'))
         <div class="alert alert-success alert-dismissible fade show" role="alert">
             {{ session('status') }}
