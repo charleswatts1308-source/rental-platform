@@ -5,7 +5,7 @@ The `docs/` folder has many files and many are stale — this index says
 which to trust and which to ignore, so you don't re-derive state from a
 superseded doc. It is a **router, not a record**: keep it short.
 
-**Last updated:** 2026-09-13.
+**Last updated:** 2026-09-15.
 
 **DECISIONS OF 12 SEP are in `docs/llcs-decisions-2026-09-12.txt`.** Charlie's pass over the snag index plus the discussion that followed: what was ruled, what was closed, the agreed fix-cycle order, and the questions still open. Read it with this file. **The snagging list HAS now been reconciled against it** (`7fdebb4`), including new snags #61, #62 and #63, and a Section 2 tag for dev-facing-only entries.
 
@@ -374,16 +374,45 @@ reference `Z229825X`. The old value was the payment/account number.
 
 ## Snags — open
 
-**#1, #2, #7, #12, #13, #17, #18, #19, #22, #25, #26, #27, #28,
-#29, #30, #31, #32, #33, #34, #35, #36, #37, #38, #39, #40, #42, #44,
-#48, #50, #51, #52, #53, #54, #56, #57, #58, #60.**
+**OPEN — #1, #2, #12, #13, #17, #18, #19, #25, #26, #27, #28, #29,
+#30, #31, #32, #33, #34, #35, #37, #40, #42, #44, #48, #50, #51, #53,
+#54, #56, #57, #58, #60, #61, #62, #63, #64.**
 
-**BUILT, NOT MERGED, NOT DEPLOYED: #24, #49, #59.** Still live on prod until
-`feature/property-landlord-contacts` ships. #7 is the same defect as
-#49(a) and dies with it.
+**BUILT ON `feature/fix-cycle-sep-2026`, NOT MERGED, NOT DEPLOYED:
+#2, #50, #51, #53, #57, #58.** They stay listed open above for exactly
+that reason — both boxes still run `01451b0` and still carry all six.
 
-Closed: **#23**, **#8**, **#41**, **#43**, **#45**, **#46**, **#47**,
-**#55**. Resolved by Phase 5 (D16): #4, #14, #15, #16, #20, #21.
+**#25 IS PART DONE.** Release 1 is deployed and proven both ways on
+prod; release 2 (the tenant-taken copy, D17.3) is not built. It stays
+open until that ships.
+
+**Closed since this block was last written:** **#7** (12 Sep — landlord
+prefill fixed and verified; it died with #49(a) as predicted), **#36**
+(12 Sep — Mailgun free tier is adequate), **#39** (12 Sep — the preview
+now shows attached photos). **#38** was FOLDED INTO **#51**. **#52**
+was DROPPED 12 Sep by decision. **#22** was LEFT AS IS 12 Sep by
+decision.
+
+**Closed earlier:** **#8**, **#23**, **#24**, **#41**, **#43**, **#45**,
+**#46**, **#47**, **#49**, **#55**, **#59**. Resolved by Phase 5 (D16):
+#4, #14, #15, #16, #20, #21.
+
+**⚠ The line that stood here — "BUILT, NOT MERGED, NOT DEPLOYED: #24,
+#49, #59 … still live on prod" — was STALE.** All three shipped to main
+and to both boxes on 4 Sep (`fb03bc9`). Nothing from that set is
+outstanding.
+
+**Added 12 Sep, from Charlie's pass over the index:** **#61** letter
+wording, to go through the ADMIN TEMPLATE EDITOR rather than SQL;
+**#62** landlord questions about the SERVICE land in the case thread
+where the tenant is the only reader — the open question behind it is
+whether landlords ever get a written channel that is not a case reply;
+**#63** the tenant's name renders exactly as stored, so a formal notice
+signs off "charles watts1308".
+
+**Added 15 Sep:** **#64** no show/hide toggle on any password field.
+Six Breeze views; one shared component, not six edits. Scheduled to
+ride with the #37/#27/#28/#29 registration/verification/login pass.
 
 **Added 22–23 Aug, walking the releases:**
 - **#49** the preview shows one landlord name and the letter sends
