@@ -2335,7 +2335,10 @@ Saw:         The staged set is all-or-nothing on BOTH sides, while the
              hears "remove all photos".
 Expected:    Remove on one staged photo removes that photo. The others
              survive the round-trip.
-Status:      open — snagged 22 Aug during the Release 1 gafol walk.
+Status:      FIXED and WALKED. Passed 15 Sep 2026 by Charlie on dev,
+             at ceiling 3 — the configuration in which this snag is
+             reachable at all. Not yet deployed.
+             open — snagged 22 Aug during the Release 1 gafol walk.
              UNREACHABLE AT THE SHIPPED DEFAULT (see Notes).
 Notes:       Two things soften this, and one sharpens it.
              Softening:
@@ -2561,7 +2564,15 @@ Saw:         resources/views/errors/ does not exist. With
              writing up a repair honestly takes time.
 Expected:    An error page that says what happened in plain words,
              says whether anything was lost, and offers a route back.
-Status:      AGREED 12 Sep 2026 — graceful error pages ARE needed. Now
+Status:      PARTLY WALKED 15 Sep 2026. Charlie confirmed the 404 page
+             on dev. The 413, 419 and 500 pages are BUILT BUT UNPROVEN —
+             none has been seen by a human. Recorded as unproven rather
+             than assumed good: 419 needs an expired session, 413 needs
+             JavaScript disabled now that the form refuses an over-budget
+             selection client-side (#58/#68), and 500 has no natural
+             trigger at all. A dev-only route that renders each on demand
+             was offered 15 Sep and not yet taken up.
+             AGREED 12 Sep 2026 — graceful error pages ARE needed. Now
              a BUILD item, scheduled LAST in the fix cycle because it
              touches nothing else. The 413 design parked below is the
              starting point; the rest of the pass is the other status
@@ -2668,7 +2679,9 @@ Expected:    The form refuses a selection the server cannot receive,
              for the same reason it already refuses an oversize single
              file: losing the whole submission to a 413 is a worse
              outcome than being told at selection time.
-Status:      open — snagged 22 Aug. Raise-not-action, by decision.
+Status:      FIXED and WALKED. Passed 15 Sep 2026 by Charlie on dev.
+             Not yet deployed.
+             open — snagged 22 Aug. Raise-not-action, by decision.
              Moot at ceiling 1 (#54).
 Notes:       The reason to record it rather than shrug: the margin is
              held by two numbers NEITHER of which the application
@@ -3149,7 +3162,8 @@ Saw:         The label carried the count in a bracket ("Photos
              reason the form never gave.
 Expected:    Every limit the machine enforces is stated where the files
              are chosen.
-Status:      FIXED SAME DAY, 15 Sep 2026.
+Status:      FIXED SAME DAY, 15 Sep 2026, and WALKED AND PASSED the
+             same day by Charlie on dev. Not yet deployed.
 Notes:       The figure was already computed and already quoted on the
              413 page (#57). Only the form was silent, so the two
              surfaces disagreed about what the rules were — the same
@@ -3263,6 +3277,8 @@ Fix:         DONE. The reply form is its own partial
              form must come after the thread it answers — so restyling
              does not break them but moving it back does. A second test
              pins that the other actions did NOT move.
+             WALKED AND PASSED 15 Sep 2026 by Charlie: "looks much
+             better". Not yet deployed.
 --------------------------------------------------------------------
 #71
 Page:        Case page reply — a DOUBLE-CLICK on Send posts the letter
