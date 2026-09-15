@@ -180,7 +180,7 @@ it('gives the landlord postal address the postcode lookup, worded for a non-UK a
     expect(strpos($html, 'for="postcode"'))->toBeLessThan(strpos($html, 'for="city"'));
     expect($html)->toContain('That is fine if the address is not in the UK.');
     expect($html)->toContain('var lookupUrl =');
-    expect($html)->toContain('id="postcode-hint" class="form-text" style="min-height:1.5rem"');
+    expect($html)->toContain('id="field-hint" class="form-text" style="min-height:1.5rem"');
 });
 
 it('keeps the sterner not-found wording on the property itself', function () {

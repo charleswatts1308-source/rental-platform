@@ -37,11 +37,6 @@
     <input id="postcode" name="postcode" type="text" maxlength="20"
            class="form-control @error('postcode') is-invalid @enderror"
            value="{{ old('postcode', $postcodeValue) }}" @required($required)>
-    {{-- Space is RESERVED, not conditional (#67). Revealing a hint used
-         to push the submit button down a line at the exact moment the
-         user was clicking it, so the first click landed where the button
-         had just been and a second was needed. --}}
-    <div id="postcode-hint" class="form-text" style="min-height:1.5rem"></div>
 </div>
 
 {{-- Forces the town onto its own row BENEATH the postcode rather than
@@ -54,17 +49,32 @@
     <input id="city" name="city" type="text" maxlength="100"
            class="form-control @error('city') is-invalid @enderror"
            value="{{ old('city', $cityValue) }}" @required($required)>
-    <div id="city-hint" class="form-text" style="min-height:1.5rem">{{ $cityHelp }}</div>
+    {{-- ONE message line for the pair, and its space is RESERVED rather
+         than conditional.
+
+         Reserved because revealing a hint used to push the submit button
+         down a line at the exact moment the user was clicking it, so the
+         first click landed where the button had just been and a second
+         was needed (#67).
+
+         One line, not two, because the postcode used to carry its own
+         reserved line directly above this field — which, once the town
+         moved beneath the postcode rather than beside it, showed as a
+         band of empty space in the middle of the form. The two messages
+         are mutually exclusive anyway: a postcode either exists, in
+         which case there may be something to say about the town, or it
+         does not, in which case there is nothing to say about the town
+         at all. --}}
+    <div id="field-hint" class="form-text" style="min-height:1.5rem">{{ $cityHelp }}</div>
 </div>
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     var postcode = document.getElementById('postcode');
     var city = document.getElementById('city');
-    var cityHint = document.getElementById('city-hint');
-    var postcodeHint = document.getElementById('postcode-hint');
+    var hint = document.getElementById('field-hint');
 
-    if (!postcode || !city) {
+    if (!postcode || !city || !hint) {
         return;
     }
 
@@ -72,43 +82,38 @@ document.addEventListener('DOMContentLoaded', function () {
     var notFoundMessage = @json($notFoundMessage);
     var lastLookedUp = null;
 
-    // Neither of these adds or removes d-none: display:none collapses the
-    // reserved line, which reintroduces exactly the
-    // button-moves-under-the-cursor problem (#67) the reserved space
-    // exists to prevent. The space is always there; only the words change.
-    function hide(el) {
-        el.textContent = '';
-    }
-
-    function show(el, text) {
-        el.textContent = text;
+    // Never adds or removes d-none: display:none collapses the reserved
+    // line, which reintroduces exactly the button-moves-under-the-cursor
+    // problem (#67) the reserved space exists to prevent. The space is
+    // always there; only the words change.
+    function say(text) {
+        hint.textContent = text || '';
     }
 
     function offerTown(district) {
-        hide(cityHint);
-
         var typed = city.value.trim();
 
         // Empty field: fill it. Nothing is being overruled.
         if (typed === '') {
             city.value = district;
-            show(cityHint, 'Filled in from the postcode. Change it if the address says otherwise.');
+            say('Filled in from the postcode. Change it if the address says otherwise.');
             return;
         }
 
         // Same answer, allowing for casing and spacing. Say nothing.
         if (typed.toLowerCase() === district.toLowerCase()) {
+            say('');
             return;
         }
 
         // Disagreement: ASK. The lookup gives the local authority, which
         // is often not the post town, so this is a question and not a
         // correction.
-        cityHint.textContent = '';
+        say('');
 
         var question = document.createElement('span');
         question.textContent = 'That postcode is in ' + district + '. Is "' + typed + '" right? ';
-        cityHint.appendChild(question);
+        hint.appendChild(question);
 
         var accept = document.createElement('button');
         accept.type = 'button';
@@ -116,9 +121,9 @@ document.addEventListener('DOMContentLoaded', function () {
         accept.textContent = 'Use ' + district;
         accept.addEventListener('click', function () {
             city.value = district;
-            show(cityHint, 'Changed to ' + district + '.');
+            say('Changed to ' + district + '.');
         });
-        cityHint.appendChild(accept);
+        hint.appendChild(accept);
     }
 
     function check() {
@@ -146,14 +151,9 @@ document.addEventListener('DOMContentLoaded', function () {
                     // Silent where a miss is not evidence of a mistake —
                     // a landlord or managing agent may sit at a non-UK
                     // address, and postcodes.io only knows UK ones.
-                    if (notFoundMessage) {
-                        show(postcodeHint, notFoundMessage);
-                    }
-                    hide(cityHint);
+                    say(notFoundMessage);
                     return;
                 }
-
-                hide(postcodeHint);
 
                 if (data.status === 'exists' && data.district) {
                     offerTown(data.district);

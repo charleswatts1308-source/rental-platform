@@ -101,19 +101,20 @@ it('redirects guests away from POST /properties', function () {
  * nothing moves.
  *
  * Asserted at the markup level because the cause is layout, not logic —
- * there is no request to assert on. This pins the two things that make
- * the shift impossible: the hint containers are never `d-none`, and they
- * always hold a reserved line.
+ * there is no request to assert on. This pins what makes
+ * the shift impossible: one hint line, never `d-none`, always holding
+ * its reserved line. One and not two: the postcode used to carry its
+ * own, which showed as empty space mid-form once the town moved beneath
+ * it.
  */
 it('reserves space for the postcode hints so the button cannot move under the cursor', function () {
     $user = User::factory()->create();
 
     $html = $this->actingAs($user)->get('/properties/create')->getContent();
 
-    expect($html)->toContain('id="postcode-hint" class="form-text" style="min-height:1.5rem"');
-    expect($html)->toContain('id="city-hint" class="form-text" style="min-height:1.5rem"');
-    expect($html)->not->toContain('id="postcode-hint" class="form-text d-none"');
-    expect($html)->not->toContain('id="city-hint" class="form-text d-none"');
+    expect($html)->toContain('id="field-hint" class="form-text" style="min-height:1.5rem"');
+    expect($html)->not->toContain('id="field-hint" class="form-text d-none"');
+    expect(substr_count($html, 'min-height:1.5rem'))->toBe(1);
 });
 
 it('puts the postcode before the city and says the city may be filled in', function () {
