@@ -12,6 +12,18 @@
            value="{{ old('address_line2', $property?->address_line2) }}">
 </div>
 
+<div class="col-md-4">
+    <label for="postcode" class="form-label">Postcode</label>
+    <input id="postcode" name="postcode" type="text" maxlength="20"
+           class="form-control @error('postcode') is-invalid @enderror"
+           value="{{ old('postcode', $property?->postcode) }}" required>
+    {{-- Space is RESERVED, not conditional. Showing a hint used to push
+         the Register button down a line at the exact moment the user was
+         clicking it, so the first click landed where the button had just
+         been and a second was needed. --}}
+    <div id="postcode-hint" class="form-text" style="min-height:1.5rem"></div>
+</div>
+
 <div class="col-md-8">
     <label for="city" class="form-label">City / town</label>
     <input id="city" name="city" type="text" maxlength="100"
@@ -19,15 +31,7 @@
            value="{{ old('city', $property?->city) }}" required>
     {{-- #51: filled from the postcode when empty, and questioned — never
          overruled — when it disagrees. See the script below. --}}
-    <div id="city-hint" class="form-text d-none"></div>
-</div>
-
-<div class="col-md-4">
-    <label for="postcode" class="form-label">Postcode</label>
-    <input id="postcode" name="postcode" type="text" maxlength="20"
-           class="form-control @error('postcode') is-invalid @enderror"
-           value="{{ old('postcode', $property?->postcode) }}" required>
-    <div id="postcode-hint" class="form-text d-none"></div>
+    <div id="city-hint" class="form-text" style="min-height:1.5rem">Enter the postcode first and we will fill this in where we can.</div>
 </div>
 
 {{--
@@ -64,14 +68,16 @@ document.addEventListener('DOMContentLoaded', function () {
     var lookupUrl = @json(route('postcode.lookup'));
     var lastLookedUp = null;
 
+    // Neither of these adds or removes d-none any more: display:none
+    // collapses the reserved line, which reintroduces exactly the
+    // button-moves-under-the-cursor problem the reserved space exists to
+    // prevent. The space is always there; only the words change.
     function hide(el) {
-        el.classList.add('d-none');
         el.textContent = '';
     }
 
     function show(el, text) {
         el.textContent = text;
-        el.classList.remove('d-none');
     }
 
     function offerTown(district) {
@@ -94,7 +100,7 @@ document.addEventListener('DOMContentLoaded', function () {
         // Disagreement: ASK. The lookup gives the local authority, which
         // is often not the post town, so this is a question and not a
         // correction.
-        cityHint.classList.remove('d-none');
+        // Space already reserved; just write into it.
         cityHint.textContent = '';
 
         var question = document.createElement('span');

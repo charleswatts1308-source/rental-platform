@@ -3027,3 +3027,36 @@ Fix:         After saving a property, send the user to that property's
              ACCEPTANCE TEST: register, verify, add a property, and be
              asked for the landlord BEFORE reaching Raise a Case.
 --------------------------------------------------------------------
+#67
+Page:        Register a property — the Register button needs TWO clicks
+             when the postcode lookup has something to say. Raised
+             2026-09-15 by Charlie, walking the form on dev.
+Severity:    minor — the second click works. It reads as an
+             unresponsive button, which is the kind of thing a user
+             blames the whole site for.
+Saw:         Fill the form, click Register, nothing happens. Click
+             again, it submits.
+Expected:    One click.
+Status:      FIXED SAME DAY, 15 Sep 2026, in the same pass as #66.
+Notes:       Not a double-submit guard and nothing to do with the
+             server. The #51 postcode lookup fires when focus LEAVES the
+             postcode field, which is what clicking the button does. The
+             hint it then writes was hidden with d-none, so revealing it
+             added a line of height below the field and pushed the
+             button down — out from under the cursor — between the mouse
+             going down and coming up. The click landed on nothing.
+             Reserving the line permanently (the hints are always in the
+             layout, only their words change) makes the shift
+             impossible. Reordering postcode above city in the same pass
+             helps separately: the lookup now fires when the user moves
+             on to the city field, well before they reach the button.
+             KNOWN LIMIT: the reserved line is one line. The
+             disagreement hint ("That postcode is in X. Is Y right?"
+             plus its button) can wrap to two on a narrow screen, which
+             would shift by one line again. Not chased — it needs a
+             narrow viewport AND a town disagreement AND a click timed
+             into the gap.
+Fix:         Done. Hints keep their space instead of being d-none'd;
+             postcode moved above city, with the city field saying it
+             may be filled in from the postcode.
+--------------------------------------------------------------------

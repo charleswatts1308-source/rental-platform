@@ -92,3 +92,35 @@ it('redirects guests away from POST /properties', function () {
 
     $response->assertRedirect('/login');
 });
+
+/**
+ * Raised by Charlie 15 Sep, walking the form: the Register button needed
+ * TWO clicks. The postcode lookup fires on blur, and the hint it wrote
+ * appeared below the field, pushing the button down a line at the exact
+ * moment the click was landing. Space is reserved for the hint now, so
+ * nothing moves.
+ *
+ * Asserted at the markup level because the cause is layout, not logic —
+ * there is no request to assert on. This pins the two things that make
+ * the shift impossible: the hint containers are never `d-none`, and they
+ * always hold a reserved line.
+ */
+it('reserves space for the postcode hints so the button cannot move under the cursor', function () {
+    $user = User::factory()->create();
+
+    $html = $this->actingAs($user)->get('/properties/create')->getContent();
+
+    expect($html)->toContain('id="postcode-hint" class="form-text" style="min-height:1.5rem"');
+    expect($html)->toContain('id="city-hint" class="form-text" style="min-height:1.5rem"');
+    expect($html)->not->toContain('id="postcode-hint" class="form-text d-none"');
+    expect($html)->not->toContain('id="city-hint" class="form-text d-none"');
+});
+
+it('puts the postcode before the city and says the city may be filled in', function () {
+    $user = User::factory()->create();
+
+    $html = $this->actingAs($user)->get('/properties/create')->getContent();
+
+    expect(strpos($html, 'for="postcode"'))->toBeLessThan(strpos($html, 'for="city"'));
+    expect($html)->toContain('Enter the postcode first and we will fill this in where we can.');
+});
