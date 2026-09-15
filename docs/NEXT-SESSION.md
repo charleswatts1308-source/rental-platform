@@ -32,17 +32,32 @@ choosing a replacement photo wiped the ones the tenant kept (#72); and
 replies shared letter 1's attachment ceiling, against the design doc
 (#73).
 
-**TWO THINGS THAT DO NOT HAPPEN BY THEMSELVES ON DEPLOY:**
+**✅ DEPLOYED TO BOTH BOXES, 15 Sep 2026.** gafol and renters.rent are
+both on **`12646e7`**, confirmed off the Plesk panel, and both walked.
+Ledger written for both (`docs/environment-state.md`). No migrations
+shipped, so nothing to migrate anywhere.
 
-1. **`attachments.reply_max` has no row** on gafol or prod. The app is
-   safe — `PhotoLimits::replyCeiling()` falls back to the letter-1
-   ceiling, and the admin form renders the same default rather than
-   blank — but nothing is stored until someone saves the settings form.
-2. **The retaliation sentence (#61) is still in the DATABASE** on gafol
-   and on the dev box. Prod was done by hand through the admin template
-   editor on 15 Sep. The seeder change only reaches a fresh install, and
-   deliberately so. TWO templates carry it: `landlord_wakeup_generic`
-   and `exhaustion_landlord_closer`.
+**PROD RECONCILED against `migrate:status`** — 43 Ran, none pending,
+against 43 files. That clears the ledger item open since **27 June**.
+**gafol is still unreconciled**; no migration has shipped since its last
+figure, so no drift is expected, but the rule asks for the check and not
+for the inference. Do it at the next touch of that box.
+
+**ATTACHMENT CEILINGS, both boxes: letter 1 = `0`, replies = `3`.** A
+deliberate reduction — prod ran at 1 from 23 Aug. Photos are refused on
+the cold first letter and allowed, up to three, once the landlord has
+engaged (#73). **The consequence, written down so it is not rediscovered
+as a bug:** a tenant whose landlord never replies never attaches a
+photograph at all, and the case escalates on the description alone. The
+create-case form says so, and only in this configuration.
+
+**`BBY6GV` IS ABANDONED.** The 26 Sep real-mail warning is discharged.
+
+**Retaliation sentence (#61): done on prod AND gafol.** Still present on
+the DEV box's database — the seeder change only reaches a fresh install,
+deliberately, so dev keeps the old wording until someone edits it or
+reseeds. Two templates carry it: `landlord_wakeup_generic` and
+`exhaustion_landlord_closer`.
 **Still open from the 12 Sep discussion:** whether landlords ever get a
 written channel that is not a case reply. That decides whether `admin@`
 is a stopgap or the permanent front door, and whether the threaded
