@@ -134,17 +134,29 @@
                         letter still carries your full description.
                     </div>
                 @else
-                    <label for="photos" class="form-label">
-                        Photos (optional, up to {{ $photoCeiling }})
-                    </label>
+                    <label for="photos" class="form-label">Photos (optional)</label>
                     <input id="photos" name="photos[]" type="file" multiple
                            accept=".jpg,.jpeg,.png,.pdf"
                            data-photo-ceiling="{{ $photoCeiling }}"
                            data-photo-max-bytes="{{ $photoMaxBytes }}"
                            data-photo-total-max-bytes="{{ $photoTotalMaxBytes }}"
                            class="form-control @error('photos') is-invalid @enderror @error('photos.*') is-invalid @enderror">
+                    {{-- All three limits, stated. The count used to sit in a
+                         bracket in the label and the TOTAL was not stated at
+                         all — so a tenant could pick three files, satisfy every
+                         limit the screen named, and still be refused as a set.
+                         Raised 15 Sep by Charlie: "the UI does not mention any
+                         max limit". --}}
                     <div class="form-text">
-                        JPG, PNG, or PDF. Each file must be under {{ $photoMaxLabel }}.
+                        JPG, PNG or PDF.
+                        Up to <strong>{{ $photoCeiling }}</strong> {{ $photoCeiling === 1 ? 'file' : 'files' }},
+                        {{-- An inline @if is a trap here: Blade does not
+                             recognise @endif when it is stuck straight onto a
+                             word, so "together@endif" compiled as literal text
+                             and the @if never closed — every render of this
+                             page died on a parse error. A ternary says the
+                             same thing with nothing left to close. --}}
+                        each under <strong>{{ $photoMaxLabel }}</strong>{!! $photoTotalMaxBytes > 0 ? ', and <strong>'.e($photoTotalLabel).'</strong> for all of them together' : '' !!}.
                     </div>
 
                     {{-- Photo errors live here rather than only in the summary

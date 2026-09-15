@@ -760,7 +760,10 @@ it('states the limit the machine will actually accept, not our own cap', functio
     // that cannot happen — the tenant hits a refusal the form said wouldn't
     // come. The displayed figure and the byte limit handed to the script
     // both come from the same effective value.
-    $response->assertSee('under '.FileSize::human($effective));
+    // The figure is emphasised in the markup now that the form states all
+    // three limits, so this matches the tag too — same figure, pinned
+    // harder, not looser.
+    $response->assertSee('under <strong>'.FileSize::human($effective).'</strong>', false);
     $response->assertSee('data-photo-max-bytes="'.$effective.'"', false);
 });
 
@@ -1141,4 +1144,28 @@ it('still says landlord when the contact is a landlord', function () {
     $html = $this->actingAs($tenant)->get('/cases/create')->getContent();
 
     expect($html)->toContain('This property&rsquo;s landlord:');
+});
+
+/**
+ * Raised by Charlie 15 Sep: "the UI does not mention any max limit".
+ *
+ * The count sat in a bracket in the label and the TOTAL was never stated
+ * at all, though #58 enforces it — so a tenant could pick three files,
+ * satisfy every limit the screen named, and still be refused as a set.
+ * All three are stated now, from the same values the machine enforces.
+ */
+it('states all three photo limits on the form, not just the per-file one', function () {
+    [$tenant] = tenantWithProperty();
+
+    $html = $this->actingAs($tenant)->get('/cases/create')->assertOk()->getContent();
+
+    // Count, per-file, and — when there is one — the total.
+    expect($html)->toContain('Up to <strong>');
+    expect($html)->toMatch('/Up to <strong>\d+<\/strong> files?/');
+    expect($html)->toContain('each under <strong>'.\App\Support\PhotoLimits::perFileLabel().'</strong>');
+
+    if (\App\Support\PhotoLimits::totalBytes() > 0) {
+        expect($html)->toContain('for all of them together');
+        expect($html)->toContain(\App\Support\PhotoLimits::totalLabel());
+    }
 });

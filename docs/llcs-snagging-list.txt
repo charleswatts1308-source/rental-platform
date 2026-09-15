@@ -3100,3 +3100,38 @@ Fix:         Done. Hints keep their space instead of being d-none'd;
              postcode moved above city, with the city field saying it
              may be filled in from the postcode.
 --------------------------------------------------------------------
+#68
+Page:        Raise a Case, the Photos field — the form did not state the
+             TOTAL size limit it enforces. Raised 2026-09-15 by Charlie:
+             "the UI does not mention any max limit".
+Severity:    minor — nothing is broken, but a tenant can satisfy every
+             limit the screen names and still be refused.
+Saw:         The label carried the count in a bracket ("Photos
+             (optional, up to 3)") and the grey line underneath gave the
+             per-file size. The budget for the whole selection — which
+             #58 enforces — was never mentioned. Three files each inside
+             the per-file limit can therefore be refused as a set, for a
+             reason the form never gave.
+Expected:    Every limit the machine enforces is stated where the files
+             are chosen.
+Status:      FIXED SAME DAY, 15 Sep 2026.
+Notes:       The figure was already computed and already quoted on the
+             413 page (#57). Only the form was silent, so the two
+             surfaces disagreed about what the rules were — the same
+             shape as #46/#49/#53, one surface short of the truth.
+             Count moved out of the label's bracket and into the help
+             line with the other two, so all three read as one sentence.
+             A DEFECT WAS INTRODUCED AND FIXED IN THE SAME PASS, worth
+             recording because it will recur: the first version used an
+             inline @if whose @endif was stuck directly onto a word
+             ("...together@endif."). Blade does not recognise a directive
+             in that position, so it compiled as literal text, the @if
+             never closed, and EVERY render of the create form died on a
+             PHP parse error. The suite caught it; the lesson is that an
+             inline Blade directive must not butt against a word. Says
+             the same thing with a ternary now, which has nothing to
+             leave unclosed.
+Fix:         Done. The form states count, per-file and total, all from
+             the same values the machine enforces. Test in
+             tests/Feature/Phase6/CaseCreateTest.php.
+--------------------------------------------------------------------

@@ -387,6 +387,11 @@ class CaseController extends Controller
             'photoMaxBytes' => $this->effectivePhotoMaxBytes(),
             'photoMaxLabel' => FileSize::human($this->effectivePhotoMaxBytes()),
             'photoTotalMaxBytes' => $this->effectivePhotoTotalBytes(),
+            // The form enforced the total but never stated it (#58 half
+            // done): three files could each satisfy every limit the screen
+            // named and still be refused as a set. The 413 page has quoted
+            // this figure since #57 — the form now quotes the same one.
+            'photoTotalLabel' => PhotoLimits::totalLabel(),
         ]);
     }
 
