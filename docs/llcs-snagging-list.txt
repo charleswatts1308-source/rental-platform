@@ -3020,6 +3020,9 @@ Status:      open — snagged 15 Sep 2026. RULED in the same breath: no
              life it will be a rare event and we need not worry much
              about it now." The landlord step simply always follows
              registering a property.
+             WALKED AND PASSED 15 Sep 2026 by Charlie, on dev, against
+             feature/fix-cycle-sep-2026: property -> landlord -> case, and
+             the nav reads correctly throughout. Not yet deployed.
 Notes:       Nothing is actually missed today — the landlord fields are
              on the create-case form and are required when the property
              has none, so the user cannot get past them. This is about
