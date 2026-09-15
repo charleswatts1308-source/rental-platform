@@ -1038,6 +1038,10 @@ Fix:         Move verify-email/{id}/{hash} out of the `auth` group so a guest
              end identically — verified, logged in, on the dashboard,
              same thank-you message. No login demand, no 403, no silent
              landing.
+             WALKED AND PASSED 15 Sep 2026 by Charlie: both routes,
+             same browser and different browser, on dev. Verification,
+             sign-in and the welcome message are identical either way, so
+             the acceptance test above is MET. Not yet deployed.
              RULED 15 Sep 2026 by Charlie: the emailed link SIGNS THE
              USER IN. "Login is a hassle and there are no crown jewels
              here to steal." The July security note — acceptable for a
@@ -2114,6 +2118,8 @@ Saw:         cases.severity is an enum routine|serious|emergency
 Expected:    Either the landlord is told how urgent the tenant says it
              is, or the tenant is not asked to say.
 Status:      RULED 12 Sep 2026 — DROP Severity from the UI entirely.
+             WALKED AND PASSED 15 Sep 2026 by Charlie, on dev,
+             against feature/fix-cycle-sep-2026. Not yet deployed.
              The tenant expresses urgency in their own words in the
              issue statement. This answers the design question below:
              severity does not change the deadline, and a tenant's
@@ -2172,6 +2178,8 @@ Expected:    A postcode that does not exist is refused. A city that
              disagrees with the postcode is questioned before the
              letter carries it.
 Status:      RULED 12 Sep 2026 — use postcodes.io (api.postcodes.io).
+             WALKED AND PASSED 15 Sep 2026 by Charlie, on dev,
+             against feature/fix-cycle-sep-2026. Not yet deployed.
              Third-party sharing ACCEPTED: Charlie's reasoning is that a
              postcode carries near-zero vulnerability compared with an
              email address. That OVERRIDES the caution recorded in Notes
@@ -2791,6 +2799,9 @@ Notes:       Two things make this less trivial than a text edit.
              email is about the REPAIR and lands in the case record; the
              link is for everything else. If both read the same,
              landlords will use whichever comes first.
+Status:      PROD TEMPLATES EDITED AND WALKED 15 Sep 2026 by Charlie,
+             through the admin template editor. Tested OK. Dev and
+             gafol not confirmed — see the Fix block.
 Fix:         SEEDER DONE 15 Sep 2026 — the sentence is out of both
              footer variants, so a fresh box is clean. The rest of each
              footer stands. Test pins it in
@@ -2922,6 +2933,8 @@ Saw:         Register on dev, then click the Mailpit verification link
 Expected:    A user who verifies is told they have verified, on every
              route that gets them there.
 Status:      open — snagged 15 Sep 2026.
+             WALKED AND PASSED 15 Sep 2026 by Charlie, together with
+             #27 — the same two runs. Not yet deployed.
 Notes:       CAUSE IS ESTABLISHED, not suspected.
              Registration logs the user in and redirects to /dashboard
              (RegisteredUserController.php, end of store()). They are
