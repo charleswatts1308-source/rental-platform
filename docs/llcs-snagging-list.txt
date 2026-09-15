@@ -1604,7 +1604,19 @@ Saw:         (a) A 3.22MB PNG — a completely ordinary phone-photo size —
 Expected:    A tenant attaching normal phone photos either succeeds, or
              is told clearly and specifically what to change, BEFORE
              anything they have typed is lost.
-Status:      open — snagged 02 Aug. Hosting half RESOLVED 09 Aug (#41
+Status:      CLOSED 15 Sep 2026 — both halves, and neither by today's
+             work. Reviewed when Charlie asked whether the attachments
+             pass was tested; the entry had simply never been closed.
+             (a) is gone: the per-file cap is PhotoLimits::PER_FILE_KB =
+             4096, so the 3.22MB phone photo that started this entry is
+             accepted, and photoValidationCopy() now names the tenant's
+             own file and the actual limit instead of "The photos.0
+             failed to upload."
+             (b) was already closed by headroom, as recorded below, and
+             #58 has since added an explicit total check anyway, so it is
+             closed twice over.
+             The earlier text follows.
+             open — snagged 02 Aug. Hosting half RESOLVED 09 Aug (#41
              closed: PHP Selector, limits now 8M/16M and verified).
              (b) IS NOW CLOSED BY HEADROOM: the form's own maximum
              (6 x 2MB = 12MB) fits inside post_max_size 16M, so the
@@ -1815,7 +1827,15 @@ Saw:         After abandoning a case at the preview step, starting a new
              case still showed "Your photo is saved — you don't need to
              re-attach it unless you want to change your selection."
 Expected:    A fresh case creation starts with no staged photos and no cue.
-Status:      open — snagged 09 Aug. Folded into
+Status:      CLOSED 15 Sep 2026, and not by today's work either — it
+             was fixed with the ?resume=1 mechanism and never marked.
+             The preview's Edit link carries ?resume=1; a bare visit to
+             /cases/create is treated as a fresh start and clears the
+             stale draft. Tested: "#44 — an abandoned draft does not tell
+             a NEW case that photos are saved" in
+             tests/Feature/Phase6/CaseCreateTest.php asserts both halves,
+             the absent cue AND the cleared session payload.
+             Originally: open — snagged 09 Aug. Folded into
              docs/attachment-policy-design.md §5.
 Notes:       Cause: preview.blade.php:34 links Edit to a bare
              route('cases.create'), so create() cannot distinguish
@@ -2413,6 +2433,23 @@ Expected:    The tested configuration and the shipped configuration are
              the same thing, and the untested part is named.
 Status:      open — recorded 22 Aug. Deliberate scope call, not a
              defect found and ignored.
+             SUBSTANTIALLY EATEN INTO 15 Sep 2026, but NOT closed.
+             Charlie spent the day at ceiling 3 — the configuration this
+             entry exists about — and proved: three attachments on a
+             create, three on a reply (#19), partial removal (#53), the
+             total check (#58), the stated limits (#68). That is most of
+             the matrix's centre.
+             STILL UNWALKED, and small enough to list exactly:
+               - the #46 Edit round-trip variants (stage, Edit, change
+                 the selection, confirm);
+               - #43 sequential selection (pick one, browse again, add a
+                 second — the accumulate behaviour);
+               - ceiling 0 (the input absent and the reason given, on
+                 BOTH forms now);
+               - oversize-with-survivors (pick three, one too big — the
+                 other two should survive and be named).
+             WIDENED the same day: #19 gave replies attachments, so every
+             row above now has two places to be walked, not one.
 Notes:       The important observation is that the matrix is almost
              ENTIRELY a ceiling >= 2 matrix. At ceiling 1 it collapses:
              one photo means no partial removal (#53 unreachable), no
