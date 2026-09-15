@@ -44,12 +44,12 @@ about-to-ship code.
 | **#57** | No error pages at all | yes, all four |
 | **#58** | Photo check per-file only, never summed | yes |
 | **#61** | Retaliation sentence in the letter footer | prod templates, yes |
-| **#64** | No show/hide on any password field | built, not yet walked |
+| **#64** | No show/hide on any password field | yes |
 | **#65** | Same-browser verification gave no confirmation | yes |
 | **#66** | Landlord asked for on the case form, not the property | yes |
 | **#67** | Register button needed two clicks | yes |
 | **#68** | Form stated only one of three photo limits | yes |
-| **#69** | A reply sent with no preview, where letter 1 has one | built, not yet walked |
+| **#69** | A reply sent with no preview, where letter 1 has one | yes |
 | **#70** | Case page sidebar too narrow for the reply form | yes |
 | **#71** | Double-click on Send posted the letter twice | yes |
 | **#72** | New photos wiped the staged set instead of adding | yes |
@@ -177,8 +177,8 @@ point. It is closed because the centre is proven and the risk no longer
 lives at the edges. Anyone reopening this area should read #54 before
 assuming it was signed off as exhaustive.
 
-**Not walked:** #64 (password reveal) and #69 (the reply preview) were
-built after the last walk. Both want a browser before merge.
+**Everything on this branch has now been walked.** #64 and #69 were the
+last two, confirmed after this report was first written.
 
 ---
 
@@ -201,7 +201,8 @@ built after the last walk. Both want a browser before merge.
 
 ## 7. Before this merges
 
-1. **Walk #64 and #69** — the only unwalked work on the branch.
+1. **Nothing outstanding to walk.** Every fix and feature on this branch
+   has been exercised in a browser by Charlie on dev.
 2. **No MariaDB check needed.** The Migrations rule in CLAUDE.md is not
    triggered: this branch creates and alters nothing. Worth stating
    explicitly so nobody goes looking.

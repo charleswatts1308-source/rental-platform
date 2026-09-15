@@ -3004,7 +3004,8 @@ Saw:         Every password input is type="password" with no way to
              indistinguishable from a wrong password.
 Expected:    A show/hide toggle on the field, so what is about to be
              submitted can be read back before submitting.
-Status:      FIXED 15 Sep 2026. Not yet walked, not yet deployed.
+Status:      FIXED AND WALKED 15 Sep 2026 by Charlie, on dev. Not yet
+             deployed.
 Notes:       NINE inputs, not six — six VIEWS, but register, reset and
              change-password each carry two or three.
              Applied from ONE place rather than to each field: a script
@@ -3278,9 +3279,10 @@ Saw:         Raising a case goes description -> PREVIEW -> confirm, and
              the asymmetry is sharper: the tenant commits attachments
              to an evidential record without seeing what goes.
 Expected:    Undecided — that is the point of this entry.
-Status:      RULED AND BUILT 15 Sep 2026. Charlie: "replies should get
-             preview, no reason why not and it makes for consistency".
-             Not yet walked, not yet deployed.
+Status:      RULED, BUILT AND WALKED 15 Sep 2026. Charlie: "replies
+             should get preview, no reason why not and it makes for
+             consistency", then "preview is good, thanks". Not yet
+             deployed.
              CHECKED AGAINST THE DESIGN DOC FIRST, as CLAUDE.md requires,
              and the result is worth recording because one line looks
              like a conflict and is not. D8 (tenant reply) is SILENT on
