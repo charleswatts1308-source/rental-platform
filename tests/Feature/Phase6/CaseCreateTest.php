@@ -876,7 +876,23 @@ it('#46 — an explicit Remove does clear the staged photos', function () {
     expect(MessageAttachment::where('case_message_id', $message->id)->count())->toBe(0);
 });
 
-it('#46 — newly chosen photos REPLACE the staged set rather than adding to it', function () {
+/**
+ * #72 — REVERSES a rule this test used to pin the other way round.
+ *
+ * It read "newly chosen photos REPLACE the staged set rather than adding
+ * to it", and that was a deliberate decision, not an accident: at a
+ * ceiling of one, replace and add are the same thing.
+ *
+ * At three they are not, and Charlie found the difference on 15 Sep 2026:
+ * "create case, add 1, 2 or 3 photos, preview, edit, remove a photo and
+ * reselect another and the list is cleared and all that remains is the
+ * new reselected one." Two photos the tenant had every reason to think
+ * were still attached went silently.
+ *
+ * Not a weakened assertion — an inverted one. The old expectation was
+ * wrong once the ceiling rose above one.
+ */
+it('#72 — newly chosen photos ADD to the staged set rather than replacing it', function () {
     [$tenant, $property] = tenantWithProperty();
 
     allowPhotoCeiling(3);
@@ -885,6 +901,8 @@ it('#46 — newly chosen photos REPLACE the staged set rather than adding to it'
         'photos' => [UploadedFile::fake()->image('first.jpg')],
     ]);
 
+    // No keep_staged_photos: absent means keep, which is also what a
+    // browser with no JavaScript sends.
     $this->actingAs($tenant)->post('/cases', validStorePayload($property->id) + [
         'photos' => [UploadedFile::fake()->image('second.jpg')],
     ]);
@@ -894,10 +912,71 @@ it('#46 — newly chosen photos REPLACE the staged set rather than adding to it'
     $message = CaseMessage::where('direction', MessageDirection::Outbound)->firstOrFail();
     $attachments = MessageAttachment::where('case_message_id', $message->id)->get();
 
-    expect($attachments)->toHaveCount(1);
-    expect($attachments->first()->original_filename)->toBe('second.jpg');
+    expect($attachments)->toHaveCount(2);
+    expect($attachments->pluck('original_filename')->sort()->values()->all())
+        ->toBe(['first.jpg', 'second.jpg']);
 });
 
+it('#72 — removing one and choosing another keeps the ones that were not removed', function () {
+    [$tenant, $property] = tenantWithProperty();
+
+    allowPhotoCeiling(3);
+
+    // Three staged.
+    $this->actingAs($tenant)->post('/cases', validStorePayload($property->id) + [
+        'photos' => [
+            UploadedFile::fake()->image('keep-one.jpg'),
+            UploadedFile::fake()->image('keep-two.jpg'),
+            UploadedFile::fake()->image('drop-me.jpg'),
+        ],
+    ]);
+
+    $staged = session('cases.preview.payload')['photos'];
+    $survivors = collect($staged)
+        ->reject(fn ($photo) => $photo['original_filename'] === 'drop-me.jpg')
+        ->pluck('path')
+        ->all();
+
+    // Exactly what the form posts after Remove on one row plus a new pick.
+    $this->actingAs($tenant)->post('/cases', validStorePayload($property->id) + [
+        'keep_staged_photos' => $survivors,
+        'photos' => [UploadedFile::fake()->image('replacement.jpg')],
+    ]);
+
+    $this->actingAs($tenant)->post('/cases/preview/confirm');
+
+    $message = CaseMessage::where('direction', MessageDirection::Outbound)->firstOrFail();
+    $names = MessageAttachment::where('case_message_id', $message->id)
+        ->pluck('original_filename')->sort()->values()->all();
+
+    expect($names)->toBe(['keep-one.jpg', 'keep-two.jpg', 'replacement.jpg']);
+});
+
+it('#72 — the ceiling covers the whole set, not just the new files', function () {
+    [$tenant, $property] = tenantWithProperty();
+
+    allowPhotoCeiling(3);
+
+    $this->actingAs($tenant)->post('/cases', validStorePayload($property->id) + [
+        'photos' => [
+            UploadedFile::fake()->image('one.jpg'),
+            UploadedFile::fake()->image('two.jpg'),
+        ],
+    ]);
+
+    // Two already attached, so there is room for one more — not three.
+    $this->actingAs($tenant)->post('/cases', validStorePayload($property->id) + [
+        'photos' => [
+            UploadedFile::fake()->image('three.jpg'),
+            UploadedFile::fake()->image('four.jpg'),
+        ],
+    ])->assertSessionHasErrors('photos');
+
+    // And the message says how many MORE, rather than repeating the
+    // ceiling at someone who is already holding two.
+    $errors = implode(' ', session('errors')->getBag('default')->all());
+    expect($errors)->toContain('add 1 more photo');
+});
 it('#45 — drops an attachment whose staged file has been swept, rather than recording one that is not there', function () {
     [$tenant, $property] = tenantWithProperty();
 

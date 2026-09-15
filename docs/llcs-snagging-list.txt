@@ -3421,3 +3421,54 @@ Fix:         Done. resources/views/partials/submit-once.blade.php in the
              and escalation carry a token. Anything else that becomes
              evidentially important should get one.
 --------------------------------------------------------------------
+#72
+Page:        Create a case, and now the reply form too — removing one
+             staged photo and choosing a replacement WIPES the ones that
+             were kept. Found 2026-09-15 by Charlie: "create case, add
+             1, 2, or 3 photos, preview, edit, remove a photo and
+             reselect another and the list is cleared and all that
+             remains is the new reselected one".
+Severity:    functional, and the same family as #46 and #53 — evidence
+             leaving a letter silently, with the screen showing the
+             tenant a set they did not choose.
+Saw:         Stage three photos, preview, Edit, Remove one, pick a
+             replacement. The two survivors vanish and only the
+             replacement is attached. No warning, and the letter goes
+             with one photo where the tenant believes it carries three.
+Expected:    New files ADD to whatever survived the removals, up to the
+             ceiling.
+Status:      FIXED SAME DAY, 15 Sep 2026.
+Notes:       THIS WAS A DELIBERATE RULE, not an accident, and the test
+             suite pinned it: a test literally named "#46 — newly chosen
+             photos REPLACE the staged set rather than adding to it".
+             The rule was defensible when the ceiling was 1, because at
+             a ceiling of one REPLACE and ADD are the same thing. It
+             became wrong the moment the ceiling rose, and #54 had
+             already warned that the ceiling >= 2 matrix was the
+             untested area. This is the first defect that gap actually
+             hid.
+             The test was INVERTED rather than deleted, and the entry
+             for it says so: the old expectation was correct for its
+             time and is wrong now.
+             BOTH HALVES had to change together — the server's
+             resolveStagedPhotos() and the browser's picker script. Had
+             only one changed, the screen would show a set the server
+             would not send, which is the #46/#49/#53 pattern again.
+             THE CEILING NOW COVERS THE WHOLE SET. It previously
+             validated only the newly uploaded array, so with two
+             already staged a tenant could add three more and pass. The
+             refusal message changed with it: "you can add 1 more photo
+             — 3 in total" rather than repeating "up to 3" at someone
+             already holding two.
+             The reply form carried the same defect, because #19's
+             resolver was written to mirror the create flow's rule.
+             Fixed in the same pass, from the same shared helper.
+Fix:         Done. survivingStagedPhotos() decides what lives (the #53
+             per-file keep instruction, unchanged), the resolvers append
+             newly staged files to it, and remainingPhotoRoom() sizes
+             the validation rule. Tests in
+             tests/Feature/Phase6/CaseCreateTest.php cover add, remove-
+             then-replace, and the whole-set ceiling.
+             STILL TO WALK: the browser half. The tests prove the
+             server; the picker script is only exercised by a human.
+--------------------------------------------------------------------

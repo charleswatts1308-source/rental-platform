@@ -164,10 +164,12 @@
             list.appendChild(row);
         });
 
-        if (chosen.length >= ceiling) {
+        const attached = chosen.length + staged.length;
+
+        if (attached >= ceiling) {
             const note = document.createElement('li');
             note.className = 'text-muted mt-1';
-            note.textContent = chosen.length + ' of ' + ceiling + ' — remove one to attach a different photo.';
+            note.textContent = attached + ' of ' + ceiling + ' — remove one to attach a different photo.';
             list.appendChild(note);
         }
     }
@@ -175,12 +177,12 @@
     input.addEventListener('change', function () {
         clearErrors();
 
-        // Choosing new files REPLACES the staged set — same rule the server
-        // applies in resolveStagedPhotos(), so the screen cannot promise
-        // something different from what will be sent.
-        if (stagedRows().length) {
-            dropStaged();
-        }
+        // #72 — new files ADD to whatever staged photos remain. This used
+        // to call dropStaged(), matching the server's old replace rule, so
+        // removing one of three and picking a replacement left the tenant
+        // with just the replacement. Both halves changed together; if only
+        // one had, the screen would promise something different from what
+        // gets sent.
 
         const incoming = Array.from(input.files || []);
 
@@ -194,7 +196,10 @@
         const tooBig = maxBytes > 0 ? incoming.filter(f => f.size > maxBytes) : [];
         const usable = maxBytes > 0 ? incoming.filter(f => f.size <= maxBytes) : incoming;
 
-        const room = ceiling - chosen.length;
+        // #72 — the ceiling covers the WHOLE set: staged survivors plus
+        // anything chosen since. Counting only `chosen` would let the
+        // browser accept files the server then refuses.
+        const room = ceiling - chosen.length - stagedRows().length;
         const withinCount = usable.slice(0, Math.max(0, room));
 
         // #58 — the TOTAL matters as much as each file. PHP refuses a
@@ -240,8 +245,9 @@
         // also refused for the count would be a second, wrong reason.
         if (usable.length > withinCount.length) {
             problems.push(
-                'You can attach up to ' + ceiling + (ceiling === 1 ? ' photo' : ' photos') +
-                '. Remove one first if you want to swap it for a different photo.'
+                (room > 0
+                    ? 'You can add ' + room + (room === 1 ? ' more photo' : ' more photos') + ' — ' + ceiling + ' in total.'
+                    : 'You already have ' + ceiling + (ceiling === 1 ? ' photo' : ' photos') + ' attached. Remove one before adding another.')
             );
         }
 

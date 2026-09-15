@@ -194,13 +194,21 @@ class CaseController extends Controller
         $case = $this->findCaseOrFail($slug);
         $this->authorize('reply', $case);
 
+        // #72 — the same whole-set ceiling as the create form.
+        $stagedNow = ($p = session(self::REPLY_PREVIEW_KEY))
+            && (int) ($p['user_id'] ?? 0) === $request->user()->id
+            && (int) ($p['case_id'] ?? 0) === $case->id
+                ? ($p['photos'] ?? [])
+                : [];
+        $photoRoom = $this->remainingPhotoRoom($request, $stagedNow);
+
         $rules = [
             'body' => ['required', 'string', 'min:1', 'max:10000'],
-            'photos' => ['nullable', 'array', 'max:'.$this->photoCeiling()],
+            'photos' => ['nullable', 'array', 'max:'.$photoRoom],
             'photos.*' => ['file', 'mimes:jpg,jpeg,png,pdf', 'max:'.self::PHOTO_MAX_KB],
         ];
 
-        [$photoMessages, $photoAttributes] = $this->photoValidationCopy($request);
+        [$photoMessages, $photoAttributes] = $this->photoValidationCopy($request, $photoRoom);
         $validated = $request->validate($rules, $photoMessages, $photoAttributes);
 
         // Staged, not stored straight into the case folder as the
@@ -577,6 +585,12 @@ class CaseController extends Controller
         // different sources if only one source is ever present.
         $inheritsContact = $this->propertyContactFor($request->input('property_id'), $userId) !== null;
 
+        // #72 — how many more photos may ride on THIS submission.
+        $stagedNow = ($p = session(self::PREVIEW_SESSION_KEY)) && (int) ($p['user_id'] ?? 0) === $userId
+            ? ($p['photos'] ?? [])
+            : [];
+        $photoRoom = $this->remainingPhotoRoom($request, $stagedNow);
+
         $rules = [
             'property_id' => [
                 'required',
@@ -591,11 +605,15 @@ class CaseController extends Controller
             'landlord_name' => [Rule::excludeIf($inheritsContact), 'nullable', 'string', 'max:255'],
             'landlord_role' => [Rule::excludeIf($inheritsContact), 'required', Rule::enum(LandlordContactRole::class)],
             'organisation_name' => [Rule::excludeIf($inheritsContact), 'nullable', 'string', 'max:255'],
-            'photos' => ['nullable', 'array', 'max:'.$this->photoCeiling()],
+            // #72 — the ceiling covers the WHOLE set, so a tenant with two
+            // survivors and a ceiling of three may add one more, not three.
+            // Sized before validation runs, which is why
+            // survivingStagedPhotos() deletes nothing.
+            'photos' => ['nullable', 'array', 'max:'.$photoRoom],
             'photos.*' => ['file', 'mimes:jpg,jpeg,png,pdf', 'max:'.self::PHOTO_MAX_KB],
         ];
 
-        [$photoMessages, $photoAttributes] = $this->photoValidationCopy($request);
+        [$photoMessages, $photoAttributes] = $this->photoValidationCopy($request, $photoRoom);
 
         $validated = $request->validate($rules, $photoMessages, $photoAttributes);
 
@@ -828,12 +846,17 @@ class CaseController extends Controller
      * is saved, you don't need to re-attach it". The cue was false and the
      * photo left the letter silently.
      *
-     * Three cases now, in priority order:
-     *   1. New files uploaded  -> they REPLACE the staged set.
-     *   2. No files, keep flag -> carry the staged set forward (the cue is
-     *      now true).
-     *   3. Otherwise           -> empty; the tenant removed them, or there
-     *      were never any.
+     * Snag #72 — new files used to REPLACE the staged set outright.
+     * Charlie, 15 Sep 2026: "remove a photo and reselect another and the
+     * list is cleared and all that remains is the new reselected one." At
+     * a ceiling of one that rule was invisible; at three it silently threw
+     * away evidence the tenant had every reason to think was still
+     * attached. New files now ADD to whatever survived.
+     *
+     * Two steps, in order:
+     *   1. Work out which staged photos survive (the per-file keep
+     *      instruction from #53).
+     *   2. Stage any new files and append them.
      *
      * The keep flag defaults to on whenever a staged set exists, so the
      * safe outcome (evidence survives) is what happens without JavaScript.
@@ -844,37 +867,57 @@ class CaseController extends Controller
      */
     private function resolveStagedPhotos(Request $request, int $userId): array
     {
-        $incoming = $request->file('photos', []) ?? [];
         $payload = session(self::PREVIEW_SESSION_KEY);
         $ownsPayload = $payload && (int) ($payload['user_id'] ?? 0) === $userId;
         $staged = $ownsPayload ? ($payload['photos'] ?? []) : [];
 
-        if (count($incoming) > 0) {
-            // Replacing: the superseded files would be swept within 24h
-            // anyway, but there is no reason to leave them lying about.
-            if ($staged) {
-                $this->discardStagedPhotos($payload);
-            }
+        $survivors = $this->survivingStagedPhotos($request, $staged);
 
-            return $this->stagePreviewPhotos($incoming, $userId);
+        // Anything the tenant removed is deleted; the survivors have to
+        // still be on disk when the letter is built.
+        $dropped = array_values(array_filter(
+            $staged,
+            fn ($photo) => ! in_array($photo, $survivors, true),
+        ));
 
+        if ($dropped !== []) {
+            $this->discardStagedPhotos(['photos' => $dropped]);
         }
-        // #53 — the keep instruction is PER FILE, not one boolean for the
-        // set. It used to be a single flag, so Remove on one of two staged
-        // photos removed both: the control said "remove this photo" and
-        // the server heard "remove all photos". There was no per-file
-        // identity in the instruction, so it could not have honoured a
-        // partial removal even if the script had asked for one.
-        //
-        // Three shapes are accepted, and the ABSENT-MEANS-KEEP default
-        // survives all of them, because a caller that forgets the field
-        // must not be able to wipe a tenant's evidence:
-        //
-        //   absent          -> keep everything
-        //   array of paths  -> keep exactly those, discard the rest
-        //   "1" / "0"       -> the old all-or-nothing form, still honoured
-        //
-        if (! $request->has('keep_staged_photos')) {
+
+        $incoming = $request->file('photos', []) ?? [];
+
+        if (count($incoming) === 0) {
+            return $survivors;
+        }
+
+        return array_merge($survivors, $this->stagePreviewPhotos($incoming, $userId));
+    }
+
+    /**
+     * Which of the already-staged photos survive this submission.
+     *
+     * Pure — it deletes nothing, so it can be called before validation to
+     * work out how much room is left without side effects.
+     *
+     * #53 — the keep instruction is PER FILE, not one boolean for the set.
+     * It used to be a single flag, so Remove on one of two staged photos
+     * removed both: the control said "remove this photo" and the server
+     * heard "remove all photos".
+     *
+     * Three shapes are accepted, and the ABSENT-MEANS-KEEP default
+     * survives all of them, because a caller that forgets the field must
+     * not be able to wipe a tenant's evidence:
+     *
+     *   absent          -> keep everything
+     *   array of paths  -> keep exactly those
+     *   "1" / "0"       -> the old all-or-nothing form, still honoured
+     *
+     * @param  array<int, array<string, mixed>>  $staged
+     * @return array<int, array<string, mixed>>
+     */
+    private function survivingStagedPhotos(Request $request, array $staged): array
+    {
+        if ($staged === [] || ! $request->has('keep_staged_photos')) {
             return $staged;
         }
 
@@ -882,13 +925,7 @@ class CaseController extends Controller
 
         if (! is_array($keep)) {
             // Legacy scalar form.
-            if ($request->boolean('keep_staged_photos')) {
-                return $staged;
-            }
-
-            $this->discardStagedPhotos($payload);
-
-            return [];
+            return $request->boolean('keep_staged_photos') ? $staged : [];
         }
 
         $keepPaths = array_filter(array_map(
@@ -896,25 +933,24 @@ class CaseController extends Controller
             $keep,
         ));
 
-        $survivors = array_values(array_filter(
+        return array_values(array_filter(
             $staged,
             fn ($photo) => isset($photo['path']) && in_array($photo['path'], $keepPaths, true),
         ));
-
-        $dropped = array_values(array_filter(
-            $staged,
-            fn ($photo) => ! isset($photo['path']) || ! in_array($photo['path'], $keepPaths, true),
-        ));
-
-        // Only the dropped files are deleted. The survivors have to still
-        // be on disk when the letter is built.
-        if ($dropped !== []) {
-            $this->discardStagedPhotos(['photos' => $dropped]);
-        }
-
-        return $survivors;
     }
 
+    /**
+     * How many more photos this submission may carry — #72.
+     *
+     * The ceiling applies to the WHOLE attachment set, so a tenant with
+     * two survivors and a ceiling of three may add one, not three.
+     *
+     * @param  array<int, array<string, mixed>>  $staged
+     */
+    private function remainingPhotoRoom(Request $request, array $staged): int
+    {
+        return max(0, $this->photoCeiling() - count($this->survivingStagedPhotos($request, $staged)));
+    }
     /**
      * The per-file size the machine will ACTUALLY accept, in bytes.
      *
@@ -994,16 +1030,23 @@ class CaseController extends Controller
      *
      * @return array{0: array<string, string>, 1: array<string, string>}
      */
-    private function photoValidationCopy(Request $request): array
+    private function photoValidationCopy(Request $request, ?int $room = null): array
     {
         $ceiling = $this->photoCeiling();
+        // #72 — when some photos are already attached, the message has to
+        // say how many MORE may be added, or it reads as a contradiction:
+        // "you can attach up to 3" over a form that already holds two.
+        $room = $room ?? $ceiling;
         $limit = FileSize::human(self::PHOTO_MAX_KB * 1024);
 
         $attributes = [];
         $messages = [
-            'photos.max' => $ceiling === 0
-                ? 'Photos cannot be attached at the moment.'
-                : 'You can attach up to '.$ceiling.' '.($ceiling === 1 ? 'photo' : 'photos').'.',
+            'photos.max' => match (true) {
+                $ceiling === 0 => 'Photos cannot be attached at the moment.',
+                $room === 0 => 'You already have '.$ceiling.' '.($ceiling === 1 ? 'photo' : 'photos').' attached. Remove one before adding another.',
+                $room < $ceiling => 'You can add '.$room.' more '.($room === 1 ? 'photo' : 'photos').' — '.$ceiling.' in total.',
+                default => 'You can attach up to '.$ceiling.' '.($ceiling === 1 ? 'photo' : 'photos').'.',
+            },
         ];
 
         foreach ($request->file('photos', []) ?? [] as $index => $file) {
@@ -1122,11 +1165,10 @@ class CaseController extends Controller
      * Stage a reply's photos, honouring anything already staged — #69.
      *
      * The same shape as resolveStagedPhotos() for the create flow, and the
-     * same two rules, because a tenant who has just used one form should
-     * not find the other behaves differently:
-     *
-     *   choosing new files REPLACES the staged set;
-     *   choosing none KEEPS what is staged.
+     * same rule, because a tenant who has just used one form should not
+     * find the other behaves differently: new files ADD to whatever
+     * survived the tenant's removals (#72), and choosing none keeps what
+     * is staged.
      *
      * Absent-means-keep matters here for the same reason it does in #53: a
      * caller that forgets the field must not be able to wipe evidence.
@@ -1135,7 +1177,6 @@ class CaseController extends Controller
      */
     private function resolveStagedReplyPhotos(Request $request, RepairCase $case): array
     {
-        $incoming = $request->file('photos', []) ?? [];
         $payload = session(self::REPLY_PREVIEW_KEY);
 
         $ownsPayload = $payload
@@ -1144,40 +1185,25 @@ class CaseController extends Controller
 
         $staged = $ownsPayload ? ($payload['photos'] ?? []) : [];
 
-        if (count($incoming) > 0) {
-            if ($staged) {
-                $this->discardStagedPhotos(['photos' => $staged]);
-            }
-
-            return $this->stagePreviewPhotos($incoming, $request->user()->id);
-        }
-
-        // #53's per-file keep instruction, on this form too. Absent means
-        // keep everything; an array names exactly what survives.
-        $keep = $request->input('keep_staged_photos');
-
-        if ($keep === null) {
-            return $staged;
-        }
-
-        $keepPaths = is_array($keep) ? $keep : [];
-        $kept = array_values(array_filter(
-            $staged,
-            fn ($photo) => in_array($photo['path'] ?? '', $keepPaths, true),
-        ));
+        $survivors = $this->survivingStagedPhotos($request, $staged);
 
         $dropped = array_values(array_filter(
             $staged,
-            fn ($photo) => ! in_array($photo['path'] ?? '', $keepPaths, true),
+            fn ($photo) => ! in_array($photo, $survivors, true),
         ));
 
-        if ($dropped) {
+        if ($dropped !== []) {
             $this->discardStagedPhotos(['photos' => $dropped]);
         }
 
-        return $kept;
-    }
+        $incoming = $request->file('photos', []) ?? [];
 
+        if (count($incoming) === 0) {
+            return $survivors;
+        }
+
+        return array_merge($survivors, $this->stagePreviewPhotos($incoming, $request->user()->id));
+    }
     /**
      * Move staged preview photos to the final cases/{case_id}/
      * folder and return the attachment input array shape that
