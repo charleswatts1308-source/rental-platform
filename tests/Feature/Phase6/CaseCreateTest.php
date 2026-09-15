@@ -1248,3 +1248,31 @@ it('states all three photo limits on the form, not just the per-file one', funct
         expect($html)->toContain(\App\Support\PhotoLimits::totalLabel());
     }
 });
+
+/**
+ * A button says what the next screen is. Raised by Charlie 15 Sep 2026 on
+ * the create form — "the button is labelled Send the first notice, not
+ * Preview" — having just approved the same change on the reply form.
+ *
+ * Both submit buttons in the app that lead to a preview now say so, and
+ * both confirm buttons on a preview say send. Asserted as a PAIR, because
+ * the defect is the two disagreeing, not either label alone.
+ */
+it('labels the create button for the preview it leads to, not the send two screens later', function () {
+    [$tenant] = tenantWithProperty();
+
+    $form = $this->actingAs($tenant)->get('/cases/create')->getContent();
+
+    expect($form)->toContain('Preview the first notice');
+    expect($form)->not->toContain('Send the first notice');
+});
+
+it('labels the preview button for the send it performs', function () {
+    [$tenant, $property] = tenantWithProperty();
+
+    $this->actingAs($tenant)->post('/cases', validStorePayload($property->id));
+
+    $preview = $this->actingAs($tenant)->get('/cases/preview')->getContent();
+
+    expect($preview)->toContain('Confirm and send notice 1');
+});

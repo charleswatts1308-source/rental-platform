@@ -291,7 +291,13 @@
             </div>
 
             <div class="col-12 d-flex gap-2 mt-4">
-                <button type="submit" class="btn btn-primary">Send the first notice</button>
+                {{-- Says what the NEXT screen is, not what eventually
+                     happens two screens later. This form goes to the D13
+                     preview; nothing is sent until the tenant confirms
+                     there. "Send the first notice" on a button that does
+                     not send is the same complaint Charlie made about the
+                     reply form, one form along. --}}
+                <button type="submit" class="btn btn-primary">Preview the first notice</button>
                 <a href="{{ route('cases.index') }}" class="btn btn-outline-secondary">Cancel</a>
             </div>
         </form>
