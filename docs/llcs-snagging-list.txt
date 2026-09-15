@@ -1032,6 +1032,12 @@ Fix:         Move verify-email/{id}/{hash} out of the `auth` group so a guest
              path (verify while logged out -> marked verified + session
              started + lands on dashboard). Keep the already-logged-in path
              intact.
+             ACCEPTANCE TEST — Charlie's own, stated 15 Sep 2026, shared
+             with #65: register and verify in the SAME browser, then
+             register again and verify in a DIFFERENT browser. Both must
+             end identically — verified, logged in, on the dashboard,
+             same thank-you message. No login demand, no 403, no silent
+             landing.
 --------------------------------------------------------------------
 #28
 Page:        Login + Register forms — the email field is blank on every fresh
@@ -2940,4 +2946,12 @@ Fix:         Do not rely on intended() to carry the flag. Either forget
              than the dashboard. Test BOTH routes, same-browser and
              guest, and assert the message is present.
              Belongs with the #37/#27/#28/#29 registration pass.
+             ACCEPTANCE TEST — Charlie's own, stated 15 Sep 2026, and
+             it governs BOTH this snag and #27:
+               1. Register, verify in the SAME browser.
+               2. Register again, verify in a DIFFERENT browser.
+             Both must end identically: verified, logged in, on the
+             dashboard, with the same thank-you message shown. No login
+             demand, no 403, no silent landing. If the two routes do not
+             look the same to the user, it is not fixed.
 --------------------------------------------------------------------
