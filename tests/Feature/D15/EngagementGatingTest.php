@@ -338,8 +338,7 @@ it('a dormant engaged case still revives via tenant reply within the window (D11
     ]);
     CaseMessage::factory()->inbound()->create(['case_id' => $case->id]);
 
-    $this->actingAs($tenant)
-        ->post(route('cases.reply', $case->url_slug), ['body' => 'Actually still broken.'])
+    sendTenantReply($tenant, $case, 'Actually still broken.')
         ->assertRedirect();
 
     $case->refresh();
@@ -372,8 +371,7 @@ it('HEADLINE: a thank-you reply from awaiting_tenant_review on an ENGAGED case d
     CaseMessage::factory()->inbound()->create(['case_id' => $case->id]);
 
     // Tenant replies "thanks, all sorted".
-    $this->actingAs($tenant)
-        ->post(route('cases.reply', $case->url_slug), ['body' => 'Thanks, all sorted!'])
+    sendTenantReply($tenant, $case, 'Thanks, all sorted!')
         ->assertRedirect();
 
     $case->refresh();

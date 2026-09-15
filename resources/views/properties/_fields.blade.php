@@ -12,16 +12,13 @@
            value="{{ old('address_line2', $property?->address_line2) }}">
 </div>
 
-<div class="col-md-8">
-    <label for="city" class="form-label">City / town</label>
-    <input id="city" name="city" type="text" maxlength="100"
-           class="form-control @error('city') is-invalid @enderror"
-           value="{{ old('city', $property?->city) }}" required>
-</div>
-
-<div class="col-md-4">
-    <label for="postcode" class="form-label">Postcode</label>
-    <input id="postcode" name="postcode" type="text" maxlength="20"
-           class="form-control @error('postcode') is-invalid @enderror"
-           value="{{ old('postcode', $property?->postcode) }}" required>
-</div>
+@include('partials.postcode-city', [
+    'cityLabel' => 'City / town',
+    'cityValue' => $property?->city,
+    'postcodeValue' => $property?->postcode,
+    'required' => true,
+    // The property is where the TENANT lives, so a postcode that does not
+    // exist is a typo and worth saying so.
+    'notFoundMessage' => 'We could not find that postcode. Please check it.',
+    'cityHelp' => 'Type the postcode above, then click in this box and we will fill it in for you.',
+])

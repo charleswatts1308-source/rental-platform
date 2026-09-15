@@ -123,3 +123,62 @@ it('does not show the unverified-messages warning when there are no quarantined 
     $response->assertOk();
     $response->assertDontSee('Unverified messages');
 });
+
+/*
+ * #2 — the case page never showed the landlord's EMAIL, only a name, and
+ * titled the panel with the generic "Recipient" whether the contact was a
+ * landlord or a managing agent. The email is the one detail a case
+ * depends on and the tenant had no way to check it.
+ */
+
+it('#2 — shows the landlord email on the case page and titles the panel by role', function () {
+    $tenant = User::factory()->create();
+    $case = RepairCase::factory()->create([
+        'tenant_user_id' => $tenant->id,
+        'status' => CaseStatus::AwaitingLandlord,
+    ]);
+
+    $case->property->setLandlordContact(
+        [
+            'email' => 'mr.eastlord@example.com',
+            'name' => 'Mr EastLord',
+            'role' => App\Enums\LandlordContactRole::Landlord,
+        ],
+        now(),
+        $tenant->id,
+    );
+
+    $response = $this->actingAs($tenant)->get("/cases/{$case->url_slug}");
+
+    $response->assertOk();
+    $response->assertSee('mr.eastlord@example.com');
+    $response->assertSee('Mr EastLord');
+    $response->assertSee('Landlord');
+    $response->assertDontSee('Recipient');
+});
+
+it('#2 — titles the panel Agent when the contact is a managing agent', function () {
+    $tenant = User::factory()->create();
+    $case = RepairCase::factory()->create([
+        'tenant_user_id' => $tenant->id,
+        'status' => CaseStatus::AwaitingLandlord,
+    ]);
+
+    $case->property->setLandlordContact(
+        [
+            'email' => 'lettings@example-agents.com',
+            'name' => 'Example Lettings',
+            'role' => App\Enums\LandlordContactRole::Agent,
+            'organisation_name' => 'Example Agents Ltd',
+        ],
+        now(),
+        $tenant->id,
+    );
+
+    $response = $this->actingAs($tenant)->get("/cases/{$case->url_slug}");
+
+    $response->assertOk();
+    $response->assertSee('Agent');
+    $response->assertSee('lettings@example-agents.com');
+    $response->assertSee('Example Agents Ltd');
+});

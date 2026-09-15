@@ -226,7 +226,7 @@ HTML;
 <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;">
 
 <p style="font-size: 11px; color: #888;">
-This message was sent through renters.rent on behalf of the tenant. Replies are routed back to the tenant via the system; please reply to this email rather than emailing the tenant directly. The tenant's contact details are kept private to protect against retaliation.
+This message was sent through renters.rent on behalf of the tenant. Replies are routed back to the tenant via the system; please reply to this email rather than emailing the tenant directly.
 </p>
 HTML;
     }
@@ -273,7 +273,7 @@ HTML;
 <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;">
 
 <p style="font-size: 11px; color: #888;">
-This message was sent through renters.rent on behalf of the tenant. The tenant's contact details are kept private to protect against retaliation.
+This message was sent through renters.rent on behalf of the tenant.
 </p>
 HTML;
     }

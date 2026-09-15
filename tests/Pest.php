@@ -78,3 +78,38 @@ function allowPhotoCeiling(int $max): void
         ['value' => (string) $max],
     );
 }
+
+/**
+ * Send a tenant reply the way a tenant now does — #69.
+ *
+ * The reply became a two-step flow on 15 Sep 2026: write, preview, then
+ * confirm. Sixteen existing tests posted straight at cases.reply, which is
+ * now only the confirm step. Rather than weaken those tests to match, this
+ * helper drives BOTH steps, so every one of them still asserts exactly
+ * what it asserted before — that a reply transitions the case, restarts
+ * the clock, mints a token, writes the canonical event, and so on.
+ *
+ * It carries the send token off the rendered preview rather than
+ * fabricating one, so the #71 double-submit guard is exercised on the real
+ * path by every test that sends a reply, not only by its own.
+ */
+function sendTenantReply(\App\Models\User $tenant, \App\Models\RepairCase $case, string $body)
+{
+    $preview = test()->actingAs($tenant)->post(
+        route('cases.reply.preview', $case->url_slug),
+        ['body' => $body],
+    );
+
+    // A validation failure redirects instead of rendering. Hand that back
+    // so a test asserting on a refused reply still sees the refusal.
+    if ($preview->getStatusCode() !== 200) {
+        return $preview;
+    }
+
+    preg_match('/name="send_token"\s*\n?\s*value="([^"]+)"/', $preview->getContent(), $m);
+
+    return test()->actingAs($tenant)->post(
+        route('cases.reply', $case->url_slug),
+        ['send_token' => $m[1] ?? ''],
+    );
+}

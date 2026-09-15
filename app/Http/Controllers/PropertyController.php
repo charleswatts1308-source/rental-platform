@@ -3,7 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Property;
+use App\Rules\PostcodeIsReal;
+use App\Services\PostcodeLookup;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -50,11 +53,7 @@ class PropertyController extends Controller
 
         $validated = $this->validatePayload($request);
 
-        // Was this their first? Checked BEFORE the insert, since the answer
-        // decides where we send them next.
-        $isFirstProperty = ! Property::where('registered_by_user_id', $request->user()->id)->exists();
-
-        Property::create([
+        $property = Property::create([
             'address_line1' => $validated['address_line1'],
             'address_line2' => $validated['address_line2'] ?? null,
             'city' => $validated['city'],
@@ -62,18 +61,20 @@ class PropertyController extends Controller
             'registered_by_user_id' => $request->user()->id,
         ]);
 
-        // First property means the user is mid-onboarding — registering it is
-        // a step toward raising a case, not the goal — so carry them straight
-        // on. A later property is property management, so stay on the list.
-        if ($isFirstProperty) {
-            return redirect()
-                ->route('cases.create')
-                ->with('success', 'Property registered. Now you can raise your first repair case.');
-        }
-
+        // Snag #66. The landlord belongs to the PROPERTY, so it is asked for
+        // with the property — not buried in the create-case form, where what
+        // the user types silently becomes this property's permanent landlord
+        // without looking like a property decision.
+        //
+        // No first-property branch. It used to send a first property to
+        // raise-a-case and later ones to the list; ruled 15 Sep that a second
+        // property is rare enough not to warrant its own path, which removes
+        // the branch rather than adding a third case to it. The landlord page
+        // itself decides what comes next: newly set -> on to raise-a-case,
+        // corrected later -> stay put.
         return redirect()
-            ->route('properties.index')
-            ->with('success', 'Property registered.');
+            ->route('properties.contact.edit', $property)
+            ->with('success', 'Property registered. Now add your landlord or agent, so we know who to write to.');
     }
 
     public function edit(Property $property): View
@@ -102,6 +103,32 @@ class PropertyController extends Controller
     }
 
     /**
+     * #51. The form's postcode lookup.
+     *
+     * Deliberately proxied through us rather than called from the
+     * browser: the cache lives here, one shape of answer is returned
+     * whatever postcodes.io does, and the tenant's browser never talks
+     * to a third party directly.
+     *
+     * Returns UNKNOWN rather than an error on any failure. The form
+     * treats UNKNOWN as "say nothing", so an outage is silent rather
+     * than alarming.
+     */
+    public function lookupPostcode(Request $request, PostcodeLookup $lookup): JsonResponse
+    {
+        $postcode = (string) $request->query('postcode', '');
+
+        if (trim($postcode) === '') {
+            return response()->json([
+                'status' => PostcodeLookup::UNKNOWN,
+                'postcode' => null,
+                'district' => null,
+            ]);
+        }
+
+        return response()->json($lookup->lookup($postcode));
+    }
+    /**
      * @return array<string, mixed>
      */
     private function validatePayload(Request $request): array
@@ -110,7 +137,15 @@ class PropertyController extends Controller
             'address_line1' => ['required', 'string', 'max:255'],
             'address_line2' => ['nullable', 'string', 'max:255'],
             'city' => ['required', 'string', 'max:100'],
-            'postcode' => ['required', 'string', 'max:20', 'regex:'.self::POSTCODE_PATTERN],
+            // #51: shape first, then existence. The existence check fails
+            // OPEN — see the PostcodeIsReal rule.
+            'postcode' => [
+                'required',
+                'string',
+                'max:20',
+                'regex:'.self::POSTCODE_PATTERN,
+                app(PostcodeIsReal::class),
+            ],
         ], [
             'postcode.regex' => 'Enter a valid UK postcode (for example, M1 1AA).',
         ]);

@@ -171,9 +171,7 @@ it('allow-reply: a TENANT web reply revives an exhausted case to awaiting_landlo
     $clockBefore = $case->silence_clock_started_at->copy();
     $tokensBefore = $case->replyTokens()->count();
 
-    $this->actingAs($case->tenant)
-        ->post(route('cases.reply', $case->url_slug), ['body' => 'Actually, still not fixed.'])
-        ->assertRedirect();
+    sendTenantReply($case->tenant, $case, 'Actually, still not fixed.')->assertRedirect();
 
     $case->refresh();
     expect($case->status)->toBe(CaseStatus::AwaitingLandlord);
@@ -291,9 +289,7 @@ it('the landlord closer is ONE-SHOT: a tenant-web revival that re-exhausts does 
     expect(d14CloserMessageCount($case->fresh()))->toBe(1);
 
     // Tenant revives via web → awaiting_landlord.
-    $this->actingAs($case->tenant)
-        ->post(route('cases.reply', $case->url_slug), ['body' => 'Still broken.'])
-        ->assertRedirect();
+    sendTenantReply($case->tenant, $case, 'Still broken.')->assertRedirect();
     expect($case->fresh()->status)->toBe(CaseStatus::AwaitingLandlord);
 
     // Landlord stays silent past the interval; re-exhaust.

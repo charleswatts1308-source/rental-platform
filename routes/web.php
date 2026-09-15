@@ -87,6 +87,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/properties/{property}/edit', [PropertyController::class, 'edit'])->name('properties.edit');
     Route::patch('/properties/{property}', [PropertyController::class, 'update'])->name('properties.update');
 
+    // #51: the create/edit forms ask us, not postcodes.io directly — the
+    // cache and the privacy boundary both live server-side. Throttled
+    // because it is a proxy to a free third-party service.
+    Route::get('/postcode-lookup', [PropertyController::class, 'lookupPostcode'])
+        ->middleware('throttle:30,1')
+        ->name('postcode.lookup');
+
     // The landlord contact is a property of the PROPERTY, versioned.
     // Correcting it here is the whole of snag #24 — separate from the
     // address edit above because a correction inserts a new version and
@@ -101,6 +108,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/cases/preview', [CaseController::class, 'preview'])->name('cases.preview');
     Route::post('/cases/preview/confirm', [CaseController::class, 'confirm'])->name('cases.confirm');
     Route::get('/cases/{slug}', [CaseController::class, 'show'])->name('cases.show');
+    // #69 — a reply is previewed before it is sent, the same as letter 1.
+    // The reply is frozen on case_messages and served on the landlord
+    // exactly like a notice; it is evidence, not chat, and since #19 it can
+    // carry photographs. D13 previews letter 1 because "the tenant is
+    // present and acting", which is equally true here. D13's rejection of
+    // per-letter approval is about SWEEP-SENT escalation, not about a
+    // letter the tenant has just written.
+    Route::post('/cases/{slug}/reply/preview', [CaseController::class, 'replyPreview'])->name('cases.reply.preview');
     Route::post('/cases/{slug}/reply', [CaseController::class, 'reply'])->name('cases.reply');
     // D15 — engagement-gated escalation: tenant authorises a withheld notice.
     Route::get('/cases/{slug}/authorise', [CaseController::class, 'escalationPreview'])->name('cases.escalate.preview');
@@ -127,6 +142,38 @@ Route::prefix('members')->name('members.')->group(function () {
     Route::get('/how-it-works', fn () => view('members.how-it-works'))->name('how-it-works');
 });
 
+// Error pages, on demand — #57. Three of the four could not be walked:
+// 419 needs an expired session, 413 needs JavaScript disabled now that the
+// create form refuses an over-budget selection before it submits, and 500
+// has no natural trigger at all. So they shipped unseen, which is how a
+// page that is meant to reassure ends up being the one nobody has read.
+//
+// Gated to local/staging/preprod, the same allow-list the dev:* artisan
+// commands use. Production refuses it. The pages carry no data — they are
+// static reassurance — so the gate is about not offering a route that
+// exists for our convenience, not about protecting anything on them.
+Route::get('/dev/errors/{code}', function (string $code) {
+    // Gated at RUNTIME, not at registration, for the same reason the dev:*
+    // commands are: a route that does not exist under `testing` cannot be
+    // tested, and an env gate nobody has exercised is a claim rather than
+    // a control.
+    abort_unless(app()->environment(['local', 'staging', 'preprod']), 404);
+
+    // Whitelisted, not free-form: `view("errors.$code")` on unchecked
+    // input renders whatever a caller names.
+    abort_unless(in_array($code, ['404', '413', '419', '500'], true), 404);
+
+    // Rendered with the REAL status code, so what you see is what a
+    // browser gets — including the status line, which is half the
+    // behaviour being checked.
+    return response()->view("errors.{$code}", [], (int) $code);
+})->name('dev.errors');
+
+Route::get('/dev/errors', function () {
+    abort_unless(app()->environment(['local', 'staging', 'preprod']), 404);
+
+    return response()->view('dev-errors-index');
+})->name('dev.errors.index');
 // Content archive — dev box only. Retired pages live under
 // resources/views/content-archive/. This single catch-all makes any Blade
 // view dropped into that folder instantly runnable at

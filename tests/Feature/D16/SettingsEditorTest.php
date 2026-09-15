@@ -144,6 +144,9 @@ function validSettingsPayload(array $overrides = []): array
         'hold_max_days' => 60,
         'escalation_apply_inflight' => '0',
         'attachments_first_notice_max' => 1,
+        // #73 — tenant replies carry their own ceiling, as the attachment
+        // policy always said they should.
+        'attachments_reply_max' => 1,
     ], $overrides);
 }
 
@@ -176,3 +179,35 @@ function inflightLandlordCase(int $snapshotInterval): RepairCase
 
     return $case->fresh();
 }
+
+/**
+ * A setting deployed but never stored must not lock the form.
+ *
+ * Every field here is required, so a key with no row would render blank
+ * and refuse the whole save — an admin locked out of editing ANY setting
+ * until someone seeded a row by hand. Caught while planning the #73
+ * deploy, where attachments.reply_max is exactly that case on gafol and
+ * prod.
+ */
+it('renders a never-stored setting at its default rather than blank', function () {
+    \App\Models\Setting::where('key', 'attachments.reply_max')->delete();
+
+    $this->actingAs(settingsAdmin())
+        ->get('/admin/settings')
+        ->assertOk()
+        // The letter-1 ceiling, which is what PhotoLimits::replyCeiling()
+        // falls back to — so the form shows what the app is really doing.
+        ->assertSee('name="attachments_reply_max"', false)
+        ->assertDontSee('name="attachments_reply_max" value=""', false);
+});
+
+it('can still save every setting when one has never been stored', function () {
+    \App\Models\Setting::where('key', 'attachments.reply_max')->delete();
+
+    $this->actingAs(settingsAdmin())
+        ->put('/admin/settings', validSettingsPayload(['escalation_interval_days' => 21]))
+        ->assertRedirect(route('admin.settings.index'))
+        ->assertSessionHasNoErrors();
+
+    expect((int) \App\Models\Setting::get('escalation.interval_days'))->toBe(21);
+});

@@ -49,15 +49,6 @@
             </a>
         @endif
 
-        @can('reply', $case)
-            <form method="POST" action="{{ route('cases.reply', $case->url_slug) }}" class="mb-3">
-                @csrf
-                <label for="reply_body" class="form-label small">Reply to your landlord</label>
-                <textarea id="reply_body" name="body" rows="4" required maxlength="10000"
-                          class="form-control form-control-sm mb-2">{{ old('body') }}</textarea>
-                <button type="submit" class="btn btn-primary w-100">Send reply</button>
-            </form>
-        @endcan
 
         @if($case->status === CaseStatus::Dormant && ($revivalExpired ?? false))
             <a href="{{ route('cases.create') }}" class="btn btn-outline-primary w-100 mb-3">Raise a new case</a>

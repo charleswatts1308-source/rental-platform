@@ -51,8 +51,6 @@
                         {{-- #16 — denominator reads the live ladder length, not a literal 4. --}}
                         <dd class="col-7">{{ $case->current_stage }} of {{ \App\Models\Setting::get('escalation.max_notices', 4) }}</dd>
 
-                        <dt class="col-5">Severity</dt>
-                        <dd class="col-7">{{ ucfirst($case->severity->value) }}</dd>
 
                         <dt class="col-5">Issue</dt>
                         <dd class="col-7">{{ $case->category?->label ?? $case->category_key }}</dd>
@@ -89,12 +87,25 @@
 
             <div class="card mb-3">
                 <div class="card-body">
-                    <h2 class="h6 text-muted text-uppercase">Recipient</h2>
                     @php($recipient = $case->landlordRecipient())
+                    {{-- #2: titled by the contact's stored role rather than
+                         the generic "Recipient", and showing the address the
+                         letters actually go to. The email was not on this
+                         page at all before, so a tenant could not check the
+                         one detail a case depends on. Plain text, not a
+                         mailto: contacting the landlord outside the system
+                         leaves no record, which is the thing the product
+                         exists to produce. --}}
+                    <h2 class="h6 text-muted text-uppercase">
+                        {{ $recipient ? ucfirst($recipient->role->value) : 'Recipient' }}
+                    </h2>
                     <p class="mb-1 fw-bold">{{ $recipient?->name ?? $recipient?->email }}</p>
-                    <p class="mb-0 small text-muted">
-                        {{ ucfirst($recipient?->role->value) }}@if($recipient?->organisation_name) — {{ $recipient->organisation_name }}@endif
-                    </p>
+                    @if($recipient?->name && $recipient?->email)
+                        <p class="mb-0 small text-muted">{{ $recipient->email }}</p>
+                    @endif
+                    @if($recipient?->organisation_name)
+                        <p class="mb-0 small text-muted">{{ $recipient->organisation_name }}</p>
+                    @endif
                 </div>
             </div>
 
@@ -163,6 +174,10 @@
                     @include('cases._message_card', ['message' => $message])
                 @endforeach
             @endif
+
+            {{-- #70(b): the reply form lives HERE, beneath the thread it
+                 answers, rather than in the sidebar. Read, then reply. --}}
+            @include('cases._reply_form')
 
             @if($quarantined->isNotEmpty())
                 <div class="alert alert-warning mt-4">

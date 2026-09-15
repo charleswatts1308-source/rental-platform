@@ -5,38 +5,44 @@ The `docs/` folder has many files and many are stale — this index says
 which to trust and which to ignore, so you don't re-derive state from a
 superseded doc. It is a **router, not a record**: keep it short.
 
-**Last updated:** 2026-09-13.
+**Last updated:** 2026-09-15.
 
 **DECISIONS OF 12 SEP are in `docs/llcs-decisions-2026-09-12.txt`.** Charlie's pass over the snag index plus the discussion that followed: what was ruled, what was closed, the agreed fix-cycle order, and the questions still open. Read it with this file. **The snagging list HAS now been reconciled against it** (`7fdebb4`), including new snags #61, #62 and #63, and a Section 2 tag for dev-facing-only entries.
 
-**➡ WORK IN FLIGHT: `feature/fix-cycle-sep-2026`, pushed 13 Sep, NOT
-MERGED.** Branched from `main` at `7fdebb4`; fork point tagged
-`pre-fix-cycle-sep-2026`. Six commits, suite **803 green**. Nothing is
-deployed from it — both boxes still run `01451b0`.
+**✅ THE SEPTEMBER FIX CYCLE IS MERGED.** `feature/fix-cycle-sep-2026`
+merged to `main` 15 Sep, `--no-ff`, fork point tagged
+`pre-fix-cycle-sep-2026`. 46 commits, suite **861 green** (803 at fork).
+**No migrations at all** — nothing on it creates or alters a table, so
+the CLAUDE.md MariaDB check is not triggered. Every fix was walked in a
+browser on dev by Charlie.
 
-Built, each with tests: **#50** severity off the UI; **#2** landlord
-email on the case page with the panel titled by role; **#51**
-postcodes.io existence check + town reconciliation; **#53** Remove on one
-staged photo no longer removes both (verified failing against the old
-code first); **#58** the form sums the selection against `post_max_size`;
-**#57** error pages for 404, 413, 419, 500.
+**➡ READ `docs/cc-report-fix-cycle-sep-2026-implementation.md` FIRST**
+if you are picking this area up. It carries the test deltas (one
+assertion INVERTED, twenty repointed, none weakened), the three defects
+worth knowing about, and what "closed" means for #54.
 
-**FLAGGED, not slipped in:** the photo limits moved off
-`CaseController`'s private const into `App\Support\PhotoLimits`, because
-the 413 view has to state the same figures the form advertises and could
-not reach them. The controller delegates.
+**Twenty-one snags closed:** #2, #27, #40, #44, #50, #51, #53, #54, #57,
+#58, #61, #64, #65, #66, #67, #68, #69, #70, #71, #72, #73. Plus **#19**
+(attachments on tenant replies), open since the June live-fire.
 
-**BEFORE MERGE:** the implementation report is NOT written, and per
-CLAUDE.md it stops the phase. Nothing on this branch has been walked in a
-browser — all six are behavioural or visual and need it.
+**Ten of those were raised BY the walk** (#64–#73), and three were
+defects no test would have found: a double-click on Send posted two
+evidential letters and was unguarded on the escalation path (#71);
+choosing a replacement photo wiped the ones the tenant kept (#72); and
+replies shared letter 1's attachment ceiling, against the design doc
+(#73).
 
-**REMAINING in the cycle, all needing Charlie:** **#61** (wording pasted
-through the ADMIN TEMPLATE EDITOR, not SQL — the editor writes
-`letter_text_change_history` and these are evidential letters, and the
-footer also gains the /landlords link); the rest of the attachments pass
-(**#40, #44, #54**) which needs the ceiling raised and a deliberate walk;
-and registration/verification/login (**#37, #27, #28, #29**) as one unit.
+**TWO THINGS THAT DO NOT HAPPEN BY THEMSELVES ON DEPLOY:**
 
+1. **`attachments.reply_max` has no row** on gafol or prod. The app is
+   safe — `PhotoLimits::replyCeiling()` falls back to the letter-1
+   ceiling, and the admin form renders the same default rather than
+   blank — but nothing is stored until someone saves the settings form.
+2. **The retaliation sentence (#61) is still in the DATABASE** on gafol
+   and on the dev box. Prod was done by hand through the admin template
+   editor on 15 Sep. The seeder change only reaches a fresh install, and
+   deliberately so. TWO templates carry it: `landlord_wakeup_generic`
+   and `exhaustion_landlord_closer`.
 **Still open from the 12 Sep discussion:** whether landlords ever get a
 written channel that is not a case reply. That decides whether `admin@`
 is a stopgap or the permanent front door, and whether the threaded
@@ -374,16 +380,49 @@ reference `Z229825X`. The old value was the payment/account number.
 
 ## Snags — open
 
-**#1, #2, #7, #12, #13, #17, #18, #19, #22, #25, #26, #27, #28,
-#29, #30, #31, #32, #33, #34, #35, #36, #37, #38, #39, #40, #42, #44,
-#48, #50, #51, #52, #53, #54, #56, #57, #58, #60.**
+**OPEN — #1, #2, #12, #13, #17, #18, #19, #25, #26, #27, #28, #29,
+#30, #31, #32, #33, #34, #35, #37, #40, #42, #44, #48, #50, #51, #53,
+#54, #56, #57, #58, #60, #61, #62, #63, #64, #65, #66.**
 
-**BUILT, NOT MERGED, NOT DEPLOYED: #24, #49, #59.** Still live on prod until
-`feature/property-landlord-contacts` ships. #7 is the same defect as
-#49(a) and dies with it.
+**BUILT ON `feature/fix-cycle-sep-2026`, NOT MERGED, NOT DEPLOYED:
+#2, #50, #51, #53, #57, #58.** They stay listed open above for exactly
+that reason — both boxes still run `01451b0` and still carry all six.
 
-Closed: **#23**, **#8**, **#41**, **#43**, **#45**, **#46**, **#47**,
-**#55**. Resolved by Phase 5 (D16): #4, #14, #15, #16, #20, #21.
+**#25 IS PART DONE.** Release 1 is deployed and proven both ways on
+prod; release 2 (the tenant-taken copy, D17.3) is not built. It stays
+open until that ships.
+
+**Closed since this block was last written:** **#7** (12 Sep — landlord
+prefill fixed and verified; it died with #49(a) as predicted), **#36**
+(12 Sep — Mailgun free tier is adequate), **#39** (12 Sep — the preview
+now shows attached photos). **#38** was FOLDED INTO **#51**. **#52**
+was DROPPED 12 Sep by decision. **#22** was LEFT AS IS 12 Sep by
+decision.
+
+**Closed earlier:** **#8**, **#23**, **#24**, **#41**, **#43**, **#45**,
+**#46**, **#47**, **#49**, **#55**, **#59**. Resolved by Phase 5 (D16):
+#4, #14, #15, #16, #20, #21.
+
+**⚠ The line that stood here — "BUILT, NOT MERGED, NOT DEPLOYED: #24,
+#49, #59 … still live on prod" — was STALE.** All three shipped to main
+and to both boxes on 4 Sep (`fb03bc9`). Nothing from that set is
+outstanding.
+
+**Added 12 Sep, from Charlie's pass over the index:** **#61** letter
+wording, to go through the ADMIN TEMPLATE EDITOR rather than SQL;
+**#62** landlord questions about the SERVICE land in the case thread
+where the tenant is the only reader — the open question behind it is
+whether landlords ever get a written channel that is not a case reply;
+**#63** the tenant's name renders exactly as stored, so a formal notice
+signs off "charles watts1308".
+
+**Added 15 Sep:** **#64** no show/hide toggle on any password field;
+**#65** the same-browser verification path verifies the user and then
+shows no confirmation, because a stale `url.intended` swallows the
+`?verified=1` flag. Both belong with the #37/#27/#28/#29 pass.
+**#66** landlord details are asked for on the Raise a Case form rather
+than after registering the property they belong to — ruled the same
+day that a second property needs no special handling.
 
 **Added 22–23 Aug, walking the releases:**
 - **#49** the preview shows one landlord name and the letter sends

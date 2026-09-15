@@ -34,7 +34,16 @@
 
     <div class="mb-3">
         <label for="body" class="form-label">Body</label>
-        <textarea class="form-control font-monospace" id="body" name="body" rows="18" required>{{ old('body', $template->body) }}</textarea>
+        {{-- Grows to fit its content instead of hiding the tail behind a
+             scrollbar. Charlie, 15 Sep, editing landlord_wakeup_generic on
+             prod: the visible text ended on an <hr>, which reads as the
+             end of the letter, and the footer paragraph below it was
+             invisible — so the sentence he was there to delete looked as
+             though it did not exist.
+
+             rows is kept as the floor and as the no-JS fallback. --}}
+        <textarea class="form-control font-monospace" id="body" name="body" rows="18"
+                  style="overflow-y:hidden" required>{{ old('body', $template->body) }}</textarea>
         <div class="form-text">
             Placeholders use <code>&#123;&#123;name&#125;&#125;</code> syntax. Allowed fields:
             {{ implode(', ', \App\Services\LetterTemplateRenderer::WHITELIST) }}.
@@ -69,3 +78,33 @@
     </div>
 @endif
 @endsection
+
+<script>
+/**
+ * Grow the body box to fit the template, so nothing hides below a
+ * scrollbar. Raised 15 Sep: the visible text of landlord_wakeup_generic
+ * ended on an <hr>, which reads as the end of the letter, and the footer
+ * paragraph under it was invisible.
+ *
+ * Height is set from scrollHeight and re-applied on input, so it tracks
+ * edits. `rows` stays on the element as the floor and as what a
+ * no-JavaScript browser gets — this only ever makes the box bigger.
+ */
+document.addEventListener('DOMContentLoaded', function () {
+    var body = document.getElementById('body');
+
+    if (!body) {
+        return;
+    }
+
+    function fit() {
+        // Reset first, or the box can only ever grow: scrollHeight of an
+        // already-tall element includes the height we gave it.
+        body.style.height = 'auto';
+        body.style.height = body.scrollHeight + 'px';
+    }
+
+    fit();
+    body.addEventListener('input', fit);
+});
+</script>

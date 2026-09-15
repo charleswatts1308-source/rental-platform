@@ -17,6 +17,7 @@ use App\Services\LetterTemplateRenderer;
 use App\Services\Silence\SilenceClock;
 use App\Support\CaseReference;
 use App\Support\FileSize;
+use App\Support\PhotoLimits;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -59,7 +60,13 @@ class CaseController extends Controller
      * which is snag #41's failure mode. The deliverability lever is the
      * COUNT, which is configurable, and later the resize option (R7).
      */
-    private const PHOTO_MAX_KB = 4096;
+    private const PHOTO_MAX_KB = PhotoLimits::PER_FILE_KB;
+
+    /** #69 — the staged reply awaiting its preview confirmation. */
+    private const REPLY_PREVIEW_KEY = 'cases.reply_preview';
+
+    /** #71 — one-time send tokens live under this session prefix. */
+    private const SEND_TOKEN_PREFIX = 'cases.send_token.';
 
     /**
      * Ceiling fallback when the setting row is missing. Matches the
@@ -109,10 +116,29 @@ class CaseController extends Controller
             ->orderBy('created_at')
             ->get();
 
+        // #69 — a staged reply is offered back ONLY on a return via Edit
+        // (?resume=1). On any other visit it is cleared, for the reason #44
+        // records: a plain visit cannot otherwise be told apart from coming
+        // back to finish a draft, and a stale reply would sit waiting to be
+        // sent on a case the tenant has long moved on from.
+        $resumeReply = null;
+        $stagedReply = session(self::REPLY_PREVIEW_KEY);
+        $ownsStaged = $stagedReply
+            && (int) ($stagedReply['user_id'] ?? 0) === request()->user()->id
+            && (int) ($stagedReply['case_id'] ?? 0) === $case->id;
+
+        if ($ownsStaged && request()->boolean('resume')) {
+            $resumeReply = $stagedReply;
+        } elseif ($ownsStaged) {
+            $this->discardStagedPhotos(['photos' => $stagedReply['photos'] ?? []]);
+            session()->forget(self::REPLY_PREVIEW_KEY);
+        }
+
         return view('cases.show', [
             'case' => $case,
             'messages' => $messages,
             'quarantined' => $quarantined,
+            'resumeReply' => $resumeReply,
             'revivalExpired' => $this->dormantRevivalExpired($case),
             // #25 — the event that stopped the case, so the page can say
             // WHY rather than showing a status nobody can interpret. Null
@@ -143,20 +169,133 @@ class CaseController extends Controller
      * Policy enforces the availability gate; this controller delegates
      * to SendCaseNotice's $isTenantReply branch.
      */
+    /**
+     * #69 — stage a reply and show the tenant what will be sent.
+     *
+     * Charlie, 15 Sep 2026: "replies should get preview, no reason why not
+     * and it makes for consistency". He is right on the consistency, and
+     * there is a stronger reason than that: a reply is rendered into the
+     * same letter, frozen on case_messages and served on the landlord
+     * exactly like a notice. Since #19 it can carry photographs. It is
+     * evidence, not chat.
+     *
+     * Checked against the design doc before building, as CLAUDE.md
+     * requires. D8 (tenant reply) is silent on previews. D13 previews
+     * letter 1 because "case creation is the one moment a preview costs
+     * nothing — the tenant is present and acting", which is equally true
+     * of a reply. D13 DOES reject per-letter approval, but explicitly for
+     * sweep-sent escalation, on the grounds that gating automatic
+     * escalation on the tenant's attention reintroduces the disease the
+     * silence model cured. A letter the tenant has just written is the
+     * opposite case. No conflict.
+     */
+    public function replyPreview(Request $request, string $slug): RedirectResponse|View
+    {
+        $case = $this->findCaseOrFail($slug);
+        $this->authorize('reply', $case);
+
+        // #72 — the same whole-set ceiling as the create form.
+        $stagedNow = ($p = session(self::REPLY_PREVIEW_KEY))
+            && (int) ($p['user_id'] ?? 0) === $request->user()->id
+            && (int) ($p['case_id'] ?? 0) === $case->id
+                ? ($p['photos'] ?? [])
+                : [];
+        $photoRoom = $this->remainingPhotoRoom($request, $stagedNow, PhotoLimits::replyCeiling());
+
+        $rules = [
+            'body' => ['required', 'string', 'min:1', 'max:10000'],
+            'photos' => ['nullable', 'array', 'max:'.$photoRoom],
+            'photos.*' => ['file', 'mimes:jpg,jpeg,png,pdf', 'max:'.self::PHOTO_MAX_KB],
+        ];
+
+        [$photoMessages, $photoAttributes] = $this->photoValidationCopy($request, $photoRoom);
+        $validated = $request->validate($rules, $photoMessages, $photoAttributes);
+
+        // Staged, not stored straight into the case folder as the
+        // pre-preview version did. A preview can be abandoned, and the
+        // daily sweep already clears preview folders over 24h old (#45) —
+        // so staging is what stops an abandoned reply leaving files behind
+        // for ever. The promote step on confirm handles a swept file by
+        // skipping and logging, exactly as the create flow does.
+        $photos = $this->resolveStagedReplyPhotos($request, $case);
+
+        session()->put(self::REPLY_PREVIEW_KEY, [
+            'user_id' => $request->user()->id,
+            'case_id' => $case->id,
+            'body' => $validated['body'],
+            'photos' => $photos,
+            'staged_at' => now()->toIso8601String(),
+        ]);
+
+        $case->load(['property', 'property.currentLandlordContact', 'tenant']);
+
+        $rendered = $this->renderer->renderFreeForm(
+            $validated['body'],
+            'Reply on repair case {{case_reference}} from {{tenant_name}}',
+            [
+                'tenant_name' => $case->tenant->name,
+                'landlord_name' => $case->landlordRecipient()?->name ?: 'Sir or Madam',
+                'case_reference' => $case->url_slug,
+                'property_address' => $this->formatAddress($case->property),
+                'issue_description' => $case->description,
+            ],
+        );
+
+        return view('cases.reply-preview', [
+            'case' => $case,
+            'rendered' => $rendered,
+            'photos' => $photos,
+            'recipient' => $case->landlordRecipient(),
+        ]);
+    }
+
+    /**
+     * Send the previewed reply. #69 made this the CONFIRM step; it no
+     * longer reads the form directly.
+     */
     public function reply(Request $request, string $slug): RedirectResponse
     {
         $case = $this->findCaseOrFail($slug);
         $this->authorize('reply', $case);
 
-        $validated = $request->validate([
-            'body' => ['required', 'string', 'min:1', 'max:10000'],
-        ]);
+        // #71 — a double-click on Send used to write TWO evidential rows
+        // and post TWO letters. The form carries a one-time token minted
+        // when the page rendered; the first submit consumes it and the
+        // second finds nothing. Deliberately server-side: disabling the
+        // button in the browser is the comfort, this is the guarantee.
+        //
+        // Not a validation error. The tenant pressed send once as far as
+        // they are concerned, and their reply DID go — telling them
+        // something failed would be false.
+        if (! $this->consumeSendToken($request, 'reply', $case->id)) {
+            return redirect()
+                ->route('cases.show', $case->url_slug)
+                ->with('success', 'Reply sent to your landlord.');
+        }
+
+        $payload = session(self::REPLY_PREVIEW_KEY);
+
+        // Expired, cleared, or belonging to another user or another case.
+        // Sending "whatever is in the session" would be how one case's
+        // reply lands on another.
+        if (! $payload
+            || (int) ($payload['user_id'] ?? 0) !== $request->user()->id
+            || (int) ($payload['case_id'] ?? 0) !== $case->id) {
+            return redirect()
+                ->route('cases.show', $case->url_slug)
+                ->with('error', 'Your reply has expired — please write it again.');
+        }
+
+        $attachmentInputs = $this->promotePreviewPhotos($payload['photos'] ?? [], $case->id);
 
         $this->sendCaseNotice->execute(
             $case,
             actorUserId: $request->user()->id,
-            tenantReplyBody: $validated['body'],
+            attachmentInputs: $attachmentInputs,
+            tenantReplyBody: $payload['body'],
         );
+
+        session()->forget(self::REPLY_PREVIEW_KEY);
 
         return redirect()
             ->route('cases.show', $case->url_slug)
@@ -219,6 +358,17 @@ class CaseController extends Controller
     {
         $case = $this->findCaseOrFail($slug);
         $this->authorize('authoriseEscalation', $case);
+
+        // #71. The policy would very likely refuse a second authorisation
+        // anyway, because the first send clears the held condition — but
+        // "very likely" is not good enough here. A duplicate escalation
+        // letter advances the ladder, the counter is DERIVED from these
+        // rows and never resets (D3), and there is no way back from it.
+        if (! $this->consumeSendToken($request, 'escalate', $case->id)) {
+            return redirect()
+                ->route('cases.show', $case->url_slug)
+                ->with('success', 'The next notice has been sent to your landlord.');
+        }
 
         $this->sendCaseNotice->execute($case, actorUserId: $request->user()->id);
 
@@ -380,12 +530,17 @@ class CaseController extends Controller
         return view('cases.create', [
             'properties' => $properties,
             'categories' => $categories,
-            'severities' => CaseSeverity::cases(),
             'roles' => LandlordContactRole::cases(),
             'stagedPhotos' => $stagedPhotos,
             'photoCeiling' => $this->photoCeiling(),
             'photoMaxBytes' => $this->effectivePhotoMaxBytes(),
             'photoMaxLabel' => FileSize::human($this->effectivePhotoMaxBytes()),
+            'photoTotalMaxBytes' => $this->effectivePhotoTotalBytes(),
+            // The form enforced the total but never stated it (#58 half
+            // done): three files could each satisfy every limit the screen
+            // named and still be refused as a set. The 413 page has quoted
+            // this figure since #57 — the form now quotes the same one.
+            'photoTotalLabel' => PhotoLimits::totalLabel(),
         ]);
     }
 
@@ -430,6 +585,12 @@ class CaseController extends Controller
         // different sources if only one source is ever present.
         $inheritsContact = $this->propertyContactFor($request->input('property_id'), $userId) !== null;
 
+        // #72 — how many more photos may ride on THIS submission.
+        $stagedNow = ($p = session(self::PREVIEW_SESSION_KEY)) && (int) ($p['user_id'] ?? 0) === $userId
+            ? ($p['photos'] ?? [])
+            : [];
+        $photoRoom = $this->remainingPhotoRoom($request, $stagedNow);
+
         $rules = [
             'property_id' => [
                 'required',
@@ -439,17 +600,20 @@ class CaseController extends Controller
                 'required',
                 Rule::exists('repair_categories', 'key')->where('active', true),
             ],
-            'severity' => ['required', Rule::enum(CaseSeverity::class)],
             'description' => ['required', 'string', 'max:5000'],
             'landlord_email' => [Rule::excludeIf($inheritsContact), 'required', 'email', 'max:255'],
             'landlord_name' => [Rule::excludeIf($inheritsContact), 'nullable', 'string', 'max:255'],
             'landlord_role' => [Rule::excludeIf($inheritsContact), 'required', Rule::enum(LandlordContactRole::class)],
             'organisation_name' => [Rule::excludeIf($inheritsContact), 'nullable', 'string', 'max:255'],
-            'photos' => ['nullable', 'array', 'max:'.$this->photoCeiling()],
+            // #72 — the ceiling covers the WHOLE set, so a tenant with two
+            // survivors and a ceiling of three may add one more, not three.
+            // Sized before validation runs, which is why
+            // survivingStagedPhotos() deletes nothing.
+            'photos' => ['nullable', 'array', 'max:'.$photoRoom],
             'photos.*' => ['file', 'mimes:jpg,jpeg,png,pdf', 'max:'.self::PHOTO_MAX_KB],
         ];
 
-        [$photoMessages, $photoAttributes] = $this->photoValidationCopy($request);
+        [$photoMessages, $photoAttributes] = $this->photoValidationCopy($request, $photoRoom);
 
         $validated = $request->validate($rules, $photoMessages, $photoAttributes);
 
@@ -578,7 +742,10 @@ class CaseController extends Controller
                 'property_id' => $validated['property_id'],
                 'property_landlord_contact_id' => $propertyContact->id,
                 'category_key' => $validated['category_key'],
-                'severity' => $validated['severity'],
+                // #50: severity is no longer collected. The column stays,
+                // fixed at Routine, so nothing reading it breaks and no
+                // migration destroys the values already stored.
+                'severity' => CaseSeverity::Routine,
                 'description' => $validated['description'],
                 'status' => CaseStatus::Open,
                 'current_stage' => 1,
@@ -679,12 +846,17 @@ class CaseController extends Controller
      * is saved, you don't need to re-attach it". The cue was false and the
      * photo left the letter silently.
      *
-     * Three cases now, in priority order:
-     *   1. New files uploaded  -> they REPLACE the staged set.
-     *   2. No files, keep flag -> carry the staged set forward (the cue is
-     *      now true).
-     *   3. Otherwise           -> empty; the tenant removed them, or there
-     *      were never any.
+     * Snag #72 — new files used to REPLACE the staged set outright.
+     * Charlie, 15 Sep 2026: "remove a photo and reselect another and the
+     * list is cleared and all that remains is the new reselected one." At
+     * a ceiling of one that rule was invisible; at three it silently threw
+     * away evidence the tenant had every reason to think was still
+     * attached. New files now ADD to whatever survived.
+     *
+     * Two steps, in order:
+     *   1. Work out which staged photos survive (the per-file keep
+     *      instruction from #53).
+     *   2. Stage any new files and append them.
      *
      * The keep flag defaults to on whenever a staged set exists, so the
      * safe outcome (evidence survives) is what happens without JavaScript.
@@ -695,40 +867,90 @@ class CaseController extends Controller
      */
     private function resolveStagedPhotos(Request $request, int $userId): array
     {
-        $incoming = $request->file('photos', []) ?? [];
         $payload = session(self::PREVIEW_SESSION_KEY);
         $ownsPayload = $payload && (int) ($payload['user_id'] ?? 0) === $userId;
         $staged = $ownsPayload ? ($payload['photos'] ?? []) : [];
 
-        if (count($incoming) > 0) {
-            // Replacing: the superseded files would be swept within 24h
-            // anyway, but there is no reason to leave them lying about.
-            if ($staged) {
-                $this->discardStagedPhotos($payload);
-            }
+        $survivors = $this->survivingStagedPhotos($request, $staged);
 
-            return $this->stagePreviewPhotos($incoming, $userId);
+        // Anything the tenant removed is deleted; the survivors have to
+        // still be on disk when the letter is built.
+        $dropped = array_values(array_filter(
+            $staged,
+            fn ($photo) => ! in_array($photo, $survivors, true),
+        ));
+
+        if ($dropped !== []) {
+            $this->discardStagedPhotos(['photos' => $dropped]);
         }
 
-        // ABSENT means keep. Only an explicit "0" — which the form's script
-        // sets when the tenant chooses new files or clicks Remove — drops
-        // them. Defaulting the other way would make every caller that
-        // forgets the field silently discard a tenant's evidence, which is
-        // the failure mode this whole design exists to prevent.
-        $keepStaged = ! $request->has('keep_staged_photos')
-            || $request->boolean('keep_staged_photos');
+        $incoming = $request->file('photos', []) ?? [];
 
-        if ($staged && $keepStaged) {
+        if (count($incoming) === 0) {
+            return $survivors;
+        }
+
+        return array_merge($survivors, $this->stagePreviewPhotos($incoming, $userId));
+    }
+
+    /**
+     * Which of the already-staged photos survive this submission.
+     *
+     * Pure — it deletes nothing, so it can be called before validation to
+     * work out how much room is left without side effects.
+     *
+     * #53 — the keep instruction is PER FILE, not one boolean for the set.
+     * It used to be a single flag, so Remove on one of two staged photos
+     * removed both: the control said "remove this photo" and the server
+     * heard "remove all photos".
+     *
+     * Three shapes are accepted, and the ABSENT-MEANS-KEEP default
+     * survives all of them, because a caller that forgets the field must
+     * not be able to wipe a tenant's evidence:
+     *
+     *   absent          -> keep everything
+     *   array of paths  -> keep exactly those
+     *   "1" / "0"       -> the old all-or-nothing form, still honoured
+     *
+     * @param  array<int, array<string, mixed>>  $staged
+     * @return array<int, array<string, mixed>>
+     */
+    private function survivingStagedPhotos(Request $request, array $staged): array
+    {
+        if ($staged === [] || ! $request->has('keep_staged_photos')) {
             return $staged;
         }
 
-        if ($staged) {
-            $this->discardStagedPhotos($payload);
+        $keep = $request->input('keep_staged_photos');
+
+        if (! is_array($keep)) {
+            // Legacy scalar form.
+            return $request->boolean('keep_staged_photos') ? $staged : [];
         }
 
-        return [];
+        $keepPaths = array_filter(array_map(
+            fn ($path) => is_string($path) ? $path : null,
+            $keep,
+        ));
+
+        return array_values(array_filter(
+            $staged,
+            fn ($photo) => isset($photo['path']) && in_array($photo['path'], $keepPaths, true),
+        ));
     }
 
+    /**
+     * How many more photos this submission may carry — #72.
+     *
+     * The ceiling applies to the WHOLE attachment set, so a tenant with
+     * two survivors and a ceiling of three may add one, not three.
+     *
+     * @param  array<int, array<string, mixed>>  $staged
+     */
+    private function remainingPhotoRoom(Request $request, array $staged, ?int $ceiling = null): int
+    {
+        return max(0, ($ceiling ?? $this->photoCeiling()) - count($this->survivingStagedPhotos($request, $staged)));
+    }
     /**
      * The per-file size the machine will ACTUALLY accept, in bytes.
      *
@@ -746,10 +968,33 @@ class CaseController extends Controller
      */
     private function effectivePhotoMaxBytes(): int
     {
-        $ours = self::PHOTO_MAX_KB * 1024;
-        $php = FileSize::fromIniShorthand(ini_get('upload_max_filesize'));
+        return PhotoLimits::perFileBytes();
+    }
 
-        return $php > 0 ? min($ours, $php) : $ours;
+    /**
+     * #58 — the budget for the WHOLE selection, in bytes.
+     *
+     * The per-file limit was never the binding constraint on a multi-photo
+     * selection. PHP refuses the entire request when the multipart body
+     * exceeds post_max_size, and it does so before any validation runs, so
+     * the tenant loses the whole submission and the application never
+     * learns it happened.
+     *
+     * Until now that was safe by ARITHMETIC rather than by design: a
+     * ceiling of 3 and a per-file cap of 4MB comes to about 12MB against a
+     * 16M post_max_size. Neither number is controlled or watched by this
+     * application — post_max_size lives in the hosting panel, subscription
+     * wide, and has already been changed once mid-project without the app
+     * knowing. Lower it to 8M and that 12MB becomes a silent 413.
+     *
+     * So the sum is now checked against the real limit, with a reserve for
+     * the description field, the landlord fields and multipart overhead.
+     * Returns 0 when post_max_size is unreadable or unlimited, which the
+     * form treats as "no total check" — the per-file rule still applies.
+     */
+    private function effectivePhotoTotalBytes(): int
+    {
+        return PhotoLimits::totalBytes();
     }
 
     /**
@@ -765,9 +1010,7 @@ class CaseController extends Controller
      */
     private function photoCeiling(): int
     {
-        $value = Setting::get('attachments.first_notice_max', self::PHOTO_COUNT_DEFAULT);
-
-        return max(0, min(3, (int) $value));
+        return PhotoLimits::ceiling();
     }
 
     /**
@@ -787,16 +1030,23 @@ class CaseController extends Controller
      *
      * @return array{0: array<string, string>, 1: array<string, string>}
      */
-    private function photoValidationCopy(Request $request): array
+    private function photoValidationCopy(Request $request, ?int $room = null, ?int $ceiling = null): array
     {
-        $ceiling = $this->photoCeiling();
+        $ceiling = $ceiling ?? $this->photoCeiling();
+        // #72 — when some photos are already attached, the message has to
+        // say how many MORE may be added, or it reads as a contradiction:
+        // "you can attach up to 3" over a form that already holds two.
+        $room = $room ?? $ceiling;
         $limit = FileSize::human(self::PHOTO_MAX_KB * 1024);
 
         $attributes = [];
         $messages = [
-            'photos.max' => $ceiling === 0
-                ? 'Photos cannot be attached at the moment.'
-                : 'You can attach up to '.$ceiling.' '.($ceiling === 1 ? 'photo' : 'photos').'.',
+            'photos.max' => match (true) {
+                $ceiling === 0 => 'Photos cannot be attached at the moment.',
+                $room === 0 => 'You already have '.$ceiling.' '.($ceiling === 1 ? 'photo' : 'photos').' attached. Remove one before adding another.',
+                $room < $ceiling => 'You can add '.$room.' more '.($room === 1 ? 'photo' : 'photos').' — '.$ceiling.' in total.',
+                default => 'You can attach up to '.$ceiling.' '.($ceiling === 1 ? 'photo' : 'photos').'.',
+            },
         ];
 
         foreach ($request->file('photos', []) ?? [] as $index => $file) {
@@ -870,6 +1120,90 @@ class CaseController extends Controller
         return $stored;
     }
 
+    /**
+     * Mint a one-time token for a form that SENDS something — #71.
+     *
+     * Charlie double-clicked Send on a reply (15 Sep 2026) and case
+     * LYE62E took two outbound rows a second apart, and the landlord two
+     * letters. Outbound rows are the evidence record; a duplicate is not
+     * a cosmetic problem.
+     *
+     * Keyed by the token itself rather than by case, so two tabs on the
+     * same case each hold a live token instead of the second render
+     * invalidating the first.
+     */
+    public static function mintSendToken(string $action, int $caseId): string
+    {
+        $token = Str::random(32);
+        session()->put(self::SEND_TOKEN_PREFIX.$token, $action.':'.$caseId);
+
+        return $token;
+    }
+
+    /**
+     * Consume it. True means "this is the first submit, go ahead".
+     *
+     * A missing token means the form was rendered before #71 shipped, or
+     * the session was cleared. Treated as VALID: refusing a genuine reply
+     * because a token went missing would cost a tenant their message,
+     * which is worse than the duplicate this guards against. The token
+     * only ever has to catch the second of two submits from the same
+     * rendered page, and for that it does not need to be mandatory.
+     */
+    private function consumeSendToken(Request $request, string $action, int $caseId): bool
+    {
+        $token = (string) $request->input('send_token', '');
+
+        if ($token === '') {
+            return true;
+        }
+
+        return session()->pull(self::SEND_TOKEN_PREFIX.$token) === $action.':'.$caseId;
+    }
+
+    /**
+     * Stage a reply's photos, honouring anything already staged — #69.
+     *
+     * The same shape as resolveStagedPhotos() for the create flow, and the
+     * same rule, because a tenant who has just used one form should not
+     * find the other behaves differently: new files ADD to whatever
+     * survived the tenant's removals (#72), and choosing none keeps what
+     * is staged.
+     *
+     * Absent-means-keep matters here for the same reason it does in #53: a
+     * caller that forgets the field must not be able to wipe evidence.
+     *
+     * @return array<int, array{disk: string, path: string, original_filename: string, mime_type: string, size_bytes: int}>
+     */
+    private function resolveStagedReplyPhotos(Request $request, RepairCase $case): array
+    {
+        $payload = session(self::REPLY_PREVIEW_KEY);
+
+        $ownsPayload = $payload
+            && (int) ($payload['user_id'] ?? 0) === $request->user()->id
+            && (int) ($payload['case_id'] ?? 0) === $case->id;
+
+        $staged = $ownsPayload ? ($payload['photos'] ?? []) : [];
+
+        $survivors = $this->survivingStagedPhotos($request, $staged);
+
+        $dropped = array_values(array_filter(
+            $staged,
+            fn ($photo) => ! in_array($photo, $survivors, true),
+        ));
+
+        if ($dropped !== []) {
+            $this->discardStagedPhotos(['photos' => $dropped]);
+        }
+
+        $incoming = $request->file('photos', []) ?? [];
+
+        if (count($incoming) === 0) {
+            return $survivors;
+        }
+
+        return array_merge($survivors, $this->stagePreviewPhotos($incoming, $request->user()->id));
+    }
     /**
      * Move staged preview photos to the final cases/{case_id}/
      * folder and return the attachment input array shape that

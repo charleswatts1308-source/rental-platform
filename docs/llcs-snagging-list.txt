@@ -66,6 +66,18 @@ Page: Cases - landlord agent email not shown
 Severity:
 Saw:
 Expected:
+Status:      SECOND HALF FOUND AND FIXED 15 Sep 2026. Charlie set a
+             property's contact to AGENT, raised a case, and the
+             create-case panel still read "This property's landlord".
+             The 12 Sep fix titled the CASE PAGE by role and left the
+             create-case panel hardcoded — so the first screen after
+             choosing Agent contradicted the choice. Both the
+             server-rendered title and the JS that relabels it when the
+             property dropdown changes now follow the stored role.
+             Tests in tests/Feature/Phase6/CaseCreateTest.php cover
+             agent and landlord.
+             WALKED AND PASSED 15 Sep 2026 by Charlie, on dev. Not yet
+             deployed.
 Status:      open — RULED 12 Sep 2026. The panel currently titled
              "Recipient" takes its title from the contact's stored role
              — "Landlord" or "Agent" — and shows the contact's EMAIL
@@ -468,9 +480,44 @@ Notes:       Surfaced by real usage in the live-fire, not by a test gap.
              → CaseNotice::attachments). A tenant-reply version reuses the
              same SendCaseNotice attachmentInputs parameter, which the
              reply path currently calls without attachments.
-Fix:         Add a file input to the reply form + photo validation/staging
-             in CaseController::reply, thread attachmentInputs into the
-             tenant-reply SendCaseNotice call. Reuses existing helpers.
+Status note: BUILT 15 Sep 2026, on feature/fix-cycle-sep-2026, at
+             Charlie's ask ("I am still hoping that i will be able to use
+             the ad hoc reply to landlord and attach more photos" — "I'd
+             like to get it done now"). Not yet deployed, not yet walked.
+Fix:         DONE, and it did reuse the existing helpers as predicted.
+             A file input on the reply form, the SAME validation rules and
+             the SAME per-file error wording as the create form, and the
+             files threaded into the attachmentInputs parameter the reply
+             path was already calling empty.
+             THREE THINGS WORTH KNOWING:
+             (1) Reply photos are stored straight into cases/{id}/ rather
+                 than through the preview staging folder. A reply has no
+                 preview to return from, and SilenceSweep deletes preview
+                 folders over 24h old (#45) — staging would have invented a
+                 window in which a reply could lose its evidence.
+             (2) The ceiling moved from a private method on CaseController
+                 into PhotoLimits::ceiling(). The reply form needs the same
+                 number the create form uses, and a second copy of
+                 "Setting::get, clamp 0..3" in a view is how two surfaces
+                 come to advertise different limits. Same reasoning as #57
+                 moving the sizes there.
+             (3) The limits sentence itself is now one partial included by
+                 both forms (partials/photo-limits.blade.php), for the same
+                 reason — #68 was one surface short of the truth.
+             Tests: tests/Feature/ReplyAttachmentsTest.php — attaches,
+             sends with none, refuses over-ceiling and sends nothing,
+             refuses a non-photo, names the tenant's own file in the
+             error, renders the field with enctype, and explains itself at
+             ceiling 0.
+             WALKED AND PASSED 15 Sep 2026 by Charlie, on dev at
+             ceiling 3: an ad-hoc reply to case 4WKXDQ with three files.
+             "The attachments worked fine." Not yet deployed.
+             It still widens #54's untested matrix — there are now TWO
+             places to attach from — but the main path is proven.
+             Two observations came out of the same walk and are snagged
+             separately: #69 (a reply sends with no preview, where
+             letter 1 has one) and #70 (the case page sidebar is narrow
+             on a desktop now the reply form carries a picker).
 --------------------------------------------------------------------
 #20
 Page:        D9 description header block — dark mode (authorise-preview
@@ -1032,6 +1079,35 @@ Fix:         Move verify-email/{id}/{hash} out of the `auth` group so a guest
              path (verify while logged out -> marked verified + session
              started + lands on dashboard). Keep the already-logged-in path
              intact.
+             ACCEPTANCE TEST — Charlie's own, stated 15 Sep 2026, shared
+             with #65: register and verify in the SAME browser, then
+             register again and verify in a DIFFERENT browser. Both must
+             end identically — verified, logged in, on the dashboard,
+             same thank-you message. No login demand, no 403, no silent
+             landing.
+             WALKED AND PASSED 15 Sep 2026 by Charlie: both routes,
+             same browser and different browser, on dev. Verification,
+             sign-in and the welcome message are identical either way, so
+             the acceptance test above is MET. Not yet deployed.
+             RULED 15 Sep 2026 by Charlie: the emailed link SIGNS THE
+             USER IN. "Login is a hassle and there are no crown jewels
+             here to steal." The July security note — acceptable for a
+             private beta, reconsider before opening registration wide —
+             is hereby OVERRIDDEN as the standing position, not merely
+             unaddressed.
+             The trade-off was put to him and accepted: anyone holding
+             the email can enter the account by clicking it (forwarded
+             message, shared mailbox), bounded by the link's 60-minute
+             expiry (Laravel default; nothing is set in config/auth.php).
+             My one recorded reservation, raised and not disputed: the
+             account is not empty. It holds the tenant's home address
+             and their dispute with their landlord — the very thing this
+             product promises to keep private FROM that landlord. A
+             landlord who obtains a forwarded verification email inside
+             the hour gets exactly that. Judged acceptable at beta scale.
+             REVISIT TRIGGER: if this is still the design when
+             registration opens to the public, raise it again rather
+             than letting it ride on this ruling.
 --------------------------------------------------------------------
 #28
 Page:        Login + Register forms — the email field is blank on every fresh
@@ -1528,7 +1604,19 @@ Saw:         (a) A 3.22MB PNG — a completely ordinary phone-photo size —
 Expected:    A tenant attaching normal phone photos either succeeds, or
              is told clearly and specifically what to change, BEFORE
              anything they have typed is lost.
-Status:      open — snagged 02 Aug. Hosting half RESOLVED 09 Aug (#41
+Status:      CLOSED 15 Sep 2026 — both halves, and neither by today's
+             work. Reviewed when Charlie asked whether the attachments
+             pass was tested; the entry had simply never been closed.
+             (a) is gone: the per-file cap is PhotoLimits::PER_FILE_KB =
+             4096, so the 3.22MB phone photo that started this entry is
+             accepted, and photoValidationCopy() now names the tenant's
+             own file and the actual limit instead of "The photos.0
+             failed to upload."
+             (b) was already closed by headroom, as recorded below, and
+             #58 has since added an explicit total check anyway, so it is
+             closed twice over.
+             The earlier text follows.
+             open — snagged 02 Aug. Hosting half RESOLVED 09 Aug (#41
              closed: PHP Selector, limits now 8M/16M and verified).
              (b) IS NOW CLOSED BY HEADROOM: the form's own maximum
              (6 x 2MB = 12MB) fits inside post_max_size 16M, so the
@@ -1739,7 +1827,15 @@ Saw:         After abandoning a case at the preview step, starting a new
              case still showed "Your photo is saved — you don't need to
              re-attach it unless you want to change your selection."
 Expected:    A fresh case creation starts with no staged photos and no cue.
-Status:      open — snagged 09 Aug. Folded into
+Status:      CLOSED 15 Sep 2026, and not by today's work either — it
+             was fixed with the ?resume=1 mechanism and never marked.
+             The preview's Edit link carries ?resume=1; a bare visit to
+             /cases/create is treated as a fresh start and clears the
+             stale draft. Tested: "#44 — an abandoned draft does not tell
+             a NEW case that photos are saved" in
+             tests/Feature/Phase6/CaseCreateTest.php asserts both halves,
+             the absent cue AND the cleared session payload.
+             Originally: open — snagged 09 Aug. Folded into
              docs/attachment-policy-design.md §5.
 Notes:       Cause: preview.blade.php:34 links Edit to a bare
              route('cases.create'), so create() cannot distinguish
@@ -2089,6 +2185,8 @@ Saw:         cases.severity is an enum routine|serious|emergency
 Expected:    Either the landlord is told how urgent the tenant says it
              is, or the tenant is not asked to say.
 Status:      RULED 12 Sep 2026 — DROP Severity from the UI entirely.
+             WALKED AND PASSED 15 Sep 2026 by Charlie, on dev,
+             against feature/fix-cycle-sep-2026. Not yet deployed.
              The tenant expresses urgency in their own words in the
              issue statement. This answers the design question below:
              severity does not change the deadline, and a tenant's
@@ -2147,6 +2245,8 @@ Expected:    A postcode that does not exist is refused. A city that
              disagrees with the postcode is questioned before the
              letter carries it.
 Status:      RULED 12 Sep 2026 — use postcodes.io (api.postcodes.io).
+             WALKED AND PASSED 15 Sep 2026 by Charlie, on dev,
+             against feature/fix-cycle-sep-2026. Not yet deployed.
              Third-party sharing ACCEPTED: Charlie's reasoning is that a
              postcode carries near-zero vulnerability compared with an
              email address. That OVERRIDES the caution recorded in Notes
@@ -2255,7 +2355,10 @@ Saw:         The staged set is all-or-nothing on BOTH sides, while the
              hears "remove all photos".
 Expected:    Remove on one staged photo removes that photo. The others
              survive the round-trip.
-Status:      open — snagged 22 Aug during the Release 1 gafol walk.
+Status:      FIXED and WALKED. Passed 15 Sep 2026 by Charlie on dev,
+             at ceiling 3 — the configuration in which this snag is
+             reachable at all. Not yet deployed.
+             open — snagged 22 Aug during the Release 1 gafol walk.
              UNREACHABLE AT THE SHIPPED DEFAULT (see Notes).
 Notes:       Two things soften this, and one sharpens it.
              Softening:
@@ -2330,6 +2433,36 @@ Expected:    The tested configuration and the shipped configuration are
              the same thing, and the untested part is named.
 Status:      open — recorded 22 Aug. Deliberate scope call, not a
              defect found and ignored.
+             SUBSTANTIALLY EATEN INTO 15 Sep 2026, but NOT closed.
+             Charlie spent the day at ceiling 3 — the configuration this
+             entry exists about — and proved: three attachments on a
+             create, three on a reply (#19), partial removal (#53), the
+             total check (#58), the stated limits (#68). That is most of
+             the matrix's centre.
+             STILL UNWALKED, and small enough to list exactly:
+               - the #46 Edit round-trip variants (stage, Edit, change
+                 the selection, confirm);
+               - #43 sequential selection (pick one, browse again, add a
+                 second — the accumulate behaviour);
+               - ceiling 0 (the input absent and the reason given, on
+                 BOTH forms now);
+               - oversize-with-survivors (pick three, one too big — the
+                 other two should survive and be named).
+             WIDENED the same day: #19 gave replies attachments, so every
+             row above now has two places to be walked, not one.
+             CLOSED 15 Sep 2026. Charlie walked the Edit round-trip,
+             sequential selection, remove-then-add and the
+             oversize-with-survivors case on both forms, at ceiling 3,
+             and was satisfied: "the actual perms are many - but I'm
+             happy it passes the remove and add that i have done".
+             RECORDED HONESTLY: the permutation space is not exhausted
+             and never will be — that was always this entry's point. It
+             is closed on the JUDGEMENT that the centre is proven and
+             the edges are no longer where the risk lives, not on a
+             claim that every combination has been seen.
+             The cycle earned it: walking this matrix is what found #72
+             (new files wiping the staged set), which was the defect
+             this gap had been hiding since the ceiling rose above 1.
 Notes:       The important observation is that the matrix is almost
              ENTIRELY a ceiling >= 2 matrix. At ceiling 1 it collapses:
              one photo means no partial removal (#53 unreachable), no
@@ -2481,7 +2614,16 @@ Saw:         resources/views/errors/ does not exist. With
              writing up a repair honestly takes time.
 Expected:    An error page that says what happened in plain words,
              says whether anything was lost, and offers a route back.
-Status:      AGREED 12 Sep 2026 — graceful error pages ARE needed. Now
+Status:      WALKED AND PASSED IN FULL 15 Sep 2026. All four pages seen
+             by Charlie on dev — 404 in normal use, and 413, 419 and 500
+             via the dev-only route built the same day. Not yet deployed.
+             The earlier note that three were built but unproven is
+             DISCHARGED, and the route is the reason: 419 needs an
+             expired session, 413 needs JavaScript disabled now the form
+             refuses an over-budget selection first, and 500 has no
+             natural trigger, so without /dev/errors they would have
+             shipped unseen.
+             AGREED 12 Sep 2026 — graceful error pages ARE needed. Now
              a BUILD item, scheduled LAST in the fix cycle because it
              touches nothing else. The 413 design parked below is the
              starting point; the rest of the pass is the other status
@@ -2588,7 +2730,9 @@ Expected:    The form refuses a selection the server cannot receive,
              for the same reason it already refuses an oversize single
              file: losing the whole submission to a 413 is a worse
              outcome than being told at selection time.
-Status:      open — snagged 22 Aug. Raise-not-action, by decision.
+Status:      FIXED and WALKED. Passed 15 Sep 2026 by Charlie on dev.
+             Not yet deployed.
+             open — snagged 22 Aug. Raise-not-action, by decision.
              Moot at ceiling 1 (#54).
 Notes:       The reason to record it rather than shrug: the margin is
              held by two numbers NEITHER of which the application
@@ -2735,6 +2879,10 @@ Saw:         The footer of letter 1, and of at least one other template,
              in at least TWO variants (around lines 229 and 276); the
              shorter one omits the routed-replies sentence but carries
              the same final sentence.
+RULED:       15 Sep 2026 by Charlie — "please remove it regardless of
+             any replacement text." The removal does NOT wait on the
+             /landlords link agreed alongside it on 12 Sep; that is now
+             carried separately.
 Expected:    The final sentence — "The tenant's contact details are kept
              private to protect against retaliation." — is removed. The
              rest of the footer stands.
@@ -2762,13 +2910,24 @@ Notes:       Two things make this less trivial than a text edit.
              email is about the REPAIR and lands in the case record; the
              link is for everything else. If both read the same,
              landlords will use whichever comes first.
-Fix:         Edit the live templates through the ADMIN TEMPLATE EDITOR
+Status:      PROD TEMPLATES EDITED AND WALKED 15 Sep 2026 by Charlie,
+             through the admin template editor. Tested OK. Dev and
+             gafol not confirmed — see the Fix block.
+Fix:         SEEDER DONE 15 Sep 2026 — the sentence is out of both
+             footer variants, so a fresh box is clean. The rest of each
+             footer stands. Test pins it in
+             tests/Feature/Phase6/CaseCreateTest.php.
+             STILL TO DO, and it is the part that matters: dev, gafol
+             and prod all read templates from the DATABASE, which the
+             seeder does not overwrite, so all three still send the old
+             wording. Each needs the change made through the ADMIN
+             TEMPLATE EDITOR
              (routes admin templates.edit / templates.update), NOT by
              raw SQL — the editor writes letter_text_change_history, and
              an unexplained wording change on an evidential letter with
              no audit trail is exactly what you would later need to
-             explain. Update the seeder in the same pass so a fresh box
-             gets the corrected text.
+             explain. The seeder half of that instruction is now done.
+
 --------------------------------------------------------------------
 #62
 Page:        Case correspondence — landlord questions about the SERVICE
@@ -2829,4 +2988,585 @@ Fix:         Not decided. Options: validate the name at registration;
              collect a separate correspondence name; or let the tenant
              confirm the name that will appear on the letter, which the
              preview is already the natural place for.
+--------------------------------------------------------------------
+#64
+Page:        All password fields — login, register, reset password,
+             confirm password, change password, and the delete-account
+             confirmation. Raised 2026-09-15 by Charlie.
+Severity:    minor — no data is wrong, but it costs a failed login or a
+             failed registration every time a password is mistyped, and
+             the user cannot tell which.
+Saw:         Every password input is type="password" with no way to
+             reveal what was typed. On registration the password and
+             its confirmation are both masked, so a typo is only
+             discoverable by the mismatch error, which does not say
+             where the mismatch is. On login a mistype is
+             indistinguishable from a wrong password.
+Expected:    A show/hide toggle on the field, so what is about to be
+             submitted can be read back before submitting.
+Status:      FIXED AND WALKED 15 Sep 2026 by Charlie, on dev. Not yet
+             deployed.
+Notes:       NINE inputs, not six — six VIEWS, but register, reset and
+             change-password each carry two or three.
+             Applied from ONE place rather than to each field: a script
+             in the app layout finds every password input on the page.
+             That was the snag's own argument (six edits is how the
+             sixth gets missed) taken one step further — a password
+             field added later is covered without anyone remembering.
+             THE DELETE-ACCOUNT FIELD IS INCLUDED, the call Charlie was
+             asked to make: same person, same keyboard, and a mistyped
+             password there simply means the deletion does not happen.
+             ONE THING THAT COULD HAVE GONE SILENTLY WRONG: the obvious
+             implementation wraps each input in a Bootstrap input-group.
+             That would have moved the input out of the sibling
+             relationship Bootstrap uses to show validation messages
+             (.is-invalid ~ .invalid-feedback), killing the error text on
+             login and registration while looking perfectly fine. The
+             message is moved INTO the input-group alongside the input,
+             which is what Bootstrap's own input-group validation expects,
+             and a test asserts a password validation error still appears.
+             THE FIRST VERSION WAS A TEXT LINK under the field and was
+             rejected within a minute — Charlie: "i was expecting a
+             whizzy little icon". He was right: an eye icon is the
+             convention on every login form anyone has used, and a text
+             link reads as homemade. Bootstrap Icons is already loaded
+             from the CDN in the layout, so bi-eye / bi-eye-slash cost
+             nothing.
+             Six views carry a password input:
+               resources/views/auth/login.blade.php
+               resources/views/auth/register.blade.php
+               resources/views/auth/reset-password.blade.php
+               resources/views/auth/confirm-password.blade.php
+               resources/views/profile/partials/update-password-form.blade.php
+               resources/views/profile/partials/delete-user-form.blade.php
+             They are Breeze stock, so the fix is one shared component
+             used six times, not six edits — otherwise the sixth gets
+             missed the way the create-case dropdown did on 4 Sep.
+             Sits naturally with #37/#27/#28/#29, the
+             registration/verification/login unit already scheduled in
+             this fix cycle. Do it in that pass rather than alone.
+             The delete-account field is the one place to think twice:
+             revealing a password on a destructive confirmation is
+             defensible but is a deliberate call, not a default.
+Fix:         A Blade component wrapping the input with a button that
+             flips type between password and text, labelled for screen
+             readers and defaulting to hidden. Bootstrap input-group,
+             no new dependency. Never persist the revealed state.
+--------------------------------------------------------------------
+#65
+Page:        Email verification — the same-browser path verifies the
+             user and then shows them NOTHING. Found 2026-09-15 by
+             Charlie, walking registration on the dev box.
+Severity:    minor — verification itself completes correctly. What is
+             lost is the confirmation, on the one path most real users
+             will take.
+Saw:         Register on dev, then click the Mailpit verification link
+             in the SAME browser. Lands on the dashboard with no success
+             message and no thank-you. Doing the same registration but
+             pasting the link into a DIFFERENT browser (Chrome ->
+             Firefox) asks for a login, and THEN shows the "Welcome —
+             and thanks for registering!" banner correctly.
+             So the awkward cross-browser route confirms, and the direct
+             route does not.
+Expected:    A user who verifies is told they have verified, on every
+             route that gets them there.
+Status:      open — snagged 15 Sep 2026.
+             WALKED AND PASSED 15 Sep 2026 by Charlie, together with
+             #27 — the same two runs. Not yet deployed.
+Notes:       CAUSE IS ESTABLISHED, not suspected.
+             Registration logs the user in and redirects to /dashboard
+             (RegisteredUserController.php, end of store()). They are
+             not verified yet, so EnsureEmailIsVerified bounces them to
+             the verify-email notice using Redirect::guest(), which
+             STORES url.intended = /dashboard in the session.
+             Clicking the link in the same browser reuses that session,
+             so VerifyEmailController takes its Auth::check() branch:
+                 return redirect()->intended(route('dashboard',
+                     absolute: false).'?verified=1');
+             intended() PREFERS the stored value and discards its own
+             argument. Stored value is plain /dashboard with no query
+             string, so ?verified=1 never arrives and
+             dashboard.blade.php's @if(request()->boolean('verified'))
+             is false. No banner.
+             The cross-browser route works only by accident: the guest
+             is bounced to /login, which stores the verify URL as
+             intended; logging in CONSUMES it; by the time the
+             controller's intended() runs the slot is empty, so the
+             argument is used and the query string survives.
+             SEPARATE FROM #27. #27 is the login bounce itself and
+             proposes moving the route out of the `auth` group. That
+             fix does NOT fix this — a same-browser click still carries
+             the stale url.intended and still loses the banner.
+             Also note: the "Email verified successfully! Welcome to
+             Renters." and "Email already verified!" flashes further
+             down VerifyEmailController are UNREACHABLE, for the reason
+             #27 records. The banner seen in the cross-browser walk is
+             the ?verified=1 one in dashboard.blade.php, not either of
+             those.
+             PROD BEHAVES DIFFERENTLY AGAIN, and not predictably:
+             Outlook desktop opens links in the OS DEFAULT browser. If
+             that is the browser used to register, the user gets this
+             silent path; if not, they get #27's bounce or the 2 Aug
+             403. Which of the three a real user meets depends on their
+             machine, not on our code.
+             CHARLIE'S OWN MACHINE, confirmed 15 Sep: Outlook opens
+             links in EDGE, and web access to the app is ALWAYS Chrome.
+             So Charlie will never meet this snag on prod — he registers
+             in Chrome and the link opens in Edge, which is #27 every
+             time. That is consistent with the 2 Aug prod 403 (registered
+             in Firefox, link opened in Edge). It also means this snag
+             cannot be walked on prod by Charlie at all: reproducing it
+             needs the link opened in the SAME browser, i.e. pasted into
+             Chrome by hand, exactly as done on dev.
+Fix:         Do not rely on intended() to carry the flag. Either forget
+             the intended URL before redirecting, or pass the
+             confirmation as a flash (->with('status', ...)), which
+             survives regardless of where the redirect lands — the
+             dashboard already renders session('status') immediately
+             below the ?verified=1 block. Flash is the better shape: it
+             also covers the case where intended points somewhere other
+             than the dashboard. Test BOTH routes, same-browser and
+             guest, and assert the message is present.
+             Belongs with the #37/#27/#28/#29 registration pass.
+             ACCEPTANCE TEST — Charlie's own, stated 15 Sep 2026, and
+             it governs BOTH this snag and #27:
+               1. Register, verify in the SAME browser.
+               2. Register again, verify in a DIFFERENT browser.
+             Both must end identically: verified, logged in, on the
+             dashboard, with the same thank-you message shown. No login
+             demand, no 403, no silent landing. If the two routes do not
+             look the same to the user, it is not fixed.
+--------------------------------------------------------------------
+#66
+Page:        Onboarding order — landlord details are collected on the
+             RAISE A CASE form, not after registering the property they
+             belong to. Raised 2026-09-15 by Charlie, walking a fresh
+             registration on dev.
+Severity:    minor — nothing is lost and nothing breaks. It is the
+             wrong place to ask, and it hides a property-level decision
+             on a case-level screen.
+Saw:         Register, verify, land on the dashboard, invited to
+             register a property, do so — and are taken straight to
+             Raise a Case. The property form never mentions the
+             landlord. Charlie's words: "so missed out Landlord details,
+             which is apparent now I'm on Raise A case."
+Expected:    Register property -> landlord details -> raise case. The
+             landlord belongs to the property, so it is asked for with
+             the property.
+Status:      open — snagged 15 Sep 2026. RULED in the same breath: no
+             special handling for a SECOND property. Charlie: "in real
+             life it will be a rare event and we need not worry much
+             about it now." The landlord step simply always follows
+             registering a property.
+             WALKED AND PASSED 15 Sep 2026 by Charlie, on dev, against
+             feature/fix-cycle-sep-2026: property -> landlord -> case, and
+             the nav reads correctly throughout. Not yet deployed.
+Notes:       Nothing is actually missed today — the landlord fields are
+             on the create-case form and are required when the property
+             has none, so the user cannot get past them. This is about
+             ORDER, not a gap.
+             The real cost is concealment. What the user types into
+             those fields on the case form becomes THE PROPERTY'S
+             landlord, inherited by every future case at that address.
+             That is a property decision taken on a case screen, and it
+             does not look like one.
+             A dedicated property-level landlord page already exists and
+             is reachable from the property. It is simply not part of
+             the sign-up journey, so a new user never meets it. The
+             surface to send them to already exists.
+             SIMPLIFIES rather than complicates: the property save
+             currently BRANCHES on whether this is the user's first
+             property, sending the first to Raise a Case and later ones
+             to the property list. The ruling above removes the need for
+             that branch — everyone goes to the landlord step next.
+             Related: #2 (the case page panel titled by role) and #59
+             (the preview showing the landlord email) are both about the
+             same thing one step later — making the landlord visible at
+             the moment it matters. This is the earliest such moment.
+Fix:         After saving a property, send the user to that property's
+             landlord page instead of to Raise a Case or the property
+             list. Then on to Raise a Case. Drop the first-property
+             branch. The create-case form keeps its landlord fields as
+             the fallback for any property that still has none — do not
+             remove them, they are the safety net for properties
+             registered before this change.
+             ACCEPTANCE TEST: register, verify, add a property, and be
+             asked for the landlord BEFORE reaching Raise a Case.
+--------------------------------------------------------------------
+#67
+Page:        Register a property — the Register button needs TWO clicks
+             when the postcode lookup has something to say. Raised
+             2026-09-15 by Charlie, walking the form on dev.
+Severity:    minor — the second click works. It reads as an
+             unresponsive button, which is the kind of thing a user
+             blames the whole site for.
+Saw:         Fill the form, click Register, nothing happens. Click
+             again, it submits.
+Expected:    One click.
+Status:      FIXED SAME DAY, 15 Sep 2026, in the same pass as #66, and
+             WALKED AND PASSED the same day by Charlie on dev — one
+             click on Register. Not yet deployed.
+Notes:       Not a double-submit guard and nothing to do with the
+             server. The #51 postcode lookup fires when focus LEAVES the
+             postcode field, which is what clicking the button does. The
+             hint it then writes was hidden with d-none, so revealing it
+             added a line of height below the field and pushed the
+             button down — out from under the cursor — between the mouse
+             going down and coming up. The click landed on nothing.
+             Reserving the line permanently (the hints are always in the
+             layout, only their words change) makes the shift
+             impossible. Reordering postcode above city in the same pass
+             helps separately: the lookup now fires when the user moves
+             on to the city field, well before they reach the button.
+             KNOWN LIMIT: the reserved line is one line. The
+             disagreement hint ("That postcode is in X. Is Y right?"
+             plus its button) can wrap to two on a narrow screen, which
+             would shift by one line again. Not chased — it needs a
+             narrow viewport AND a town disagreement AND a click timed
+             into the gap.
+Fix:         Done. Hints keep their space instead of being d-none'd;
+             postcode moved above city, with the city field saying it
+             may be filled in from the postcode.
+--------------------------------------------------------------------
+#68
+Page:        Raise a Case, the Photos field — the form did not state the
+             TOTAL size limit it enforces. Raised 2026-09-15 by Charlie:
+             "the UI does not mention any max limit".
+Severity:    minor — nothing is broken, but a tenant can satisfy every
+             limit the screen names and still be refused.
+Saw:         The label carried the count in a bracket ("Photos
+             (optional, up to 3)") and the grey line underneath gave the
+             per-file size. The budget for the whole selection — which
+             #58 enforces — was never mentioned. Three files each inside
+             the per-file limit can therefore be refused as a set, for a
+             reason the form never gave.
+Expected:    Every limit the machine enforces is stated where the files
+             are chosen.
+Status:      FIXED SAME DAY, 15 Sep 2026, and WALKED AND PASSED the
+             same day by Charlie on dev. Not yet deployed.
+Notes:       The figure was already computed and already quoted on the
+             413 page (#57). Only the form was silent, so the two
+             surfaces disagreed about what the rules were — the same
+             shape as #46/#49/#53, one surface short of the truth.
+             Count moved out of the label's bracket and into the help
+             line with the other two, so all three read as one sentence.
+             A DEFECT WAS INTRODUCED AND FIXED IN THE SAME PASS, worth
+             recording because it will recur: the first version used an
+             inline @if whose @endif was stuck directly onto a word
+             ("...together@endif."). Blade does not recognise a directive
+             in that position, so it compiled as literal text, the @if
+             never closed, and EVERY render of the create form died on a
+             PHP parse error. The suite caught it; the lesson is that an
+             inline Blade directive must not butt against a word. Says
+             the same thing with a ternary now, which has nothing to
+             leave unclosed.
+Fix:         Done. The form states count, per-file and total, all from
+             the same values the machine enforces. Test in
+             tests/Feature/Phase6/CaseCreateTest.php.
+--------------------------------------------------------------------
+#69
+Page:        Case page — an ad-hoc reply to the landlord sends with NO
+             preview, where letter 1 has one. Raised 2026-09-15 by
+             Charlie, immediately after walking #19: "I was
+             subconsciously expecting a preview as with letter 1".
+Severity:    design question, NOT a defect. Nothing is wrong today; the
+             two paths simply differ and the difference was not a
+             decision anyone took.
+Saw:         Raising a case goes description -> PREVIEW -> confirm, and
+             the preview shows the letter as the landlord will see it
+             (D13). Replying from the case page sends immediately on
+             one button press. Now that a reply can carry photos (#19)
+             the asymmetry is sharper: the tenant commits attachments
+             to an evidential record without seeing what goes.
+Expected:    Undecided — that is the point of this entry.
+Status:      RULED, BUILT AND WALKED 15 Sep 2026. Charlie: "replies
+             should get preview, no reason why not and it makes for
+             consistency", then "preview is good, thanks". Not yet
+             deployed.
+             CHECKED AGAINST THE DESIGN DOC FIRST, as CLAUDE.md requires,
+             and the result is worth recording because one line looks
+             like a conflict and is not. D8 (tenant reply) is SILENT on
+             previews. D13 previews letter 1 because "case creation is
+             the one moment a preview costs nothing — the tenant is
+             present and acting", which is equally true of a reply. D13
+             DOES explicitly reject per-letter tenant approval, but for
+             SWEEP-SENT escalation, on the grounds that gating automatic
+             escalation on the tenant's attention reintroduces the
+             disease the silence model cured. A letter the tenant has
+             just written is the opposite case. No conflict.
+Notes:       Arguments FOR a reply preview:
+             - the reply is frozen on case_messages and served on the
+               landlord exactly like a notice; it is evidence, not chat;
+             - #19 just added attachments, and attachments are the thing
+               a tenant would most want to check before sending;
+             - the tenant's expectation is already set by letter 1, and
+               a product that previews one outbound letter but not
+               another teaches nothing consistent.
+             Arguments AGAINST:
+             - D13's preview exists to carry the AUTHORISATION wording
+               for a formal notice. A reply is the tenant's own words to
+               a landlord who has engaged; it is closer to an email than
+               to serving notice;
+             - the reply box is deliberately light-touch — the case page
+               says "You can send extra information at any time";
+             - a preview step is where drafts go to die. Friction on a
+               reply may simply mean fewer replies.
+             A MIDDLE OPTION worth considering before the full preview:
+             list the chosen files and require nothing else. That is
+             already built as of 15 Sep — the tenant now sees filenames
+             and sizes before pressing send. It may be that this was the
+             whole of the real want, and a full letter preview is not
+             needed.
+             Check against docs/llcs-silence-model-design.md before
+             ruling: the design doc is authoritative over any brief, and
+             D8 (tenant reply) / D13 (preview) are the two clauses in
+             play. If the doc is silent, say so in the ruling rather
+             than inferring.
+Fix:         DONE. Write -> preview -> confirm, the same three steps as
+             raising a case, and deliberately the same shape on screen so
+             a tenant who has seen one recognises the other.
+             The preview shows the rendered letter as the landlord will
+             see it, NAMES the recipient and address (the last free
+             moment to notice a corrected contact, the #59 argument one
+             step later), lists the attachments — and says "No photos
+             attached" when there are none, because the mirror of #39 is
+             showing nothing and letting a tenant assume theirs went.
+             THREE CONSEQUENCES worth knowing:
+             (1) Reply photos are STAGED again rather than written
+                 straight to the case folder as #19 left them. A preview
+                 can be abandoned, and the daily sweep already clears
+                 preview folders over 24h old (#45), so staging is what
+                 stops an abandoned reply leaving files behind for ever.
+             (2) Edit carries ?resume=1, the same signal the create-case
+                 Edit link uses, and a plain visit to the case page
+                 clears the staged reply — #44's rule, applied here
+                 before it could become #44's bug.
+             (3) The #71 send token moved from the reply form to the
+                 preview's confirm button, which is where a double-click
+                 actually happens now.
+             Sixteen existing tests posted straight at cases.reply, which
+             is only the confirm step now. They were REPOINTED through a
+             shared sendTenantReply() helper in tests/Pest.php rather
+             than weakened — every one still asserts what it asserted
+             before, and now exercises the token on the real path too.
+             The "forbids reply from ..." tests were deliberately left
+             posting DIRECTLY at cases.reply: they assert the SEND
+             endpoint is gated, which is worth keeping pointed at the
+             send endpoint rather than at the preview in front of it.
+--------------------------------------------------------------------
+#70
+Page:        Case page — the left-hand pane is narrow on a desktop.
+             Raised 2026-09-15 by Charlie, walking #19.
+Severity:    minor — cosmetic/usability. Nothing is unusable.
+Saw:         cases/show.blade.php splits col-lg-4 (case facts + action
+             panel, including the reply form) against col-lg-8
+             (correspondence). A third of the width was fine when the
+             reply was a text box and two buttons. It now carries a file
+             input, a limits sentence, a list of chosen files with
+             Remove controls, and an error area.
+Expected:    Enough room to use the reply form comfortably on a desktop.
+Notes:       Charlie'S OWN OBSERVATION, and it is correct: "I expect it
+             would become column on phone". It does — col-lg-* is full
+             width below the lg breakpoint, so the phone layout stacks
+             and is not the problem. The desktop is.
+             Two candidate fixes, put to Charlie 15 Sep:
+             (a) widen the sidebar (col-lg-4 -> col-lg-5, main 8 -> 7).
+                 Smallest change, nothing moves.
+             (b) move the reply form OUT of the sidebar and into the
+                 main column beneath the correspondence, leaving the
+                 sidebar for case facts and the other actions. Better
+                 reading order — read the thread, reply beneath it — but
+                 a larger rearrangement.
+             Note (b) interacts with #69: if a reply ever gains a
+             preview, the reply form stops being a sidebar widget
+             altogether and (b) becomes the obvious shape. Worth ruling
+             #69 first if it is going to be ruled at all.
+Status:      RULED AND BUILT 15 Sep 2026. Charlie chose (b): "lets
+             move it as you suggest — move the reply form out of the
+             sidebar into the main column". Not yet walked, not yet
+             deployed.
+Fix:         DONE. The reply form is its own partial
+             (cases/_reply_form.blade.php), included from the main column
+             directly beneath the correspondence. The action panel keeps
+             pause, resolve, abandon and the escalation review — only the
+             reply moved.
+             Resized with it: the sidebar's small controls and
+             full-width button were right in a third of the page and odd
+             across a whole column, so the textarea grows, the button
+             becomes a normal button, and the block gains a heading now
+             that it is a section rather than one item in a list of
+             actions.
+             Tests assert POSITION BY ORDER rather than by markup — the
+             form must come after the thread it answers — so restyling
+             does not break them but moving it back does. A second test
+             pins that the other actions did NOT move.
+             WALKED AND PASSED 15 Sep 2026 by Charlie: "looks much
+             better". Not yet deployed.
+--------------------------------------------------------------------
+#71
+Page:        Case page reply — a DOUBLE-CLICK on Send posts the letter
+             twice. Found 2026-09-15 by Charlie, by accident: "funny
+             thing i double clicked on send by mistake and did send 2
+             emails to mailpit".
+Severity:    functional, and on the escalation path SERIOUS. Outbound
+             rows are the evidence record, not a log of attempts.
+Saw:         Case LYE62E on dev: two outbound rows a second apart
+             (msg 13 at 14:28:26, msg 14 at 14:28:27), each with the
+             same attachment, and two letters in Mailpit. The landlord
+             would have received the same message twice.
+Expected:    One press, one letter. Two presses of the same button on
+             the same page, still one letter.
+Status:      FIXED SAME DAY, 15 Sep 2026.
+Notes:       BLAST RADIUS, established before fixing rather than after:
+             - REPLY: reproduced, two rows, two letters.
+             - CREATE-CASE CONFIRM: safe already, but BY ACCIDENT. The
+               draft is pulled out of the session on first confirm, so a
+               second request finds no draft and is sent back to the
+               form. Worth knowing it was luck, not design.
+             - ESCALATION AUTHORISE: was not explicitly guarded. The
+               policy would very likely have refused a second attempt,
+               because the first send clears the held condition — but
+               "very likely" is not a standard to apply here. A
+               duplicate escalation letter ADVANCES THE LADDER, the
+               counter is derived from these rows and never resets (D3
+               ratchet), and there is no way back from it. Now guarded
+               explicitly.
+             TWO LAYERS, and the distinction matters:
+             (1) the browser disables the submit button once a form is
+                 on its way. This is the comfort. It re-enables after ten
+                 seconds so a stalled connection cannot leave a tenant
+                 unable to send at all, and it is bound to the submit
+                 EVENT, which a browser-rejected form never fires — so a
+                 blank required field does not strand the button.
+             (2) the server consumes a one-time token minted when the
+                 page rendered. This is the guarantee. A double-submit
+                 that never touches the script — two tabs, a resubmitted
+                 back button, a reloaded POST — still has to be refused,
+                 and is.
+             A DELIBERATE CHOICE INSIDE (2): a request carrying NO token
+             is allowed through. A page rendered before this shipped, or
+             a cleared session, would otherwise cost a tenant their
+             message — worse than the duplicate being guarded against.
+             The token only has to catch the second of two submits from
+             one rendered page, and for that it need not be mandatory.
+             A SECOND DELIBERATE CHOICE: the refused duplicate redirects
+             with the SUCCESS message, not an error. The tenant pressed
+             send once as far as they are concerned, and their reply did
+             go. Reporting a failure would be false.
+Fix:         Done. resources/views/partials/submit-once.blade.php in the
+             layout; mintSendToken/consumeSendToken on CaseController,
+             used by the reply form and the escalation authorise form.
+             Tests in tests/Feature/DoubleSubmitTest.php.
+             NOT DONE, and recorded rather than assumed: every other POST
+             form in the app gets layer (1) automatically, but only reply
+             and escalation carry a token. Anything else that becomes
+             evidentially important should get one.
+--------------------------------------------------------------------
+#72
+Page:        Create a case, and now the reply form too — removing one
+             staged photo and choosing a replacement WIPES the ones that
+             were kept. Found 2026-09-15 by Charlie: "create case, add
+             1, 2, or 3 photos, preview, edit, remove a photo and
+             reselect another and the list is cleared and all that
+             remains is the new reselected one".
+Severity:    functional, and the same family as #46 and #53 — evidence
+             leaving a letter silently, with the screen showing the
+             tenant a set they did not choose.
+Saw:         Stage three photos, preview, Edit, Remove one, pick a
+             replacement. The two survivors vanish and only the
+             replacement is attached. No warning, and the letter goes
+             with one photo where the tenant believes it carries three.
+Expected:    New files ADD to whatever survived the removals, up to the
+             ceiling.
+Status:      FIXED SAME DAY, 15 Sep 2026.
+Notes:       THIS WAS A DELIBERATE RULE, not an accident, and the test
+             suite pinned it: a test literally named "#46 — newly chosen
+             photos REPLACE the staged set rather than adding to it".
+             The rule was defensible when the ceiling was 1, because at
+             a ceiling of one REPLACE and ADD are the same thing. It
+             became wrong the moment the ceiling rose, and #54 had
+             already warned that the ceiling >= 2 matrix was the
+             untested area. This is the first defect that gap actually
+             hid.
+             The test was INVERTED rather than deleted, and the entry
+             for it says so: the old expectation was correct for its
+             time and is wrong now.
+             BOTH HALVES had to change together — the server's
+             resolveStagedPhotos() and the browser's picker script. Had
+             only one changed, the screen would show a set the server
+             would not send, which is the #46/#49/#53 pattern again.
+             THE CEILING NOW COVERS THE WHOLE SET. It previously
+             validated only the newly uploaded array, so with two
+             already staged a tenant could add three more and pass. The
+             refusal message changed with it: "you can add 1 more photo
+             — 3 in total" rather than repeating "up to 3" at someone
+             already holding two.
+             The reply form carried the same defect, because #19's
+             resolver was written to mirror the create flow's rule.
+             Fixed in the same pass, from the same shared helper.
+Fix:         Done. survivingStagedPhotos() decides what lives (the #53
+             per-file keep instruction, unchanged), the resolvers append
+             newly staged files to it, and remainingPhotoRoom() sizes
+             the validation rule. Tests in
+             tests/Feature/Phase6/CaseCreateTest.php cover add, remove-
+             then-replace, and the whole-set ceiling.
+             WALKED AND PASSED 15 Sep 2026 by Charlie, on both forms:
+             add, remove, add again. The browser half is the part tests
+             cannot reach, so this is the assurance that matters. Not
+             yet deployed.
+--------------------------------------------------------------------
+#73
+             [SECTION 2 — DEV-FACING ONLY until the setting is used]
+Page:        Attachment ceilings — tenant replies shared letter 1's
+             ceiling, so switching photos off for letter 1 switched them
+             off everywhere. Found 2026-09-15 while checking whether a
+             message Charlie asked for would be TRUE.
+Severity:    minor as behaviour, but it is a DIVERGENCE FROM THE DESIGN
+             DOC, which CLAUDE.md makes authoritative over any brief or
+             implementation.
+Saw:         docs/attachment-policy-design.md has listed letter 1 and
+             tenant replies as two separately configurable ceilings
+             since 9 Aug 2026. #19 (built 15 Sep) reused the letter-1
+             setting for replies — the one named first_notice_max —
+             collapsing the two.
+Expected:    What the design doc says: two ceilings, independently set.
+Status:      FIXED SAME DAY, 15 Sep 2026, in the same pass as the
+             wording that exposed it.
+Notes:       IT SURFACED THROUGH A SENTENCE. Charlie asked for the
+             ceiling-0 message on the create form to say photos would be
+             possible once the landlord replied. Under one shared
+             ceiling that sentence was false, and his own standing rule
+             is that no surface may claim what the system cannot
+             deliver. Making the sentence honest and fixing the
+             divergence turned out to be the same job.
+             THE REASONING IS THE DESIGN'S OWN. A ceiling of 0 exists on
+             deliverability grounds, and the risk it guards is a COLD
+             letter to a stranger carrying an attachment. Once the
+             landlord has written back the thread is established and
+             that risk has largely gone — so refusing photos on letter 1
+             while allowing them on replies is a coherent position, and
+             one an installation may now take.
+             Charlie arrived at this from the wording alone, without
+             knowing the doc said it.
+             SAFE ON EXISTING BOXES: PhotoLimits::replyCeiling() falls
+             back to the letter-1 ceiling when the new key is absent, so
+             prod and gafol behave exactly as they do today until
+             someone sets it. The seeder ships it at the same value as
+             letter 1 for the same reason.
+             The promise on the create form is CONDITIONAL on the reply
+             ceiling being above 0, so it is never shown when it would
+             be untrue. Both branches are tested.
+Fix:         Done. New setting attachments.reply_max, offered in the
+             admin settings editor with its own help text;
+             PhotoLimits::replyCeiling() with a fallback; the reply form
+             and reply validation read it. Tests in
+             tests/Feature/ReplyAttachmentsTest.php cover the two
+             ceilings independently and both states of the promise.
+             WALKED AND PASSED 15 Sep 2026 by Charlie: "that seems a good
+             solution", tested alongside the #72 add/remove/add walk.
+             Not yet deployed.
+             TO DO ON DEPLOY: the new key needs seeding on gafol and
+             prod, or replyCeiling() quietly keeps following letter 1 —
+             correct, but not what an admin editing the field would
+             expect. Note it in the deployment ledger.
 --------------------------------------------------------------------

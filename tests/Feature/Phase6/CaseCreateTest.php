@@ -121,9 +121,12 @@ it('Edit round-trip — GET /cases/create after staging re-fills the form from t
     // the tenant can see WHICH evidence is attached.
     $response->assertSee('damp.jpg');
     $response->assertSee('attached');
-    // And the keep flag rides along so a resubmit carries it forward.
-    $response->assertSee('name="keep_staged_photos"', false);
-    $response->assertSee('value="1"', false);
+    // And the keep instruction rides along so a resubmit carries it
+    // forward. #53 made it per-file: each row carries the staged PATH it
+    // stands for, rather than one boolean for the whole set.
+    $response->assertSee('name="keep_staged_photos[]"', false);
+    $payload = session('cases.preview.payload');
+    $response->assertSee('value="'.$payload['photos'][0]['path'].'"', false);
 });
 
 it('Edit round-trip does not leak another tenant\'s staged draft', function () {
@@ -611,7 +614,6 @@ it('rejects a payload with missing required fields', function () {
     $response->assertSessionHasErrors([
         'property_id',
         'category_key',
-        'severity',
         'description',
         'landlord_email',
         'landlord_role',
@@ -758,7 +760,10 @@ it('states the limit the machine will actually accept, not our own cap', functio
     // that cannot happen — the tenant hits a refusal the form said wouldn't
     // come. The displayed figure and the byte limit handed to the script
     // both come from the same effective value.
-    $response->assertSee('under '.FileSize::human($effective));
+    // The figure is emphasised in the markup now that the form states all
+    // three limits, so this matches the tag too — same figure, pinned
+    // harder, not looser.
+    $response->assertSee('under <strong>'.FileSize::human($effective).'</strong>', false);
     $response->assertSee('data-photo-max-bytes="'.$effective.'"', false);
 });
 
@@ -871,7 +876,23 @@ it('#46 — an explicit Remove does clear the staged photos', function () {
     expect(MessageAttachment::where('case_message_id', $message->id)->count())->toBe(0);
 });
 
-it('#46 — newly chosen photos REPLACE the staged set rather than adding to it', function () {
+/**
+ * #72 — REVERSES a rule this test used to pin the other way round.
+ *
+ * It read "newly chosen photos REPLACE the staged set rather than adding
+ * to it", and that was a deliberate decision, not an accident: at a
+ * ceiling of one, replace and add are the same thing.
+ *
+ * At three they are not, and Charlie found the difference on 15 Sep 2026:
+ * "create case, add 1, 2 or 3 photos, preview, edit, remove a photo and
+ * reselect another and the list is cleared and all that remains is the
+ * new reselected one." Two photos the tenant had every reason to think
+ * were still attached went silently.
+ *
+ * Not a weakened assertion — an inverted one. The old expectation was
+ * wrong once the ceiling rose above one.
+ */
+it('#72 — newly chosen photos ADD to the staged set rather than replacing it', function () {
     [$tenant, $property] = tenantWithProperty();
 
     allowPhotoCeiling(3);
@@ -880,6 +901,8 @@ it('#46 — newly chosen photos REPLACE the staged set rather than adding to it'
         'photos' => [UploadedFile::fake()->image('first.jpg')],
     ]);
 
+    // No keep_staged_photos: absent means keep, which is also what a
+    // browser with no JavaScript sends.
     $this->actingAs($tenant)->post('/cases', validStorePayload($property->id) + [
         'photos' => [UploadedFile::fake()->image('second.jpg')],
     ]);
@@ -889,10 +912,71 @@ it('#46 — newly chosen photos REPLACE the staged set rather than adding to it'
     $message = CaseMessage::where('direction', MessageDirection::Outbound)->firstOrFail();
     $attachments = MessageAttachment::where('case_message_id', $message->id)->get();
 
-    expect($attachments)->toHaveCount(1);
-    expect($attachments->first()->original_filename)->toBe('second.jpg');
+    expect($attachments)->toHaveCount(2);
+    expect($attachments->pluck('original_filename')->sort()->values()->all())
+        ->toBe(['first.jpg', 'second.jpg']);
 });
 
+it('#72 — removing one and choosing another keeps the ones that were not removed', function () {
+    [$tenant, $property] = tenantWithProperty();
+
+    allowPhotoCeiling(3);
+
+    // Three staged.
+    $this->actingAs($tenant)->post('/cases', validStorePayload($property->id) + [
+        'photos' => [
+            UploadedFile::fake()->image('keep-one.jpg'),
+            UploadedFile::fake()->image('keep-two.jpg'),
+            UploadedFile::fake()->image('drop-me.jpg'),
+        ],
+    ]);
+
+    $staged = session('cases.preview.payload')['photos'];
+    $survivors = collect($staged)
+        ->reject(fn ($photo) => $photo['original_filename'] === 'drop-me.jpg')
+        ->pluck('path')
+        ->all();
+
+    // Exactly what the form posts after Remove on one row plus a new pick.
+    $this->actingAs($tenant)->post('/cases', validStorePayload($property->id) + [
+        'keep_staged_photos' => $survivors,
+        'photos' => [UploadedFile::fake()->image('replacement.jpg')],
+    ]);
+
+    $this->actingAs($tenant)->post('/cases/preview/confirm');
+
+    $message = CaseMessage::where('direction', MessageDirection::Outbound)->firstOrFail();
+    $names = MessageAttachment::where('case_message_id', $message->id)
+        ->pluck('original_filename')->sort()->values()->all();
+
+    expect($names)->toBe(['keep-one.jpg', 'keep-two.jpg', 'replacement.jpg']);
+});
+
+it('#72 — the ceiling covers the whole set, not just the new files', function () {
+    [$tenant, $property] = tenantWithProperty();
+
+    allowPhotoCeiling(3);
+
+    $this->actingAs($tenant)->post('/cases', validStorePayload($property->id) + [
+        'photos' => [
+            UploadedFile::fake()->image('one.jpg'),
+            UploadedFile::fake()->image('two.jpg'),
+        ],
+    ]);
+
+    // Two already attached, so there is room for one more — not three.
+    $this->actingAs($tenant)->post('/cases', validStorePayload($property->id) + [
+        'photos' => [
+            UploadedFile::fake()->image('three.jpg'),
+            UploadedFile::fake()->image('four.jpg'),
+        ],
+    ])->assertSessionHasErrors('photos');
+
+    // And the message says how many MORE, rather than repeating the
+    // ceiling at someone who is already holding two.
+    $errors = implode(' ', session('errors')->getBag('default')->all());
+    expect($errors)->toContain('add 1 more photo');
+});
 it('#45 — drops an attachment whose staged file has been swept, rather than recording one that is not there', function () {
     [$tenant, $property] = tenantWithProperty();
 
@@ -919,4 +1003,276 @@ it('redirects guests away from POST /cases', function () {
     $response = $this->post('/cases', []);
 
     $response->assertRedirect('/login');
+});
+
+/*
+ * #53 — Remove on ONE of two staged photos removed BOTH.
+ *
+ * The keep instruction was a single boolean for the whole set, so the
+ * control said "remove this photo" and the server heard "remove all
+ * photos". It could not have honoured a partial removal even if the
+ * script had asked for one: there was no per-file identity in the
+ * instruction.
+ *
+ * These tests run AT CEILING 2 AND 3 deliberately. Every existing
+ * attachment test uses a single staged photo, where all-or-nothing and
+ * per-file are indistinguishable — which is exactly why the suite was
+ * green while the defect shipped.
+ */
+
+it('#53 — removing one of two staged photos keeps the other', function () {
+    [$tenant, $property] = tenantWithProperty();
+
+    allowPhotoCeiling(2);
+
+    $this->actingAs($tenant)->post('/cases', validStorePayload($property->id) + [
+        'photos' => [
+            UploadedFile::fake()->image('kitchen.jpg'),
+            UploadedFile::fake()->image('bathroom.jpg'),
+        ],
+    ]);
+
+    $staged = session('cases.preview.payload')['photos'];
+    expect($staged)->toHaveCount(2);
+
+    // The form sends back the paths of the rows that SURVIVED. Removing
+    // the first row means its input goes with it; the sentinel keeps the
+    // field present.
+    $this->actingAs($tenant)->post('/cases', validStorePayload($property->id) + [
+        'keep_staged_photos' => ['', $staged[1]['path']],
+    ]);
+
+    $this->actingAs($tenant)->post('/cases/preview/confirm');
+
+    $message = CaseMessage::where('direction', MessageDirection::Outbound)->firstOrFail();
+    $attachments = MessageAttachment::where('case_message_id', $message->id)->get();
+
+    expect($attachments)->toHaveCount(1);
+    expect($attachments->first()->original_filename)->toBe('bathroom.jpg');
+});
+
+it('#53 — the removed file is deleted from disk, the survivor is not', function () {
+    [$tenant, $property] = tenantWithProperty();
+
+    allowPhotoCeiling(2);
+
+    $this->actingAs($tenant)->post('/cases', validStorePayload($property->id) + [
+        'photos' => [
+            UploadedFile::fake()->image('kitchen.jpg'),
+            UploadedFile::fake()->image('bathroom.jpg'),
+        ],
+    ]);
+
+    $staged = session('cases.preview.payload')['photos'];
+    $dropped = $staged[0]['path'];
+    $kept = $staged[1]['path'];
+
+    $this->actingAs($tenant)->post('/cases', validStorePayload($property->id) + [
+        'keep_staged_photos' => ['', $kept],
+    ]);
+
+    expect(Storage::disk('local')->exists($dropped))->toBeFalse();
+    expect(Storage::disk('local')->exists($kept))->toBeTrue();
+});
+
+it('#53 — removing every staged photo still removes them all', function () {
+    [$tenant, $property] = tenantWithProperty();
+
+    allowPhotoCeiling(3);
+
+    $this->actingAs($tenant)->post('/cases', validStorePayload($property->id) + [
+        'photos' => [
+            UploadedFile::fake()->image('one.jpg'),
+            UploadedFile::fake()->image('two.jpg'),
+        ],
+    ]);
+
+    // Every row gone: only the sentinel is left. The field is PRESENT and
+    // empty, which is how "remove them all" is said now that absence means
+    // keep everything.
+    $this->actingAs($tenant)->post('/cases', validStorePayload($property->id) + [
+        'keep_staged_photos' => [''],
+    ]);
+
+    $this->actingAs($tenant)->post('/cases/preview/confirm');
+
+    $message = CaseMessage::where('direction', MessageDirection::Outbound)->firstOrFail();
+    expect(MessageAttachment::where('case_message_id', $message->id)->count())->toBe(0);
+});
+
+it('#53 — an ABSENT keep instruction still keeps everything', function () {
+    [$tenant, $property] = tenantWithProperty();
+
+    allowPhotoCeiling(2);
+
+    $this->actingAs($tenant)->post('/cases', validStorePayload($property->id) + [
+        'photos' => [
+            UploadedFile::fake()->image('one.jpg'),
+            UploadedFile::fake()->image('two.jpg'),
+        ],
+    ]);
+
+    // No keep field at all. A caller that forgets it must not be able to
+    // wipe a tenant's evidence — the whole reason the default is KEEP.
+    $this->actingAs($tenant)->post('/cases', validStorePayload($property->id));
+
+    $this->actingAs($tenant)->post('/cases/preview/confirm');
+
+    $message = CaseMessage::where('direction', MessageDirection::Outbound)->firstOrFail();
+    expect(MessageAttachment::where('case_message_id', $message->id)->count())->toBe(2);
+});
+
+it('#53 — a path that was never staged cannot smuggle a file in', function () {
+    [$tenant, $property] = tenantWithProperty();
+
+    allowPhotoCeiling(2);
+
+    $this->actingAs($tenant)->post('/cases', validStorePayload($property->id) + [
+        'photos' => [UploadedFile::fake()->image('one.jpg')],
+    ]);
+
+    // The instruction is intersected AGAINST the staged set, never used as
+    // a source of truth of its own.
+    $this->actingAs($tenant)->post('/cases', validStorePayload($property->id) + [
+        'keep_staged_photos' => ['', 'preview-photos/999/not-mine.jpg'],
+    ]);
+
+    $this->actingAs($tenant)->post('/cases/preview/confirm');
+
+    $message = CaseMessage::where('direction', MessageDirection::Outbound)->firstOrFail();
+    expect(MessageAttachment::where('case_message_id', $message->id)->count())->toBe(0);
+});
+
+it('#53 — the form renders one keep input per staged photo, plus the sentinel', function () {
+    [$tenant, $property] = tenantWithProperty();
+
+    allowPhotoCeiling(2);
+
+    $this->actingAs($tenant)->post('/cases', validStorePayload($property->id) + [
+        'photos' => [
+            UploadedFile::fake()->image('one.jpg'),
+            UploadedFile::fake()->image('two.jpg'),
+        ],
+    ]);
+
+    $staged = session('cases.preview.payload')['photos'];
+
+    $response = $this->actingAs($tenant)->get('/cases/create?resume=1');
+
+    $response->assertOk();
+    $response->assertSee('value="'.$staged[0]['path'].'"', false);
+    $response->assertSee('value="'.$staged[1]['path'].'"', false);
+    // The sentinel, which is what keeps "remove them all" sayable.
+    $response->assertSee('name="keep_staged_photos[]" value=""', false);
+});
+
+/**
+ * #61 — the retaliation sentence is gone from the seeded footers.
+ *
+ * Charlie, 15 Sep: remove it regardless of any replacement text. The
+ * /landlords link agreed alongside it on 12 Sep is NOT blocked on this
+ * and is not built here.
+ *
+ * Asserted against the seeder's own output because that is the only
+ * copy this repo controls. Deployed boxes read templates from the
+ * database and the seeder deliberately does not overwrite them, so this
+ * test says a FRESH box is clean — it says nothing about dev, gafol or
+ * prod, each of which needs the admin template editor.
+ */
+it('has no retaliation sentence left in any seeded letter template', function () {
+    $seeder = file_get_contents(database_path('seeders/LetterTemplateSeeder.php'));
+
+    expect($seeder)->not->toContain('retaliation');
+    // The rest of the footer must survive — this is a sentence removal,
+    // not a footer removal.
+    expect($seeder)->toContain('This message was sent through renters.rent on behalf of the tenant.');
+});
+
+/**
+ * #2, second half. The case page was titled by the contact's stored role
+ * on 12 Sep; the create-case panel was not, and still said "This
+ * property's landlord" after Charlie set the contact to Agent (found
+ * 15 Sep, walking dev). A surface contradicting what the user entered
+ * one screen earlier is the #46/#49/#53 pattern.
+ */
+it('titles the create-case panel by the contact role, not always "landlord"', function () {
+    $tenant = User::factory()->create(['email_verified_at' => now()]);
+    $property = Property::factory()->create(['registered_by_user_id' => $tenant->id]);
+
+    $property->setLandlordContact([
+        'email' => 'agent@example.com',
+        'name' => 'Some Agent',
+        'role' => 'agent',
+    ], now(), $tenant->id);
+
+    $html = $this->actingAs($tenant)->get('/cases/create')->getContent();
+
+    expect($html)->toContain('This property&rsquo;s agent:');
+    expect($html)->not->toContain('This property&rsquo;s landlord:');
+});
+
+it('still says landlord when the contact is a landlord', function () {
+    $tenant = User::factory()->create(['email_verified_at' => now()]);
+    $property = Property::factory()->create(['registered_by_user_id' => $tenant->id]);
+
+    $property->setLandlordContact([
+        'email' => 'landlord@example.com',
+        'role' => 'landlord',
+    ], now(), $tenant->id);
+
+    $html = $this->actingAs($tenant)->get('/cases/create')->getContent();
+
+    expect($html)->toContain('This property&rsquo;s landlord:');
+});
+
+/**
+ * Raised by Charlie 15 Sep: "the UI does not mention any max limit".
+ *
+ * The count sat in a bracket in the label and the TOTAL was never stated
+ * at all, though #58 enforces it — so a tenant could pick three files,
+ * satisfy every limit the screen named, and still be refused as a set.
+ * All three are stated now, from the same values the machine enforces.
+ */
+it('states all three photo limits on the form, not just the per-file one', function () {
+    [$tenant] = tenantWithProperty();
+
+    $html = $this->actingAs($tenant)->get('/cases/create')->assertOk()->getContent();
+
+    // Count, per-file, and — when there is one — the total.
+    expect($html)->toContain('Up to <strong>');
+    expect($html)->toMatch('/Up to <strong>\d+<\/strong> files?/');
+    expect($html)->toContain('each under <strong>'.\App\Support\PhotoLimits::perFileLabel().'</strong>');
+
+    if (\App\Support\PhotoLimits::totalBytes() > 0) {
+        expect($html)->toContain('for all of them together');
+        expect($html)->toContain(\App\Support\PhotoLimits::totalLabel());
+    }
+});
+
+/**
+ * A button says what the next screen is. Raised by Charlie 15 Sep 2026 on
+ * the create form — "the button is labelled Send the first notice, not
+ * Preview" — having just approved the same change on the reply form.
+ *
+ * Both submit buttons in the app that lead to a preview now say so, and
+ * both confirm buttons on a preview say send. Asserted as a PAIR, because
+ * the defect is the two disagreeing, not either label alone.
+ */
+it('labels the create button for the preview it leads to, not the send two screens later', function () {
+    [$tenant] = tenantWithProperty();
+
+    $form = $this->actingAs($tenant)->get('/cases/create')->getContent();
+
+    expect($form)->toContain('Preview the first notice');
+    expect($form)->not->toContain('Send the first notice');
+});
+
+it('labels the preview button for the send it performs', function () {
+    [$tenant, $property] = tenantWithProperty();
+
+    $this->actingAs($tenant)->post('/cases', validStorePayload($property->id));
+
+    $preview = $this->actingAs($tenant)->get('/cases/preview')->getContent();
+
+    expect($preview)->toContain('Confirm and send notice 1');
 });

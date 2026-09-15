@@ -122,9 +122,22 @@ class PropertyLandlordContactController extends Controller
             }
         });
 
+        // Snag #66. Setting the landlord for the FIRST time is the second
+        // step of onboarding — property, landlord, case — so carry the user
+        // on to raising their case. Coming back later to CORRECT a contact is
+        // property management, so stay on the page and show the confirmation.
+        //
+        // "Did this property have a landlord before I saved?" is the whole
+        // test; no flag needs passing through from the property form.
+        if ($previous === null) {
+            return redirect()
+                ->route('cases.create')
+                ->with('success', 'Landlord details saved. Now you can raise your repair case.');
+        }
+
         return redirect()
             ->route('properties.contact.edit', $property)
-            ->with('success', $this->confirmationMessage($previous !== null, $addressMoved));
+            ->with('success', $this->confirmationMessage($addressMoved));
     }
 
     /**
@@ -134,13 +147,14 @@ class PropertyLandlordContactController extends Controller
      * postal-address edit is a claim the system does not honour — the
      * address did not move and every letter goes exactly where it went
      * before.
+     *
+     * Only ever reached for a CORRECTION now (#66): a first-time save
+     * redirects onward to raise-a-case with its own message, so the
+     * "no previous contact" branch this method used to carry was dead
+     * and has been removed rather than left to mislead.
      */
-    private function confirmationMessage(bool $hadContact, bool $addressMoved): string
+    private function confirmationMessage(bool $addressMoved): string
     {
-        if (! $hadContact) {
-            return 'Landlord details saved.';
-        }
-
         if ($addressMoved) {
             return 'Landlord email corrected. Future letters on this property will go to the new address.';
         }

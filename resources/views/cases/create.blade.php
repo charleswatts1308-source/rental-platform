@@ -86,6 +86,7 @@
                             <option value="{{ $property->id }}" @selected(old('property_id') == $property->id)
                                     data-contact-name="{{ $property->currentLandlordContact?->name ?: $property->currentLandlordContact?->email }}"
                                     data-contact-email="{{ $property->currentLandlordContact?->email }}"
+                                    data-contact-role="{{ $property->currentLandlordContact?->role->value }}"
                                     data-property-url="{{ route('properties.contact.edit', $property) }}">
                                 {{ $property->address_line1 }}@if($property->address_line2), {{ $property->address_line2 }}@endif, {{ $property->postcode }}
                             </option>
@@ -94,24 +95,13 @@
                 </div>
             @endif
 
-            <div class="col-md-8">
+            <div class="col-12">
                 <label for="category_key" class="form-label">Repair category</label>
                 <select id="category_key" name="category_key" class="form-select @error('category_key') is-invalid @enderror" required>
                     <option value="">— select a category —</option>
                     @foreach($categories as $category)
                         <option value="{{ $category->key }}" @selected(old('category_key') === $category->key)>
                             {{ $category->label }}
-                        </option>
-                    @endforeach
-                </select>
-            </div>
-
-            <div class="col-md-4">
-                <label for="severity" class="form-label">Severity</label>
-                <select id="severity" name="severity" class="form-select @error('severity') is-invalid @enderror" required>
-                    @foreach($severities as $severity)
-                        <option value="{{ $severity->value }}" @selected(old('severity', 'routine') === $severity->value)>
-                            {{ ucfirst($severity->value) }}
                         </option>
                     @endforeach
                 </select>
@@ -142,18 +132,37 @@
                         attachments off for now to make sure letters reach landlords' inboxes.
                         Please describe the problem in as much detail as you can instead; the
                         letter still carries your full description.
+                        @if(\App\Support\PhotoLimits::replyCeiling() > 0)
+                            {{-- #73 — asked for by Charlie 15 Sep 2026, and only
+                                 shown when it is TRUE. The reply ceiling is a
+                                 separate setting now, so this sentence appears
+                                 exactly when a tenant really will be able to
+                                 attach photos later, and stays away when both
+                                 ceilings are 0. --}}
+                            <strong>You'll be able to attach photos once your landlord replies.</strong>
+                        @endif
                     </div>
                 @else
-                    <label for="photos" class="form-label">
-                        Photos (optional, up to {{ $photoCeiling }})
-                    </label>
+                    <label for="photos" class="form-label">Photos (optional)</label>
                     <input id="photos" name="photos[]" type="file" multiple
                            accept=".jpg,.jpeg,.png,.pdf"
                            data-photo-ceiling="{{ $photoCeiling }}"
                            data-photo-max-bytes="{{ $photoMaxBytes }}"
+                           data-photo-total-max-bytes="{{ $photoTotalMaxBytes }}"
                            class="form-control @error('photos') is-invalid @enderror @error('photos.*') is-invalid @enderror">
+                    {{-- All three limits, stated. The count used to sit in a
+                         bracket in the label and the TOTAL was not stated at
+                         all — so a tenant could pick three files, satisfy every
+                         limit the screen named, and still be refused as a set.
+                         Raised 15 Sep by Charlie: "the UI does not mention any
+                         max limit". --}}
                     <div class="form-text">
-                        JPG, PNG, or PDF. Each file must be under {{ $photoMaxLabel }}.
+                        @include('partials.photo-limits', [
+                            'ceiling' => $photoCeiling,
+                            'perFileLabel' => $photoMaxLabel,
+                            'totalBytes' => $photoTotalMaxBytes,
+                            'totalLabel' => $photoTotalLabel,
+                        ])
                     </div>
 
                     {{-- Photo errors live here rather than only in the summary
@@ -179,6 +188,12 @@
                     <ul id="photo-list" class="list-unstyled small mt-2 mb-0">
                         @foreach($stagedPhotos as $photo)
                             <li data-staged="1" class="d-flex align-items-center gap-2 mb-1">
+                                {{-- #53: the keep instruction rides INSIDE the row.
+                                     Remove deletes the row, which takes this input
+                                     with it, so the server is told precisely which
+                                     photo went. It used to be one flag for the whole
+                                     set, so removing one of two removed both. --}}
+                                <input type="hidden" name="keep_staged_photos[]" value="{{ $photo['path'] }}">
                                 <span>{{ $photo['original_filename'] ?? basename($photo['path']) }}</span>
                                 <span class="text-muted">({{ \App\Support\FileSize::human((int) ($photo['size_bytes'] ?? 0)) }})</span>
                                 <span class="badge text-bg-light">attached</span>
@@ -187,12 +202,13 @@
                         @endforeach
                     </ul>
 
-                    {{-- Defaults ON whenever a staged set exists, so the safe
-                         outcome — the evidence survives the round-trip —
-                         is what happens with no JavaScript at all. Only
-                         choosing new files or clicking Remove turns it off. --}}
-                    <input type="hidden" id="keep-staged-photos" name="keep_staged_photos"
-                           value="{{ count($stagedPhotos) > 0 ? 1 : 0 }}">
+                    {{-- The sentinel. Without it, removing EVERY row would leave
+                         the field absent, and absent means KEEP EVERYTHING — the
+                         safe default that stops a forgetful caller wiping a
+                         tenant's evidence. This empty entry keeps the field
+                         present so "remove them all" can still be said. It sits
+                         outside the list, so no Remove click can take it. --}}
+                    <input type="hidden" name="keep_staged_photos[]" value="">
                 @endif
             </div>
 
@@ -222,7 +238,12 @@
                  @class(['col-12', 'd-none' => ! $inheritedContact])>
                 <div class="border rounded p-3 bg-light">
                     <p class="mb-1">
-                        <span class="text-muted">This property&rsquo;s landlord:</span>
+                        {{-- Titled by the contact's STORED ROLE, the same way
+                             the case page is (#2). Hardcoding "landlord" told a
+                             tenant who had just set the contact to Agent that it
+                             was a landlord — a surface contradicting what the
+                             user had entered one screen earlier. --}}
+                        <span class="text-muted" data-inherited-role>This property&rsquo;s {{ $inheritedContact?->role->value ?: "landlord" }}:</span>
                         <span class="fw-semibold" data-inherited-name>{{ $inheritedContact?->name ?: $inheritedContact?->email }}</span>
                     </p>
                     <p class="mb-1 small text-muted" data-inherited-email>{{ $inheritedContact?->email }}</p>
@@ -279,7 +300,13 @@
             </div>
 
             <div class="col-12 d-flex gap-2 mt-4">
-                <button type="submit" class="btn btn-primary">Send the first notice</button>
+                {{-- Says what the NEXT screen is, not what eventually
+                     happens two screens later. This form goes to the D13
+                     preview; nothing is sent until the tenant confirms
+                     there. "Send the first notice" on a button that does
+                     not send is the same complaint Charlie made about the
+                     reply form, one form along. --}}
+                <button type="submit" class="btn btn-primary">Preview the first notice</button>
                 <a href="{{ route('cases.index') }}" class="btn btn-outline-secondary">Cancel</a>
             </div>
         </form>
@@ -288,199 +315,11 @@
 @endsection
 
 @section('scripts')
-{{--
-    Photo selection list.
-
-    Two jobs, both about the tenant seeing what is actually attached:
-
-    1. Snag #43 — a file input REPLACES its entire FileList on each
-       selection, so choosing one photo and then browsing again for a
-       second silently discards the first. Standard HTML behaviour, and
-       invisible server-side: store() receives one file and validates it
-       happily. We accumulate into a DataTransfer instead, so a second
-       browse ADDS.
-
-       NOTE: a ceiling of 1 MASKS #43 without fixing it — at one permitted
-       file, replacement is exactly what a tenant wants. The defect returns
-       in full the moment the ceiling is raised, which is the point of it
-       being configurable. Hence this runs at every ceiling.
-
-    2. Show filename and size before sending, matching the preview and the
-       case page. Keep the size format in step with App\Support\FileSize.
-
-    ENHANCEMENT ONLY. If this never runs, the native input still submits
-    and CaseController::store still enforces the ceiling, the mime types
-    and the per-file size. No evidential guarantee rests on it.
---}}
-<script>
-(function () {
-    const input = document.getElementById('photos');
-    const list = document.getElementById('photo-list');
-    if (!input || !list) return;
-
-    const ceiling = parseInt(input.dataset.photoCeiling || '0', 10);
-    if (!ceiling) return;
-
-    const maxBytes = parseInt(input.dataset.photoMaxBytes || '0', 10);
-
-    const keepFlag = document.getElementById('keep-staged-photos');
-    const errorBox = document.getElementById('photo-errors');
-
-    function stagedRows() {
-        return Array.from(list.querySelectorAll('[data-staged]'));
-    }
-
-    // Staged photos are the server's, not this script's — we hold no File
-    // objects for them. Dropping them is therefore a server instruction
-    // (the keep flag), not a DataTransfer edit.
-    function dropStaged() {
-        stagedRows().forEach(row => row.remove());
-        if (keepFlag) keepFlag.value = '0';
-    }
-
-    // A validation error from the previous request describes files that are
-    // no longer the selection. Clear it as soon as the tenant changes it.
-    function clearErrors() {
-        if (errorBox) errorBox.innerHTML = '';
-        input.classList.remove('is-invalid');
-    }
-
-    // Client-side problems render in the same place, and read the same, as
-    // the server's — the tenant should not be able to tell which stopped
-    // them. Refusing a file here is not a lesser event than refusing it
-    // there.
-    function showProblems(messages) {
-        if (!errorBox || !messages.length) return;
-
-        messages.forEach(function (text) {
-            const line = document.createElement('div');
-            line.className = 'text-danger small mt-1';
-            line.textContent = text;
-            errorBox.appendChild(line);
-        });
-
-        input.classList.add('is-invalid');
-    }
-
-    list.addEventListener('click', function (event) {
-        if (!event.target.matches('[data-remove-staged]')) return;
-        dropStaged();
-        clearErrors();
-        render();
-    });
-
-    // Mirrors App\Support\FileSize::human().
-    function humanSize(bytes) {
-        if (bytes >= 1048576) return (Math.round(bytes / 1048576 * 10) / 10) + ' MB';
-        return Math.max(1, Math.round(bytes / 1024)) + ' KB';
-    }
-
-    let chosen = [];
-
-    function sync() {
-        const data = new DataTransfer();
-        chosen.forEach(file => data.items.add(file));
-        input.files = data.files;
-        render();
-    }
-
-    function render() {
-        // Never wipe server-rendered staged rows here — they are the record
-        // of what is currently attached, and this script cannot recreate
-        // them. dropStaged() is the only thing that removes them.
-        const staged = stagedRows();
-        list.innerHTML = '';
-        staged.forEach(row => list.appendChild(row));
-
-        if (!chosen.length && !staged.length) {
-            const none = document.createElement('li');
-            none.className = 'text-muted';
-            none.textContent = 'No photos attached.';
-            list.appendChild(none);
-            return;
-        }
-
-        chosen.forEach((file, index) => {
-            const row = document.createElement('li');
-            row.className = 'd-flex align-items-center gap-2 mb-1';
-
-            const name = document.createElement('span');
-            name.textContent = file.name;
-
-            const size = document.createElement('span');
-            size.className = 'text-muted';
-            size.textContent = '(' + humanSize(file.size) + ')';
-
-            const remove = document.createElement('button');
-            remove.type = 'button';
-            remove.className = 'btn btn-link btn-sm p-0 text-danger';
-            remove.textContent = 'Remove';
-            remove.addEventListener('click', function () {
-                chosen.splice(index, 1);
-                sync();
-            });
-
-            row.append(name, size, remove);
-            list.appendChild(row);
-        });
-
-        if (chosen.length >= ceiling) {
-            const note = document.createElement('li');
-            note.className = 'text-muted mt-1';
-            note.textContent = chosen.length + ' of ' + ceiling + ' — remove one to attach a different photo.';
-            list.appendChild(note);
-        }
-    }
-
-    input.addEventListener('change', function () {
-        clearErrors();
-
-        // Choosing new files REPLACES the staged set — same rule the server
-        // applies in resolveStagedPhotos(), so the screen cannot promise
-        // something different from what will be sent.
-        if (stagedRows().length) {
-            dropStaged();
-        }
-
-        const incoming = Array.from(input.files || []);
-
-        // Refuse oversize HERE, before submitting. Otherwise one too-large
-        // file fails server validation, the redirect loses the whole
-        // selection (a browser cannot re-seed a file input), and the tenant
-        // has to re-pick photos that were perfectly fine. The limit is the
-        // one the machine will actually accept — min(our cap, PHP's
-        // upload_max_filesize) — so this cannot promise more than the box
-        // takes.
-        const tooBig = maxBytes > 0 ? incoming.filter(f => f.size > maxBytes) : [];
-        const usable = maxBytes > 0 ? incoming.filter(f => f.size <= maxBytes) : incoming;
-
-        const room = ceiling - chosen.length;
-        const accepted = usable.slice(0, Math.max(0, room));
-        chosen = chosen.concat(accepted);
-
-        const problems = [];
-
-        tooBig.forEach(function (file) {
-            problems.push(
-                'Photo "' + file.name + '" is ' + humanSize(file.size) +
-                ' — each photo must be ' + humanSize(maxBytes) + ' or smaller. It has not been attached.'
-            );
-        });
-
-        if (usable.length > accepted.length) {
-            problems.push(
-                'You can attach up to ' + ceiling + (ceiling === 1 ? ' photo' : ' photos') +
-                '. Remove one first if you want to swap it for a different photo.'
-            );
-        }
-
-        showProblems(problems);
-        sync();
-    });
-
-    render();
-})();
-</script>
+@include('partials.photo-picker', [
+    'inputId' => 'photos',
+    'listId' => 'photo-list',
+    'errorsId' => 'photo-errors',
+])
 
 <script>
 /*
@@ -503,6 +342,7 @@
 
     const nameEl = inherited.querySelector('[data-inherited-name]');
     const emailEl = inherited.querySelector('[data-inherited-email]');
+    const roleEl = inherited.querySelector('[data-inherited-role]');
     const linkEl = inherited.querySelector('a');
     const required = ['landlord_email', 'landlord_role'];
 
@@ -514,6 +354,14 @@
             nameEl.textContent = option.dataset.contactName || email;
             emailEl.textContent = email;
             linkEl.href = option.dataset.propertyUrl;
+
+            // Relabel as well as refill: switching to a property whose
+            // contact is an agent must not leave the previous property's
+            // word standing.
+            if (roleEl) {
+                const role = option.dataset.contactRole || 'landlord';
+                roleEl.textContent = 'This property’s ' + role + ':';
+            }
         }
 
         inherited.classList.toggle('d-none', !email);
