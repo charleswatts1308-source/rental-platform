@@ -211,3 +211,28 @@ it('renders the D9 header block with an explicit text colour (#20)', function ()
 
     expect($rendered['body'])->toContain('color: #222');
 });
+
+/**
+ * The body box shows the whole template rather than hiding its tail
+ * behind a scrollbar. Raised 15 Sep: editing landlord_wakeup_generic on
+ * prod, the visible text ended on an <hr>, which reads as the end of the
+ * letter, and the footer paragraph under it could not be seen — so the
+ * sentence #61 exists to delete looked as though it was not there.
+ */
+it('grows the body box to fit the template instead of scrolling it', function () {
+    $admin = User::factory()->create(['email_verified_at' => now()]);
+    $admin->forceFill(['is_admin' => true])->save();
+
+    $template = LetterTemplate::query()->firstOrFail();
+
+    $html = $this->actingAs($admin)
+        ->get(route('admin.templates.edit', $template))
+        ->assertOk()
+        ->getContent();
+
+    // The box cannot hide anything, and the script that sizes it is present.
+    expect($html)->toContain('style="overflow-y:hidden"');
+    expect($html)->toContain("body.style.height = body.scrollHeight + 'px'");
+    // rows stays as the floor / no-JS fallback.
+    expect($html)->toContain('rows="18"');
+});
