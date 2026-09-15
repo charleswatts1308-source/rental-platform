@@ -161,3 +161,33 @@ it('requires auth and verification', function () {
     $unverified = User::factory()->create(['email_verified_at' => null]);
     $this->actingAs($unverified)->get(route('dashboard'))->assertRedirect(route('verification.notice'));
 });
+
+/**
+ * The landlord's postal address gets the same postcode lookup as the
+ * property (asked for 15 Sep), from the SAME partial — the point being
+ * that there is one copy of the script, not two to drift apart.
+ *
+ * The not-found wording is the one thing that deliberately differs: a
+ * managing agent may sit at a non-UK address, which postcodes.io will
+ * never find, so a miss there must not read as a mistake.
+ */
+it('gives the landlord postal address the postcode lookup, worded for a non-UK address', function () {
+    $user = User::factory()->create(['email_verified_at' => now()]);
+    $property = Property::factory()->create(['registered_by_user_id' => $user->id]);
+
+    $html = $this->actingAs($user)->get(route('properties.contact.edit', $property))->getContent();
+
+    expect(strpos($html, 'for="postcode"'))->toBeLessThan(strpos($html, 'for="city"'));
+    expect($html)->toContain('That is fine if the address is not in the UK.');
+    expect($html)->toContain('var lookupUrl =');
+    expect($html)->toContain('id="postcode-hint" class="form-text" style="min-height:1.5rem"');
+});
+
+it('keeps the sterner not-found wording on the property itself', function () {
+    $user = User::factory()->create(['email_verified_at' => now()]);
+
+    $html = $this->actingAs($user)->get('/properties/create')->getContent();
+
+    expect($html)->toContain('We could not find that postcode. Please check it.');
+    expect($html)->not->toContain('That is fine if the address is not in the UK.');
+});

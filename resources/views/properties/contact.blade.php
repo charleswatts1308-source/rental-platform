@@ -118,19 +118,19 @@
                    value="{{ old('address_line2', $contact?->address_line2) }}">
         </div>
 
-        <div class="col-md-6">
-            <label for="city" class="form-label">Town or city</label>
-            <input id="city" name="city" type="text" maxlength="100"
-                   class="form-control @error('city') is-invalid @enderror"
-                   value="{{ old('city', $contact?->city) }}">
-        </div>
-
-        <div class="col-md-6">
-            <label for="postcode" class="form-label">Postcode</label>
-            <input id="postcode" name="postcode" type="text" maxlength="20"
-                   class="form-control @error('postcode') is-invalid @enderror"
-                   value="{{ old('postcode', $contact?->postcode) }}">
-        </div>
+        @include('partials.postcode-city', [
+            'cityLabel' => 'Town or city',
+            'cityValue' => $contact?->city,
+            'postcodeValue' => $contact?->postcode,
+            'required' => false,
+            // Deliberately gentler than the property's. A managing agent
+            // can sit at a non-UK address, which postcodes.io will never
+            // find, so a miss here is not evidence of a mistake and must
+            // not read as one. The server-side rule is looser for the
+            // same reason.
+            'notFoundMessage' => 'We could not find that postcode. That is fine if the address is not in the UK.',
+            'cityHelp' => 'Filled in from the postcode where we can.',
+        ])
 
         <div class="col-12 d-flex gap-2 mt-4">
             <button type="submit" class="btn btn-primary">
