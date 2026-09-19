@@ -148,8 +148,7 @@ class ForwardInboundEnquiry
             .'<div><strong>Enquiry to:</strong> '.e(Str::lower(trim((string) ($payload['recipient'] ?? '')))).'</div>'
             .'<div><strong>From:</strong> '.e((string) ($payload['from'] ?? 'unknown')).'</div>'
             .'<div><strong>Received:</strong> '.e($now->format('d M Y H:i')).'</div>'
-            .'<div><strong>SPF / DKIM:</strong> '.e($this->authResult($payload, 'spf'))
-            .' / '.e($this->authResult($payload, 'dkim')).'</div>'
+            .$this->authLine($payload)
             .$attachmentLine
             .$spamLine
             .'<div style="margin-top: 8px; color: #666;">Not a case reply. Nothing was written to any '
@@ -157,6 +156,38 @@ class ForwardInboundEnquiry
             .'</div>';
 
         return $header.$original;
+    }
+
+    /**
+     * The sender-authentication line — shown ONLY when something is wrong.
+     *
+     * Ruled 19 Sep 2026 after the live walk. The line used to print on every
+     * forward, and read "Pass / Pass" almost every time, which trains a reader
+     * to ignore the block it sits in. A pass never changes what you do; only a
+     * failure does. So: silent when clean, loud when not.
+     *
+     * What a pass actually means, since it is easy to over-read: the message
+     * genuinely came from the domain it claims and was not altered in transit.
+     * It says NOTHING about who the human is — anyone can open a free webmail
+     * account — so on gmail.com or outlook.com a pass is uninformative. It
+     * earns its place when the sender's DOMAIN means something: a letting
+     * agency asking to change an address or close a case is exactly where a
+     * failure matters.
+     */
+    private function authLine(array $payload): string
+    {
+        $spf = $this->authResult($payload, 'spf');
+        $dkim = $this->authResult($payload, 'dkim');
+
+        if (Str::lower($spf) === 'pass' && Str::lower($dkim) === 'pass') {
+            return '';
+        }
+
+        return '<div style="margin-top: 6px; padding: 6px 8px; background: #fff3cd; '
+            .'border: 1px solid #ffc107; color: #533f03;">'
+            .'<strong>Sender checks did not fully pass — SPF '.e($spf).' / DKIM '.e($dkim).'.</strong> '
+            .'This may not be from the domain it claims. Treat any instruction in it with care.'
+            .'</div>';
     }
 
     /**

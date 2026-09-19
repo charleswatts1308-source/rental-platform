@@ -150,7 +150,13 @@ it('reads SPF and DKIM verdicts out of message-headers', function () {
     $this->post('/webhooks/mailgun/inbound', $payload)->assertStatus(200);
 
     Mail::assertSent(InboundEnquiryForward::class, function (InboundEnquiryForward $mail) {
-        return str_contains($mail->renderedBody, 'Pass / Pass');
+        // INVERTED 19 Sep 2026 (was: asserts "Pass / Pass" is present). The
+        // line is now exception-only — a clean pair says nothing a reader can
+        // act on, so it is suppressed. This assertion is STRONGER than the one
+        // it replaces: it pins both the verdicts being read correctly AND the
+        // suppression, where the old one pinned only the reading.
+        return ! str_contains($mail->renderedBody, 'Sender checks')
+            && str_contains($mail->renderedBody, 'Enquiry to:');
     });
 });
 
@@ -179,7 +185,8 @@ it('says "not reported" rather than "?" when the payload carries no verdicts', f
     $this->post('/webhooks/mailgun/inbound', $payload)->assertStatus(200);
 
     Mail::assertSent(InboundEnquiryForward::class, function (InboundEnquiryForward $mail) {
-        return str_contains($mail->renderedBody, 'not reported / not reported')
+        return str_contains($mail->renderedBody, 'Sender checks did not fully pass')
+            && str_contains($mail->renderedBody, 'SPF not reported / DKIM not reported')
             && ! str_contains($mail->renderedBody, '? / ?');
     });
 });
@@ -194,4 +201,46 @@ it('survives a malformed message-headers value', function () {
     $this->post('/webhooks/mailgun/inbound', $payload)->assertStatus(200);
 
     Mail::assertSent(InboundEnquiryForward::class);
+});
+
+/*
+ * Exception-only display, ruled 19 Sep 2026: a clean pair is suppressed, and
+ * anything short of a clean pair is shown as a warning. A pass never changes
+ * what the reader does; a failure is the only verdict that should.
+ */
+
+it('warns prominently when SPF fails, even though DKIM passed', function () {
+    $payload = enquiryPayload('landlord-enquiries@mg.renters.rent', [
+        'X-Mailgun-Spf' => null,
+        'X-Mailgun-Dkim-Check-Result' => null,
+        'message-headers' => json_encode([
+            ['Received-SPF', 'fail (google.com: domain does not designate 9.9.9.9 as permitted sender)'],
+            ['Authentication-Results', 'mx.google.com; spf=fail; dkim=pass header.i=@landlord.example'],
+        ]),
+    ]);
+
+    $this->post('/webhooks/mailgun/inbound', $payload)->assertStatus(200);
+
+    Mail::assertSent(InboundEnquiryForward::class, function (InboundEnquiryForward $mail) {
+        return str_contains($mail->renderedBody, 'Sender checks did not fully pass')
+            && str_contains($mail->renderedBody, 'SPF Fail / DKIM Pass')
+            && str_contains($mail->renderedBody, 'may not be from the domain it claims');
+    });
+});
+
+it('treats a signed-but-unverified DKIM as worth warning about', function () {
+    $payload = enquiryPayload('privacy@mg.renters.rent', [
+        'X-Mailgun-Spf' => null,
+        'X-Mailgun-Dkim-Check-Result' => null,
+        'message-headers' => json_encode([
+            ['Received-SPF', 'pass (designated sender)'],
+            ['DKIM-Signature', 'v=1; a=rsa-sha256; d=landlord.example; s=s1'],
+        ]),
+    ]);
+
+    $this->post('/webhooks/mailgun/inbound', $payload)->assertStatus(200);
+
+    Mail::assertSent(InboundEnquiryForward::class, function (InboundEnquiryForward $mail) {
+        return str_contains($mail->renderedBody, 'Sender checks did not fully pass');
+    });
 });
