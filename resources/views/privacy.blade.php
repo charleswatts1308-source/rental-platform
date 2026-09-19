@@ -57,7 +57,12 @@
 
             <h2 class="h5 mt-4">8. Contact Us</h2>
             <p>If you have any questions about this Privacy Policy or our data practices, please contact us at:</p>
-            <p><strong>Email:</strong> <a href="mailto:admin@renters.rent">admin@renters.rent</a></p>
+            {{-- #48 — admin@renters.rent could not receive mail (no mailbox behind
+                 the apex MX), so a data subject exercising their rights got
+                 silence and we never learned they tried. privacy@mg.renters.rent
+                 is delivered by the stage 1 enquiry forwarder and was proven
+                 live on 19 Sep 2026. --}}
+            <p><strong>Email:</strong> <a href="mailto:privacy@mg.renters.rent">privacy@mg.renters.rent</a></p>
 
             <h2 class="h5 mt-4">9. Changes to This Policy</h2>
             <p>We may update this Privacy Policy from time to time. We will notify you of any changes by posting the new policy on this page and updating the "Last updated" date.</p>

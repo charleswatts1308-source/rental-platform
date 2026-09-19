@@ -82,7 +82,9 @@
         <p>
             If you have any questions about our use of cookies, please contact us at:
         </p>
-        <p><strong>Email:</strong> <a href="mailto:admin@renters.rent">admin@renters.rent</a></p>
+        {{-- #48 — see privacy.blade.php. admin@renters.rent receives nothing;
+             privacy@mg.renters.rent is delivered by the enquiry forwarder. --}}
+        <p><strong>Email:</strong> <a href="mailto:privacy@mg.renters.rent">privacy@mg.renters.rent</a></p>
     </div>
 </div>
 @endsection
