@@ -2638,9 +2638,11 @@ Saw:         The registration is live and correct (see #55), but it
              does not mention the site that wrote to them.
 Expected:    The register entry names renters.rent, so the reference
              on the page confirms what the reader is trying to confirm.
-Status:      OPEN — task on Charlie, 22 Aug. Not code; nothing in the
-             repo changes when it is done. Close this entry once the
-             amended entry shows renters.rent.
+Status:      CLOSED 19 Sep 2026 — done, reported by Charlie. The ICO has
+             been advised of renters.rent as a trading name on
+             registration Z229825X. Nothing in the repo changed; the
+             reference already published on /landlords now resolves to
+             an entry that names the site. Open 22 Aug to 19 Sep.
 Notes:       This is an AMENDMENT to the registration already held,
              not a new registration and not a second fee — ICO
              registration attaches to the data controller (one sole

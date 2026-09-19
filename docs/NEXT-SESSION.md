@@ -77,10 +77,13 @@ Three were defects no test would have found:
 3. **#48 — `admin@renters.rent` cannot receive mail**, so its password
    reset is broken. Open since July, approach agreed 12 Sep, unbuilt.
    The one open item with real consequences.
-4. **#56** — advise the ICO of renters.rent as a trading name on
-   registration `Z229825X`. Admin task, not code.
-5. **Older, unconfirmed since before 9 Aug:** close out case 3; confirm
-   the registration allowlist.
+4. ~~**#56** — advise the ICO of renters.rent as a trading name on
+   registration `Z229825X`.~~ **DONE 19 Sep**, reported by Charlie. Entry
+   closed in the snag list; nothing in the repo changed.
+5. ~~**Older, unconfirmed since before 9 Aug:** close out case 3; confirm
+   the registration allowlist.~~ **DONE 19 Sep**, both confirmed by
+   Charlie. They had been carried unconfirmed for six weeks; they are
+   not carried forward.
 
 **Two decisions are blocking builds:** **#60** (a tenant gets no email at
 all when their case opens and letter 1 goes out — the design doc is
@@ -97,9 +100,9 @@ reply — this decides whether `admin@` is a stopgap or the front door).
 
 ## Snags — open
 
-**OPEN, and confident — 25:** #1, #9, #10, #12, #13, #17, #18, #25
+**OPEN, and confident — 24:** #1, #9, #10, #12, #13, #17, #18, #25
 (release 2 only), #26, #28, #29, #30, #31, #32, #33, #34, #35, #37, #42,
-#43, #48, #56, #60, #62, #63.
+#43, #48, #60, #62, #63. (#56 closed 19 Sep.)
 
 **~~DISPUTED — 6~~ SETTLED 19 Sep 2026: #4, #14, #15, #16, #20, #21 are
 CLOSED.** Settled against the code, not the documents: all six were built
@@ -113,10 +116,10 @@ NOT reversed; an exhausted case keeps reply/resolve/abandon and stays
 revivable. The snag file's own "#21 RULING" block (drop "Abandoned",
 exhausted = dead) is a withdrawn draft and is marked as such.
 
-**What the 25 actually are:**
+**What the 24 actually are:**
 - **Dev-facing only, nobody sees them:** #9, #10, #12, #13, #17, #18,
-  #26, #31, #34, #35, #43. Eleven of the twenty-five.
-- **Admin tasks, not code:** #48, #56.
+  #26, #31, #34, #35, #43. Eleven of the twenty-four.
+- **Admin tasks, not code:** #48.
 - **Needs a ruling first:** #60, #62.
 - **Real user-facing work:** #1 (nav restructure), **#25 release 2** (the
   tenant-taken copy of a bounced case — the largest remaining piece),
