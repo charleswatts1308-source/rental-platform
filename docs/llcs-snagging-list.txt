@@ -119,7 +119,14 @@ Severity:    Low — cosmetic/UX; not blocking. Pre-flip change, zero migration 
 Saw:         Case reference is a 12-char mixed-case random string (e.g. Bmjomam2aaSV).
 Expected:    Short, human-quotable reference: 6 uppercase chars, human-safe alphabet,
              case-insensitive, random, unique, never reused.
-Status:      Open — design decided, ready for CC.
+Status:      SHIPPED 21 Jun 2026 in D16 / Phase 5 (merge cf2f5c9; commit
+             57880f7, built with Surface C so the case list showed the
+             final format). app/Support/CaseReference.php mints 6 chars
+             from A-Z + 2-9 less I, O, 0, 1; CaseController::mintSlug
+             carries the collision loop. On main, live on both boxes.
+             STAMPED 19 Sep 2026 on inspection of the code — the D16
+             build never came back to this entry, which is why the
+             router and this list disagreed for three months.
 Notes:       Use case is a tenant quoting the reference to a landlord verbally/in
              writing ("re: case TRE3YU"), so it must survive being said aloud and
              retyped. Security is NOT carried by the reference — per-tenant login +
@@ -371,7 +378,12 @@ Saw:         After the sweep releases an expired hold (OnHold ->
              on the case page and is not nulled on release.
 Expected:    Once a hold is released, hold_until either reads as past/
              cleared or is not surfaced as an active pause.
-Status:      open — cosmetic.
+Status:      SHIPPED 21 Jun 2026 in D16 / Phase 5 (merge cf2f5c9; commit
+             57880f7). Fixed with #15 and the #21 tail as ONE predicate:
+             RepairCase::showsHoldUntil() gates the "Paused until" line,
+             so the column persists as history but stops reading as a
+             live pause. cases/show.blade.php. On main, live on both
+             boxes. STAMPED 19 Sep 2026 on inspection of the code.
 Notes:       The design keeps hold_until as a historical record on the
              row (so don't necessarily null the column) — the snag is
              the case page presenting a released hold as if still live.
@@ -387,7 +399,13 @@ Saw:         The "Next escalation" projection is rendered while the case
              meaningless.
 Expected:    "Next escalation" suppressed (or replaced with the hold
              status) while status === on_hold.
-Status:      open — cosmetic.
+Status:      SHIPPED 21 Jun 2026 in D16 / Phase 5 (merge cf2f5c9; commit
+             57880f7). RepairCase::showsNextEscalation() is true only
+             while status=awaiting_landlord with the clock live, so the
+             line is suppressed on on_hold, dormant, closed and
+             exhausted alike — the same predicate that fixed #14 and the
+             #21 tail. cases/show.blade.php. On main, live on both
+             boxes. STAMPED 19 Sep 2026 on inspection of the code.
 Notes:       Confirmed 2026-06-07 gafol live-fire. Same state-awareness
              gap as #14.
 Fix:         Suppress the escalation projection on on_hold (and other
@@ -400,7 +418,12 @@ Saw:         The stage label hardcodes 4 as the total notice count
              instead of reading escalation.max_notices from settings.
 Expected:    Denominator reads the live escalation.max_notices value so
              the label tracks the configured ladder length.
-Status:      open — cosmetic.
+Status:      SHIPPED 21 Jun 2026 in D16 / Phase 5 (merge cf2f5c9; commit
+             bae9bfa, Surface B — a hard dependency: the settings editor
+             can change escalation.max_notices, at which point a literal
+             4 lies). Both the tenant and the admin case page now read
+             Setting::get('escalation.max_notices', 4). On main, live on
+             both boxes. STAMPED 19 Sep 2026 on inspection of the code.
 Notes:       Confirmed 2026-06-07 gafol live-fire. Harmless while
              max_notices=4 but drifts if the setting changes.
 Fix:         Replace the literal 4 with Setting::get('escalation.max_notices').
@@ -535,8 +558,14 @@ Saw:         The D9 header block (property / case reference / issue) renders
              the D15 authorise-preview during the 2026-06-13 gafol live-fire.
 Expected:    The header block stays legible in dark mode (explicit text
              colour, or a background that holds contrast in both themes).
-Status:      open — cosmetic. Surfaced by D15 but the block predates it
-             (D9, Phase 3); affects every view that renders the block.
+Status:      SHIPPED 21 Jun 2026 in D16 / Phase 5 (merge cf2f5c9; commit
+             e3f3765, Surface A — the template-editor preview renders
+             through the same block, so it was fixed once for both).
+             LetterTemplateRenderer::buildHeaderBlock now sets an
+             explicit color: #222 alongside the light-grey background.
+             Wrapper only; the frozen evidential bodies are untouched.
+             On main, live on both boxes. STAMPED 19 Sep 2026 on
+             inspection of the code.
 Notes:       The block uses a fixed light-grey background with no explicit
              text colour (LetterTemplateRenderer::buildHeaderBlock), so dark
              mode inherits a light-on-light combination.
@@ -546,6 +575,17 @@ Fix:         Set an explicit text colour on the header block (and/or a
              evidential letter bodies (header is wrapper, not body).
 --------------------------------------------------------------------
 #21 — exhausted-case "abandon" collision (UI confusion)
+
+*** SUPERSEDED — DO NOT BUILD FROM THIS BLOCK. ***
+The ruling below was a draft. It was withdrawn on 21 Jun 2026 and
+replaced by OPTION C in the design doc, which is authoritative: remove
+the cosmetic stance dropdown ONLY; D14 is not reversed; an exhausted
+case stays revivable and closable. The draft's premise — that exhausted
+is dead/terminal with no controls — is wrong against the implemented
+machine: escalation_exhausted has four outgoing edges, and only
+resolved/abandoned are terminal. Kept for the record of how Option C
+was reached. See the Status line of the #21 entry immediately below.
+
 Exhausted page shows two controls that both say "abandon": the cosmetic
 stance dropdown ("Abandoned" value, label-only, writes exhausted_stance)
 and the real "Abandon this case" terminal action (transitions to
@@ -578,14 +618,23 @@ Saw:         The exhausted page exposes TWO controls that both say "abandon"
              closed when they meant only to label it.
 Expected:    A tenant framing the outcome as "abandoned" should not be able
              to confuse that with truly closing the case.
-Status:      open — carries a DESIGN QUESTION for Charlie. Two coherent fixes:
-             (a) keep stance cosmetic as ruled, but disambiguate the labels/
-                 placement so the two "abandon"s cannot be confused; or
-             (b) adopt the "Abandon truly closes the case; Unresolved = stay
-                 exhausted (revivable)" model — cleaner UX, but REVERSES the
-                 D14 cosmetic ruling and loses the abandoned-but-revivable
-                 state (a later landlord reply would not revive an abandoned
-                 case; recurrence = new case, the standard D8 terminal rule).
+Status:      SHIPPED 21 Jun 2026 in D16 / Phase 5 (merge cf2f5c9; commits
+             57880f7 then 6988ba3). RULED OPTION C — neither (a) nor (b)
+             below, and NOT the ruling block sitting above this entry.
+             The design doc (llcs-silence-model-design.md, D16 "Snags
+             folded into Phase 5") is authoritative and says: remove the
+             cosmetic stance dropdown — the colliding control — and
+             nothing else. UI-only. D14 is NOT reversed: an exhausted
+             case keeps reply / resolve / abandon and stays revivable by
+             a late landlord reply. No backend, policy or state-machine
+             change; the ExhaustedStance enum and CaseController::
+             setStance remain in the codebase, dormant with no UI,
+             pending a future disposition. The #21 TAIL ("Next
+             escalation" reappearing on the abandoned card) went with
+             #14/#15 into showsNextEscalation(). On main, live on both
+             boxes. STAMPED 19 Sep 2026 on inspection of the code:
+             cases/_action_panel.blade.php carries the removal and the
+             reason for it.
 Notes:       exhausted_stance IS wired (CaseController::setStance, POST
              cases.stance, policy setStance; covered by a passing test). The
              collision is the issue, not a missing build. Both controls are

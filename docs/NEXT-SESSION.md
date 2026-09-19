@@ -101,13 +101,17 @@ reply — this decides whether `admin@` is a stopgap or the front door).
 (release 2 only), #26, #28, #29, #30, #31, #32, #33, #34, #35, #37, #42,
 #43, #48, #56, #60, #62, #63.
 
-**⚠ DISPUTED — 6: #4, #14, #15, #16, #20, #21.** This router has said
-since Phase 5 that D16 resolved them. The snagging list still has all six
-reading `open — cosmetic` (or, for #21, carrying a design question). The
-two documents disagree and neither is obviously right. NOT silently
-picked either way on 15 Sep; whoever next touches D16 territory should
-read the six and settle it. Until then treat them as open, because the
-list is the record and this file is only the index.
+**~~DISPUTED — 6~~ SETTLED 19 Sep 2026: #4, #14, #15, #16, #20, #21 are
+CLOSED.** Settled against the code, not the documents: all six were built
+in D16 / Phase 5 (merge `cf2f5c9`, 21 Jun), are on `main`, and are live on
+both boxes. The router was right; the snagging list was three months
+stale, because D16 is the one phase with no `cc-report-*` to prompt the
+stamping. Entries now carry the commit and the file. **One outcome
+differs from what BOTH documents claimed: #21 was ruled Option C** —
+remove the colliding cosmetic stance dropdown and nothing else. D14 is
+NOT reversed; an exhausted case keeps reply/resolve/abandon and stays
+revivable. The snag file's own "#21 RULING" block (drop "Abandoned",
+exhausted = dead) is a withdrawn draft and is marked as such.
 
 **What the 25 actually are:**
 - **Dev-facing only, nobody sees them:** #9, #10, #12, #13, #17, #18,
@@ -120,6 +124,9 @@ list is the record and this file is only the index.
 
 **Closed by the September cycle:** #2, #19, #27, #40, #44, #50, #51, #53,
 #54, #57, #58, #61, #64, #65, #66, #67, #68, #69, #70, #71, #72, #73.
+
+**Closed by D16 / Phase 5** (stamped 19 Sep, shipped 21 Jun): #4, #14,
+#15, #16, #20, #21.
 
 ---
 
