@@ -85,11 +85,18 @@ Three were defects no test would have found:
    Charlie. They had been carried unconfirmed for six weeks; they are
    not carried forward.
 
-**Two decisions are blocking builds:** **#60** (a tenant gets no email at
-all when their case opens and letter 1 goes out — the design doc is
-SILENT, so it needs a ruling, and it must be mail-only or it inflates the
-ladder) and **#62** (landlords have no written channel that is not a case
-reply — this decides whether `admin@` is a stopgap or the front door).
+**ONE decision is blocking a build: #62** — landlords have no written
+channel that is not a case reply, so service questions land in the case
+thread where the tenant is the only reader. The answer decides whether
+`admin@` is a stopgap or the front door, and whether the fix is wording
+on the letter or a real landlord-facing channel.
+
+**#60 is NOT blocked — it is parked, undecided, on purpose.** A tenant
+gets no email when their case opens and letter 1 goes out. Asked
+directly on 19 Sep, Charlie chose to defer and keep it on the list as an
+option he has not made his mind up about. Do not re-ask each session;
+raise it only if something new bears on it. (If ever built: mail-only,
+or it inflates the ladder.)
 
 **Prod pacing, confirmed 4 Sep:** `interval_days` **14**,
 `max_notices` **4**. In-flight cases keep their
