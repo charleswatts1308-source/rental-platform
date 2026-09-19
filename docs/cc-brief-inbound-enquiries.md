@@ -206,4 +206,23 @@ The cosmetic cost of "mg." is the price of keeping enquiries inside the system.
 - **Restore the catch-all route's priority to 0** (changed to 10 on 19 Sep while
   investigating; harmless with one route, but the docs should match the panel).
 - **Was a second route created before the cap refused it?** If so, delete it.
-- `MAIL_ENQUIRY_FORWARD_TO` needs setting on production before the live test.
+- ~~`MAIL_ENQUIRY_FORWARD_TO` needs setting on production before the live test.~~
+  **Set on production 19 Sep** (an Outlook mailbox; the value stays in `.env`
+  and out of this repo). Needs `php artisan config:cache` to take effect.
+- **Charlie intends to create a dedicated mailbox for this later.** By design
+  that is a ONE-LINE change — the env value plus a `config:cache`. Nothing else
+  in the system knows where the forward lands. Two notes for when he does:
+  pick a provider that can **send as** the renters.rent address, which solves
+  the reply-identity problem without a second mail client at all; and the
+  account address stays private either way, since what landlords see is
+  `landlord-enquiries@mg.renters.rent`.
+- **Deliverability watch, live test:** the destination is Outlook, and #36
+  records that Mailgun's shared pools bite hardest at Microsoft. Check the Junk
+  folder during acceptance, not just the Inbox. If it lands there it is a
+  safe-senders rule at Charlie's end, not a design fault — but it must be
+  discovered during the test rather than when enquiries quietly stop arriving.
+- **Reading is safe; replying leaks.** Reply-To is the original sender, so a
+  reply from Outlook does reach the landlord — from Charlie's private address.
+  The Thunderbird identity (or a send-as capable mailbox) is what fixes that.
+  The FIRST enquiry is when this catches you out, because the instinct is to
+  hit Reply.
