@@ -119,6 +119,41 @@ what ran, so that is not drift and should not be "fixed".
   by raw SQL; then #48's remaining half (admin login to Charlie's own
   address, and the two dev seeders).
 
+### Deploy 19 Sep 2026 (second, same day) — `7f183e2`
+
+- **Landed on BOTH boxes: `7f183e2`.** gafol and renters.rent confirmed
+  on `main` by Charlie. Second deploy of the day; the first is the entry
+  immediately above and this one builds on it.
+- **Route:** Plesk Git pull, `config:cache`, **and `view:clear`** — the
+  third step mattered this time, since two cached Blade views changed and
+  without it both would have kept serving the old address.
+- **MIGRATIONS: NONE.** No composer either.
+- **Three changes:**
+  1. **Sender checks are now EXCEPTION-ONLY** on enquiry forwards. The
+     SPF/DKIM line printed "Pass / Pass" on every forward, which is the
+     reading that never changes what a reader does, and a block that
+     always says the same thing trains the reader to skip it. Suppressed
+     when clean; shown as a highlighted warning on a fail, an absent
+     verdict, or a DKIM signature that could not be verified.
+  2. **`privacy.blade.php` and `cookies.blade.php` now publish
+     `privacy@mg.renters.rent`** instead of the dead `admin@renters.rent`
+     (#48). Safe only because the forwarder shipped first — the ordering
+     was explicit in the brief.
+  3. The mail schematic, `docs/inbound-mail-schematic.txt`.
+- **Verified on production by Charlie:** `/privacy` serves the new
+  address, and a further live enquiry to `landlord-enquiries@` arrived
+  **"very fast"** — the extra hop through the webhook costs nothing
+  perceptible.
+- **Suite: 879 passed** (877 at the previous deploy). One assertion
+  INVERTED, none weakened: the message-headers test now pins both the
+  parsing and the suppression, where before it pinned only the parsing.
+- **Still to do on this line:** #62's letter-1 sentence (seeder in code,
+  then each of the three databases through the admin template editor),
+  and #48's last half — the admin login row on production, plus
+  `DevReset.php:56` and `DevLifecycle.php:29`, which still seed local
+  admins with the dead address. Harmless locally, since Mailpit catches
+  mail to any address, but they perpetuate the string.
+
 
 ### Deploy 15 Sep 2026 — September fix cycle
 
