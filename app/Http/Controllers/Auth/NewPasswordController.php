@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
@@ -17,10 +18,45 @@ class NewPasswordController extends Controller
 {
     /**
      * Display the password reset view.
+     *
+     * #75 — these two routes used to sit inside the `guest` middleware group,
+     * which bounces an authenticated visitor to the dashboard. The realistic
+     * victim is not a tester: it is a tenant who stays permanently signed in
+     * on a phone, never types the password for six months, then needs it.
+     * They request a reset, tap the link on that same phone, land on the
+     * dashboard with no explanation, and find the profile page asking for the
+     * very password they have forgotten. No way through, and nothing telling
+     * them to sign out first.
+     *
+     * So the reset routes now accept a signed-in visitor, and END THE SESSION
+     * before showing the form. Clicking a reset link is an unambiguous "I want
+     * new credentials"; signing the old session out is the honest answer to
+     * it, and it leaves no room for the confusing half-state where you are
+     * logged in as one account while resetting another.
      */
     public function create(Request $request): View
     {
+        $this->endAnyExistingSession($request);
+
         return view('auth.reset-password', ['request' => $request]);
+    }
+
+    /**
+     * Sign out whoever is currently logged in, if anyone.
+     *
+     * Invalidating and regenerating matters: the reset form that follows needs
+     * a CSRF token belonging to the new session, or the POST fails with a 419
+     * and the user is back where they started.
+     */
+    private function endAnyExistingSession(Request $request): void
+    {
+        if (! Auth::check()) {
+            return;
+        }
+
+        Auth::logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
     }
 
     /**
@@ -30,6 +66,12 @@ class NewPasswordController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
+        // #75 — a signed-in visitor can reach this route now, so end that
+        // session before resetting. Without it a user could reset account B's
+        // password while holding account A's session, which is a confusing
+        // state to leave anyone in even though the reset itself is sound.
+        $this->endAnyExistingSession($request);
+
         $request->validate([
             'token' => ['required'],
             'email' => ['required', 'email'],

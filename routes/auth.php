@@ -53,12 +53,26 @@ Route::middleware('guest')->group(function () {
     Route::post('forgot-password', [PasswordResetLinkController::class, 'store'])
         ->name('password.email');
 
-    Route::get('reset-password/{token}', [NewPasswordController::class, 'create'])
-        ->name('password.reset');
-
-    Route::post('reset-password', [NewPasswordController::class, 'store'])
-        ->name('password.store');
 });
+
+/*
+ * #75 — the password-reset routes deliberately sit OUTSIDE the `guest` group.
+ *
+ * Inside it, an authenticated visitor was redirected to the dashboard and
+ * never saw the reset form. That reads as a tester's edge case and is not: a
+ * tenant signed in permanently on a phone, who has not typed the password in
+ * months, taps the emailed link on that same phone and lands on the dashboard
+ * with no explanation — and the profile page then demands the password they
+ * are trying to replace. A closed loop with no way out.
+ *
+ * The controller signs out any existing session before showing the form, so
+ * "logged in" is never a state these two routes have to reason about.
+ */
+Route::get('reset-password/{token}', [NewPasswordController::class, 'create'])
+    ->name('password.reset');
+
+Route::post('reset-password', [NewPasswordController::class, 'store'])
+    ->name('password.store');
 
 Route::middleware('auth')->group(function () {
     Route::get('verify-email', EmailVerificationPromptController::class)

@@ -3891,3 +3891,50 @@ cannot complete a password reset, because its address receives nothing.
 Harmless while the password is known. It bites on the day it is not,
 and there is no second admin account to get in with.
 
+#75
+Page:        Password reset — GET /reset-password/{token}. Found
+             2026-09-19 by Charlie on PRODUCTION, while proving #48's
+             admin reset actually worked.
+Severity:    functional, and it is a DEAD END for the user it catches.
+Saw:         Requested a reset, received the email, clicked the link —
+             and was taken straight to the DASHBOARD. No reset form, no
+             message, no error. Worse, the account shown was the one
+             already signed in (the vanilla tenant), not the account
+             being reset, which looked at first like sessions or cookies
+             crossing over. They were not: the link was never processed
+             at all.
+Expected:    Clicking a reset link shows the reset form, whatever
+             session the browser happens to be carrying.
+Status:      FIXED 19 Sep 2026, same day, on main. Suite 882 green
+             (879 before, 3 added). NOT YET DEPLOYED.
+Notes:       ROOT CAUSE: the two reset routes sat inside Laravel's
+             `guest` middleware group, which redirects an authenticated
+             visitor to the dashboard. Stock Breeze scaffolding, never
+             questioned.
+             WHY IT MATTERS, and why it is not a tester's edge case:
+             the realistic victim is a TENANT PERMANENTLY SIGNED IN ON
+             A PHONE. They have not typed the password in six months —
+             that is precisely why they have forgotten it. They request
+             a reset, tap the link on that same phone, and land on the
+             dashboard. The profile page then asks for the CURRENT
+             password before it will set a new one — the very thing
+             they do not have. There is no way out and nothing tells
+             them to sign out first. The loop never closes.
+             It hid for so long because every test of this path was run
+             from a clean session, which is the one state in which the
+             bug cannot appear. Charlie found it only because he was
+             already logged in as a test tenant.
+             #48 CONNECTION: this was found while proving the admin
+             reset. The admin lockout is now genuinely closed — the
+             reset completes in a fresh session — but note it was one
+             browser session away from looking broken for a second,
+             unrelated reason.
+Fix:         The two routes move OUT of the `guest` group, and
+             NewPasswordController ends any existing session before
+             showing the form (logout + invalidate + regenerate the CSRF
+             token, or the following POST 419s). Applied on the POST
+             path too, so nobody resets account B while holding account
+             A's session. Three tests: a signed-in visitor reaches the
+             form, reaching it ends their session, and a signed-in
+             visitor can complete a reset for another account.
+--------------------------------------------------------------------
