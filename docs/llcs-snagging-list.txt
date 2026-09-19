@@ -2988,18 +2988,24 @@ Notes:       Two things make this less trivial than a text edit.
              email is about the REPAIR and lands in the case record; the
              link is for everything else. If both read the same,
              landlords will use whichever comes first.
-Status:      PROD TEMPLATES EDITED AND WALKED 15 Sep 2026 by Charlie,
-             through the admin template editor. Tested OK. Dev and
-             gafol not confirmed — see the Fix block.
+Status:      CLOSED — clear on ALL THREE environments (prod, gafol,
+             dev), confirmed 19 Sep 2026. Prod was edited and walked
+             15 Sep by Charlie through the admin template editor; dev
+             and gafol followed, verified by QUERYING the templates
+             rather than by trusting the edit. The seeder is clean too,
+             so a fresh box never carries the sentence. The earlier
+             "dev and gafol not confirmed" text was stale and the Fix
+             block's STILL-TO-DO paragraph is discharged.
 Fix:         SEEDER DONE 15 Sep 2026 — the sentence is out of both
              footer variants, so a fresh box is clean. The rest of each
              footer stands. Test pins it in
              tests/Feature/Phase6/CaseCreateTest.php.
-             STILL TO DO, and it is the part that matters: dev, gafol
-             and prod all read templates from the DATABASE, which the
-             seeder does not overwrite, so all three still send the old
-             wording. Each needs the change made through the ADMIN
-             TEMPLATE EDITOR
+             DONE 19 Sep 2026 — all three boxes now clear. What follows
+             is kept because it is the standing method for ANY evidential
+             wording change, not just this one: dev, gafol and prod all
+             read templates from the DATABASE, which the seeder does not
+             overwrite, so each box needs the change made through the
+             ADMIN TEMPLATE EDITOR
              (routes admin templates.edit / templates.update), NOT by
              raw SQL — the editor writes letter_text_change_history, and
              an unexplained wording change on an evidential letter with
