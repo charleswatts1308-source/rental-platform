@@ -5,7 +5,7 @@ The `docs/` folder has many files and many are stale — this index says
 which to trust and which to ignore, so you don't re-derive state from a
 superseded doc. It is a **router, not a record**: keep it short.
 
-**Last updated:** 2026-09-15.
+**Last updated:** 2026-09-19.
 
 > **Pruned 15 Sep 2026.** This file had grown to 542 lines of discharged
 > history — the #24/#49/#59 build, the 23 Aug capture run, the #25
@@ -19,14 +19,14 @@ superseded doc. It is a **router, not a record**: keep it short.
 
 ## Where everything is, right now
 
-- **`main` = `72b0d8e`.** Local and origin level; nothing exists only on
-  the dev box.
-- **gafol.rent AND renters.rent are both on `12646e7`**, the September
-  fix-cycle merge (tag `post-fix-cycle-sep-2026`). Both walked. Ledger
-  written for both.
-- **Suite: 861 green.**
-- **No work in flight.** No branch is unmerged. `main` is safe to check
-  out and build from.
+- **`main` = `22287c2`.** Local and origin level.
+- **BOTH BOXES ARE AT `7f183e2` — two commits BEHIND main, and one of
+  them is a live bug fix.** See the first open action below. This is the
+  only thing in this file that is urgent.
+- **Suite: 882 green.**
+- **No work in flight.** `feature/inbound-enquiries` is merged
+  (`--no-ff`, tag `pre-inbound-enquiries` marks the commit before it).
+  `main` is safe to build from.
 
 **Attachment ceilings, both boxes: letter 1 = `0`, replies = `3`.** Set
 15 Sep, deliberately (#73). Photos are refused on the cold first letter
@@ -35,6 +35,47 @@ consequence, so it is not rediscovered as a bug:** a tenant whose
 landlord never replies never attaches a photograph at all, and the case
 escalates on the description alone. The create-case form says so, and
 only in this configuration.
+
+---
+
+## 19 Sep 2026 — the inbound enquiry channel, and what it cost to get it
+
+**➡ `docs/cc-brief-inbound-enquiries.md` and
+`docs/cc-report-inbound-enquiries-implementation.md` are the record.
+`docs/inbound-mail-schematic.txt` shows where any given address ends up
+— read that first if the question is "where does mail to X go".**
+
+Landlords now have a written channel that is not a case reply (#62):
+`landlord-enquiries@`, `privacy@` and `info@` on `mg.renters.rent` are
+recognised by the webhook and forwarded to a private mailbox. Built,
+tested live on production, merged, deployed.
+
+**The constraint that shaped it:** the Mailgun free tier allows ONE
+inbound route and it is spent on the case-reply catch-all. Upgrading buys
+volume, not deliverability (#36), so the discrimination moved into the
+application instead. Mail to those addresses was already reaching the
+webhook and being dropped; only recognition was missing.
+
+**Three things found by walking, which no test would have caught:**
+
+- **#74** — the forward's SPF/DKIM line read `? / ?` on every real send.
+  The code read payload fields Mailgun does not send, and **the test
+  fixture invented the same fields**, so the suite agreed with the bug.
+  The #25 lesson, recurring four days later: a fixture for a third-party
+  payload proves nothing unless it came from a real capture.
+- **#75** — a signed-in visitor clicking a password-reset link was
+  redirected to the dashboard and never saw the form. Stock Breeze
+  scaffolding. It traps a tenant permanently signed in on a phone, who
+  then finds the profile page demanding the password they have
+  forgotten. **Fixed on main, NOT YET DEPLOYED.**
+- **#48's root cause had gone stale** — the apex DOES have MX records
+  now (added ~1 Aug), so mail bounces rather than vanishing. The original
+  diagnosis was right for the world it was written in, and nobody
+  re-checked. A diagnosis has a date.
+
+**Sender checks on forwards are exception-only:** silent when SPF and
+DKIM both pass, loud when they do not. A pass never changes what the
+reader does.
 
 ---
 
@@ -63,42 +104,67 @@ Three were defects no test would have found:
   code.
 
 ---
-
 ## Open actions
 
-1. ~~**gafol reconciled against `migrate:status`.**~~ **DONE 15 Sep** —
-   43 Ran, none pending, identical set to prod. Both boxes are now
-   reconciled and the item open since 27 Jun is closed. (Batch numbers
-   differ between the boxes; that is deployment history, not drift.)
-2. ~~**The dev box still carries the retaliation sentence.**~~ **DONE
-   15 Sep** — #61 is now clear on ALL THREE environments (prod, gafol,
-   dev), verified by querying the templates rather than by trusting the
-   edit. A fresh install gets the corrected text from the seeder.
-3. **#48 — `admin@renters.rent` cannot receive mail**, so its password
-   reset is broken. Open since July, approach agreed 12 Sep, unbuilt.
-   The one open item with real consequences.
-4. ~~**#56** — advise the ICO of renters.rent as a trading name on
-   registration `Z229825X`.~~ **DONE 19 Sep**, reported by Charlie. Entry
-   closed in the snag list; nothing in the repo changed.
-5. ~~**Older, unconfirmed since before 9 Aug:** close out case 3; confirm
-   the registration allowlist.~~ **DONE 19 Sep**, both confirmed by
-   Charlie. They had been carried unconfirmed for six weeks; they are
-   not carried forward.
+**1. DEPLOY `main` TO BOTH BOXES. Do this first.** They are at
+`7f183e2`; main is `22287c2`. The gap contains **#75, a live bug**: a
+signed-in visitor clicking a password-reset link is bounced to the
+dashboard and can never set a new password. Route: Plesk Git pull,
+`config:cache`, `view:clear`. **No composer, no migrations.** Then the
+ledger, per the rule.
 
-**No decision is blocking a build. #62 was ruled 19 Sep:** wording only,
-in letter 1 — tell the landlord how to make a separate enquiry and ask
-that such enquiries stay out of the repair thread. **No link**, so the
-letter has the best chance of avoiding spam treatment. Explicitly a
-first attempt: if it does not hold, think again. Landlords therefore get
-**no** written channel that is not a case reply, which makes `admin@` the
-front door rather than a stopgap.
+**2. #62's sentence into the THREE DATABASES.** The seeder has it
+(commit `9f6855e`), so a fresh box is right — but dev, gafol and prod
+read templates from the DATABASE and the seeder does not overwrite
+existing rows. Each needs the paragraph added through the **ADMIN
+TEMPLATE EDITOR**, never raw SQL: the editor writes
+`letter_text_change_history`, and an unexplained wording change on an
+evidential letter is what you would later have to explain. Exactly the
+trap #61 hit on 15 Sep. **Until this is done, landlords are not told the
+enquiry channel exists** — the build is live but invisible.
 
-**Next build, and it is a prerequisite: #48.** The #62 sentence needs a
-destination and there is none — `admin@renters.rent` has received nothing
-since 4 Jul. Build the Mailgun forward route, prove it receives, THEN
-write the sentence against the address that results.
+The wording, as settled on a dev preview and now in the seeder, sits in
+letter 1's FOOTER below the rule, not in the body:
 
-**#60 is NOT blocked — it is parked, undecided, on purpose.** A tenant
+> If you have a question about renters.rent itself rather than this
+> repair — who we are, why you received this, or how your details are
+> held — please write to landlord-enquiries@mg.renters.rent instead, so
+> this thread stays a record of the repair.
+
+Placement was deliberate: above "Yours faithfully" is the TENANT's
+notice, signed in their name; below the rule is renters.rent speaking.
+A service instruction in the body muddles who is speaking in a document
+that may reach a council or a court.
+
+**3. OPEN QUESTION, Charlie's call:** the FINAL NOTICE has its own
+shorter footer and did NOT get that sentence. Arguably it should — a
+landlord receiving the final notice is the most likely of all to ask who
+we are — but it is the most adversarial letter in the ladder.
+
+**4. #48 — half closed 19 Sep, half deferred with a reason.**
+- CLOSED: the published compliance contact is now
+  `privacy@mg.renters.rent` on both boxes, proven live. A data subject
+  exercising their rights reaches a working address.
+- CLOSED: the PROD admin login moved to a `+admin` plus-addressed
+  mailbox and **a real password reset was completed** — the first time
+  that path has ever been exercised on that account.
+- STILL OPEN: **gafol's admin account is unchanged.** Note the trap
+  before trying it: gafol sends through the Mailgun **sandbox**, which
+  delivers only to **authorised recipients**, and a plus-addressed
+  variant is a different string. Add it in Mailgun first or the reset
+  will not arrive, for a reason that has nothing to do with the fix.
+- STILL OPEN: `DevReset.php:56` and `DevLifecycle.php:29` seed local
+  admins with the dead `admin@renters.rent`. Harmless — Mailpit catches
+  any address — but they perpetuate the string.
+
+**5. Stage 2 of the enquiry channel, when it earns its place.** Today an
+enquiry exists ONLY in Charlie's Outlook: no record, no admin list, no
+trail. Sketched at the end of the brief. Do not build it until the
+traffic says it is needed — that traffic is also the evidence for
+whether #62's wording held.
+
+**No decision is blocking a build.** #60 is parked UNDECIDED on purpose
+(see below); #62 is ruled and built.
 gets no email when their case opens and letter 1 goes out. Asked
 directly on 19 Sep, Charlie chose to defer and keep it on the list as an
 option he has not made his mind up about. Do not re-ask each session;
@@ -116,7 +182,11 @@ or it inflates the ladder.)
 
 **OPEN, and confident — 24:** #1, #9, #10, #12, #13, #17, #18, #25
 (release 2 only), #26, #28, #29, #30, #31, #32, #33, #34, #35, #37, #42,
-#43, #48, #60, #62, #63. (#56 closed 19 Sep.)
+#43, #48 (half closed), #60 (parked, undecided), #62 (built; wording not
+yet in the three databases), #63. (#56 closed 19 Sep.)
+
+**Fixed 19 Sep, DEPLOYED:** #74. **Fixed 19 Sep, NOT DEPLOYED: #75** —
+it is live on both boxes until open action 1 is done.
 
 **~~DISPUTED — 6~~ SETTLED 19 Sep 2026: #4, #14, #15, #16, #20, #21 are
 CLOSED.** Settled against the code, not the documents: all six were built
@@ -172,6 +242,8 @@ exhausted = dead) is a withdrawn draft and is marked as such.
 ## Doc status map (design doc + ledger win when in doubt)
 
 **LIVE — trust these:** `CLAUDE.md`; `environment-state.md`;
+`inbound-mail-schematic.txt`; `cc-brief-inbound-enquiries.md`;
+`cc-report-inbound-enquiries-implementation.md`;
 `llcs-silence-model-design.md` (authoritative); `llcs-snagging-list.txt`;
 `cc-report-fix-cycle-sep-2026-implementation.md`;
 `mailgun-delivery-event-payloads.md`; `attachment-policy-design.md`;
