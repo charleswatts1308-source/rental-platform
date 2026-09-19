@@ -2061,7 +2061,70 @@ Saw:         Mailgun suppression list for mg.renters.rent, Bounces tab:
              nobody is told.
 Expected:    A published contact address receives mail. An admin account
              can complete a password reset.
-Status:      open — APPROACH AGREED 12 Sep 2026. Use
+Status:      open — APPROACH REVISED 19 Sep 2026, and the ROOT CAUSE
+             BELOW IS NOW STALE. See the re-diagnosis immediately below
+             before acting on anything in this entry.
+
+             RE-DIAGNOSED 19 Sep 2026 against live DNS:
+             - The apex renters.rent DOES have MX records now:
+                 @ MX 10 smtp01.hostinguk.net
+                 @ MX 50 mail.hostinguk.net
+               The zone serial is 2026080104 — written around 1 Aug,
+               a MONTH AFTER the 4 Jul bounce. So the "no apex MX"
+               diagnosis was CORRECT WHEN MADE and the world changed
+               under it. Nobody re-checked. Worth remembering as a
+               pattern: a diagnosis has a date, and DNS does not tell
+               you when it moved.
+             - Apex mail therefore reaches Hostinguk, not the web
+               server. It no longer vanishes.
+             - But there is NO MAILBOX. Tested 19 Sep by Charlie from
+               an outside account: "Address not found — your message
+               wasn't delivered to admin@renters.rent because the
+               address couldn't be found or is unable to receive
+               email." A clean bounce is an improvement on July's
+               silence; it is still a published contact nobody can
+               write to.
+             - mg.renters.rent MX (mxa/mxb.eu.mailgun.org) is
+               unchanged and is how case replies arrive. Mailgun is on
+               the EU region, which is also the data-residency answer
+               #36 wanted for any mail provider holding UK tenant data.
+
+             REVISED APPROACH, 19 Sep, replacing the 12 Sep plan:
+             (a) ADMIN LOGIN becomes Charlie's OWN private address.
+                 One row on production. No mailbox, no Mailgun route,
+                 no DNS. The address is never published, so no bot
+                 ever sees it, and its only inbound mail is the
+                 platform's own password-reset link.
+             (b) PUBLISHED COMPLIANCE CONTACT becomes
+                 privacy@mg.renters.rent, delivered by the stage 1
+                 forwarder in docs/cc-brief-inbound-enquiries.md.
+                 ORDERING: the privacy and cookie pages can only be
+                 repointed AFTER stage 1 ships. Repoint them sooner
+                 and they name an address the app still drops.
+             (c) admin@renters.rent is RETIRED. Nothing sends to it,
+                 nothing publishes it.
+
+             WHY NOT the 12 Sep plan (admin@mg + a Mailgun forward
+             route): the Mailgun FREE TIER ALLOWS ONE INBOUND ROUTE and
+             it is already spent on the case-reply catch-all. Upgrading
+             was ruled out under #36 on deliverability grounds. So the
+             route-based answer is unavailable at any acceptable price,
+             and the discrimination moves into the application instead.
+
+             WHY NOT a Plesk mailbox on the apex (now genuinely
+             possible, since the MX points there): it means a SECOND
+             MAIL SYSTEM to maintain and another account to collect,
+             and it contradicts the standing CLAUDE.md rule that
+             production mail is Mailgun in both directions. The only
+             thing it buys is the absence of "mg." from a published
+             address. Rejected 19 Sep as not worth the exchange.
+
+             CONSEQUENCE: clearing the Mailgun suppression entry for
+             admin@renters.rent DROPS OFF THE CRITICAL PATH. It only
+             mattered while something still sent there. Worth clearing
+             for tidiness; nothing waits on it.
+
+             SUPERSEDED 12 Sep TEXT, kept for the reasoning: use
              admin@mg.renters.rent with a Mailgun FORWARD ROUTE to
              Charlie's private address, collected in Outlook. NO DNS
              change, NO hosting change, NO second mail system, no

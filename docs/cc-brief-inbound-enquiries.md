@@ -177,6 +177,30 @@ with a channel column avoids a misnomer that would mislead for years.
 
 ---
 
+## DNS, checked 19 Sep — nothing to change
+
+Stage 1 needs **no DNS record, no Plesk change and no Mailgun route change.**
+The three enquiry addresses already arrive: `mg.renters.rent` has MX to
+`mxa`/`mxb.eu.mailgun.org`, the catch-all matches every local part on it, and
+the payload already reaches this webhook. Only recognition is missing. The
+forward is sent through the existing Mailgun sending setup, so SPF, DKIM and
+DMARC are untouched.
+
+Two findings from the same check, recorded against #48 in full:
+
+- **The apex now has MX** (`smtp01`/`mail.hostinguk.net`), added around 1 Aug
+  per zone serial `2026080104` — a month after the 4 Jul bounce that diagnosed
+  "no apex MX". The diagnosis was right when written; the world moved.
+- **There is no mailbox behind it.** Tested 19 Sep: a clean "Address not found"
+  bounce. Better than July's silent loss, still a dead published contact.
+
+**Why the enquiry addresses stay on `mg.` and do not move to the apex**, even
+though the apex would read better in letter 1: apex mail goes to Hostinguk, not
+to Mailgun, so it would never reach this application. That makes stage 2
+impossible rather than deferred — no record, no admin list, no trail. #62 exists
+precisely because correspondence was landing where only one person could see it.
+The cosmetic cost of "mg." is the price of keeping enquiries inside the system.
+
 ## Open, for Charlie
 
 - **Restore the catch-all route's priority to 0** (changed to 10 on 19 Sep while
