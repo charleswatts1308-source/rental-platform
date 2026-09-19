@@ -85,11 +85,18 @@ Three were defects no test would have found:
    Charlie. They had been carried unconfirmed for six weeks; they are
    not carried forward.
 
-**ONE decision is blocking a build: #62** — landlords have no written
-channel that is not a case reply, so service questions land in the case
-thread where the tenant is the only reader. The answer decides whether
-`admin@` is a stopgap or the front door, and whether the fix is wording
-on the letter or a real landlord-facing channel.
+**No decision is blocking a build. #62 was ruled 19 Sep:** wording only,
+in letter 1 — tell the landlord how to make a separate enquiry and ask
+that such enquiries stay out of the repair thread. **No link**, so the
+letter has the best chance of avoiding spam treatment. Explicitly a
+first attempt: if it does not hold, think again. Landlords therefore get
+**no** written channel that is not a case reply, which makes `admin@` the
+front door rather than a stopgap.
+
+**Next build, and it is a prerequisite: #48.** The #62 sentence needs a
+destination and there is none — `admin@renters.rent` has received nothing
+since 4 Jul. Build the Mailgun forward route, prove it receives, THEN
+write the sentence against the address that results.
 
 **#60 is NOT blocked — it is parked, undecided, on purpose.** A tenant
 gets no email when their case opens and letter 1 goes out. Asked

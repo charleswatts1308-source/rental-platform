@@ -3034,8 +3034,30 @@ Saw:         A landlord replying to a notice can write anything. "Who
              sees them.
 Expected:    Questions about the service reach the service. The tenant
              is not asked to answer for renters.rent.
-Status:      open — snagged 12 Sep 2026. Raised deliberately, not being
-             fixed in this cycle.
+Status:      RULED 19 Sep 2026 by Charlie. WORDING ONLY, in letter 1,
+             and explicitly a FIRST ATTEMPT rather than a settled
+             design: "If this does not work, then I will think again."
+             The letter tells the landlord how to make a separate
+             enquiry and ASKS them to keep such enquiries out of the
+             repair thread.
+             NO LINK, deliberately — a bare address in plain text has a
+             better chance of avoiding spam treatment than an anchor,
+             and letter 1 is the one email in the system that must land.
+             This answers the open question below: landlords get NO
+             written channel that is not a case reply. No account, no
+             token mechanism, no landlord-facing thread. admin@ is
+             therefore the front door, not a stopgap.
+             BLOCKED ON #48 — THE WORDING HAS NO DESTINATION YET.
+             admin@renters.rent has received nothing since 4 Jul
+             (no apex MX; Mailgun has it suppressed as unrouteable), so
+             a sentence pointing landlords at it would send them to a
+             black hole — worse than today, where the question at least
+             reaches a human, albeit the wrong one. Build #48's forward
+             route FIRST, then write the sentence against the address
+             that results. Do not draft wording around an address that
+             does not yet receive.
+             Earlier: snagged 12 Sep 2026, raised deliberately, not
+             fixed in that cycle.
 Notes:       Charlie's words: the case record will definitely collect
              questions about the service, and the tenant will not want
              to answer them.
@@ -3051,10 +3073,16 @@ Notes:       Charlie's words: the case record will definitely collect
              a case reply? If they are ever to be inside a thread they
              need either an account or the token-in-the-reply-address
              mechanism already built for case replies.
-Fix:         Not decided. The cheap end is wording on the letter that
-             sends service questions to the link rather than to Reply.
-             The real end is a landlord-facing channel that records what
-             was said. Do not build until the question above is answered.
+Fix:         Per the 19 Sep ruling: the cheap end, minus the link. A
+             sentence in letter 1 giving a plain-text enquiry address
+             and asking that service questions go there rather than
+             into the repair thread. The "real end" — a landlord-facing
+             channel that records what was said — is NOT being built,
+             and is revisited only if the wording fails to hold.
+             ORDER OF WORK: #48 forward route, prove it receives, then
+             the sentence. Then watch what actually arrives in the case
+             threads; that traffic is the evidence for whether the
+             wording worked.
 --------------------------------------------------------------------
 #63
 Page:        Outbound letters and tenant emails — the tenant's name is
