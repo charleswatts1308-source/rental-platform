@@ -148,8 +148,8 @@ class ForwardInboundEnquiry
             .'<div><strong>Enquiry to:</strong> '.e(Str::lower(trim((string) ($payload['recipient'] ?? '')))).'</div>'
             .'<div><strong>From:</strong> '.e((string) ($payload['from'] ?? 'unknown')).'</div>'
             .'<div><strong>Received:</strong> '.e($now->format('d M Y H:i')).'</div>'
-            .'<div><strong>SPF / DKIM:</strong> '.e((string) ($payload['X-Mailgun-Spf'] ?? '?'))
-            .' / '.e((string) ($payload['X-Mailgun-Dkim-Check-Result'] ?? '?')).'</div>'
+            .'<div><strong>SPF / DKIM:</strong> '.e($this->authResult($payload, 'spf'))
+            .' / '.e($this->authResult($payload, 'dkim')).'</div>'
             .$attachmentLine
             .$spamLine
             .'<div style="margin-top: 8px; color: #666;">Not a case reply. Nothing was written to any '
@@ -157,5 +157,93 @@ class ForwardInboundEnquiry
             .'</div>';
 
         return $header.$original;
+    }
+
+    /**
+     * The SPF or DKIM verdict for a forwarded enquiry.
+     *
+     * #74 — this used to read two TOP-LEVEL payload keys (`X-Mailgun-Spf`,
+     * `X-Mailgun-Dkim-Check-Result`). Mailgun does not send them there, so the
+     * line read "? / ?" on every real forward. The suite agreed with the bug
+     * because the fixture invented the same two keys: a payload shape written
+     * from assumption rather than from observed bytes, which is exactly what
+     * docs/mailgun-delivery-event-payloads.md exists to stop.
+     *
+     * So this looks in three places, cheapest first, and never claims a
+     * verdict it did not find:
+     *   1. the top-level keys, in case a future payload does carry them;
+     *   2. `message-headers`, Mailgun's JSON array of [name, value] pairs —
+     *      Received-SPF, Authentication-Results, DKIM-Signature;
+     *   3. nothing → "not reported", which is honest, unlike "?".
+     */
+    private function authResult(array $payload, string $kind): string
+    {
+        $topLevel = $kind === 'spf'
+            ? trim((string) ($payload['X-Mailgun-Spf'] ?? ''))
+            : trim((string) ($payload['X-Mailgun-Dkim-Check-Result'] ?? ''));
+
+        if ($topLevel !== '') {
+            return $topLevel;
+        }
+
+        $headers = $this->messageHeaders($payload);
+
+        if ($kind === 'spf') {
+            $received = $headers['received-spf'] ?? '';
+
+            if ($received !== '') {
+                return Str::title(Str::before(trim($received), ' '));
+            }
+        }
+
+        $auth = $headers['authentication-results'] ?? '';
+
+        if ($auth !== '' && preg_match('/\b'.$kind.'=([a-z]+)/i', $auth, $matches) === 1) {
+            return Str::title($matches[1]);
+        }
+
+        if ($kind === 'dkim' && ($headers['dkim-signature'] ?? '') !== '') {
+            return 'Signed (unverified)';
+        }
+
+        return 'not reported';
+    }
+
+    /**
+     * Mailgun's `message-headers` is a JSON array of [name, value] pairs.
+     * Returned lower-cased by name; a later duplicate does not overwrite an
+     * earlier one, matching how a reader sees the topmost header.
+     *
+     * @return array<string, string>
+     */
+    private function messageHeaders(array $payload): array
+    {
+        $raw = (string) ($payload['message-headers'] ?? '');
+
+        if ($raw === '') {
+            return [];
+        }
+
+        $decoded = json_decode($raw, true);
+
+        if (! is_array($decoded)) {
+            return [];
+        }
+
+        $headers = [];
+
+        foreach ($decoded as $pair) {
+            if (! is_array($pair) || count($pair) < 2) {
+                continue;
+            }
+
+            $name = Str::lower(trim((string) $pair[0]));
+
+            if ($name !== '' && ! array_key_exists($name, $headers)) {
+                $headers[$name] = (string) $pair[1];
+            }
+        }
+
+        return $headers;
     }
 }

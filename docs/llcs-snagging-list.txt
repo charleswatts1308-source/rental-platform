@@ -3783,3 +3783,48 @@ Fix:         Done. New setting attachments.reply_max, offered in the
              correct, but not what an admin editing the field would
              expect. Note it in the deployment ledger.
 --------------------------------------------------------------------
+#74
+Page:        Inbound enquiry forward — the header block's SPF / DKIM line
+             (ForwardInboundEnquiry). Found 2026-09-19 by Charlie on the
+             FIRST live send of the stage 1 enquiry channel.
+Severity:    cosmetic, but it defeated the only purpose of the line.
+Saw:         Every real forward read "SPF / DKIM: ? / ?". The line exists
+             so a doubtful enquiry can be judged — a landlord claiming to
+             be someone, a request to remove a case — and it reported
+             nothing at all. Three live sends, three identical "? / ?".
+Expected:    The verdicts Mailgun actually carries, or an honest
+             statement that none arrived.
+Status:      FIXED 19 Sep 2026, same day, on feature/inbound-enquiries
+             before merge. Suite 877 green (873 before, 4 added).
+Notes:       ROOT CAUSE, and it is the interesting part: the code read
+             two TOP-LEVEL payload keys, X-Mailgun-Spf and
+             X-Mailgun-Dkim-Check-Result. Mailgun does not send them
+             there — the verdicts live inside message-headers, a JSON
+             array of [name, value] pairs.
+             WHY THE SUITE DID NOT CATCH IT: the fixture invented the
+             same two top-level keys, so the tests and the bug agreed
+             with each other. A payload shape written from ASSUMPTION
+             rather than from observed bytes. That is precisely the
+             failure docs/mailgun-delivery-event-payloads.md was written
+             to prevent for #25, and it recurred four days later in a
+             different file.
+             GENERAL LESSON, worth more than this snag: a test fixture
+             for a third-party payload is a claim about someone else's
+             system. It proves nothing unless it came from a real
+             capture. Green tests over an invented fixture are
+             self-agreement, not evidence.
+Fix:         authResult() now looks in three places, cheapest first:
+             the top-level keys (in case a future payload carries them),
+             then message-headers for Received-SPF /
+             Authentication-Results / DKIM-Signature, then "not
+             reported" — which is honest, where "?" was not. A bare
+             DKIM-Signature with no verdict reads "Signed (unverified)"
+             rather than claiming a pass. Four tests added against the
+             real payload shape, including a malformed message-headers
+             value.
+             STILL UNCONFIRMED: the fix is built against Mailgun's
+             documented shape, not against a capture from this account.
+             The next live enquiry proves it. If it still reads "not
+             reported", capture the payload and write the shape down —
+             do not guess a second time.
+--------------------------------------------------------------------

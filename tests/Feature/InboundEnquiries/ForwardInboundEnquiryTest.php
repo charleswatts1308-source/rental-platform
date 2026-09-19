@@ -130,3 +130,68 @@ it('says so in the body when the original carried attachments', function () {
         return str_contains($mail->renderedBody, 'NOT forwarded');
     });
 });
+
+/*
+ * #74 — the SPF/DKIM line read "? / ?" on every real forward, because the
+ * verdicts are not top-level payload keys. These use Mailgun's actual shape:
+ * message-headers, a JSON array of [name, value] pairs.
+ */
+
+it('reads SPF and DKIM verdicts out of message-headers', function () {
+    $payload = enquiryPayload('landlord-enquiries@mg.renters.rent', [
+        'X-Mailgun-Spf' => null,
+        'X-Mailgun-Dkim-Check-Result' => null,
+        'message-headers' => json_encode([
+            ['Received-SPF', 'pass (google.com: domain of curious@landlord.example designates 1.2.3.4)'],
+            ['Authentication-Results', 'mx.google.com; spf=pass; dkim=pass header.i=@landlord.example'],
+        ]),
+    ]);
+
+    $this->post('/webhooks/mailgun/inbound', $payload)->assertStatus(200);
+
+    Mail::assertSent(InboundEnquiryForward::class, function (InboundEnquiryForward $mail) {
+        return str_contains($mail->renderedBody, 'Pass / Pass');
+    });
+});
+
+it('reports a DKIM signature it cannot verify rather than claiming a pass', function () {
+    $payload = enquiryPayload('privacy@mg.renters.rent', [
+        'X-Mailgun-Spf' => null,
+        'X-Mailgun-Dkim-Check-Result' => null,
+        'message-headers' => json_encode([
+            ['DKIM-Signature', 'v=1; a=rsa-sha256; d=landlord.example; s=s1'],
+        ]),
+    ]);
+
+    $this->post('/webhooks/mailgun/inbound', $payload)->assertStatus(200);
+
+    Mail::assertSent(InboundEnquiryForward::class, function (InboundEnquiryForward $mail) {
+        return str_contains($mail->renderedBody, 'Signed (unverified)');
+    });
+});
+
+it('says "not reported" rather than "?" when the payload carries no verdicts', function () {
+    $payload = enquiryPayload('info@mg.renters.rent', [
+        'X-Mailgun-Spf' => null,
+        'X-Mailgun-Dkim-Check-Result' => null,
+    ]);
+
+    $this->post('/webhooks/mailgun/inbound', $payload)->assertStatus(200);
+
+    Mail::assertSent(InboundEnquiryForward::class, function (InboundEnquiryForward $mail) {
+        return str_contains($mail->renderedBody, 'not reported / not reported')
+            && ! str_contains($mail->renderedBody, '? / ?');
+    });
+});
+
+it('survives a malformed message-headers value', function () {
+    $payload = enquiryPayload('info@mg.renters.rent', [
+        'X-Mailgun-Spf' => null,
+        'X-Mailgun-Dkim-Check-Result' => null,
+        'message-headers' => 'not json at all',
+    ]);
+
+    $this->post('/webhooks/mailgun/inbound', $payload)->assertStatus(200);
+
+    Mail::assertSent(InboundEnquiryForward::class);
+});
