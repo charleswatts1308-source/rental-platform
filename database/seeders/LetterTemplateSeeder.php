@@ -228,6 +228,10 @@ HTML;
 <p style="font-size: 11px; color: #888;">
 This message was sent through renters.rent on behalf of the tenant. Replies are routed back to the tenant via the system; please reply to this email rather than emailing the tenant directly.
 </p>
+
+<p style="font-size: 11px; color: #888;">
+If you have a question about renters.rent itself rather than this repair — who we are, why you received this, or how your details are held — please write to landlord-enquiries@mg.renters.rent instead, so this thread stays a record of the repair.
+</p>
 HTML;
     }
 

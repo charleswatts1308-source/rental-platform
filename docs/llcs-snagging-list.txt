@@ -3828,3 +3828,40 @@ Fix:         authResult() now looks in three places, cheapest first:
              own bytes, not against documentation — which is the
              standard this snag exists to insist on.
 --------------------------------------------------------------------
+#62 — WORDING SHIPPED (entry above remains the record; this is the
+close-out note, kept with #74 rather than rewriting the entry).
+
+SEEDER DONE 19 Sep 2026: letter 1's footer gains a second paragraph
+giving landlord-enquiries@mg.renters.rent as the route for questions
+about the SERVICE rather than the repair. Wording settled by Charlie on
+a dev preview the same day.
+
+PLACEMENT, and it was a deliberate change from his first draft: the
+sentence sits BELOW the rule, in the footer, not in the letter body.
+Everything above "Yours faithfully" is the TENANT's formal notice, sent
+and signed in their name; everything below the rule is renters.rent
+speaking in its own voice. A service-enquiry instruction in the body
+would read as the tenant directing enquiries about a platform to that
+platform, which muddies who is speaking in a document that may end up
+in front of a council or a court. Cost accepted: footer text is 11px
+grey and is read less often than the body.
+
+STILL TO DO, the part that matters, exactly as #61 found: dev, gafol
+and prod read templates from the DATABASE and the seeder does not
+overwrite them. Each box needs the paragraph added through the ADMIN
+TEMPLATE EDITOR, never by raw SQL — the editor writes
+letter_text_change_history, and an unexplained wording change on an
+evidential letter with no audit trail is what you would later have to
+explain.
+
+OPEN QUESTION for Charlie: the FINAL NOTICE template has its own,
+shorter footer ("This message was sent through renters.rent on behalf
+of the tenant.") and did NOT get the sentence. Arguably it should — a
+landlord receiving the final notice is the MOST likely to ask who we
+are — but it is the most adversarial letter in the ladder and its
+wording is his call, not a tidy-up.
+
+FREEZING: outbound letters are frozen on case_messages at send time and
+never re-rendered, so this changes FUTURE letters only. Anything already
+sent keeps the wording it went out with, which is correct.
+--------------------------------------------------------------------
