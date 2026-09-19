@@ -3822,9 +3822,9 @@ Fix:         authResult() now looks in three places, cheapest first:
              rather than claiming a pass. Four tests added against the
              real payload shape, including a malformed message-headers
              value.
-             STILL UNCONFIRMED: the fix is built against Mailgun's
-             documented shape, not against a capture from this account.
-             The next live enquiry proves it. If it still reads "not
-             reported", capture the payload and write the shape down —
-             do not guess a second time.
+             CONFIRMED LIVE 19 Sep 2026, 15:04, on production: a real
+             enquiry to landlord-enquiries@ read "SPF / DKIM: Pass /
+             Pass". So the shape is now proven against this account's
+             own bytes, not against documentation — which is the
+             standard this snag exists to insist on.
 --------------------------------------------------------------------
