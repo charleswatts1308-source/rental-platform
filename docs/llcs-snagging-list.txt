@@ -3865,3 +3865,29 @@ FREEZING: outbound letters are frozen on case_messages at send time and
 never re-rendered, so this changes FUTURE letters only. Anything already
 sent keeps the wording it went out with, which is correct.
 --------------------------------------------------------------------
+#48 — DEFERRAL NOTE, 19 Sep 2026 (the entry above remains the record).
+
+HALF DONE TODAY: the published compliance contact moved to
+privacy@mg.renters.rent on both boxes, delivered by the stage 1
+forwarder and proven live. That closes the COMPLIANCE face of #48 —
+a data subject exercising their rights now reaches a working address.
+
+THE LOCKOUT FACE IS STILL OPEN, deferred by Charlie the same day, for
+a reason worth recording because it is not obvious: EVERY EMAIL
+ADDRESS HE OWNS IS ALREADY IN USE AS A TEST TENANT. A user's email is
+unique, so there is nothing free to move the admin login to without
+first freeing up a test account.
+
+THE WAY ROUND, when he returns to it: plus-addressing. Something like
+charles.watts1308+admin@gmail.com is a DISTINCT string to the database,
+so it passes the uniqueness check, while Gmail (and Outlook) deliver it
+to the ordinary inbox. No new mailbox, no test account destroyed.
+Check first that nothing in the auth path strips the +suffix — the
+landlord-matching code is deliberately +suffix tolerant, but that is a
+different path and does not apply to logins.
+
+RISK WHILE DEFERRED, unchanged: the production admin account (id 1)
+cannot complete a password reset, because its address receives nothing.
+Harmless while the password is known. It bites on the day it is not,
+and there is no second admin account to get in with.
+
