@@ -69,6 +69,56 @@ what ran, so that is not drift and should not be "fixed".
   24 Aug.
 
 ## gafol — permanent staging (gafol.rent) — ✅ BACK ON MAIN (4 Sep 2026)
+### Deploy 19 Sep 2026 — inbound enquiry channel, stage 1
+
+- **Landed on BOTH boxes: `461f3d4`** (`--no-ff` merge of
+  `feature/inbound-enquiries`). gafol and renters.rent confirmed on `main`
+  by Charlie off the Plesk Git panel.
+- **Route:** Plesk Git pull, then `config:cache`. **No `composer install`**
+  (no new dependencies) and **no `migrate --force`**.
+- **MIGRATIONS: NONE.** The release creates and alters nothing, so the
+  CLAUDE.md MariaDB check is not triggered. Stated rather than inferred.
+- **NEW ENV KEY: `MAIL_ENQUIRY_FORWARD_TO`**, set on **production only**,
+  holding a private mailbox. gafol does not have it — deliberate: the
+  sandbox cannot receive, so the enquiry path can never fire there, and
+  an unset key logs a warning and drops rather than misdelivering.
+  `MAIL_ENQUIRY_LOCAL_PARTS` is unset on both and falls back to the
+  production default `landlord-enquiries,privacy,info`.
+- **PROD RAN THE BRANCH FIRST, deliberately.** Acceptance required a live
+  exercise — case-reply handling exists on no other box, since staging is
+  the Mailgun sandbox and is outbound only. So `feature/inbound-enquiries`
+  was deployed to production, exercised, and only then merged; prod was
+  switched back to `main` afterwards and re-verified. Recorded because a
+  reader seeing a branch name in the Plesk panel's history would otherwise
+  assume a mistake.
+- **Verified on production by Charlie, 19 Sep:**
+  - all three enquiry addresses forwarded and arrived
+    (`landlord-enquiries@`, `privacy@`, `info@` on `mg.renters.rent`);
+  - the header block named the arrival address, sender and time;
+  - **Reply answered the original sender**, not the system;
+  - **a real case reply still bound to its case** — the regression that
+    mattered, since the dispatcher now sits in front of the evidential
+    path;
+  - **#74 found on the FIRST live send** (SPF/DKIM read `? / ?`), fixed
+    the same day, and re-proven after redeploy: `Pass / Pass`;
+  - one final send after the switch back to `main`: identical behaviour.
+- **Known, accepted, not faults:**
+  - **Stage 1 keeps no record.** An enquiry exists only in the
+    destination mailbox. Stage 2 is what makes it a record.
+  - **`info@` was junked by Outlook**; `landlord-enquiries@` and
+    `privacy@` reached the inbox. Recipient-side filtering — `info@` is a
+    classic bulk pattern and Microsoft weights the local part. Fixed with
+    a safe-senders entry for `mg.renters.rent`. Of the three, `info@` is
+    the fragile one.
+  - **Replies leave from the destination mailbox's own address** until a
+    send-as identity exists, so replying to a landlord exposes it.
+- **Suite: 877 passed** (861 before this work), green pre- and post-merge.
+- **Unblocked by this deploy, in order:** repoint `privacy.blade.php:60`
+  and `cookies.blade.php:85` to `privacy@mg.renters.rent`; write #62's
+  letter-1 sentence through the ADMIN TEMPLATE EDITOR on each box, never
+  by raw SQL; then #48's remaining half (admin login to Charlie's own
+  address, and the two dev seeders).
+
 
 ### Deploy 15 Sep 2026 — September fix cycle
 
@@ -442,6 +492,23 @@ what ran, so that is not drift and should not be "fixed".
   (staging), renters.rent (production), and main.
 
 ## renters.rent — production (NEW sibling build) — ✅ LIVE (hardening green)
+### Deploy 19 Sep 2026 — inbound enquiry channel, stage 1
+
+- **At `461f3d4`, same commit as gafol.** Full entry is under the gafol
+  section above and is not duplicated here; it covers both boxes.
+- **Production-only facts, recorded where a prod reader will look:**
+  - `MAIL_ENQUIRY_FORWARD_TO` is set **here and nowhere else**, holding a
+    private mailbox. It is the destination for every enquiry to
+    `landlord-enquiries@`, `privacy@` and `info@`.
+  - **This box ran `feature/inbound-enquiries` for about forty minutes**
+    on 19 Sep before the merge, because acceptance needed a live exercise
+    and inbound mail reaches no other environment. Switched back to
+    `main` and re-verified afterwards. A branch name in the Plesk Git
+    history for that afternoon is deliberate, not a slip.
+  - **Live acceptance was run here**, against real Mailgun payloads: three
+    enquiry addresses, a reply round-trip, and a real case reply that
+    still bound to its case.
+
 
 ### Deploy 15 Sep 2026 — September fix cycle
 
