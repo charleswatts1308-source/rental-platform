@@ -1,0 +1,111 @@
+INBOUND AND OUTBOUND MAIL — WHERE IT ACTUALLY GOES
+Written 19 Sep 2026, after the stage 1 enquiry channel went live.
+Answers "where does mail to X end up" without reading three documents.
+
+Authoritative on mechanism; the snag list and environment-state.md win
+on current state if they ever disagree with this.
+
+--------------------------------------------------------------------
+INBOUND - mail a human sends us
+--------------------------------------------------------------------
+
+  landlord-enquiries@ -+
+  privacy@            -+- mg.renters.rent
+  info@               -+  MX -> mxa/mxb.eu.mailgun.org
+  {20-char-token}@    -+         |
+                                 v
+                       +----------------------+
+                       | MAILGUN              |
+                       | 1 route, priority 0  |   <- free tier allows
+                       | catch-all, store()   |      ONE route only
+                       +----------+-----------+
+                                  | POST (signature verified)
+                                  v
+                       +----------------------+
+                       | renters.rent         |
+                       | /webhooks/mailgun/   |
+                       |        inbound       |
+                       +----------+-----------+
+                                  v
+                          who was it sent to?
+                                  |
+       +--------------------------+--------------------------+
+       v                          v                          v
+  20 alphanumeric chars    in local-parts list           anything else
+       |                          |                          |
+       v                          v                          v
+  HandleInboundReply       ForwardInboundEnquiry           logged,
+       |                          |                        dropped
+       v                          v
+   CASE RECORD            MAIL_ENQUIRY_FORWARD_TO
+   (evidential)                   |
+                                  v
+                            Charlie's Outlook
+
+--------------------------------------------------------------------
+OUTBOUND - the password-reset link the app sends Charlie
+--------------------------------------------------------------------
+
+TODAY (BROKEN) -- admin@renters.rent
+  app -> Mailgun -> renters.rent MX -> Hostinguk -> NO MAILBOX -> bounce
+
+PROPOSED -- admin@mg.renters.rent
+  app -> Mailgun -> mg MX -> Mailgun route -> webhook -> dispatcher
+                                                            |
+                                   needs 'admin' in list ---+ (1)
+                                                            v
+                                                        forwarder
+                                   needs FORWARD_TO set ----+ (2)
+                                   needs the app running ---+ (3)
+                                   needs the webhook ok ----+ (4)
+                                                            v
+                                                     Charlie's Outlook
+
+RECOMMENDED -- Charlie's own mailbox
+  app -> Mailgun -> outlook.com MX -> Charlie's Outlook
+
+--------------------------------------------------------------------
+THE POINT OF PUTTING THESE SIDE BY SIDE
+--------------------------------------------------------------------
+
+The enquiry path and the proposed admin path ARE THE SAME PATH.
+
+For enquiries that is fine. If one goes astray it is a nuisance, it is
+noticed eventually, and nothing is lost that cannot be sent again.
+
+For the reset link it is not, because of what (1) to (4) have in
+common: every one of them can be broken BY A BAD DEPLOY - and a bad
+deploy is a likely reason to be reaching for admin access in the first
+place. The recovery route would run through the wreckage.
+
+The recommended line has no numbered failure points. That is the whole
+argument, and it is why #48's login moves to a plain mailbox rather
+than to a tidier-looking address on our own domain.
+
+--------------------------------------------------------------------
+FACTS THAT MAKE THIS WORK, AND ARE EASY TO FORGET
+--------------------------------------------------------------------
+
+- There is NO MAILBOX anywhere on renters.rent or mg.renters.rent.
+  Nothing to log into. For mg. addresses the APPLICATION stands in for
+  a mailbox; for the apex there is nothing at all.
+
+- The apex renters.rent HAS MX records (Hostinguk, added around 1 Aug
+  2026), but no mailbox behind them. Mail bounces cleanly. Before 1 Aug
+  it had no MX and mail vanished into the web server - which is what
+  #48 originally diagnosed, correctly, for the world as it then was.
+
+- Reply tokens are exactly 20 alphanumeric characters. That is what
+  makes the dispatcher's first test safe: no enquiry local part can
+  ever look like one.
+
+- The recognised enquiry addresses live in config/enquiries.php with
+  a production default. MAIL_ENQUIRY_LOCAL_PARTS overrides it, and is
+  set NOWHERE - the default is what runs.
+
+- MAIL_ENQUIRY_FORWARD_TO is set on PRODUCTION ONLY. gafol has no
+  value, deliberately: the sandbox cannot receive, so the path can
+  never fire there.
+
+- Stage 1 keeps NO RECORD of an enquiry. It exists only in the
+  destination mailbox. Stage 2 is what changes that.
