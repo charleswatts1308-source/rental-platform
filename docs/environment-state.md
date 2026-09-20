@@ -119,6 +119,60 @@ what ran, so that is not drift and should not be "fixed".
   by raw SQL; then #48's remaining half (admin login to Charlie's own
   address, and the two dev seeders).
 
+### Deploy 20 Sep 2026 — `29450ed`
+
+- **Landed on BOTH boxes: `29450ed`.** Deployed and tested by Charlie.
+- **Route:** Plesk Git pull, `config:cache`, `view:clear`. **No migrations,
+  no composer step typed by hand** (see the finding below — this is the
+  release that exposed it).
+- **What shipped:**
+  - **#75, all three halves.** A signed-in visitor can now reach the reset
+    form, reach the page that SENDS the link, and FIND that page from the
+    profile form. Each half was found by Charlie asking what the user would
+    do next; each time the wall had moved one step earlier in the path.
+  - **#76** — the reset form says "New Password" / "Confirm New Password".
+  - **#30** — Contact Us notifies on submit with REPLY-TO set to the user,
+    and the admin reply now sends from `info@<inbound domain>` instead of
+    the dead `noreply@renters.rent`.
+  - **#62** — the letter-1 footer sentence, IN THE SEEDER ONLY.
+- **Suite: 889 passed.**
+- **Verified by Charlie:** the full signed-in reset walk end to end on dev
+  (profile link → request → still signed in → email → link → reset form →
+  signed out), and both boxes deployed and tested.
+
+#### FINDING — the two boxes DO NOT deploy the same way
+
+Charlie noticed different output between the boxes and was right; an
+earlier reading of "display only" was wrong and is corrected here.
+Screenshots on 20 Sep show:
+
+- **gafol runs a FULL Laravel deployment:** maintenance mode on → deploy
+  files → **install Composer dependencies** → **install Node.js
+  dependencies** → maintenance mode off → complete.
+- **renters.rent (PROD) does ONE step:** "Deploying files". No maintenance
+  mode, no composer, no npm.
+
+Both repositories are configured identically in the Plesk Git panel (same
+remote, branch `main`, Deployment mode **Manual**, "additional deployment
+actions" **unchecked**), and `composer --version` answers 2.10.3 on both.
+So the difference is NOT the Git settings and NOT a missing composer — it
+is that gafol's site is driven by Plesk's Laravel/PHP application
+integration and prod's is not.
+
+**THE RISK, and it is a production one:** the next release that adds a
+Composer package will install cleanly on gafol and **break prod** — new
+code against an old `vendor/`, surfacing as fatal errors on whichever page
+touches the new library, with nothing in the deploy output to warn anyone.
+Every release so far has been safe only because none added a dependency.
+
+**DECISION NEEDED (next session):** either enable the same application
+integration on prod so both boxes deploy identically, or make
+`composer install --no-dev --optimize-autoloader` a MANDATORY typed step
+in the prod deploy routine and say so in this ledger every time. The first
+is better; the second is the honest minimum. Until one is chosen, treat
+any release touching `composer.json` or `composer.lock` as blocked for
+prod.
+
 ### Deploy 19 Sep 2026 (second, same day) — `7f183e2`
 
 - **Landed on BOTH boxes: `7f183e2`.** gafol and renters.rent confirmed

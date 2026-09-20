@@ -5,7 +5,7 @@ The `docs/` folder has many files and many are stale — this index says
 which to trust and which to ignore, so you don't re-derive state from a
 superseded doc. It is a **router, not a record**: keep it short.
 
-**Last updated:** 2026-09-19.
+**Last updated:** 2026-09-20.
 
 > **Pruned 15 Sep 2026.** This file had grown to 542 lines of discharged
 > history — the #24/#49/#59 build, the 23 Aug capture run, the #25
@@ -19,11 +19,10 @@ superseded doc. It is a **router, not a record**: keep it short.
 
 ## Where everything is, right now
 
-- **`main` = `22287c2`.** Local and origin level.
-- **BOTH BOXES ARE AT `7f183e2` — two commits BEHIND main, and one of
-  them is a live bug fix.** See the first open action below. This is the
-  only thing in this file that is urgent.
-- **Suite: 882 green.**
+- **`main` = `29450ed`.** Local and origin level.
+- **BOTH BOXES ARE AT `29450ed`** — deployed and tested 20 Sep. Nothing
+  undeployed. Ledger written.
+- **Suite: 889 green.**
 - **No work in flight.** `feature/inbound-enquiries` is merged
   (`--no-ff`, tag `pre-inbound-enquiries` marks the commit before it).
   `main` is safe to build from.
@@ -35,6 +34,36 @@ consequence, so it is not rediscovered as a bug:** a tenant whose
 landlord never replies never attaches a photograph at all, and the case
 escalates on the description alone. The create-case form says so, and
 only in this configuration.
+
+---
+
+## 20 Sep 2026 — credentials, Contact Us, and a deploy asymmetry
+
+**#75 took THREE fixes, and the pattern is the point.** Each was verified
+against the symptom I had been shown; each time the wall had moved one
+step earlier in the user's path:
+
+1. the reset FORM was unreachable while signed in — fixed;
+2. the page that SENDS the link was unreachable — fixed;
+3. the LINK to that page did not exist anywhere a signed-in user could
+   see — fixed (it now sits on the profile password form).
+
+Only the third makes the feature usable by the person it was for. A green
+test proved each step in isolation; none walked the path end to end.
+**Charlie found all three by asking what the user would do next** — the
+question the suite never asks. Also **#76**: the reset form now says "New
+Password", not "Password", on the least forgiving screen in the product.
+
+**#30 Contact Us — the August decision was revised, deliberately.** Not
+the threaded rebuild: a notification on submit whose **Reply-To is the
+user**, so an ordinary mail client answers them, plus the admin reply
+moving off the dead `noreply@renters.rent` onto an address the enquiry
+forwarder recognises. Charlie's reasoning: keep it simple until volume
+dictates otherwise, especially now the forwarder exists. Accepted cost:
+his REPLY lives in his mailbox, not on the platform.
+
+**A production risk was found, and it is open — see open action 1a.** The
+two boxes do not deploy the same way.
 
 ---
 
@@ -67,7 +96,7 @@ webhook and being dropped; only recognition was missing.
   redirected to the dashboard and never saw the form. Stock Breeze
   scaffolding. It traps a tenant permanently signed in on a phone, who
   then finds the profile page demanding the password they have
-  forgotten. **Fixed on main, NOT YET DEPLOYED.**
+  forgotten. **Fixed in THREE halves on 20 Sep — see below.**
 - **#48's root cause had gone stale** — the apex DOES have MX records
   now (added ~1 Aug), so mail bounces rather than vanishing. The original
   diagnosis was right for the world it was written in, and nobody
@@ -106,12 +135,9 @@ Three were defects no test would have found:
 ---
 ## Open actions
 
-**1. DEPLOY `main` TO BOTH BOXES. Do this first.** They are at
-`7f183e2`; main is `22287c2`. The gap contains **#75, a live bug**: a
-signed-in visitor clicking a password-reset link is bounced to the
-dashboard and can never set a new password. Route: Plesk Git pull,
-`config:cache`, `view:clear`. **No composer, no migrations.** Then the
-ledger, per the rule.
+**1. ~~DEPLOY `main` to both boxes.~~ DONE 20 Sep** — both at `29450ed`, tested, ledger written.
+
+**1a. DECISION NEEDED: the two boxes DO NOT deploy the same way.** gafol runs a full Laravel deployment (maintenance mode, composer install, npm install); prod copies files and nothing else. Same Git settings on both, composer working on both — the difference is Plesk application integration, present on gafol and absent on prod. **The next release that adds a Composer package will install on gafol and BREAK PROD** (new code, old `vendor/`), with nothing in the deploy output to warn you. Either enable the integration on prod, or make `composer install --no-dev --optimize-autoloader` a mandatory typed step there. **Until one is chosen, treat any release touching `composer.json` as blocked for prod.** Full detail in `environment-state.md`, 20 Sep entry.
 
 **2. #62's sentence into the THREE DATABASES.** The seeder has it
 (commit `9f6855e`), so a fresh box is right — but dev, gafol and prod
@@ -185,8 +211,8 @@ or it inflates the ladder.)
 #43, #48 (half closed), #60 (parked, undecided), #62 (built; wording not
 yet in the three databases), #63. (#56 closed 19 Sep.)
 
-**Fixed 19 Sep, DEPLOYED:** #74. **Fixed 19 Sep, NOT DEPLOYED: #75** —
-it is live on both boxes until open action 1 is done.
+**Fixed and DEPLOYED:** #74 (19 Sep); #75 all three halves, #76 and the
+#30 cheap fix (20 Sep). Nothing fixed is undeployed.
 
 **~~DISPUTED — 6~~ SETTLED 19 Sep 2026: #4, #14, #15, #16, #20, #21 are
 CLOSED.** Settled against the code, not the documents: all six were built
