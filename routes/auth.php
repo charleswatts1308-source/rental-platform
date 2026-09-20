@@ -47,13 +47,27 @@ Route::middleware('guest')->group(function () {
 
     Route::post('login', [AuthenticatedSessionController::class, 'store']);
 
-    Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])
-        ->name('password.request');
-
-    Route::post('forgot-password', [PasswordResetLinkController::class, 'store'])
-        ->name('password.email');
-
 });
+
+/*
+ * #75 (second half) — "forgotten password" is reachable WHILE SIGNED IN.
+ *
+ * Inside the `guest` group these two bounced an authenticated visitor to the
+ * dashboard, which walled off the person the whole feature is for: signed in
+ * on a phone, does not know the password, wants a new one. Profile cannot
+ * help — it demands the current password. Their only route was to sign out
+ * first, and that is precisely what they hesitate to do, because if it goes
+ * wrong they are locked out of an account that was working a minute ago.
+ *
+ * DELIBERATELY NO LOGOUT HERE, unlike the reset routes below. Requesting a
+ * link is not the commitment; opening it is. Staying signed in while you go
+ * and check your inbox means a link that never arrives costs you nothing.
+ */
+Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])
+    ->name('password.request');
+
+Route::post('forgot-password', [PasswordResetLinkController::class, 'store'])
+    ->name('password.email');
 
 /*
  * #75 — the password-reset routes deliberately sit OUTSIDE the `guest` group.

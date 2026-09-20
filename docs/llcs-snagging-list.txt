@@ -3987,3 +3987,35 @@ controller refuses a second reply) is untouched and now slightly
 misleading, since the conversation can continue by email outside it.
 Harmless; note it before anyone reads the guard as the whole story.
 --------------------------------------------------------------------
+#75 — SECOND HALF, 20 Sep 2026. Raised BY CHARLIE reading the first
+fix: "but if you are signed in you can't get to the Forgotten link".
+He was right, and the first fix was half a fix.
+
+WHAT WAS STILL WRONG: /forgot-password was ALSO inside the `guest`
+group. So the person #75 exists for — signed in on a phone, does not
+know the password, wants a new one — hit the wall one step EARLIER
+than the fix reached. Profile cannot help them: it demands the current
+password, which is the thing they have forgotten. Their only route was
+to sign out first, and that is exactly what they hesitate to do,
+because if it goes wrong they are locked out of an account that was
+working a minute ago.
+
+The original #75 was still reachable (request the link on a laptop,
+click it on the signed-in phone; or open an older reset email), which
+is why the first fix was worth shipping — but the COMMON case was
+still walled off.
+
+FIXED 20 Sep 2026: both forgot-password routes move out of the `guest`
+group. Suite 888 green (885 before, 3 added).
+
+DELIBERATE ASYMMETRY, and the reason is the whole point of the entry:
+requesting a link does NOT sign you out, while opening one does.
+Requesting is not the commitment — opening is. Staying signed in while
+you go and check your inbox means a link that never arrives costs you
+nothing, which is precisely the fear that stops people trying.
+
+LESSON, worth more than the fix: the first fix was verified by a test
+that proved the reset FORM was reachable while signed in. It was. The
+route to that form was not, and no test asked. Fixing the symptom you
+were shown is not the same as fixing the path the user walks.
+--------------------------------------------------------------------

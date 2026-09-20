@@ -144,4 +144,44 @@ class PasswordResetTest extends TestCase
             return true;
         });
     }
+
+    /*
+     * #75, second half — the wall one step earlier. "Forgotten password" was
+     * also guest-only, so the signed-in tenant who has forgotten the password
+     * could not even ASK for a link. Profile cannot help them: it demands the
+     * current password.
+     */
+
+    public function test_a_signed_in_visitor_can_reach_the_forgotten_password_page(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)->get('/forgot-password')->assertStatus(200);
+    }
+
+    public function test_a_signed_in_visitor_can_request_a_reset_link(): void
+    {
+        Notification::fake();
+
+        $user = User::factory()->create();
+
+        $this->actingAs($user)->post('/forgot-password', ['email' => $user->email]);
+
+        Notification::assertSentTo($user, ResetPassword::class);
+    }
+
+    public function test_requesting_a_link_does_not_sign_you_out(): void
+    {
+        Notification::fake();
+
+        $user = User::factory()->create();
+
+        $this->actingAs($user)->post('/forgot-password', ['email' => $user->email]);
+
+        // Deliberate, and the opposite of the reset route's behaviour.
+        // Requesting a link is not the commitment — opening it is. Staying
+        // signed in means a link that never arrives costs the user nothing,
+        // which is the fear that stops people trying in the first place.
+        $this->assertAuthenticatedAs($user);
+    }
 }
