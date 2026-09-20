@@ -184,4 +184,19 @@ class PasswordResetTest extends TestCase
         // which is the fear that stops people trying in the first place.
         $this->assertAuthenticatedAs($user);
     }
+
+    /*
+     * #75, third half. Charlie again: "a user cannot actually nav to the
+     * forgotten password page without knowing the url". The route was open
+     * but the only link to it was on the login screen, which a signed-in user
+     * cannot reach. Open and unreachable is not fixed.
+     */
+    public function test_the_profile_password_form_offers_a_way_out(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->get('/profile')
+            ->assertSee(route('password.request'));
+    }
 }

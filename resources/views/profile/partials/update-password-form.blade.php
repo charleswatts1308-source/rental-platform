@@ -17,6 +17,19 @@
             <x-input-label for="update_password_current_password" :value="__('Current Password')" />
             <x-text-input id="update_password_current_password" name="current_password" type="password" class="form-control" autocomplete="current-password" />
             <x-input-error :messages="$errors->updatePassword->get('current_password')" class="mt-2" />
+
+            {{-- #75 — the way out for someone who cannot fill this field in.
+                 This form is where a user who has forgotten their password
+                 gets stuck: it asks for the very thing they do not have, and
+                 the only other link to the reset page lives on the login
+                 screen, which they cannot reach while signed in. Without this
+                 line the route is open but unreachable by navigation. --}}
+            @if (Route::has('password.request'))
+                <div class="form-text">
+                    {{ __("Can't remember it?") }}
+                    <a href="{{ route('password.request') }}">{{ __('Reset your password by email') }}</a>.
+                </div>
+            @endif
         </div>
 
         <div class="mb-3">

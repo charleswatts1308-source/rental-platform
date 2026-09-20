@@ -4044,3 +4044,29 @@ Notes:       Worth keeping for the general point rather than the two
 Fix:         Two label strings in the Blade view. Both still wrapped in
              __() so they stay translatable.
 --------------------------------------------------------------------
+#75 — THIRD HALF, 20 Sep 2026. Charlie again: "am i right that a user
+cannot actually nav to the forgotten password page without knowing the
+url". He was right a second time.
+
+The route was opened to signed-in users in the second half, but the
+ONLY link to it lives on the LOGIN screen — which a signed-in user
+cannot reach, for the same guest-middleware reason. So the page was
+open and unreachable by navigation. Nobody types a URL.
+
+FIXED: the profile's Update Password form now carries "Can't remember
+it? Reset your password by email". That is exactly where the user gets
+stuck, because that form asks for the current password — the one thing
+they do not have. Suite 889 green.
+
+THE PATTERN, which is the reason all three halves are recorded
+separately rather than merged into one tidy entry: each fix was
+verified against the symptom I had been SHOWN, and each time the wall
+had simply moved one step earlier in the user's path.
+  1st: the reset FORM was unreachable while signed in.  Fixed.
+  2nd: the page that SENDS the link was unreachable.     Fixed.
+  3rd: the LINK to that page did not exist.              Fixed.
+Only the third makes the feature usable by the person it was for. A
+green test proved each step in isolation; none of them walked the path
+end to end. Charlie found all three by asking what the user would
+actually do next.
+--------------------------------------------------------------------
