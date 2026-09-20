@@ -3938,3 +3938,52 @@ Fix:         The two routes move OUT of the `guest` group, and
              form, reaching it ends their session, and a signed-in
              visitor can complete a reset for another account.
 --------------------------------------------------------------------
+#30 — CHEAP FIX SHIPPED 20 Sep 2026 (the entry above remains the
+record of the August decision, which this DEPARTS FROM deliberately).
+
+DECISION REVISED 20 Sep 2026 by Charlie: "keep it simple until volume
+dictates otherwise, especially as we have new mechanism." The 1 Aug
+decision was option (b), a real two-way threaded conversation. That is
+NOT built and is not scheduled. What changed since August is that the
+enquiry forwarder now exists, so the cheap option buys most of the
+value without the threading.
+
+WHAT WAS WRONG, both halves failing SILENTLY:
+  (a) store() wrote a contact_messages row and did nothing else. No
+      mail, no notification. The only way to learn a message existed
+      was to log into admin and look — while the user had been told on
+      screen "Your message has been sent. We will get back to you
+      soon." That promise was kept only by Charlie's memory.
+  (b) the admin reply sent from noreply@renters.rent with NO Reply-To.
+      The apex has no mailbox, so a user who read the answer and hit
+      Reply was writing into nothing. Their follow-up vanished and
+      neither side found out.
+
+WHAT WAS BUILT (3 changes, no schema, no migration):
+  1. ContactMessageReceived — a notification to the mailbox in
+     enquiries.forward_to. REPLY-TO IS THE USER, which is the whole
+     mechanism: answering from an ordinary mail client reaches the
+     person who wrote in. From is info@<inbound domain>.
+  2. ContactReply now sends from info@<inbound domain> instead of the
+     dead noreply@. A user's reply therefore lands on an address the
+     enquiry forwarder RECOGNISES, reaches the webhook, and is
+     forwarded on. The conversation continues through the mechanism
+     built for landlord enquiries rather than through new threading.
+  3. App\Support\ServiceAddress — one place that answers "what address
+     does renters.rent send as, speaking for itself", derived from the
+     inbound domain so it is always one the forwarder recognises.
+
+ORDER INSIDE store(): the row is written FIRST, the notification is
+best-effort after it. A mail failure must never cost us the message.
+
+ACCEPTED COST, stated so it is not rediscovered as a defect: Charlie's
+REPLY lives in his mailbox and NOT on the platform. Only the user's
+original message is a row. Same trade as the stage 1 enquiry forwarder.
+If volume ever justifies a real thread, the case token machinery
+({token}@ binding inbound mail to a record) is what it would reuse.
+
+STILL OPEN under #30: the one-shot guard on admin replies (the
+controller refuses a second reply) is untouched and now slightly
+misleading, since the conversation can continue by email outside it.
+Harmless; note it before anyone reads the guard as the whole story.
+--------------------------------------------------------------------
