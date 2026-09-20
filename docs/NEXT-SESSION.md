@@ -137,7 +137,7 @@ Three were defects no test would have found:
 
 **1. ~~DEPLOY `main` to both boxes.~~ DONE 20 Sep** — both at `29450ed`, tested, ledger written.
 
-**1a. DECISION NEEDED: the two boxes DO NOT deploy the same way.** gafol runs a full Laravel deployment (maintenance mode, composer install, npm install); prod copies files and nothing else. Same Git settings on both, composer working on both — the difference is Plesk application integration, present on gafol and absent on prod. **The next release that adds a Composer package will install on gafol and BREAK PROD** (new code, old `vendor/`), with nothing in the deploy output to warn you. Either enable the integration on prod, or make `composer install --no-dev --optimize-autoloader` a mandatory typed step there. **Until one is chosen, treat any release touching `composer.json` as blocked for prod.** Full detail in `environment-state.md`, 20 Sep entry.
+**1a. DECISION NEEDED: the two boxes DO NOT deploy the same way.** gafol runs a full Laravel deployment (maintenance mode, composer install, npm install); prod copies files and nothing else. Same Git settings on both, composer working on both — the difference is Plesk application integration, present on gafol and absent on prod. **The next release that adds a Composer package will install on gafol and BREAK PROD** (new code, old `vendor/`), with nothing in the deploy output to warn you. Either enable the integration on prod, or make `composer install --no-dev --optimize-autoloader` a mandatory typed step there. **Until one is chosen, treat any release touching `composer.json` as blocked for prod.** **➡ `docs/revision-2026-09-20-deploy-asymmetry.md` is the record** — what was believed, what is actually true, why (the Laravel application is linked to the Git repo on gafol and not on prod), and the agreed handling: run composer from prod's Laravel Toolkit COMPOSER TAB after any deploy that changes `composer.lock`, and do NOT try to link the repo on prod. Also in `environment-state.md`, 20 Sep entry.
 
 **2. #62's sentence into the THREE DATABASES.** The seeder has it
 (commit `9f6855e`), so a fresh box is right — but dev, gafol and prod
@@ -268,6 +268,8 @@ exhausted = dead) is a withdrawn draft and is marked as such.
 ## Doc status map (design doc + ledger win when in doubt)
 
 **LIVE — trust these:** `CLAUDE.md`; `environment-state.md`;
+`revision-2026-09-20-deploy-asymmetry.md` (**read before any deploy that
+touches composer**);
 `inbound-mail-schematic.txt`; `cc-brief-inbound-enquiries.md`;
 `cc-report-inbound-enquiries-implementation.md`;
 `llcs-silence-model-design.md` (authoritative); `llcs-snagging-list.txt`;
