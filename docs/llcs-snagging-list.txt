@@ -4019,3 +4019,28 @@ that proved the reset FORM was reachable while signed in. It was. The
 route to that form was not, and no test asked. Fixing the symptom you
 were shown is not the same as fixing the path the user walks.
 --------------------------------------------------------------------
+#76
+Page:        Password reset form (auth/reset-password), both fields.
+             Raised 2026-09-20 by Charlie while walking the #75 fix on
+             dev: "I personally get easily confused over creds."
+Severity:    cosmetic, but on a screen where confusion is expensive.
+Saw:         The fields were labelled "Password" and "Confirm
+             Password". On a form reached from an emailed link, by
+             someone who has just failed to remember a password, plain
+             "Password" is genuinely ambiguous — it reads as though it
+             might be asking for the OLD one.
+Expected:    Labels that say which password is wanted.
+Status:      FIXED 20 Sep 2026, same day. "New Password" and "Confirm
+             New Password". Suite 888 green, unchanged — no test
+             asserted on these strings.
+Notes:       Worth keeping for the general point rather than the two
+             words: this screen is reached by someone who has ALREADY
+             hit one failure, from an email, possibly on a phone. It is
+             the least forgiving moment in the product for an ambiguous
+             label. The same reasoning is why #75 matters at all.
+             The input `autocomplete="new-password"` attributes were
+             already correct, so password managers were never confused
+             — only the human was.
+Fix:         Two label strings in the Blade view. Both still wrapped in
+             __() so they stay translatable.
+--------------------------------------------------------------------
