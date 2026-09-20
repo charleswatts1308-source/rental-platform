@@ -19,9 +19,10 @@ superseded doc. It is a **router, not a record**: keep it short.
 
 ## Where everything is, right now
 
-- **`main` = `29450ed`.** Local and origin level.
-- **BOTH BOXES ARE AT `29450ed`** — deployed and tested 20 Sep. Nothing
-  undeployed. Ledger written.
+- **`main` = the 20 Sep docs tip; code tip is `29450ed`.** Local and origin level.
+- **BOTH BOXES ARE AT `29450ed`** — deployed and tested 20 Sep, ledger
+  written. Everything ahead of them on `main` is DOCS ONLY: the deploy
+  revision doc and this router. **No code is undeployed.**
 - **Suite: 889 green.**
 - **No work in flight.** `feature/inbound-enquiries` is merged
   (`--no-ff`, tag `pre-inbound-enquiries` marks the commit before it).
@@ -137,7 +138,22 @@ Three were defects no test would have found:
 
 **1. ~~DEPLOY `main` to both boxes.~~ DONE 20 Sep** — both at `29450ed`, tested, ledger written.
 
-**1a. DECISION NEEDED: the two boxes DO NOT deploy the same way.** gafol runs a full Laravel deployment (maintenance mode, composer install, npm install); prod copies files and nothing else. Same Git settings on both, composer working on both — the difference is Plesk application integration, present on gafol and absent on prod. **The next release that adds a Composer package will install on gafol and BREAK PROD** (new code, old `vendor/`), with nothing in the deploy output to warn you. Either enable the integration on prod, or make `composer install --no-dev --optimize-autoloader` a mandatory typed step there. **Until one is chosen, treat any release touching `composer.json` as blocked for prod.** **➡ `docs/revision-2026-09-20-deploy-asymmetry.md` is the record** — what was believed, what is actually true, why (the Laravel application is linked to the Git repo on gafol and not on prod), and the agreed handling: run composer from prod's Laravel Toolkit COMPOSER TAB after any deploy that changes `composer.lock`, and do NOT try to link the repo on prod. Also in `environment-state.md`, 20 Sep entry.
+**1a. STANDING DEPLOY RULE, and a decision still open: THE TWO BOXES DO NOT DEPLOY THE SAME WAY.**
+
+**The rule, effective now:** any release that changes `composer.json` or
+`composer.lock` is NOT done on prod until you run
+`install --no-dev --optimize-autoloader` from prod's **Laravel Toolkit
+Composer tab** — it exists and works, no terminal needed. Record that you
+did it in that deploy's ledger entry. gafol needs nothing: it does this
+itself.
+
+**The decision still open:** whether to build the DRIFT CHECK (an artisan
+command comparing `composer.lock` against what is installed in `vendor/`)
+so the box says its dependencies are stale instead of waiting for a user
+to find the page that breaks. Not built. Recommended, because every other
+failure this week was silent too.
+
+**The background:** gafol runs a full Laravel deployment (maintenance mode, composer install, npm install); prod copies files and nothing else. Same Git settings on both, composer working on both — the difference is Plesk application integration, present on gafol and absent on prod. **The next release that adds a Composer package will install on gafol and BREAK PROD** (new code, old `vendor/`), with nothing in the deploy output to warn you. Either enable the integration on prod, or make `composer install --no-dev --optimize-autoloader` a mandatory typed step there. **Until one is chosen, treat any release touching `composer.json` as blocked for prod.** **➡ `docs/revision-2026-09-20-deploy-asymmetry.md` is the record** — what was believed, what is actually true, why (the Laravel application is linked to the Git repo on gafol and not on prod), and the agreed handling: run composer from prod's Laravel Toolkit COMPOSER TAB after any deploy that changes `composer.lock`, and do NOT try to link the repo on prod. Also in `environment-state.md`, 20 Sep entry.
 
 **2. #62's sentence into the THREE DATABASES.** The seeder has it
 (commit `9f6855e`), so a fresh box is right — but dev, gafol and prod
@@ -316,6 +332,21 @@ Answer him with symptom, cost, and whether it is worth fixing now — not
 code paths, not framework internals, not file:line. He does not know the
 codebase and is not a PHP developer. The mechanism belongs in the snag
 entry, which is mine to read.
+
+**NEVER correct a history doc.** Ruled 20 Sep 2026: "they are more useful
+staying unchanged even if wrong. They record what was, or was thought, to
+be happening. New understanding should go into a revision doc." So install
+recipes, phase reports, deploy plans and write-ups are left exactly as
+written, however stale — see `revision-2026-09-20-deploy-asymmetry.md` for
+the shape. The living docs are the exception and ARE rewritten: this
+router, `environment-state.md`, the snag list (append a dated note under
+the existing entry, do not rewrite it) and the design doc.
+
+**When he says something behaves oddly, believe him before explaining it
+away.** On 20 Sep he said twice that the two boxes deployed differently
+and was twice told it was cosmetic. He was right both times, and the
+answer turned out to be a production risk. He is the only one who watches
+these screens.
 
 ---
 
