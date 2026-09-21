@@ -173,3 +173,62 @@ failure.
 
 He is the only person who watches those screens. When he says something
 looks odd, that is data.
+
+---
+
+## 8. Building or deleting a site — the outcomes to avoid
+
+Two of these bite hard and neither is obvious from the panel. They are
+recorded here because the fix above may involve **building a test site**,
+which is exactly the activity that runs into them.
+
+### (a) Deleting `ukrenters.rent` can delete STAGING with it
+
+From the install recipe, and it has not changed:
+
+> `gafol.rent` and `dotrent.net` are nested **INSIDE** the
+> `ukrenters.rent` vhost directory on Plesk's filesystem
+> (`/var/www/vhosts/ukrenters.rent/<sitename>/`). If `ukrenters.rent` is
+> deleted by removing the whole `vhosts/ukrenters.rent/` tree, the nested
+> sites will be deleted too.
+
+`ukrenters.rent` is the earliest Linux site, hand-built during the HUK
+ticket period, and is marked "scheduled for eventual deletion".
+`dotrent.net` was retired on 1 Aug 2026, so **gafol.rent is what is still
+in there** — the box every release is proven on before production sees it.
+
+**The rule:** delete the `ukrenters.rent` SITE through Plesk's UI, never
+the filesystem directory. Before deleting anything, confirm what is nested
+underneath it.
+
+**Any NEW site built for testing is likely to be nested the same way.**
+Check where Plesk actually puts it, and note that its removal carries the
+same risk in reverse.
+
+### (b) Toolkit against a NON-EMPTY document root is unknown territory
+
+Two Toolkit actions write files into the application root:
+
+- **"Install Skeleton"** — lays down a fresh Laravel install. Fine on a
+  new empty site, which is what recipe STEP 3 is; **catastrophic** on a
+  site that already holds the application.
+- **"Add application from Git"** — the flow that creates the repository
+  link. Intended for a site being built from scratch.
+
+Hostinguk were asked directly what happens when the document root is not
+empty and said they **cannot say** — it may refuse, merge, or overwrite —
+and explicitly did not recommend trying it on production.
+
+**The rule:** both are for an EMPTY document root, at build time, before
+anything exists. Never point either at a live site. If the Toolkit link is
+ever wanted on an existing site, it is a rebuild of that site, not a
+setting change — which is precisely why the deployment-actions route in
+section 6 is the one agreed.
+
+### (c) The ordering that avoids all of this on a future site
+
+Create the application via Toolkit's **"Add application from Git"** flow
+**first**, into an empty site, and let it bring the code down. Do not
+deploy through the Git panel and register the application afterwards —
+that is the sequence that produced this whole document, and it cannot be
+corrected later without rebuilding the site.
