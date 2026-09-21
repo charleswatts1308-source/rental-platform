@@ -103,3 +103,84 @@ check makes the box say so itself, which is worth more than a rule someone
 has to remember six months from now.
 
 Not built as at 20 Sep 2026.
+
+---
+
+# UPDATE — 21 Sep 2026: Hostinguk's reply, and the agreed route
+
+Appended, not rewritten. Everything above is what was known on 20 Sep and
+stands as the record of it.
+
+## What HUK confirmed
+
+**The diagnosis was right, and the cause is the creation order.**
+gafol.rent's application was created through Toolkit's own **"Add
+application from Git"** flow, so Toolkit knows the repository, shows the
+Deployment tab and last commit, and runs the full pipeline. renters.rent
+was deployed through the standard **Git panel** and registered as an
+existing application afterwards, so Toolkit never recorded a repository
+for it.
+
+**There is no supported way to attach an existing repository to an
+existing Toolkit application** — they are not aware of one and would not
+guess on a live production site. **And they will not say what Toolkit does
+to a non-empty document root** if the repository is recreated from there:
+it may refuse, merge or overwrite. Not to be tried on production; test on
+a staging subdomain or a copy first if the Toolkit link is ever wanted.
+
+**For any FUTURE site: create the application via Laravel Toolkit's "Add
+application from Git" flow from the start**, rather than deploying through
+the Git panel first. That single step is what the install recipe did not
+know to specify.
+
+## The agreed route — deployment actions, not the Toolkit link
+
+Reproduce the pipeline in the **Git panel's "additional deployment
+actions"** box instead. Their reasoning, and it is sound:
+
+- **Git only writes tracked files**, so `.env`, `storage/` and the
+  database are untouched — *provided* `.env` and `storage/` are not
+  tracked.
+- **Fully reversible:** unticking the option returns the Git panel to
+  today's "Deploying files" behaviour.
+- Take a **full backup**, files and database, first.
+
+### Their proviso, VERIFIED 21 Sep 2026
+
+Checked against the repository rather than assumed:
+
+- **`.env` is NOT tracked.** Only `.env.example` is.
+- **`storage/` holds nothing but Laravel's standard `.gitignore`
+  placeholder files** — no logs, no uploads, no framework cache. Case
+  attachments live under ignored paths.
+- **`vendor/` is NOT tracked.**
+
+So a deploy can only ever rewrite a handful of placeholder files with
+identical content. The condition is met.
+
+## The job, in order, when it is done
+
+1. **Full backup** — files and database.
+2. **Find the real paths.** In prod's Toolkit terminal: `command -v
+   composer` and `command -v php`. This is the only fiddly part, and it is
+   the "yak" the install recipe warns about — the actions box runs with a
+   limited environment, so bare `composer` and `php` may not resolve even
+   though they work in the terminal. Full paths, or it fails on the day.
+3. **Fill the actions box** with composer install plus the cache
+   commands, using those paths.
+4. **Test with a docs-only commit.** Watch the progress window; confirm
+   the site is up afterwards.
+5. **If anything looks wrong, untick the box.** That is the rollback.
+
+**LEAVE MAINTENANCE MODE OUT.** gafol gets it safely because Toolkit
+manages the whole sequence and brings the site back up. Hand-rolled in the
+actions box, a failure partway through can leave production **down** with
+nothing scheduled to lift it. Deploys take seconds; the exposure is not
+worth the risk of a stuck maintenance page.
+
+## Until that is done
+
+The standing rule from 20 Sep still applies: a release changing
+`composer.json` or `composer.lock` is not finished on prod until composer
+is run from the Laravel Toolkit **Composer tab**, and the ledger entry for
+that deploy says so.
