@@ -184,3 +184,12 @@ The standing rule from 20 Sep still applies: a release changing
 `composer.json` or `composer.lock` is not finished on prod until composer
 is run from the Laravel Toolkit **Composer tab**, and the ledger entry for
 that deploy says so.
+
+---
+
+**SUPERSEDED AS THE PLACE TO READ, 21 Sep 2026 — content left intact.**
+`docs/deploy-pipeline-divergence.md` now carries the whole story in one
+place: how the two environments came to differ, the differences in full,
+what is identical, HUK's advice, and what is agreed. This file stays as
+the day-by-day record of how it was discovered — including the two
+readings that were wrong — because that is the part a tidy summary loses.
