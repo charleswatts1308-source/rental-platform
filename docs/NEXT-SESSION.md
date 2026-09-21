@@ -147,7 +147,9 @@ Composer tab** — it exists and works, no terminal needed. Record that you
 did it in that deploy's ledger entry. gafol needs nothing: it does this
 itself.
 
-**The decision still open:** whether to build the DRIFT CHECK (an artisan
+**HUK replied 21 Sep — the route is now decided, see the revision doc's 21 Sep update.** No supported way to link the repo to prod's Toolkit application, and they will not say what recreating it does to a non-empty docroot — so that is out. Instead: reproduce the pipeline in the Git panel's **additional deployment actions**, which touches only tracked files and is undone by unticking a box. Their proviso is VERIFIED — `.env`, `storage/` data and `vendor/` are all untracked. Job not yet done; full backup first, and find the real `composer` and `php` paths before filling the box. **Future sites: create the application via Toolkit's "Add application from Git" flow from the start** — the one step that prevents a repeat.
+
+**Also still open:** whether to build the DRIFT CHECK (an artisan
 command comparing `composer.lock` against what is installed in `vendor/`)
 so the box says its dependencies are stale instead of waiting for a user
 to find the page that breaks. Not built. Recommended, because every other
