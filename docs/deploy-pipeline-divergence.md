@@ -232,3 +232,53 @@ Create the application via Toolkit's **"Add application from Git"** flow
 deploy through the Git panel and register the application afterwards —
 that is the sequence that produced this whole document, and it cannot be
 corrected later without rebuilding the site.
+
+---
+
+## 9. The skeleton, and why the recipe produces PROD's shape
+
+### The wrong way to build a site: skip "Install Skeleton"
+
+The install recipe's sequence is deliberate:
+
+- **STEP 3** — Laravel Toolkit → **Install Skeleton**.
+- **STEP 5** — Git extension → Add Repository → initial deploy.
+  *"Repo files now replace the skeleton install."*
+- **STEP 6 (marked CRITICAL)** — recreate `storage/` subdirectories,
+  which are gitignored and therefore absent after a Git deploy.
+
+**Install Skeleton is what makes the site a working Laravel site**: the
+document root pointed at `public/`, a `.env`, an app key, the directory
+layout and permissions Laravel expects. The Git deploy then overwrites the
+application files on top of that working base.
+
+**Deploying the repository into a bare site without the skeleton gives you
+files that do not run.** No `.env`, no `APP_KEY`, no `public/` docroot, and
+missing `storage/` subdirectories — the last of which produces a 500
+*"Please provide a valid cache path"* on first load. A site that exists,
+serves nothing useful, and gives no obvious clue why.
+
+That is the failure to avoid when building any new site.
+
+### The consequence nobody noticed until 21 Sep 2026
+
+**STEP 5 connects the repository through the GIT EXTENSION, not through
+Laravel Toolkit's "Add application from Git" flow.**
+
+So **the recipe as written produces the renters.rent shape** — Git copies
+files, Toolkit never records a repository, no Deployment tab, no composer
+on deploy. Anyone following it today gets a production-shaped box.
+
+`gafol.rent` does not match the recipe on this point. Per HUK it was
+created through Toolkit's own Add-application-from-Git flow, which is why
+it has the Deployment tab and the full pipeline.
+
+**This is stated here, and NOT corrected in the recipe.** The recipe
+records the route actually taken, and that route is how prod came to be
+what it is — which is evidence worth keeping. But read together with
+section 4: if a future site should behave like gafol, **STEP 3 + STEP 5
+are the wrong pair for it**. Use Toolkit's "Add application from Git" into
+an empty site instead, and take the skeleton's work as done by that flow.
+
+**Either way the STEP 6 storage check still applies** — the directories are
+gitignored under every route.
