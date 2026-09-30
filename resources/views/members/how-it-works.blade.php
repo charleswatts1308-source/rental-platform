@@ -24,7 +24,10 @@
 home, somewhere you've settled for years. The repair process doesn't change. If something
 needs fixing and your landlord isn't acting, the notice is the same one, whoever you are.</p>
 
-<p class="text-muted">Student · Young professional · Family · Long-term renter</p>
+{{-- Removed 30 Sep 2026: "Student · Young professional · Family · Long-term
+     renter". A list of categories invites the reader to look for themselves in
+     it and conclude they are not there. The paragraph above already makes the
+     point without asking anyone to pick a label. --}}
 
 <hr class="my-4">
 
@@ -49,6 +52,15 @@ the record. But not all, and it's worth knowing where the process can go.</p>
 <h5 class="mb-2 mt-4">The landlord engages but stalls</h5>
 <p>Some movement, no resolution. The record captures the delay — dates, what was promised,
 what wasn't done.</p>
+
+{{-- Added 30 Sep 2026, carried over from the old homepage's "Negative" column
+     when that page was cut back to a door. This is the outcome a tenant most
+     needs warning about: the process has worked exactly as intended and they
+     still do not have their repair. --}}
+<h5 class="mb-2 mt-4">The landlord refuses</h5>
+<p>A reply that says no — either unwilling, or unable to afford the work. The process has
+done its job and the answer is still no. The record shows the request, the refusal and the
+reason given, which is what any outside body would want to see.</p>
 
 <h5 class="mb-2 mt-4">The landlord stays silent</h5>
 <p>The notice period passes with no response. The record shows a clear, dated account of
