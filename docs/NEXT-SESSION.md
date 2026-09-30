@@ -5,7 +5,7 @@ The `docs/` folder has many files and many are stale — this index says
 which to trust and which to ignore, so you don't re-derive state from a
 superseded doc. It is a **router, not a record**: keep it short.
 
-**Last updated:** 2026-09-20.
+**Last updated:** 2026-09-30.
 
 > **Pruned 15 Sep 2026.** This file had grown to 542 lines of discharged
 > history — the #24/#49/#59 build, the 23 Aug capture run, the #25
@@ -19,11 +19,13 @@ superseded doc. It is a **router, not a record**: keep it short.
 
 ## Where everything is, right now
 
-- **`main` = the 20 Sep docs tip; code tip is `29450ed`.** Local and origin level.
-- **BOTH BOXES ARE AT `29450ed`** — deployed and tested 20 Sep, ledger
-  written. Everything ahead of them on `main` is DOCS ONLY: the deploy
-  revision doc and this router. **No code is undeployed.**
-- **Suite: 889 green.**
+- **`main` = `567d081`.** Local and origin level.
+- **BOTH BOXES ARE AT `29450ed`** (deployed and tested 20 Sep, ledger written).
+  Ahead of them on `main`: the 21 Sep deploy docs, and **CONTENT CHANGES FROM
+  30 SEP THAT ARE NOT DEPLOYED** — the new homepage, the How It Works edits
+  and the new `/prs` page. Nothing urgent; deploy when Charlie wants the
+  content live.
+- **Suite: 889 green** (re-run 30 Sep after the content work).
 - **No work in flight.** `feature/inbound-enquiries` is merged
   (`--no-ff`, tag `pre-inbound-enquiries` marks the commit before it).
   `main` is safe to build from.
@@ -35,6 +37,51 @@ consequence, so it is not rediscovered as a bug:** a tenant whose
 landlord never replies never attaches a photograph at all, and the case
 escalates on the description alone. The create-case form says so, and
 only in this configuration.
+
+---
+
+## 30 Sep 2026 — content
+
+**The site is structurally finished and was never the problem.** Public
+pages are: `/` homepage, `/about`, `/members/how-it-works`, `/landlords`,
+privacy, cookies — plus `/contact` behind login and an auth-only
+escalation-routes stub kept out of the nav. That is a sufficient set for
+launch. What has been unsettled through many attempts is the WORDING, not
+the sitemap.
+
+**The homepage is now a DOOR, not an explanation.** Charlie's decision:
+the process is too involved to compress into landing copy without
+overselling it. So the page says what the service is, gives one reason to
+trust it, and offers two ways on — sign up, or read how it works. Two
+lines were cut rather than reworded: "we will ensure a useful outcome"
+(unpromisable, and contradicted eight lines below on the same page) and a
+retaliation claim that gave a legal assurance to the reader most
+frightened of exactly that.
+
+**How It Works now carries the honesty the homepage dropped** — a fourth
+outcome, THE LANDLORD REFUSES, which is the case a tenant most needs
+warning about because the process has worked perfectly and they still have
+no repair. Also removed: a list of renter categories ("Student · Young
+professional · Family · Long-term renter"), because a list invites the
+reader to look for themselves in it and conclude they are not there.
+
+**New page: `/prs`** — the scale of the sector, England only, tables and
+sources, no argument. **Route live but NOT in the nav**, pending a decision
+on where it belongs. Every figure re-fetched from the primary source: the
+archived version had cited a landlord survey for defence and retail
+figures, and had given England's 4.7 million as a UK number.
+
+**HOW CHARLIE WANTS DATA PRESENTED — this cost several iterations, so do
+not relearn it.** Direct labelling, never a legend: "tables and charts with
+legends require me to engage brain more than a fleeting glimpse will
+allow". Proportional shading INSIDE the table cells beat a separate chart —
+a stacked bar chart and a summarising sentence were both built and removed
+the same hour. Shading is at a true 0–100 scale, never scaled to the
+largest value, because the page's whole virtue is that it can be checked.
+
+**Standing rule from the same session: no invented figures.** If a number
+cannot be traced to a named source with a date, it does not go on the page.
+The one derived figure shows its arithmetic and says it is ours.
 
 ---
 
@@ -156,6 +203,23 @@ to find the page that breaks. Not built. Recommended, because every other
 failure this week was silent too.
 
 **The background:** gafol runs a full Laravel deployment (maintenance mode, composer install, npm install); prod copies files and nothing else. Same Git settings on both, composer working on both — the difference is Plesk application integration, present on gafol and absent on prod. **The next release that adds a Composer package will install on gafol and BREAK PROD** (new code, old `vendor/`), with nothing in the deploy output to warn you. Either enable the integration on prod, or make `composer install --no-dev --optimize-autoloader` a mandatory typed step there. **Until one is chosen, treat any release touching `composer.json` as blocked for prod.** **➡ `docs/revision-2026-09-20-deploy-asymmetry.md` is the record** — what was believed, what is actually true, why (the Laravel application is linked to the Git repo on gafol and not on prod), and the agreed handling: run composer from prod's Laravel Toolkit COMPOSER TAB after any deploy that changes `composer.lock`, and do NOT try to link the repo on prod. Also in `environment-state.md`, 20 Sep entry.
+
+**1b. CONTENT DECISIONS LEFT WITH CHARLIE (30 Sep).** None blocking:
+- **Where `/prs` belongs** — nav, or a link from About Us. It is
+  argument-free, which makes it as useful to point a sceptical landlord at
+  as a tenant.
+- **The homepage's retaliation line** still reads "You have new rights now
+  that encourage you to ask". Agreed to be safe but to UNDERSELL: rights
+  protect, they do not encourage, and the concrete fact — that the no-fault
+  eviction route is gone — is both stronger and checkable. Charlie's field,
+  Charlie's sentence.
+- **A jurisdiction sentence on How It Works**, saying who the service is
+  for. NOT written, deliberately: whether the Renters' Rights Act applies
+  to England only or England and Wales is extent-versus-application and
+  could not be settled from primary sources on 30 Sep. Charlie knows the
+  answer; it is a sentence that tells someone whether the law protects
+  them, so it must not be guessed.
+- **`/about` and `/landlords` have not been looked at.**
 
 **2. #62's sentence into the THREE DATABASES.** The seeder has it
 (commit `9f6855e`), so a fresh box is right — but dev, gafol and prod
