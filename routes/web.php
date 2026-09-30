@@ -30,6 +30,10 @@ Route::get('/about', function () {
 // should not have to click a link in the message they are suspicious of.
 Route::get('/landlords', fn () => view('landlords'))->name('landlords');
 
+// Scope and size of the PRS — tables, sources, no argument. Deliberately NOT
+// in the nav yet; Charlie decides where it belongs once he has seen it.
+Route::get('/prs', fn () => view('prs-scale'))->name('prs-scale');
+
 // PWA offline fallback — served by the service worker when a navigation fails.
 Route::get('/offline', fn () => view('offline'))->name('offline');
 
