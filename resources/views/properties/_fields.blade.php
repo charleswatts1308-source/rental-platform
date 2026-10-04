@@ -80,7 +80,7 @@
      tenant in dispute needs to know it will not be forwarded. --}}
 <div class="col-md-12">
     <label for="lease_documents" class="form-label text-muted">
-        Lease agreement &mdash; optional
+        Upload lease agreement &mdash; optional
     </label>
     <input id="lease_documents" name="lease_documents[]" type="file" multiple
            accept="image/jpeg,image/png,image/webp,image/heic,image/heif,application/pdf"
