@@ -19,7 +19,7 @@ superseded doc. It is a **router, not a record**: keep it short.
 
 ## Where everything is, right now
 
-- **`main` = the 4 Oct nav restructure.** Local and origin level.
+- **`main` = `9830c0a`** (4 Oct nav restructure). Local and origin level.
 - **BOTH BOXES ARE AT `29450ed`** (deployed and tested 20 Sep, ledger written).
   Ahead of them on `main` and **NOT DEPLOYED**: the 21 Sep deploy docs, the
   30 Sep content work (new homepage, How It Works edits, `/prs`), and the
