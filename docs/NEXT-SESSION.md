@@ -19,17 +19,20 @@ superseded doc. It is a **router, not a record**: keep it short.
 
 ## Where everything is, right now
 
-- **`main` = `9830c0a`** (4 Oct nav restructure). Local and origin level.
+- **`main` = `06a17b1`** (4 Oct nav restructure). Local and origin level.
+- **WORK IN FLIGHT: `feature/property-details`, PUSHED, NOT MERGED.**
+  Complete and green — property type, lease flag, lease upload. Tag
+  `pre-property-details` marks the commit before it. **Suite 914 on the
+  branch; 890 on `main`.** ➡ `docs/cc-report-property-details-implementation.md`
+  is the record and carries the deploy notes.
 - **BOTH BOXES ARE AT `29450ed`** (deployed and tested 20 Sep, ledger written).
   Ahead of them on `main` and **NOT DEPLOYED**: the 21 Sep deploy docs, the
   30 Sep content work (new homepage, How It Works edits, `/prs`), and the
   4 Oct NAV RESTRUCTURE — which removes the dashboard, so it changes where
   every signed-in user lands. Nothing urgent, but that last one is the first
   change in a while that a returning user would notice immediately.
-- **Suite: 890 green** (re-run 4 Oct after the nav restructure).
-- **No work in flight.** `feature/inbound-enquiries` is merged
-  (`--no-ff`, tag `pre-inbound-enquiries` marks the commit before it).
-  `main` is safe to build from.
+- `feature/inbound-enquiries` is merged (`--no-ff`, tag
+  `pre-inbound-enquiries`). `main` is safe to build from.
 
 **Attachment ceilings, both boxes: letter 1 = `0`, replies = `3`.** Set
 15 Sep, deliberately (#73). Photos are refused on the cold first letter
@@ -38,6 +41,72 @@ consequence, so it is not rediscovered as a bug:** a tenant whose
 landlord never replies never attaches a photograph at all, and the case
 escalates on the description alone. The create-case form says so, and
 only in this configuration.
+
+---
+
+## NEXT ACTION — Charlie's own words, 4 Oct: deploy to gafol and test
+
+**THE FIRST DECISION, BEFORE ANY DEPLOY: one release or two?**
+
+Three undeployed things are now stacked on top of the boxes (`29450ed`):
+the 30 Sep content, the 4 Oct nav restructure, and — if it is merged
+first — property-details.
+
+**Recommendation: deploy them SEPARATELY.** The nav and content work is
+views only. Property-details carries FOUR MIGRATIONS and a backfill that
+writes to every existing property row on the box. Combined, a problem
+after deploy does not tell you which half caused it. Separated, it does.
+
+**Neither release touches `composer.json` or `composer.lock`**, so the
+prod composer trap (open action 1a) does not apply to either. gafol
+would not care anyway; this matters only when prod's turn comes.
+
+**If property-details goes:** check `storage/app/` is writable on the box
+before the first lease upload, and expect every existing property to read
+"Not specified" on both new columns afterwards — that is the backfill
+working, not a failure.
+
+**NOTE: this router's copy on `main` is one commit behind** until
+`feature/property-details` merges, because the branch holds this update
+and the project rule is zero commits to `main` during a phase. If a
+session starts on `main` and this section is missing, that is why.
+
+---
+
+## 4 Oct 2026 — property details (branch, not merged)
+
+**➡ `docs/cc-brief-property-details.md` (D0, accepted) and
+`docs/cc-report-property-details-implementation.md` are the record.**
+
+Property type (mandatory, stats only), "do you have a lease agreement,
+even if you can't find it?" (mandatory, three answers including "I don't
+know"), and an optional lease upload on both property forms.
+
+**Three things not to rediscover:**
+
+- **`not_specified` is a BACKFILL MARKER on both columns, not an
+  answer.** Existing rows get it; it is not in the dropdowns, not in the
+  markup, and refused by validation. Without it "the tenant chose Other"
+  and "we never asked" merge permanently, and the statistics the fields
+  exist for are worthless. Both columns are NOT NULL with **no database
+  default**, so a code path that forgets to ask fails loudly.
+- **The type list and ITS ORDER come from the Background page's sourced
+  distribution**, so the two sets of figures can be read against each
+  other. That is why flats are split purpose-built/converted and why
+  there is NO end-of-terrace. "Room in a shared house" is deliberately
+  not labelled HMO: that is a legal question about someone else's
+  property and a tenant asked it will guess.
+- **A LEASE NEVER LEAVES THE PLATFORM** — never attached to a case, sent
+  to a landlord, or carried on a letter. Held so a human can read it to
+  identify the landlord's formal service address. Stated in the
+  migration, the model and the controller, and **two tests make it
+  executable**. `file_attachments` was deliberately not reused: a table
+  called "attachments" does not carry the rule.
+
+**MariaDB check done and passed** — no `ON UPDATE CURRENT_TIMESTAMP`
+anywhere despite the `change()`, backfill proven on 15 real rows,
+rollback byte-identical. **Nothing reads `property_type` yet**; if the
+statistics are actually wanted, an admin count is the next piece.
 
 ---
 

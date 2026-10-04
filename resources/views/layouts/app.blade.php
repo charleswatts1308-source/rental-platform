@@ -55,6 +55,73 @@
             white-space: nowrap;
         }
 
+        /* THE TWO ROWS.
+
+           flex-basis:100% alone does NOT do it. Bootstrap's .navbar-expand
+           sets flex-wrap:nowrap on the bar, and .navbar > .container
+           inherits that - so there is no second line to drop onto, and the
+           link list gets squeezed into a narrow vertical column on the
+           right instead. Both of these have to be told to wrap, and the
+           list told to stay horizontal once it gets there. */
+        .header-bar.navbar,
+        .header-bar.navbar > .container {
+            flex-wrap: wrap;
+        }
+
+        /* Row 2: the links ALWAYS take a line of their own.
+
+           flex-basis alone is not enough - a flex item may shrink to fit
+           beside its siblings when there is room, which is why this sat
+           on one row on a wide screen and two on a narrow one. 0 0 100%
+           forbids the shrink, so the header is two rows at EVERY width,
+           which is what was asked for. */
+        /* SPECIFICITY IS LOAD-BEARING HERE. Bootstrap sets
+           flex-basis:auto via `.navbar-expand .navbar-collapse` - two
+           classes. A single-class selector loses to that SILENTLY, which
+           is why this header sat on one row at wide widths and two at
+           narrow ones. Do not simplify the selector back. */
+        .navbar.header-bar .header-nav-row {
+            flex: 0 0 100%;
+        }
+
+        .header-nav-row .navbar-nav {
+            flex-direction: row;
+        }
+
+        /* Left-aligned with generous spacing, NOT spread edge to edge: a
+           signed-out visitor sees only two links, and space-between
+           would strand them in opposite corners. */
+        .header-nav-row .navbar-nav {
+            flex-wrap: wrap;
+            column-gap: 1.5rem;
+            row-gap: 0.25rem;
+        }
+
+        .header-nav-row .navbar-nav .nav-link {
+            padding-left: 0;
+            padding-right: 0;
+        }
+
+        /* Account button label. Grows with the screen rather than being
+           cut to one fixed length everywhere - on a phone the address
+           was eating the width the nav itself needed. The full value is
+           still in the menu and in the title attribute. */
+        .account-email {
+            max-width: 7rem;
+        }
+
+        @media (min-width: 576px) {
+            .account-email {
+                max-width: 12rem;
+            }
+        }
+
+        @media (min-width: 992px) {
+            .account-email {
+                max-width: 20rem;
+            }
+        }
+
         /* Dial down heading sizes */
         h1 {
             font-size: 1.75rem;
@@ -100,7 +167,25 @@
 <body>
     <!-- Header -->
     <header class="sticky-top">
-        <nav class="navbar navbar-expand-xl navbar-light header-bar bg-white border-bottom box-shadow mb-3">
+        {{-- PERMANENT TWO-ROW HEADER (Charlie, 5 Oct 2026):
+
+           Logo Renters                              loginname
+           How It Works     Background     Cases
+           ------------------------------------------------------
+
+         Row 1 is identity - whose site this is, and who you are signed
+         in as. Row 2 is navigation, and it gets the FULL WIDTH.
+
+         This replaces the hamburger entirely. The hamburger was never
+         really about having too many links: the brand SVG is a fixed
+         200px and cannot shrink, so on a phone it left about 160px for
+         everything else. Giving the links their own row gives them the
+         whole width instead of the leftovers, which is the actual fix.
+
+         "expand" with no breakpoint keeps .navbar-nav horizontal at
+         every size; .header-nav-row then forces it onto its own line.
+         There is NO toggler any more - it could never fire. --}}
+        <nav class="navbar navbar-expand navbar-light header-bar bg-white border-bottom box-shadow mb-3">
             <div class="container">
                 <a href="/" class="navbar-brand d-flex align-items-center text-decoration-none p-0">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="48 0 352 90" width="200" height="45" class="me-2">
@@ -132,22 +217,36 @@
                     <span class="badge bg-warning text-dark ms-2 align-self-center text-lowercase">{{ request()->getHost() }}</span>
                 @endunless
 
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-
                 <!-- Authentication Links - Always Visible -->
-                <div class="ms-auto d-flex align-items-center order-xl-2 auth-buttons">
+                <div class="ms-auto d-flex align-items-center auth-buttons">
                     @guest
                         <a href="{{ route('login') }}" class="btn btn-sm me-1" style="color: #047857; border-color: #047857;">Login</a>
                         <a href="{{ route('register') }}" class="btn btn-sm text-white" style="background-color: #047857;">Register</a>
                     @else
                         <div class="dropdown">
-                            <a class="btn btn-outline-secondary dropdown-toggle small text-lowercase fw-normal" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                {{ Auth::user()->email }}
+                            {{-- The email is truncated by WIDTH, not by a fixed
+                                 character count: a narrow screen gets a short
+                                 label and a wide one gets the whole address,
+                                 instead of every screen being cut to the
+                                 phone's budget. The caret sits outside the
+                                 truncating span so it is never clipped.
+
+                                 Nothing is lost by shortening it - the full
+                                 address is the first line of the menu below,
+                                 and the title shows it on hover. That matters
+                                 because this button is the only thing telling
+                                 a user WHICH account they are signed into. --}}
+                            <a class="btn btn-outline-secondary dropdown-toggle small text-lowercase fw-normal d-inline-flex align-items-center"
+                               href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false"
+                               title="{{ Auth::user()->email }}">
+                                <span class="account-email text-truncate">{{ Auth::user()->email }}</span>
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end">
+                                {{-- Full, unshortened, and allowed to wrap: this
+                                     is where "am I in the right account?" gets
+                                     answered. --}}
+                                <li><h6 class="dropdown-header text-break">{{ Auth::user()->email }}</h6></li>
+                                <li><hr class="dropdown-divider"></li>
                                 <li><a class="dropdown-item" href="{{ route('profile.edit') }}">Profile</a></li>
                                 <li><hr class="dropdown-divider"></li>
                                 <li>
@@ -161,7 +260,7 @@
                     @endguest
                 </div>
 
-                <div class="navbar-collapse collapse order-xl-1" id="navbarSupportedContent">
+                <div class="navbar-collapse collapse header-nav-row" id="navbarSupportedContent">
                     <ul class="navbar-nav flex-grow-1">
                         <li class="nav-item">
                             <a class="nav-link text-dark" href="{{ route('members.how-it-works') }}">How It Works</a>
@@ -296,7 +395,7 @@
             <div class="row">
                 <div class="col-12 text-center">
                     <p class="text-light small mb-0">
-                        &copy; 2025 Renters. All rights reserved.
+                        &copy; {{ date('Y') }} Renters. All rights reserved.
                     </p>
                 </div>
             </div>

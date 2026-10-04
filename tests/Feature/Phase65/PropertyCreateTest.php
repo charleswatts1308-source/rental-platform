@@ -12,6 +12,8 @@ function validPropertyPayload(array $overrides = []): array
         'address_line1' => '12 Mulberry Lane',
         'address_line2' => 'Flat 4',
         'city' => 'Manchester',
+        'property_type' => 'terraced',
+        'has_lease_agreement' => 'yes',
         'postcode' => 'M1 4ET',
     ], $overrides);
 }

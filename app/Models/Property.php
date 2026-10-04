@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use App\Enums\ContactSource;
+use App\Enums\LeaseAgreementAnswer;
+use App\Enums\PropertyType;
 use Carbon\CarbonInterface;
 use Database\Factories\PropertyFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -22,8 +24,41 @@ class Property extends Model
         'address_line2',
         'city',
         'postcode',
+        'property_type',
+        'has_lease_agreement',
         'registered_by_user_id',
     ];
+
+    /**
+     * Both are NOT NULL with no database default, deliberately: a code
+     * path that forgets to ask should fail loudly rather than record an
+     * answer nobody gave. See the step-3 migration.
+     */
+    protected function casts(): array
+    {
+        return [
+            'property_type' => PropertyType::class,
+            'has_lease_agreement' => LeaseAgreementAnswer::class,
+        ];
+    }
+
+    /**
+     * Documents belonging to this property — today, lease agreements.
+     *
+     * THEY NEVER LEAVE THE PLATFORM: never attached to a case, never
+     * sent to a landlord, never carried on a letter. Held so a human
+     * can read the lease to identify the landlord's formal service
+     * address. See PropertyDocument and the table migration.
+     *
+     * @return HasMany<PropertyDocument, $this>
+     */
+    public function documents(): HasMany
+    {
+        return $this->hasMany(PropertyDocument::class)
+            ->orderByRaw('page_number is null')
+            ->orderBy('page_number')
+            ->orderBy('id');
+    }
 
     public function registeredBy(): BelongsTo
     {

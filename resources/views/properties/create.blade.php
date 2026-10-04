@@ -17,7 +17,7 @@
         </div>
     @endif
 
-    <form method="POST" action="{{ route('properties.store') }}" class="row g-3">
+    <form method="POST" action="{{ route('properties.store') }}" class="row g-3" enctype="multipart/form-data">
         @csrf
         @include('properties._fields', ['property' => null])
 
