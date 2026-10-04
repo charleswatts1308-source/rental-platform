@@ -9,6 +9,7 @@ use App\Http\Controllers\ContactMessageController;
 use App\Http\Controllers\MagicLinkController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PropertyController;
+use App\Http\Controllers\PropertyDocumentController;
 use App\Http\Controllers\PropertyLandlordContactController;
 use App\Http\Controllers\Webhooks\MailgunDeliveryEventController;
 use App\Http\Controllers\Webhooks\MailgunInboundController;
@@ -85,6 +86,21 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // writes a case event, rather than overwriting a row.
     Route::get('/properties/{property}/landlord', [PropertyLandlordContactController::class, 'edit'])->name('properties.contact.edit');
     Route::patch('/properties/{property}/landlord', [PropertyLandlordContactController::class, 'update'])->name('properties.contact.update');
+
+    // Lease pages belonging to a property. Shown and removed here;
+    // UPLOADED through the property create and edit forms as well, which
+    // is why the storing lives in an Action both can call.
+    //
+    // `show` streams the file through PHP. There is no public URL and no
+    // signed URL, deliberately: a lease carries the tenant's name, the
+    // rent and often third parties. See PropertyDocument's docblock for
+    // the invariant - a document here never leaves the platform.
+    Route::post('/properties/{property}/documents', [PropertyDocumentController::class, 'store'])
+        ->name('properties.documents.store');
+    Route::get('/properties/{property}/documents/{document}', [PropertyDocumentController::class, 'show'])
+        ->name('properties.documents.show');
+    Route::delete('/properties/{property}/documents/{document}', [PropertyDocumentController::class, 'destroy'])
+        ->name('properties.documents.destroy');
 
     // Repair cases (Landlord Contact Service)
     Route::get('/cases', [CaseController::class, 'index'])->name('cases.index');

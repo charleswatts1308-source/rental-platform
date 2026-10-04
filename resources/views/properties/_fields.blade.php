@@ -64,3 +64,31 @@
     </select>
     @error('has_lease_agreement')<div class="invalid-feedback">{{ $message }}</div>@enderror
 </div>
+
+
+{{-- OPTIONAL, and it has to READ optional. Ruled 4 Oct 2026: optional in
+     validation is not enough - this form is the one thing between a
+     tenant and raising a case, and anything that looks like required
+     paperwork here is how somebody gives up before they start. So: muted,
+     no asterisk, no red, and the label says "if you have it to hand".
+
+     It appears on BOTH create and edit because a tenant registering a
+     property usually has the lease open already - that is where the
+     landlord's email address came from.
+
+     The reassurance is not decoration. The document is private, and a
+     tenant in dispute needs to know it will not be forwarded. --}}
+<div class="col-md-12">
+    <label for="lease_documents" class="form-label text-muted">
+        Lease agreement &mdash; optional
+    </label>
+    <input id="lease_documents" name="lease_documents[]" type="file" multiple
+           accept="image/jpeg,image/png,image/webp,image/heic,image/heif,application/pdf"
+           class="form-control form-control-sm @error('lease_documents.*') is-invalid @enderror">
+    <div class="form-text">
+        If you have it to hand, add a photograph or PDF of each page.
+        It stays on your record and is <strong>never</strong> sent to your landlord.
+        You can add pages later, or not at all.
+    </div>
+    @error('lease_documents.*')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+</div>

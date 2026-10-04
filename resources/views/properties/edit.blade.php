@@ -17,7 +17,7 @@
         </div>
     @endif
 
-    <form method="POST" action="{{ route('properties.update', $property) }}" class="row g-3">
+    <form method="POST" action="{{ route('properties.update', $property) }}" class="row g-3" enctype="multipart/form-data">
         @csrf
         @method('PATCH')
         @include('properties._fields', ['property' => $property])
@@ -31,5 +31,35 @@
             <a href="{{ route('cases.index') }}" class="btn btn-outline-secondary">Cancel</a>
         </div>
     </form>
+
+    {{-- Pages already held. OUTSIDE the edit form, because removing one
+         is its own action with its own verb - folding deletes into a
+         Save would mean a tenant who changed their mind about a page had
+         to save the whole form to act on it, and a tenant who cancelled
+         would silently keep it. --}}
+    @if($property->documents->isNotEmpty())
+        <h2 class="h6 mt-5">Lease agreement &mdash; pages held</h2>
+        <p class="text-muted small">
+            Private to you. Never sent to your landlord and never attached to a case.
+        </p>
+        <ul class="list-group mb-3">
+            @foreach($property->documents as $document)
+                <li class="list-group-item d-flex flex-wrap justify-content-between align-items-center gap-2">
+                    <span>
+                        <a href="{{ route('properties.documents.show', [$property, $document]) }}" target="_blank" rel="noopener">
+                            {{ $document->displayLabel() }}
+                        </a>
+                        <span class="text-muted small">{{ $document->original_filename }}</span>
+                    </span>
+                    <form method="POST" action="{{ route('properties.documents.destroy', [$property, $document]) }}">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="btn btn-sm btn-outline-danger">Remove</button>
+                    </form>
+                </li>
+            @endforeach
+        </ul>
+    @endif
 </div>
 @endsection
+

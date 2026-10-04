@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\StorePropertyDocuments;
 use App\Enums\LeaseAgreementAnswer;
 use App\Enums\PropertyType;
 use App\Models\Property;
@@ -50,7 +51,7 @@ class PropertyController extends Controller
         return view('properties.create');
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request, StorePropertyDocuments $storer): RedirectResponse
     {
         $this->authorize('create', Property::class);
 
@@ -65,6 +66,13 @@ class PropertyController extends Controller
             'has_lease_agreement' => $validated['has_lease_agreement'],
             'registered_by_user_id' => $request->user()->id,
         ]);
+
+        // The lease can only be filed once the property has an id. A
+        // failure here must not lose the property the tenant just
+        // registered, so it is deliberately NOT inside a transaction
+        // with the create above: a page that would not store is worth
+        // far less than the registration itself.
+        $storer->handle($property, $request->user(), $request->file('lease_documents', []));
 
         // Snag #66. The landlord belongs to the PROPERTY, so it is asked for
         // with the property — not buried in the create-case form, where what
@@ -89,7 +97,7 @@ class PropertyController extends Controller
         return view('properties.edit', ['property' => $property]);
     }
 
-    public function update(Request $request, Property $property): RedirectResponse
+    public function update(Request $request, Property $property, StorePropertyDocuments $storer): RedirectResponse
     {
         $this->authorize('update', $property);
 
@@ -103,6 +111,8 @@ class PropertyController extends Controller
             'property_type' => $validated['property_type'],
             'has_lease_agreement' => $validated['has_lease_agreement'],
         ]);
+
+        $storer->handle($property, $request->user(), $request->file('lease_documents', []));
 
         // Back to /cases, not the property list: since 4 Oct 2026 this
         // form is reached from a property heading there, and finishing
@@ -172,8 +182,16 @@ class PropertyController extends Controller
                 'required',
                 Rule::in(array_column(LeaseAgreementAnswer::selectable(), 'value')),
             ],
+            // OPTIONAL, on both forms. Never required, never nagged -
+            // this form is the one thing standing between a tenant and
+            // raising a case, and a demand for paperwork here is how
+            // somebody gives up before they start.
+            'lease_documents' => ['nullable', 'array', 'max:'.StorePropertyDocuments::MAX_PAGES],
+            'lease_documents.*' => StorePropertyDocuments::fileRules(),
         ], [
             'postcode.regex' => 'Enter a valid UK postcode (for example, M1 1AA).',
+            'lease_documents.*.mimes' => 'Pages must be photographs (JPG, PNG, WEBP or HEIC) or a PDF.',
+            'lease_documents.*.max' => 'Each page must be 4 MB or smaller.',
             'property_type.required' => 'Choose the type of property you rent.',
             'property_type.in' => 'Choose the type of property you rent.',
             'has_lease_agreement.required' => 'Tell us whether you have a lease agreement.',
