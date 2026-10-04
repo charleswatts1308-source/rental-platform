@@ -55,6 +55,53 @@
             white-space: nowrap;
         }
 
+        /* THE TWO ROWS.
+
+           flex-basis:100% alone does NOT do it. Bootstrap's .navbar-expand
+           sets flex-wrap:nowrap on the bar, and .navbar > .container
+           inherits that - so there is no second line to drop onto, and the
+           link list gets squeezed into a narrow vertical column on the
+           right instead. Both of these have to be told to wrap, and the
+           list told to stay horizontal once it gets there. */
+        .header-bar.navbar,
+        .header-bar.navbar > .container {
+            flex-wrap: wrap;
+        }
+
+        /* Row 2: the links ALWAYS take a line of their own.
+
+           flex-basis alone is not enough - a flex item may shrink to fit
+           beside its siblings when there is room, which is why this sat
+           on one row on a wide screen and two on a narrow one. 0 0 100%
+           forbids the shrink, so the header is two rows at EVERY width,
+           which is what was asked for. */
+        /* SPECIFICITY IS LOAD-BEARING HERE. Bootstrap sets
+           flex-basis:auto via `.navbar-expand .navbar-collapse` - two
+           classes. A single-class selector loses to that SILENTLY, which
+           is why this header sat on one row at wide widths and two at
+           narrow ones. Do not simplify the selector back. */
+        .navbar.header-bar .header-nav-row {
+            flex: 0 0 100%;
+        }
+
+        .header-nav-row .navbar-nav {
+            flex-direction: row;
+        }
+
+        /* Left-aligned with generous spacing, NOT spread edge to edge: a
+           signed-out visitor sees only two links, and space-between
+           would strand them in opposite corners. */
+        .header-nav-row .navbar-nav {
+            flex-wrap: wrap;
+            column-gap: 1.5rem;
+            row-gap: 0.25rem;
+        }
+
+        .header-nav-row .navbar-nav .nav-link {
+            padding-left: 0;
+            padding-right: 0;
+        }
+
         /* Account button label. Grows with the screen rather than being
            cut to one fixed length everywhere - on a phone the address
            was eating the width the nav itself needed. The full value is
@@ -120,17 +167,25 @@
 <body>
     <!-- Header -->
     <header class="sticky-top">
-        {{-- expand-SM, not expand-xl. The hamburger now appears only below
-         576px - on an actual phone - instead of hiding three words from
-         every tablet and half-width laptop. It was set to xl when the
-         signed-in nav carried seven items; it carries three (plus Admin)
-         since 4 Oct 2026.
+        {{-- PERMANENT TWO-ROW HEADER (Charlie, 5 Oct 2026):
 
-         THE order-sm-* CLASSES BELOW MUST MATCH THIS BREAKPOINT. They
-         put the nav links before the account button once the bar is
-         expanded; pinned to a different breakpoint they reorder the bar
-         at every width in between. --}}
-        <nav class="navbar navbar-expand-sm navbar-light header-bar bg-white border-bottom box-shadow mb-3">
+           Logo Renters                              loginname
+           How It Works     Background     Cases
+           ------------------------------------------------------
+
+         Row 1 is identity - whose site this is, and who you are signed
+         in as. Row 2 is navigation, and it gets the FULL WIDTH.
+
+         This replaces the hamburger entirely. The hamburger was never
+         really about having too many links: the brand SVG is a fixed
+         200px and cannot shrink, so on a phone it left about 160px for
+         everything else. Giving the links their own row gives them the
+         whole width instead of the leftovers, which is the actual fix.
+
+         "expand" with no breakpoint keeps .navbar-nav horizontal at
+         every size; .header-nav-row then forces it onto its own line.
+         There is NO toggler any more - it could never fire. --}}
+        <nav class="navbar navbar-expand navbar-light header-bar bg-white border-bottom box-shadow mb-3">
             <div class="container">
                 <a href="/" class="navbar-brand d-flex align-items-center text-decoration-none p-0">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="48 0 352 90" width="200" height="45" class="me-2">
@@ -162,13 +217,8 @@
                     <span class="badge bg-warning text-dark ms-2 align-self-center text-lowercase">{{ request()->getHost() }}</span>
                 @endunless
 
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-
                 <!-- Authentication Links - Always Visible -->
-                <div class="ms-auto d-flex align-items-center order-sm-2 auth-buttons">
+                <div class="ms-auto d-flex align-items-center auth-buttons">
                     @guest
                         <a href="{{ route('login') }}" class="btn btn-sm me-1" style="color: #047857; border-color: #047857;">Login</a>
                         <a href="{{ route('register') }}" class="btn btn-sm text-white" style="background-color: #047857;">Register</a>
@@ -210,7 +260,7 @@
                     @endguest
                 </div>
 
-                <div class="navbar-collapse collapse order-sm-1" id="navbarSupportedContent">
+                <div class="navbar-collapse collapse header-nav-row" id="navbarSupportedContent">
                     <ul class="navbar-nav flex-grow-1">
                         <li class="nav-item">
                             <a class="nav-link text-dark" href="{{ route('members.how-it-works') }}">How It Works</a>

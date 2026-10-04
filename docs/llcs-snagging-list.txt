@@ -4261,4 +4261,52 @@ active-page styling anywhere.
 Fix:        layouts/app.blade.php — navbar class, two ordering classes,
             the dropdown header, and a .account-email width rule.
 Ships:      With LOT 2 (feature/property-details), like #78.
+
+SUPERSEDED IN PART, 5 Oct 2026 — THERE IS NO HAMBURGER AT ALL NOW.
+
+The 576px breakpoint above lasted a day. Charlie asked to try dropping
+the collapse at phone width, I built it as "no hamburger, links beside
+the logo", and it was no good — because THE BRAND SVG IS A FIXED 200px
+AND CANNOT SHRINK, leaving about 160px on a phone for three links and
+the account button.
+
+What Charlie actually wanted, and had to say twice because I built the
+wrong thing first, is a PERMANENT TWO-ROW HEADER:
+
+    Logo Renters                              loginname
+    How It Works     Background     Cases
+    ---------------------------------------------------
+
+Row 1 is identity. Row 2 is navigation, and it gets the FULL WIDTH —
+which is the real fix, because the links stop competing with a logo
+that will not give way. Nothing is hidden behind a tap at any size, and
+the toggler button is gone from the markup entirely.
+
+THREE THINGS FOUGHT IT, all CSS, all worth knowing before touching this
+again:
+
+ 1. `.navbar-expand` sets flex-wrap:NOWRAP on the bar, and
+    `.navbar > .container` inherits it. Until both were told to wrap
+    there was no second line to drop onto, and the links rendered as a
+    squeezed vertical column on the right.
+ 2. flex-basis:100% alone is not enough. A flex item may SHRINK to fit
+    beside its siblings when there is room — so the header was two rows
+    on a narrow screen and one on a wide one. `flex: 0 0 100%` forbids
+    the shrink.
+ 3. SPECIFICITY. Bootstrap sets flex-basis:auto via
+    `.navbar-expand .navbar-collapse` — two classes. The single-class
+    selector lost to it SILENTLY and the rule simply did nothing. The
+    selector is now `.navbar.header-bar .header-nav-row`. Do not
+    simplify it back.
+
+Confirmed by Charlie in BOTH Chrome and Edge, wide and narrow.
+
+Still standing from the entry above: the account-email truncation, which
+is what made any of this possible — a full address in that button ate
+the width row 1 needed.
+
+NOT DONE, and the obvious next move if the header is ever revisited: the
+200px logo. It is over half the width of a 375px phone for something the
+reader already knows. Shrinking it below 576px would buy back the space
+cheaply.
 --------------------------------------------------------------------
