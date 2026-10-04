@@ -4196,3 +4196,25 @@ Charlie confirmed breadcrumbs were considered and ruled against. Kept
 rather than deleted, because the site may deepen, and commented in
 place so it reads as dormant-by-decision rather than broken.
 --------------------------------------------------------------------
+#78
+Page:        Footer, site-wide
+Severity:    cosmetic, but it is on every page
+Date:        4 Oct 2026 — found by Charlie walking the gafol deploy
+Saw:         "© 2025 Renters. All rights reserved."
+Expected:    The current year.
+Cost:        Small but corrosive. A stale copyright year is one of the
+             few things a cautious reader checks to decide whether a
+             site is still running — and the readers who check are
+             landlords deciding whether renters.rent is real, which is
+             the audience least inclined to give benefit of the doubt.
+
+FIXED: the year is now taken from the clock rather than typed, so it
+cannot go stale again. The old value had been wrong since 1 Jan 2026 and
+nobody had noticed in nine months, which is the argument for not typing
+it a second time.
+
+Fix:         One line in layouts/app.blade.php — the literal 2025
+             replaced with the current year at render time.
+Ships:       With LOT 2 (feature/property-details). It is a view-only
+             change and rode along rather than earning its own release.
+--------------------------------------------------------------------

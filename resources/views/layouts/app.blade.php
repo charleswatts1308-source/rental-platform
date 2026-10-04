@@ -296,7 +296,7 @@
             <div class="row">
                 <div class="col-12 text-center">
                     <p class="text-light small mb-0">
-                        &copy; 2025 Renters. All rights reserved.
+                        &copy; {{ date('Y') }} Renters. All rights reserved.
                     </p>
                 </div>
             </div>
