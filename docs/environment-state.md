@@ -4,8 +4,12 @@ Human-readable mirror of what is deployed where. The DB `migrations`
 table is the source of truth; this file is reconciled against
 `php artisan migrate:status` at each deploy (CLAUDE.md "Deployment ledger").
 
-**Reconcile status:** **dotrent retired 1 Aug 2026** (see its entry — the
-record is kept, the box is gone). **gafol at `12646e7`** (15 Sep — the
+**Reconcile status:** **gafol at `337edf0`** (5 Oct 2026 — nav
+restructure + property details, deployed in two lots and verified; see
+the 5 Oct entry). **renters.rent at `29450ed`** and now TWO RELEASES
+BEHIND. **dotrent retired 1 Aug 2026** (see its entry — the record is
+kept, the box is gone). Superseded figures below are left as written:
+**gafol at `12646e7`** (15 Sep — the
 September fix cycle; read off the Plesk Git panel and confirmed).
 **renters.rent at `12646e7`** (15 Sep — the September fix cycle, read off
 the Plesk Git panel and confirmed). The `02f1505` history below is kept
@@ -69,6 +73,76 @@ what ran, so that is not drift and should not be "fixed".
   24 Aug.
 
 ## gafol — permanent staging (gafol.rent) — ✅ BACK ON MAIN (4 Sep 2026)
+### Deploy 5 Oct 2026 — gafol only, in TWO LOTS
+
+**renters.rent was NOT touched. It remains at `29450ed`.**
+
+Deployed to **gafol (STAGE)** deliberately in two separate pulls, so that
+a problem would say which half caused it.
+
+**LOT 1 — `06a17b1`** (nav restructure + the 30 Sep content).
+
+- **Route:** Plesk Git pull, then `route:clear`, `view:clear`,
+  `config:clear` through Laravel Toolkit. The clears were not optional:
+  the release REMOVES a route (`/dashboard`) and replaces it with a
+  redirect, and rewrites most views.
+- **MIGRATIONS: NONE.** Nothing created or altered, so the CLAUDE.md
+  MariaDB check is not triggered. Stated rather than inferred.
+- **Verified by Charlie on gafol:** homepage, `/dashboard` landing on
+  `/cases`, the grouped cases page, Cancel from Landlord returning to
+  Cases, footer wrapping, and the contact-bounce wording signed out.
+- **Not tested: registration.** gafol sends through the Mailgun SANDBOX,
+  which delivers only to authorised recipients, so the verification mail
+  was refused with a 403. Expected, documented, and nothing to do with
+  this release — see the Mail rules in CLAUDE.md. Charlie had no spare
+  authorised address and skipped it.
+
+**LOT 2 — `337edf0`** (`--no-ff` merge of `feature/property-details`;
+tag `pre-property-details` marks the commit before the branch).
+
+- Carries property type, the lease-agreement flag, the lease upload, and
+  three view-only fixes found while deploying lot 1: the footer
+  copyright year (#78), the account-email truncation and the permanent
+  two-row header (#79).
+- **Route:** Plesk Git pull, then `migrate --force`, then `route:clear`,
+  `view:clear`, `config:clear`.
+- **MIGRATIONS: FOUR.**
+  - `2026_10_04_100000_add_property_details_to_properties_table`
+  - `2026_10_04_100100_backfill_property_details`
+  - `2026_10_04_100200_make_property_details_required`
+  - `2026_10_04_100300_create_property_documents_table`
+- **MariaDB check DONE BEFORE MERGE** against dev MariaDB, per CLAUDE.md:
+  both new columns came back plain `varchar NOT NULL` with **no default**,
+  `property_documents.uploaded_at` is plain `datetime`, and **no trailing
+  `ON UPDATE CURRENT_TIMESTAMP` anywhere on either table** — #18 did not
+  bite despite the `change()` in step 3, which was the thing most likely
+  to trigger it. FKs: property **cascade**, user **restrict**. Rollback
+  was byte-identical. Full detail in
+  `docs/cc-report-property-details-implementation.md`.
+- **THE BACKFILL RAN FOR REAL ON GAFOL.** Every pre-existing property now
+  holds `not_specified` on both new columns. **This is correct, not a
+  fault.** It is also INVISIBLE in the UI by design: `not_specified` is
+  not offered in either dropdown, so an existing property shows
+  "— please choose —" and the owner must pick a real value before
+  saving. A test asserts the string never reaches the markup.
+- **No `composer.json` / `composer.lock` change**, so the prod composer
+  trap (`deploy-pipeline-divergence.md`) does not apply to this release.
+- **`storage/app/properties/` is written for the first time** by the lease
+  upload. It worked on gafol without intervention.
+- **Verified by Charlie on gafol:** the two-row header in Chrome AND
+  Edge, wide and narrow; the footer year now 2026; an existing property
+  showing "— please choose —" on both new fields; a lease page uploaded,
+  viewed and removed.
+- **Known and accepted, staging only:** on a narrow window the
+  environment badge (`gafol.rent`) pushes the header to three rows. The
+  badge is wrapped in `@unless(app()->environment('production'))` so it
+  **cannot occur on renters.rent**. Left alone deliberately.
+
+**OUTSTANDING AFTER THIS DEPLOY:** renters.rent is now **two releases
+behind** and would take both lots in a single pull, because `main` no
+longer has an intermediate commit to stop at. gafol has walked exactly
+`337edf0`, which is the mitigation.
+
 ### Deploy 19 Sep 2026 — inbound enquiry channel, stage 1
 
 - **Landed on BOTH boxes: `461f3d4`** (`--no-ff` merge of
