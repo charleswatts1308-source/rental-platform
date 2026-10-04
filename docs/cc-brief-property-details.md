@@ -75,22 +75,44 @@ settable per stage).
 
 `string(32)`, **NOT NULL**, backed by a PHP enum `PropertyType`.
 
-Proposed values — **this list needs Charlie's confirmation**:
+**Values, ordered most-likely-first, and deliberately matching the
+categories already published on the Background page** so renters.rent's
+own figures can be read against the national ones. The percentages are
+that page's sourced English PRS distribution; they are NOT shown in the
+dropdown, only the reason for the ordering.
 
-| stored key | label |
-|---|---|
-| `detached` | Detached house |
-| `semi_detached` | Semi-detached house |
-| `terraced` | Terraced house |
-| `end_terrace` | End-of-terrace house |
-| `flat` | Flat or apartment |
-| `maisonette` | Maisonette |
-| `bungalow` | Bungalow |
-| `studio` | Studio flat |
-| `room_shared` | Room in a shared house |
-| `park_home` | Park home |
-| `other` | Other |
-| `not_specified` | Not specified |
+| stored key | label | share of English PRS |
+|---|---|---|
+| `terraced` | Terraced house | 34% |
+| `purpose_built_flat` | Purpose-built flat | 29% |
+| `semi_detached` | Semi-detached house | 16% |
+| `converted_flat` | Converted flat | 12% |
+| `detached` | Detached house | 5% |
+| `bungalow` | Bungalow | 3% |
+| `room_shared` | Room in a shared house | not separated at source |
+| `studio` | Studio flat | not separated at source |
+| `maisonette` | Maisonette | not separated at source |
+| `park_home` | Park home | not separated at source |
+| `other` | Other | — |
+| `not_specified` | Not specified | backfill only |
+
+**Two changes from the first draft, both for comparability:**
+
+- **Flats are split into purpose-built and converted**, as the source
+  splits them. Together they are 41% of the sector, so collapsing them
+  into one "Flat" would have thrown away the largest distinction in the
+  data.
+- **"End-of-terrace" is DROPPED.** The source folds it into terraced.
+  Offering it separately would move an unknown slice of the 34% into a
+  category the national figures do not have, and the comparison stops
+  working. Anyone in an end terrace is in a terraced house.
+
+The last four real options are kept because they are tenures and forms
+the source does not separate but a tenant will look for — a room in a
+shared house especially, where the renter is not renting a dwelling at
+all. They sit below the sourced six because they are rarer, and their
+presence does not disturb the comparison: they simply were not counted
+separately at source.
 
 `not_specified` is the backfill value for rows that pre-date the
 question. **It is not offered in the dropdown** — a tenant must choose a
@@ -106,9 +128,8 @@ counting. Easy to add later; hard to remove once populated.
 `string(16)`, **NOT NULL**, enum `LeaseAgreementAnswer`: `yes`, `no`,
 `unknown`, plus `not_specified` for backfill, on the same reasoning.
 
-**Open for Charlie:** mandatory on the form, or optional? With "Don't
-know" available there is always an honest answer, so I propose
-**mandatory**. Say if you would rather it could be skipped.
+**RULED 4 Oct: mandatory on the form.** With "Don't know" available
+there is always an honest answer, so nobody is forced to invent one.
 
 ### 3. `property_documents` — new table
 
@@ -149,10 +170,21 @@ no listing by guessable id.
 ### 4. Forms
 
 Property **create** and **edit** both gain the type dropdown and the
-lease flag. Uploads are proposed for the **edit** form only — a tenant
-registering a property is usually mid-task on their way to raising a
-case, and a multi-file upload at that moment is friction on the one path
-that matters. Say if you want it on create as well.
+lease flag.
+
+**RULED 4 Oct: uploads appear on BOTH forms, and stay optional on both.**
+My draft proposed edit-only, on the grounds that a multi-file upload is
+friction during registration. Charlie's reasoning overturns it, and is
+better: a tenant registering a property is very likely to have the lease
+IN FRONT OF THEM ALREADY, because that is where the landlord's email
+address comes from. Asking at the moment the document is open costs
+nothing; asking later means finding it twice.
+
+The condition attached, and it governs how the control is built: **it
+must not read as a demand.** Optional in validation is not enough — if
+the upload looks like part of the task, it adds heft to the one form
+standing between a tenant and raising a case. Presented as a quiet
+offer, not a field with a prompt.
 
 ---
 
@@ -199,12 +231,16 @@ No existing assertion is weakened.
 
 ---
 
-## Open questions for Charlie
+## Open questions — ALL THREE ANSWERED 4 Oct 2026
 
-1. **The type list above** — right set, right labels?
-2. **Is the lease flag mandatory?** I propose yes.
-3. **Uploads on the edit form only, or on create as well?** I propose
-   edit only.
+1. ~~The type list~~ — accepted, with the ordering taken from the
+   Background page's sourced distribution and two corrections made for
+   comparability (flats split, end-of-terrace dropped). See the table.
+2. ~~Is the lease flag mandatory?~~ — **yes.**
+3. ~~Uploads on edit only?~~ — **no: both forms, optional on both**, and
+   presented so it does not read as another thing to do.
+
+**D0 IS ACCEPTED. D1 may begin.**
 
 ---
 
