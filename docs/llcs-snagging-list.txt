@@ -60,6 +60,21 @@ Status:      open — DEFERRED 12 Sep 2026 into the final content change,
              differently on the verification path, which is where #27
              and #29 already misbehave.
 Notes:       Flagged during rentals removal (commit 929d2f6). Maybe "Your Tenancy".
+
+CLOSED 4 Oct 2026 — see #77. The restructure happened, but the OUTCOME
+IS THE OPPOSITE OF WHAT THIS ENTRY ANTICIPATED. This entry expected
+Cases and Properties to move INSIDE the Dashboard. What was built
+instead: the DASHBOARD was removed and /cases took over its duties,
+because the dashboard and the cases list were two framings of the same
+data and the cases list is the one users came for.
+
+The dropdown that started this entry no longer exists in any form. The
+account menu is now Profile + Logout only.
+
+The question this entry left open — "does the gate need registered, or
+registered AND verified?" — is NOT settled and moves to #77. The nav
+item is shown on @auth while the route requires auth+verified, so an
+unverified user still sees a link that bounces them.
 --------------------------------------------------------------------
 #2
 Page: Cases - landlord agent email not shown
@@ -4069,4 +4084,115 @@ Only the third makes the feature usable by the person it was for. A
 green test proved each step in isolation; none of them walked the path
 end to end. Charlie found all three by asking what the user would
 actually do next.
+--------------------------------------------------------------------
+#77
+Page:        Main nav + footer, site-wide
+Severity:    structural (user-facing)
+Date:        4 Oct 2026
+Saw:         A signed-in tenant met SEVEN nav items, the first three of
+             which (About Us, Contact Us, How It Works) are read-once
+             pages they had already finished with. Their actual work —
+             Dashboard, Properties, Cases — started fourth. "Landlords"
+             sat in a tenant's nav, one click from a page written to
+             reassure the other side of their dispute.
+Expected:    A signed-in nav that is the things the user does.
+
+FIXED — the nav is now How It Works / Background / Cases, plus the
+Admin dropdown. Changes, in the order they were made:
+
+ - About Us, Contact Us and Landlords left the nav for the footer.
+   About Us was already there. Footer order: About Us, Contact Us,
+   Privacy Policy, Cookies, Landlords.
+ - Footer links wrapped mid-label at narrow widths. The NAV had a rule
+   against that since whenever; the footer never got one. Fixed with
+   flex-wrap on the row and text-nowrap on each link, so links drop to
+   a second line whole.
+ - /prs entered the nav as "Background" and its heading became
+   "Background: The Scale of the Private Rented Sector", so the word
+   clicked and the word arrived at agree.
+ - CONTACT US is shown to everyone and still requires a login. A guest
+   clicking it now meets contact-specific wording on the login page
+   rather than the generic "Members Only" notice: it says the form is
+   for signed-in members, that this keeps out automated spam, and —
+   for a landlord who has had a letter — that the letter tells them
+   how to reach us. THE ENQUIRY ADDRESS IS DELIBERATELY NOT PRINTED
+   THERE. Charlie's call, and the right one: a plain-text address on a
+   public page gets harvested. The letter reaches only people who
+   already have a case.
+ - THE DASHBOARD WAS REMOVED and /cases took over its duties. This
+   closes #1, with the opposite outcome to the one #1 expected — see
+   the note there. /cases is now the post-verification landing page
+   and the only signed-in nav item. /dashboard permanent-redirects to
+   it so bookmarks survive.
+ - /cases became MASTER-DETAIL: properties newest first, cases newest
+   first within each. Each property heading carries "Raise a case
+   here" (which preselects that property on the create form),
+   "Landlord" and "Edit". "Register a property" sits at page top.
+   Properties left the nav because that list WAS those two buttons.
+
+FOUND BY WALKING IT, same session, both from Charlie:
+
+ - TWO "raise a case" BUTTONS in one state. A tenant with a property
+   and no cases saw the onboarding card's "Raise a repair case" AND
+   the property heading's "Raise a case here". That state is a new
+   tenant's FIRST VIEW, which is the worst place for a duplicate. The
+   card keeps its explanation and lost its button; the heading one
+   wins because it names the property and preselects it on the form.
+   A test now pins that link, because it is the only route left.
+ - THREE CANCEL BUTTONS DEPOSITED PEOPLE ON AN ORPHAN. The property
+   create, property edit and landlord contact forms all cancelled back
+   to /properties — correct while that was a nav page, wrong the
+   moment it stopped being one. A tenant clicking "Landlord" from a
+   property heading, then Cancel, landed on a page they had never seen
+   with no way back but the logo. All three now return to /cases.
+   Nothing was broken when each link was written; the nav moved under
+   them. That is the general shape of this class of bug.
+
+The "Edit" button on a property heading is labelled "Property", so it
+pairs with "Landlord" and each names what it edits. The /properties
+list keeps "Edit" deliberately — every row there is already a
+property, so "Property" would say nothing.
+
+Why grouped by property, since it looks like over-engineering for a
+tenant with one address: a tenant who moves keeps the cases raised at
+the old one, because they are evidence. A flat list makes that
+confusing to read; grouped, it needs no explanation. The grouping also
+gives the landlord contact a home, and a wrong landlord email is the
+likeliest reason a case goes nowhere.
+
+Cases are fetched BY TENANT and then grouped, never through the
+property registry, so a case can never be hidden by a property missing
+from it. Any such orphan gets its own heading.
+
+Fix:         Nav and footer in layouts/app.blade.php; cases/index
+             rewritten from the dashboard view; CaseController::index
+             regrouped; dashboard route replaced by a redirect and
+             dashboard.blade.php deleted; six route('dashboard')
+             redirects in Auth controllers repointed at cases.index.
+Tests:       890 green. Eleven tests failed on the move and were
+             repointed, NOT weakened: ten asked for the dashboard route
+             by name, one asserted the old empty-state wording. That
+             one became TWO tests — a tenant with nothing is pointed at
+             registering a property, and a property with no cases shows
+             under its own heading with the landlord control reachable.
+             DashboardOnboardingTest renamed CasesOnboardingTest, same
+             assertions.
+
+STILL OPEN, inherited from #1 and not fixed here:
+ - The nav item is shown on @auth, but /cases requires auth+verified.
+   An authenticated-but-unverified user therefore sees a link that
+   bounces them to the verification notice with no explanation — the
+   same silent-wall shape as #75 and as the Contact Us case above.
+   Settling it needs a ruling: hide the item until verified, or show
+   it and explain on arrival.
+ - No active-page styling anywhere in the nav. Nothing tells a user
+   which page they are on.
+ - The account button is labelled with the user's email address, and
+   is the only route to Logout.
+
+ALSO DECIDED, no code: breadcrumbs stay OUT. The layout's breadcrumb
+block has never rendered — nothing has ever supplied $breadcrumbs — and
+Charlie confirmed breadcrumbs were considered and ruled against. Kept
+rather than deleted, because the site may deepen, and commented in
+place so it reads as dormant-by-decision rather than broken.
 --------------------------------------------------------------------

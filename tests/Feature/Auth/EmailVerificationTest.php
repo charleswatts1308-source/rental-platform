@@ -58,7 +58,7 @@ class EmailVerificationTest extends TestCase
         Event::assertDispatched(Verified::class);
         $this->assertTrue($user->fresh()->hasVerifiedEmail());
         $this->assertAuthenticatedAs($user);
-        $response->assertRedirect(route('dashboard'));
+        $response->assertRedirect(route('cases.index'));
         $response->assertSessionHas('status', fn (string $status) => str_contains($status, 'thanks for registering'));
     }
 
@@ -78,7 +78,7 @@ class EmailVerificationTest extends TestCase
         Event::assertDispatched(Verified::class);
         $this->assertTrue($user->fresh()->hasVerifiedEmail());
         $this->assertAuthenticatedAs($user);
-        $response->assertRedirect(route('dashboard'));
+        $response->assertRedirect(route('cases.index'));
         $response->assertSessionHas('status', fn (string $status) => str_contains($status, 'thanks for registering'));
     }
 
@@ -95,7 +95,7 @@ class EmailVerificationTest extends TestCase
 
         $this->assertTrue($user->fresh()->hasVerifiedEmail());
         $this->assertAuthenticatedAs($user);
-        $response->assertRedirect(route('dashboard'));
+        $response->assertRedirect(route('cases.index'));
     }
 
     public function test_an_already_verified_link_signs_the_user_in_and_says_so(): void
@@ -108,7 +108,7 @@ class EmailVerificationTest extends TestCase
 
         Event::assertNotDispatched(Verified::class);
         $this->assertAuthenticatedAs($user);
-        $response->assertRedirect(route('dashboard'));
+        $response->assertRedirect(route('cases.index'));
         $response->assertSessionHas('status', fn (string $status) => str_contains($status, 'already verified'));
     }
 

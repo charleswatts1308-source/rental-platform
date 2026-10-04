@@ -5,7 +5,7 @@ The `docs/` folder has many files and many are stale — this index says
 which to trust and which to ignore, so you don't re-derive state from a
 superseded doc. It is a **router, not a record**: keep it short.
 
-**Last updated:** 2026-09-30.
+**Last updated:** 2026-10-04.
 
 > **Pruned 15 Sep 2026.** This file had grown to 542 lines of discharged
 > history — the #24/#49/#59 build, the 23 Aug capture run, the #25
@@ -19,13 +19,14 @@ superseded doc. It is a **router, not a record**: keep it short.
 
 ## Where everything is, right now
 
-- **`main` = `567d081`.** Local and origin level.
+- **`main` = the 4 Oct nav restructure.** Local and origin level.
 - **BOTH BOXES ARE AT `29450ed`** (deployed and tested 20 Sep, ledger written).
-  Ahead of them on `main`: the 21 Sep deploy docs, and **CONTENT CHANGES FROM
-  30 SEP THAT ARE NOT DEPLOYED** — the new homepage, the How It Works edits
-  and the new `/prs` page. Nothing urgent; deploy when Charlie wants the
-  content live.
-- **Suite: 889 green** (re-run 30 Sep after the content work).
+  Ahead of them on `main` and **NOT DEPLOYED**: the 21 Sep deploy docs, the
+  30 Sep content work (new homepage, How It Works edits, `/prs`), and the
+  4 Oct NAV RESTRUCTURE — which removes the dashboard, so it changes where
+  every signed-in user lands. Nothing urgent, but that last one is the first
+  change in a while that a returning user would notice immediately.
+- **Suite: 890 green** (re-run 4 Oct after the nav restructure).
 - **No work in flight.** `feature/inbound-enquiries` is merged
   (`--no-ff`, tag `pre-inbound-enquiries` marks the commit before it).
   `main` is safe to build from.
@@ -37,6 +38,46 @@ consequence, so it is not rediscovered as a bug:** a tenant whose
 landlord never replies never attaches a photograph at all, and the case
 escalates on the description alone. The create-case form says so, and
 only in this configuration.
+
+---
+
+## 4 Oct 2026 — the nav, and the dashboard's removal
+
+**➡ Snag #77 is the record, and it closes #1.** Read it before touching the
+nav, the footer or `/cases`.
+
+**The signed-in nav is now `How It Works · Background · Cases`**, plus the
+Admin dropdown. It was seven items, the first three of which were pages the
+user had already finished with.
+
+**THE DASHBOARD IS GONE.** `/cases` took over its duties — it is the
+post-verification landing page, carries the onboarding signposting and
+"Needs your attention", and is the only signed-in nav item. `/dashboard`
+permanent-redirects to it. Charlie's reasoning: two pages showed the same
+cases in different frames, and the cases list is the one people came for.
+Six `route('dashboard')` redirects in the Auth controllers were repointed.
+
+**`/cases` is master-detail** — properties newest first, cases newest first
+within each, with "Raise a case here", "Landlord" and "Edit" on every
+property heading. Properties left the nav because that page WAS those two
+buttons. **The grouping is not cosmetic:** a tenant who moves keeps the
+cases from the old address, because they are evidence, and cases are
+fetched by tenant and then grouped so a missing property can never hide one.
+
+**Contact Us is public, the enquiry address is not.** The link shows to
+everyone and still needs a login; the login page now explains why in
+contact-specific wording, including a line for a landlord. Charlie ruled
+the `landlord-enquiries@` address OFF that page — a public page gets
+harvested, and the letter already carries it.
+
+**Breadcrumbs stay out, confirmed.** The layout's breadcrumb block has never
+rendered and never will unless someone supplies `$breadcrumbs`. Kept and
+commented as dormant-by-decision, not deleted, in case the site deepens.
+
+**Three things left open and listed in #77:** the nav item shows on `@auth`
+while the route needs auth+verified, so an unverified user still meets a
+silent wall; there is no active-page styling anywhere; and the account
+button is labelled with the user's email address.
 
 ---
 
@@ -66,8 +107,9 @@ professional · Family · Long-term renter"), because a list invites the
 reader to look for themselves in it and conclude they are not there.
 
 **New page: `/prs`** — the scale of the sector, England only, tables and
-sources, no argument. **Route live but NOT in the nav**, pending a decision
-on where it belongs. Every figure re-fetched from the primary source: the
+sources, no argument. **In the nav as "Background" since 4 Oct**, with the
+page heading leading on the same word. Every figure re-fetched from the
+primary source: the
 archived version had cited a landlord survey for defence and retail
 figures, and had given England's 4.7 million as a UK number.
 
@@ -205,9 +247,8 @@ failure this week was silent too.
 **The background:** gafol runs a full Laravel deployment (maintenance mode, composer install, npm install); prod copies files and nothing else. Same Git settings on both, composer working on both — the difference is Plesk application integration, present on gafol and absent on prod. **The next release that adds a Composer package will install on gafol and BREAK PROD** (new code, old `vendor/`), with nothing in the deploy output to warn you. Either enable the integration on prod, or make `composer install --no-dev --optimize-autoloader` a mandatory typed step there. **Until one is chosen, treat any release touching `composer.json` as blocked for prod.** **➡ `docs/revision-2026-09-20-deploy-asymmetry.md` is the record** — what was believed, what is actually true, why (the Laravel application is linked to the Git repo on gafol and not on prod), and the agreed handling: run composer from prod's Laravel Toolkit COMPOSER TAB after any deploy that changes `composer.lock`, and do NOT try to link the repo on prod. Also in `environment-state.md`, 20 Sep entry.
 
 **1b. CONTENT DECISIONS LEFT WITH CHARLIE (30 Sep).** None blocking:
-- **Where `/prs` belongs** — nav, or a link from About Us. It is
-  argument-free, which makes it as useful to point a sceptical landlord at
-  as a tenant.
+- ~~**Where `/prs` belongs**~~ — SETTLED 4 Oct: main nav, named
+  "Background".
 - **The homepage's retaliation line** still reads "You have new rights now
   that encourage you to ask". Agreed to be safe but to UNDERSELL: rights
   protect, they do not encourage, and the concrete fact — that the no-fault

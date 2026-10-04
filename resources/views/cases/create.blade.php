@@ -83,7 +83,7 @@
                                  the notice will go to. Display only — the
                                  server decides, and ignores anything typed
                                  for a property that already has one. --}}
-                            <option value="{{ $property->id }}" @selected(old('property_id') == $property->id)
+                            <option value="{{ $property->id }}" @selected(old('property_id', request('property')) == $property->id)
                                     data-contact-name="{{ $property->currentLandlordContact?->name ?: $property->currentLandlordContact?->email }}"
                                     data-contact-email="{{ $property->currentLandlordContact?->email }}"
                                     data-contact-role="{{ $property->currentLandlordContact?->role->value }}"

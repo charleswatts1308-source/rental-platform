@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'The Scale of the Private Rented Sector')
+@section('title', 'Background: The Scale of the Private Rented Sector')
 
 @section('content')
 
@@ -9,7 +9,7 @@
      estimate of ours except where it says so. If a figure cannot be sourced it
      does not go on the page — that is the standard this page is held to. --}}
 
-<h1 class="mb-4">The Scale of the Private Rented Sector</h1>
+<h1 class="mb-4">Background: The Scale of the Private Rented Sector</h1>
 
 
 {{-- Jurisdiction stated once, at the top, with the REASON — a reader in

@@ -148,7 +148,6 @@
                                 {{ Auth::user()->email }}
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end">
-                                <li><a class="dropdown-item" href="{{ route('dashboard') }}">Dashboard</a></li>
                                 <li><a class="dropdown-item" href="{{ route('profile.edit') }}">Profile</a></li>
                                 <li><hr class="dropdown-divider"></li>
                                 <li>
@@ -165,29 +164,24 @@
                 <div class="navbar-collapse collapse order-xl-1" id="navbarSupportedContent">
                     <ul class="navbar-nav flex-grow-1">
                         <li class="nav-item">
-                            <a class="nav-link text-dark" href="/about">About Us</a>
-                        </li>
-
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" href="{{ route('contact.create') }}">Contact Us</a>
-                        </li>
-
-                        <li class="nav-item">
                             <a class="nav-link text-dark" href="{{ route('members.how-it-works') }}">How It Works</a>
                         </li>
 
-                        {{-- Signed-in area. Guarded by @auth: these all sit behind
-                             auth+verified, so showing them to a guest only produced a
-                             bounce to the login page with no explanation. --}}
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" href="{{ route('prs-scale') }}">Background</a>
+                        </li>
+
+                        {{-- Signed-in area. Guarded by @auth: it sits behind
+                             auth+verified, so showing it to a guest only produced a
+                             bounce to the login page with no explanation.
+
+                             ONE item since 4 Oct 2026. Dashboard and Properties
+                             both went: Dashboard showed the same cases in a second
+                             frame, and Properties was a list of addresses whose two
+                             controls now live on each property heading inside Cases.
+                             The property registry is still at /properties and is
+                             still linked from the create-case form. --}}
                         @auth
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" href="{{ route('dashboard') }}">Dashboard</a>
-                        </li>
-
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" href="{{ route('properties.index') }}">Properties</a>
-                        </li>
-
                         <li class="nav-item">
                             <a class="nav-link text-dark" href="{{ route('cases.index') }}">Cases</a>
                         </li>
@@ -208,26 +202,27 @@
                             </ul>
                         </li>
                         @endif
-
-                        {{-- Last in the nav deliberately. The landlord arrives by
-                             typing renters.rent from the letter footer rather than
-                             clicking a link, so this only has to be findable from
-                             the homepage — it is not part of the tenant journey. --}}
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" href="{{ route('landlords') }}">Landlords</a>
-                        </li>
                     </ul>
                 </div>
             </div>
         </nav>
     </header>
 
-    <!-- Breadcrumbs -->
+    {{-- Breadcrumbs — DELIBERATELY INERT, not abandoned. Nothing in the
+         application supplies $breadcrumbs, so this block never renders.
+         Breadcrumbs were considered and ruled against (4 Oct 2026): the site
+         is two levels deep, and a trail would mostly tell people they are one
+         click from where they started. Kept rather than deleted because that
+         judgement depends on the site staying shallow, which may change.
+         To switch it on, pass $breadcrumbs from a view or controller as
+         [['text' => '...', 'url' => '...'], ...] — "Home" is prepended here
+         and points at the dashboard, so check that is still the right root
+         before relying on it. --}}
     @if(isset($breadcrumbs))
         <div class="container">
             <nav aria-label="breadcrumb" class="mt-3 mb-3">
                 <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Home</a></li>
+                    <li class="breadcrumb-item"><a href="{{ route('cases.index') }}">Home</a></li>
                     @foreach($breadcrumbs as $index => $breadcrumb)
                         @if($loop->last)
                             <li class="breadcrumb-item active" aria-current="page">{{ $breadcrumb['text'] }}</li>
@@ -260,10 +255,12 @@
             <div class="row align-items-center">
                 <!-- Quick Links -->
                 <div class="col-md-6 mb-2 mb-md-0">
-                    <ul class="list-unstyled mb-0 d-flex gap-3">
-                        <li><a href="/about" class="text-light text-decoration-none">About Us</a></li>
-                        <li><a href="/privacy" class="text-light text-decoration-none">Privacy Policy</a></li>
-                        <li><a href="/cookies" class="text-light text-decoration-none">Cookies</a></li>
+                    <ul class="list-unstyled mb-0 d-flex flex-wrap gap-3">
+                        <li><a href="/about" class="text-light text-decoration-none text-nowrap">About Us</a></li>
+                        <li><a href="{{ route('contact.create') }}" class="text-light text-decoration-none text-nowrap">Contact Us</a></li>
+                        <li><a href="/privacy" class="text-light text-decoration-none text-nowrap">Privacy Policy</a></li>
+                        <li><a href="/cookies" class="text-light text-decoration-none text-nowrap">Cookies</a></li>
+                        <li><a href="{{ route('landlords') }}" class="text-light text-decoration-none text-nowrap">Landlords</a></li>
                     </ul>
                 </div>
 

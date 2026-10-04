@@ -10,8 +10,21 @@
                 <h4 class="mb-0">Login to Your Account</h4>
             </div>
             <div class="card-body p-4">
-                <!-- Redirect Notice -->
-                @if (session()->has('url.intended'))
+                {{-- Redirect Notice. The contact form gets its own wording: someone
+                     bounced from there was trying to SEND something, not read a
+                     members page, and a landlord arriving this way must not be told
+                     to register. The enquiry address is deliberately NOT printed
+                     here — a public page gets scraped; the letter carries it. --}}
+                @php
+                    $intendedPath = rtrim(parse_url(session('url.intended', ''), PHP_URL_PATH) ?? '', '/');
+                @endphp
+                @if ($intendedPath === '/contact')
+                    <div class="alert alert-warning mb-3" role="alert">
+                        <strong>Sending us a message</strong><br>
+                        Our contact form is for signed-in members — it keeps out automated spam. Please login or <a href="{{ route('register') }}">register</a>.
+                        <p class="mb-0 mt-2">If you are a landlord, the letter you received tells you how to reach us.</p>
+                    </div>
+                @elseif (session()->has('url.intended'))
                     <div class="alert alert-warning mb-3" role="alert">
                         <strong>Members Only</strong><br>
                         We reserve these pages for members, so please login or <a href="{{ route('register') }}">register</a>.

@@ -23,7 +23,11 @@
 
         <div class="col-12 d-flex gap-2 mt-4">
             <button type="submit" class="btn btn-primary">Register property</button>
-            <a href="{{ route('properties.index') }}" class="btn btn-outline-secondary">Cancel</a>
+            {{-- Cancel returns to /cases, not the property list: since 4 Oct 2026
+                 these forms are reached from a property heading on the Cases
+                 page, and landing on a page the user has never seen is how a
+                 Cancel loses someone. --}}
+            <a href="{{ route('cases.index') }}" class="btn btn-outline-secondary">Cancel</a>
         </div>
     </form>
 </div>

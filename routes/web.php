@@ -1,6 +1,5 @@
 <?php
 
-use App\Enums\CaseStatus;
 use App\Http\Controllers\Admin\CaseOversightController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\TemplateController;
@@ -13,10 +12,7 @@ use App\Http\Controllers\PropertyController;
 use App\Http\Controllers\PropertyLandlordContactController;
 use App\Http\Controllers\Webhooks\MailgunDeliveryEventController;
 use App\Http\Controllers\Webhooks\MailgunInboundController;
-use App\Models\Property;
-use App\Models\RepairCase;
 use Carbon\Carbon;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Route;
 
@@ -30,8 +26,9 @@ Route::get('/about', function () {
 // should not have to click a link in the message they are suspicious of.
 Route::get('/landlords', fn () => view('landlords'))->name('landlords');
 
-// Scope and size of the PRS — tables, sources, no argument. Deliberately NOT
-// in the nav yet; Charlie decides where it belongs once he has seen it.
+// Scope and size of the PRS — tables, sources, no argument. In the nav as
+// "Background" since 4 Oct 2026; the page heading leads with the same word so
+// the click and the arrival agree.
 Route::get('/prs', fn () => view('prs-scale'))->name('prs-scale');
 
 // PWA offline fallback — served by the service worker when a navigation fails.
@@ -51,28 +48,12 @@ Route::get('/', function () {
     return view('welcome-4');
 });
 
-// Dashboard is the post-verification landing page and the site's hub: it
-// carries the "what do I do next" signposting a new tenant needs, since the
-// property-then-case ordering is otherwise left to be inferred.
-Route::get('/dashboard', function (Request $request) {
-    $userId = $request->user()->id;
-
-    $propertyCount = Property::where('registered_by_user_id', $userId)->count();
-
-    $cases = RepairCase::query()
-        ->where('tenant_user_id', $userId)
-        ->with(['property', 'category'])
-        ->orderByDesc('opened_at')
-        ->get();
-
-    return view('dashboard', [
-        'propertyCount' => $propertyCount,
-        'cases' => $cases,
-        // Cases where the ball is with the tenant — these are the ones the
-        // user must act on, so they lead the page.
-        'needsAttention' => $cases->where('status', CaseStatus::AwaitingTenantReview),
-    ]);
-})->middleware(['auth', 'verified'])->name('dashboard');
+// The dashboard was removed on 4 Oct 2026 and /cases took over its duties:
+// it is now the post-verification landing page and the site's only signed-in
+// hub, carrying the "what do I do next" signposting a new tenant needs.
+// Two pages showing the same cases with different framing was the whole of
+// the problem. /dashboard redirects so any bookmark still lands somewhere.
+Route::permanentRedirect('/dashboard', '/cases');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     // Profile routes

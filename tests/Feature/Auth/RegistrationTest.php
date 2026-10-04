@@ -30,7 +30,7 @@ class RegistrationTest extends TestCase
         ]);
 
         $this->assertAuthenticated();
-        $response->assertRedirect(route('dashboard', absolute: false));
+        $response->assertRedirect(route('cases.index', absolute: false));
     }
 
     public function test_open_to_all_ignores_the_allowlist(): void
@@ -112,7 +112,7 @@ class RegistrationTest extends TestCase
 
         $response->assertSessionHasNoErrors();
         $this->assertAuthenticated();
-        $response->assertRedirect(route('dashboard', absolute: false));
+        $response->assertRedirect(route('cases.index', absolute: false));
 
         // Stored lowercased — the allowlist gate, landlord contacts and
         // inbound reply matching all compare against lowercase.

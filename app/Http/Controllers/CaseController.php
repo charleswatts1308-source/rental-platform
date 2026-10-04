@@ -80,17 +80,63 @@ class CaseController extends Controller
         private SilenceClock $silenceClock,
     ) {}
 
+    /**
+     * The signed-in home. This page absorbed the dashboard on 4 Oct 2026:
+     * one destination, cases grouped under the property they belong to.
+     *
+     * Grouping by property is not cosmetic. A tenant who moves keeps the
+     * cases raised at the old address — they are evidence — and a flat list
+     * makes that reading confusing. It also gives the landlord contact a
+     * home, which is the single most likely thing a tenant needs to correct.
+     *
+     * Cases are fetched BY TENANT, not through the property registry, so a
+     * case can never be hidden by a property that is missing from it.
+     */
     public function index(Request $request): View
     {
         $this->authorize('viewAny', RepairCase::class);
 
+        $userId = $request->user()->id;
+
         $cases = RepairCase::query()
-            ->where('tenant_user_id', $request->user()->id)
+            ->where('tenant_user_id', $userId)
             ->with(['property', 'property.currentLandlordContact', 'category'])
             ->orderByDesc('opened_at')
             ->get();
 
-        return view('cases.index', ['cases' => $cases]);
+        $properties = Property::query()
+            ->where('registered_by_user_id', $userId)
+            ->with('currentLandlordContact')
+            ->orderByDesc('created_at')
+            ->get();
+
+        $casesByProperty = $cases->groupBy('property_id');
+
+        $groups = $properties->map(fn (Property $property) => [
+            'property' => $property,
+            'cases' => $casesByProperty->get($property->id, collect()),
+        ]);
+
+        // Defensive: any case whose property is not in the tenant's registry
+        // still gets shown, under its own heading, rather than vanishing.
+        $orphans = $cases->reject(fn (RepairCase $case) => $properties->contains('id', $case->property_id))
+            ->groupBy('property_id');
+
+        foreach ($orphans as $group) {
+            $groups->push([
+                'property' => $group->first()->property,
+                'cases' => $group->sortByDesc('opened_at')->values(),
+            ]);
+        }
+
+        return view('cases.index', [
+            'groups' => $groups,
+            'propertyCount' => $properties->count(),
+            'caseCount' => $cases->count(),
+            // Cases where the ball is with the tenant — these are the ones
+            // the user must act on, so they lead the page.
+            'needsAttention' => $cases->where('status', CaseStatus::AwaitingTenantReview),
+        ]);
     }
 
     public function show(string $slug): View

@@ -63,7 +63,7 @@ class VerifyEmailController extends Controller
         // confirmation) vanished on the same-browser route. A flash
         // survives wherever the redirect lands.
         return redirect()
-            ->route('dashboard')
+            ->route('cases.index')
             ->with('status', $alreadyVerified
                 ? 'Your email address was already verified — you are signed in.'
                 : 'Welcome — and thanks for registering! Your email address is verified and your account is ready to go.');
