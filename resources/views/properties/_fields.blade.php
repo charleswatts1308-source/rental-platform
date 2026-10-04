@@ -22,3 +22,45 @@
     'notFoundMessage' => 'We could not find that postcode. Please check it.',
     'cityHelp' => 'Type the postcode above, then click in this box and we will fill it in for you.',
 ])
+
+
+{{-- Information only, for statistics - this drives no letter and no
+     obligation (ruled 4 Oct 2026). The ORDER is the English PRS
+     distribution published on the Background page, commonest first, so
+     most tenants find themselves in the first two or three options. --}}
+<div class="col-md-6">
+    <label for="property_type" class="form-label">Type of property</label>
+    <select id="property_type" name="property_type"
+            class="form-select @error('property_type') is-invalid @enderror" required>
+        <option value="">&mdash; please choose &mdash;</option>
+        @foreach(\App\Enums\PropertyType::selectable() as $type)
+            <option value="{{ $type->value }}"
+                @selected(old('property_type', $property?->property_type?->value) === $type->value)>
+                {{ $type->label() }}
+            </option>
+        @endforeach
+    </select>
+    @error('property_type')<div class="invalid-feedback">{{ $message }}</div>@enderror
+</div>
+
+{{-- The parenthesis is the question. It asks whether an agreement
+     EXISTS, not whether the tenant can lay hands on it - those are
+     different facts and both matter. "I don't know" is offered because
+     a lodger or an informal arrangement genuinely may not, and a forced
+     yes/no would record that guess as a fact. --}}
+<div class="col-md-6">
+    <label for="has_lease_agreement" class="form-label">
+        Do you have a lease agreement, even if you can't find it?
+    </label>
+    <select id="has_lease_agreement" name="has_lease_agreement"
+            class="form-select @error('has_lease_agreement') is-invalid @enderror" required>
+        <option value="">&mdash; please choose &mdash;</option>
+        @foreach(\App\Enums\LeaseAgreementAnswer::selectable() as $answer)
+            <option value="{{ $answer->value }}"
+                @selected(old('has_lease_agreement', $property?->has_lease_agreement?->value) === $answer->value)>
+                {{ $answer->label() }}
+            </option>
+        @endforeach
+    </select>
+    @error('has_lease_agreement')<div class="invalid-feedback">{{ $message }}</div>@enderror
+</div>

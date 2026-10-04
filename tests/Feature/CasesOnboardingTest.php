@@ -55,6 +55,8 @@ it('sends a user to the landlord step after registering their FIRST property', f
         ->post(route('properties.store'), [
             'address_line1' => '1 Test Street',
             'city' => 'Leeds',
+            'property_type' => 'terraced',
+            'has_lease_agreement' => 'yes',
             'postcode' => 'LS1 1AA',
         ])
         ->assertRedirect(route('properties.contact.edit', Property::where('registered_by_user_id', $user->id)->sole()))
@@ -69,6 +71,8 @@ it('sends a user to the landlord step for a SUBSEQUENT property too — no first
         ->post(route('properties.store'), [
             'address_line1' => '2 Test Street',
             'city' => 'Leeds',
+            'property_type' => 'terraced',
+            'has_lease_agreement' => 'yes',
             'postcode' => 'LS2 2BB',
         ])
         ->assertRedirect(route('properties.contact.edit', Property::where('address_line1', '2 Test Street')->sole()));

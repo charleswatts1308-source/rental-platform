@@ -39,6 +39,8 @@ function propertyPayload(array $overrides = []): array
     return array_merge([
         'address_line1' => '66 Pond Road',
         'city' => 'Reading',
+        'property_type' => 'terraced',
+        'has_lease_agreement' => 'yes',
         'postcode' => 'RG1 5SE',
     ], $overrides);
 }

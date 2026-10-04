@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\LeaseAgreementAnswer;
+use App\Enums\PropertyType;
 use App\Models\Property;
 use App\Rules\PostcodeIsReal;
 use App\Services\PostcodeLookup;
@@ -9,6 +11,7 @@ use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 /**
@@ -58,6 +61,8 @@ class PropertyController extends Controller
             'address_line2' => $validated['address_line2'] ?? null,
             'city' => $validated['city'],
             'postcode' => $this->normalisePostcode($validated['postcode']),
+            'property_type' => $validated['property_type'],
+            'has_lease_agreement' => $validated['has_lease_agreement'],
             'registered_by_user_id' => $request->user()->id,
         ]);
 
@@ -95,10 +100,15 @@ class PropertyController extends Controller
             'address_line2' => $validated['address_line2'] ?? null,
             'city' => $validated['city'],
             'postcode' => $this->normalisePostcode($validated['postcode']),
+            'property_type' => $validated['property_type'],
+            'has_lease_agreement' => $validated['has_lease_agreement'],
         ]);
 
+        // Back to /cases, not the property list: since 4 Oct 2026 this
+        // form is reached from a property heading there, and finishing
+        // somewhere the user has never been is how an edit loses them.
         return redirect()
-            ->route('properties.index')
+            ->route('cases.index')
             ->with('success', 'Property updated.');
     }
 
@@ -146,8 +156,28 @@ class PropertyController extends Controller
                 'regex:'.self::POSTCODE_PATTERN,
                 app(PostcodeIsReal::class),
             ],
+            // Information only, for statistics - it drives no letter and
+            // no obligation (ruled 4 Oct 2026). Rule::in over the
+            // SELECTABLE cases, not the whole enum: not_specified is a
+            // backfill marker for rows that pre-date the question and
+            // must never be submittable, or the one distinction the
+            // field exists to preserve is lost on the first POST.
+            'property_type' => [
+                'required',
+                Rule::in(array_column(PropertyType::selectable(), 'value')),
+            ],
+            // Mandatory, and answerable: "I don't know" is one of the
+            // options, so nobody is forced to invent a yes or a no.
+            'has_lease_agreement' => [
+                'required',
+                Rule::in(array_column(LeaseAgreementAnswer::selectable(), 'value')),
+            ],
         ], [
             'postcode.regex' => 'Enter a valid UK postcode (for example, M1 1AA).',
+            'property_type.required' => 'Choose the type of property you rent.',
+            'property_type.in' => 'Choose the type of property you rent.',
+            'has_lease_agreement.required' => 'Tell us whether you have a lease agreement.',
+            'has_lease_agreement.in' => 'Tell us whether you have a lease agreement.',
         ]);
     }
 
