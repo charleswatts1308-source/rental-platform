@@ -55,6 +55,26 @@
             white-space: nowrap;
         }
 
+        /* Account button label. Grows with the screen rather than being
+           cut to one fixed length everywhere - on a phone the address
+           was eating the width the nav itself needed. The full value is
+           still in the menu and in the title attribute. */
+        .account-email {
+            max-width: 7rem;
+        }
+
+        @media (min-width: 576px) {
+            .account-email {
+                max-width: 12rem;
+            }
+        }
+
+        @media (min-width: 992px) {
+            .account-email {
+                max-width: 20rem;
+            }
+        }
+
         /* Dial down heading sizes */
         h1 {
             font-size: 1.75rem;
@@ -100,7 +120,17 @@
 <body>
     <!-- Header -->
     <header class="sticky-top">
-        <nav class="navbar navbar-expand-xl navbar-light header-bar bg-white border-bottom box-shadow mb-3">
+        {{-- expand-SM, not expand-xl. The hamburger now appears only below
+         576px - on an actual phone - instead of hiding three words from
+         every tablet and half-width laptop. It was set to xl when the
+         signed-in nav carried seven items; it carries three (plus Admin)
+         since 4 Oct 2026.
+
+         THE order-sm-* CLASSES BELOW MUST MATCH THIS BREAKPOINT. They
+         put the nav links before the account button once the bar is
+         expanded; pinned to a different breakpoint they reorder the bar
+         at every width in between. --}}
+        <nav class="navbar navbar-expand-sm navbar-light header-bar bg-white border-bottom box-shadow mb-3">
             <div class="container">
                 <a href="/" class="navbar-brand d-flex align-items-center text-decoration-none p-0">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="48 0 352 90" width="200" height="45" class="me-2">
@@ -138,16 +168,35 @@
                 </button>
 
                 <!-- Authentication Links - Always Visible -->
-                <div class="ms-auto d-flex align-items-center order-xl-2 auth-buttons">
+                <div class="ms-auto d-flex align-items-center order-sm-2 auth-buttons">
                     @guest
                         <a href="{{ route('login') }}" class="btn btn-sm me-1" style="color: #047857; border-color: #047857;">Login</a>
                         <a href="{{ route('register') }}" class="btn btn-sm text-white" style="background-color: #047857;">Register</a>
                     @else
                         <div class="dropdown">
-                            <a class="btn btn-outline-secondary dropdown-toggle small text-lowercase fw-normal" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                {{ Auth::user()->email }}
+                            {{-- The email is truncated by WIDTH, not by a fixed
+                                 character count: a narrow screen gets a short
+                                 label and a wide one gets the whole address,
+                                 instead of every screen being cut to the
+                                 phone's budget. The caret sits outside the
+                                 truncating span so it is never clipped.
+
+                                 Nothing is lost by shortening it - the full
+                                 address is the first line of the menu below,
+                                 and the title shows it on hover. That matters
+                                 because this button is the only thing telling
+                                 a user WHICH account they are signed into. --}}
+                            <a class="btn btn-outline-secondary dropdown-toggle small text-lowercase fw-normal d-inline-flex align-items-center"
+                               href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false"
+                               title="{{ Auth::user()->email }}">
+                                <span class="account-email text-truncate">{{ Auth::user()->email }}</span>
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end">
+                                {{-- Full, unshortened, and allowed to wrap: this
+                                     is where "am I in the right account?" gets
+                                     answered. --}}
+                                <li><h6 class="dropdown-header text-break">{{ Auth::user()->email }}</h6></li>
+                                <li><hr class="dropdown-divider"></li>
                                 <li><a class="dropdown-item" href="{{ route('profile.edit') }}">Profile</a></li>
                                 <li><hr class="dropdown-divider"></li>
                                 <li>
@@ -161,7 +210,7 @@
                     @endguest
                 </div>
 
-                <div class="navbar-collapse collapse order-xl-1" id="navbarSupportedContent">
+                <div class="navbar-collapse collapse order-sm-1" id="navbarSupportedContent">
                     <ul class="navbar-nav flex-grow-1">
                         <li class="nav-item">
                             <a class="nav-link text-dark" href="{{ route('members.how-it-works') }}">How It Works</a>

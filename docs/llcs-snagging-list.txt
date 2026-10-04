@@ -4218,3 +4218,47 @@ Fix:         One line in layouts/app.blade.php — the literal 2025
 Ships:       With LOT 2 (feature/property-details). It is a view-only
              change and rode along rather than earning its own release.
 --------------------------------------------------------------------
+#79
+Page:        Main nav bar, site-wide
+Severity:    cosmetic
+Date:        4 Oct 2026 — raised by Charlie walking the gafol deploy:
+             "there are so few items in menu - do we need hamburger"
+Saw:         The nav collapsed to a hamburger below 1200px, hiding
+             THREE words — How It Works, Background, Cases — from every
+             tablet and every half-width laptop window. And the account
+             button was labelled with the user's FULL email address,
+             which on a phone ate the width the nav itself needed.
+Expected:    The hamburger only where it is actually needed.
+
+Both fixed, and they had to be done together: shortening the email is
+what made the lower breakpoint safe.
+
+ - COLLAPSE POINT 1200px -> 576px. The hamburger now appears only below
+   576px, on an actual phone. 1200px was right when the signed-in nav
+   carried seven items; it carries three plus Admin since #77.
+ - THE ORDERING CLASSES HAD TO MOVE WITH IT. order-xl-1 / order-xl-2 put
+   the nav links before the account button once the bar expands. Left at
+   xl while the expand point dropped to sm, the bar would have reordered
+   itself at every width between 576 and 1200 — a silent breakage that
+   only shows at sizes nobody tests at. Now order-sm-*.
+ - The .auth-buttons divider rule was ALREADY at 576px, so it now lines
+   up with the expand point exactly. Luck, but correct.
+ - ACCOUNT EMAIL TRUNCATED BY WIDTH, NOT BY CHARACTER COUNT. Charlie
+   suggested "first 10 chars"; built instead as a CSS ellipsis with a
+   max-width that grows — 7rem on a phone, 12 at 576px, 20 at 992px —
+   so a wide screen is not cut to the phone's budget.
+   NOTHING IS LOST: the full address is now the FIRST LINE OF THE
+   DROPDOWN, and the button carries it as a title on hover. That
+   mattered because this button is the only thing telling a user which
+   account they are signed into, and "charles.wa…" alone does not.
+   The caret sits outside the truncating span so it is never clipped.
+
+CLOSES one of the three items left open by #77. Still open from that
+list: the nav item shows on @auth while /cases needs auth+verified, so
+an unverified user meets a silent wall; and there is still no
+active-page styling anywhere.
+
+Fix:        layouts/app.blade.php — navbar class, two ordering classes,
+            the dropdown header, and a .account-email width rule.
+Ships:      With LOT 2 (feature/property-details), like #78.
+--------------------------------------------------------------------
