@@ -5,7 +5,7 @@ The `docs/` folder has many files and many are stale — this index says
 which to trust and which to ignore, so you don't re-derive state from a
 superseded doc. It is a **router, not a record**: keep it short.
 
-**Last updated:** 2026-10-04.
+**Last updated:** 2026-10-05.
 
 > **Pruned 15 Sep 2026.** This file had grown to 542 lines of discharged
 > history — the #24/#49/#59 build, the 23 Aug capture run, the #25
@@ -19,20 +19,15 @@ superseded doc. It is a **router, not a record**: keep it short.
 
 ## Where everything is, right now
 
-- **`main` = `06a17b1`** (4 Oct nav restructure). Local and origin level.
-- **WORK IN FLIGHT: `feature/property-details`, PUSHED, NOT MERGED.**
-  Complete and green — property type, lease flag, lease upload. Tag
-  `pre-property-details` marks the commit before it. **Suite 914 on the
-  branch; 890 on `main`.** ➡ `docs/cc-report-property-details-implementation.md`
-  is the record and carries the deploy notes.
-- **BOTH BOXES ARE AT `29450ed`** (deployed and tested 20 Sep, ledger written).
-  Ahead of them on `main` and **NOT DEPLOYED**: the 21 Sep deploy docs, the
-  30 Sep content work (new homepage, How It Works edits, `/prs`), and the
-  4 Oct NAV RESTRUCTURE — which removes the dashboard, so it changes where
-  every signed-in user lands. Nothing urgent, but that last one is the first
-  change in a while that a returning user would notice immediately.
-- `feature/inbound-enquiries` is merged (`--no-ff`, tag
-  `pre-inbound-enquiries`). `main` is safe to build from.
+- **`main` = `f78c93c`.** Local and origin level, working tree clean.
+- **BOTH BOXES ARE AT `337edf0`** — gafol and renters.rent, code-identical,
+  **48 migrations each**, deployed and verified 5 Oct 2026.
+  **NOTHING IS UNDEPLOYED.** First time the two have been level since
+  20 Sep. ➡ `docs/environment-state.md` carries both entries.
+- **Suite: 914 green.**
+- **No work in flight.** `feature/property-details` is merged (`--no-ff`,
+  tag `pre-property-details`); the branch is pushed and can be deleted
+  whenever. `main` is safe to build from.
 
 **Attachment ceilings, both boxes: letter 1 = `0`, replies = `3`.** Set
 15 Sep, deliberately (#73). Photos are refused on the cold first letter
@@ -44,57 +39,71 @@ only in this configuration.
 
 ---
 
-## NEXT ACTION — Charlie's own words, 4 Oct: deploy to gafol and test
+## NEXT ACTION — nothing is deploying. Pick from these.
 
-**THE FIRST DECISION, BEFORE ANY DEPLOY: one release or two?**
+**The deploy is DONE and closed out.** Both boxes level, ledger written.
+Do not re-derive deploy state from anything below; `environment-state.md`
+is the record.
 
-Three undeployed things are now stacked on top of the boxes (`29450ed`):
-the 30 Sep content, the 4 Oct nav restructure, and — if it is merged
-first — property-details.
+**1. #62 — THE ENQUIRY SENTENCE IS STILL NOT IN ANY DATABASE.** My pick,
+and it has been outstanding since 19 Sep. The inbound enquiry channel is
+BUILT AND LIVE on production, but letter 1 does not mention it, so **no
+landlord is being told the channel exists**. The seeder has the wording;
+dev, gafol and prod read templates from the DATABASE and the seeder does
+not overwrite existing rows. Each box needs the paragraph added through
+the **ADMIN TEMPLATE EDITOR**, never raw SQL — the editor writes
+`letter_text_change_history`, and an unexplained wording change on an
+evidential letter is what you would later have to explain in front of
+someone. The exact wording and the reasoning for its placement in the
+FOOTER rather than the body are in open action 2 below.
 
-**Recommendation: deploy them SEPARATELY.** The nav and content work is
-views only. Property-details carries FOUR MIGRATIONS and a backfill that
-writes to every existing property row on the box. Combined, a problem
-after deploy does not tell you which half caused it. Separated, it does.
+**2. The prod composer gap (open action 1a) — now the largest latent
+risk.** Nothing has changed: prod installs no dependencies on deploy, so
+**the next release that adds a Composer package will work on gafol and
+break production silently**. This release was safe only because it added
+none. The route is decided and written up in
+`docs/deploy-pipeline-divergence.md`; the job is not done.
 
-**Neither release touches `composer.json` or `composer.lock`**, so the
-prod composer trap (open action 1a) does not apply to either. gafol
-would not care anyway; this matters only when prod's turn comes.
+**3. Snag #77's three leftovers**, all small, all user-facing: an
+unverified user still sees the Cases link and gets bounced with no
+explanation; there is no active-page styling anywhere; and the 200px
+logo is over half the width of a phone screen.
 
-**If property-details goes:** check `storage/app/` is writable on the box
-before the first lease upload, and expect every existing property to read
-"Not specified" on both new columns afterwards — that is the backfill
-working, not a failure.
+**4. The content decisions parked with Charlie** — the homepage
+retaliation line, the jurisdiction sentence on How It Works, and
+`/about` and `/landlords`, which have still never been looked at.
 
-**NOTE: this router's copy on `main` is one commit behind** until
-`feature/property-details` merges, because the branch holds this update
-and the project rule is zero commits to `main` during a phase. If a
-session starts on `main` and this section is missing, that is why.
+**WATCH THIS, it is new on 5 Oct:** property type and the lease question
+are MANDATORY, and every existing property on both boxes holds the
+backfill value. So **a user editing an existing property is now asked two
+questions they have never seen**, and cannot save without answering. That
+is the design working. It is also the most likely thing a confused user
+reports, so recognise it rather than treating it as a bug.
 
 ---
 
-## 4 Oct 2026 — property details (branch, not merged)
+## 5 Oct 2026 — property details, deployed
 
-**➡ `docs/cc-brief-property-details.md` (D0, accepted) and
+**➡ `docs/cc-brief-property-details.md` (D0) and
 `docs/cc-report-property-details-implementation.md` are the record.**
 
-Property type (mandatory, stats only), "do you have a lease agreement,
-even if you can't find it?" (mandatory, three answers including "I don't
-know"), and an optional lease upload on both property forms.
+Property type (mandatory, statistics only), "do you have a lease
+agreement, even if you can't find it?" (mandatory, three answers), and an
+optional lease upload on both property forms. Merged and live on both
+boxes.
 
 **Three things not to rediscover:**
 
-- **`not_specified` is a BACKFILL MARKER on both columns, not an
-  answer.** Existing rows get it; it is not in the dropdowns, not in the
-  markup, and refused by validation. Without it "the tenant chose Other"
-  and "we never asked" merge permanently, and the statistics the fields
-  exist for are worthless. Both columns are NOT NULL with **no database
-  default**, so a code path that forgets to ask fails loudly.
+- **`not_specified` is a BACKFILL MARKER on both columns, not an answer.**
+  Not in the dropdowns, not in the markup, refused by validation — an
+  existing property shows "— please choose —" instead. Both columns are
+  NOT NULL with **no database default**, so a code path that forgets to
+  ask fails loudly rather than inventing an answer.
 - **The type list and ITS ORDER come from the Background page's sourced
   distribution**, so the two sets of figures can be read against each
   other. That is why flats are split purpose-built/converted and why
   there is NO end-of-terrace. "Room in a shared house" is deliberately
-  not labelled HMO: that is a legal question about someone else's
+  not labelled HMO — that is a legal question about someone else's
   property and a tenant asked it will guess.
 - **A LEASE NEVER LEAVES THE PLATFORM** — never attached to a case, sent
   to a landlord, or carried on a letter. Held so a human can read it to
@@ -103,14 +112,13 @@ know"), and an optional lease upload on both property forms.
   executable**. `file_attachments` was deliberately not reused: a table
   called "attachments" does not carry the rule.
 
-**MariaDB check done and passed** — no `ON UPDATE CURRENT_TIMESTAMP`
-anywhere despite the `change()`, backfill proven on 15 real rows,
-rollback byte-identical. **Nothing reads `property_type` yet**; if the
-statistics are actually wanted, an admin count is the next piece.
+**Nothing reads `property_type` yet.** It is collected and stored; no
+admin view counts it. That is the obvious next piece if the statistics
+are wanted rather than merely possible.
 
 ---
 
-## 4 Oct 2026 — the nav, and the dashboard's removal
+## 4 Oct 2026 — the nav, and the dashboard's removal (DEPLOYED)
 
 **➡ Snag #77 is the record, and it closes #1.** Read it before touching the
 nav, the footer or `/cases`.
@@ -196,105 +204,42 @@ The one derived figure shows its arithmetic and says it is ours.
 
 ---
 
-## 20 Sep 2026 — credentials, Contact Us, and a deploy asymmetry
+## Discharged sessions — pointers only
 
-**#75 took THREE fixes, and the pattern is the point.** Each was verified
-against the symptom I had been shown; each time the wall had moved one
-step earlier in the user's path:
+Pruned 5 Oct 2026. All three below are fully recorded elsewhere and none
+of them steers the next action; they were 150 lines of this router.
 
-1. the reset FORM was unreachable while signed in — fixed;
-2. the page that SENDS the link was unreachable — fixed;
-3. the LINK to that page did not exist anywhere a signed-in user could
-   see — fixed (it now sits on the profile password form).
+- **20 Sep — credentials, Contact Us, the deploy asymmetry.** #75 took
+  THREE fixes, each verified against the symptom shown while the wall
+  moved one step earlier in the user's path. ➡
+  `docs/revision-2026-09-20-deploy-asymmetry.md` and
+  `docs/deploy-pipeline-divergence.md` — **read the second before any
+  deploy that touches composer.** The asymmetry itself is still open; see
+  action 1a.
+- **19 Sep — the inbound enquiry channel.** ➡
+  `docs/cc-brief-inbound-enquiries.md`,
+  `docs/cc-report-inbound-enquiries-implementation.md`, and
+  `docs/inbound-mail-schematic.txt` — read that last one first if the
+  question is "where does mail to X go". **Its wording is still not in any
+  database: see action 2, which is the top of the next-action list.**
+- **The September fix cycle.** ➡
+  `docs/cc-report-fix-cycle-sep-2026-implementation.md`. Read it before
+  touching cases, attachments, replies or verification. Twenty-one snags
+  closed, ten of them found BY WALKING THE APP, and three defects no test
+  would ever have found (#71 double-send, #72 replacement wiping kept
+  photos, #73 replies sharing letter 1's ceiling).
 
-Only the third makes the feature usable by the person it was for. A green
-test proved each step in isolation; none walked the path end to end.
-**Charlie found all three by asking what the user would do next** — the
-question the suite never asks. Also **#76**: the reset form now says "New
-Password", not "Password", on the least forgiving screen in the product.
-
-**#30 Contact Us — the August decision was revised, deliberately.** Not
-the threaded rebuild: a notification on submit whose **Reply-To is the
-user**, so an ordinary mail client answers them, plus the admin reply
-moving off the dead `noreply@renters.rent` onto an address the enquiry
-forwarder recognises. Charlie's reasoning: keep it simple until volume
-dictates otherwise, especially now the forwarder exists. Accepted cost:
-his REPLY lives in his mailbox, not on the platform.
-
-**A production risk was found, and it is open — see open action 1a.** The
-two boxes do not deploy the same way.
-
----
-
-## 19 Sep 2026 — the inbound enquiry channel, and what it cost to get it
-
-**➡ `docs/cc-brief-inbound-enquiries.md` and
-`docs/cc-report-inbound-enquiries-implementation.md` are the record.
-`docs/inbound-mail-schematic.txt` shows where any given address ends up
-— read that first if the question is "where does mail to X go".**
-
-Landlords now have a written channel that is not a case reply (#62):
-`landlord-enquiries@`, `privacy@` and `info@` on `mg.renters.rent` are
-recognised by the webhook and forwarded to a private mailbox. Built,
-tested live on production, merged, deployed.
-
-**The constraint that shaped it:** the Mailgun free tier allows ONE
-inbound route and it is spent on the case-reply catch-all. Upgrading buys
-volume, not deliverability (#36), so the discrimination moved into the
-application instead. Mail to those addresses was already reaching the
-webhook and being dropped; only recognition was missing.
-
-**Three things found by walking, which no test would have caught:**
-
-- **#74** — the forward's SPF/DKIM line read `? / ?` on every real send.
-  The code read payload fields Mailgun does not send, and **the test
-  fixture invented the same fields**, so the suite agreed with the bug.
-  The #25 lesson, recurring four days later: a fixture for a third-party
-  payload proves nothing unless it came from a real capture.
-- **#75** — a signed-in visitor clicking a password-reset link was
-  redirected to the dashboard and never saw the form. Stock Breeze
-  scaffolding. It traps a tenant permanently signed in on a phone, who
-  then finds the profile page demanding the password they have
-  forgotten. **Fixed in THREE halves on 20 Sep — see below.**
-- **#48's root cause had gone stale** — the apex DOES have MX records
-  now (added ~1 Aug), so mail bounces rather than vanishing. The original
-  diagnosis was right for the world it was written in, and nobody
-  re-checked. A diagnosis has a date.
-
-**Sender checks on forwards are exception-only:** silent when SPF and
-DKIM both pass, loud when they do not. A pass never changes what the
-reader does.
+**The lesson all three share, and the reason this project walks the app:
+a green suite proves each step in isolation and never asks what the user
+would do next.** #74 is the sharpest case — a test fixture invented the
+same fields the buggy code read, so the suite agreed with the bug.
 
 ---
 
-## The September fix cycle — what it did
-
-**➡ `docs/cc-report-fix-cycle-sep-2026-implementation.md` is the record.**
-Read it before touching cases, attachments, replies or verification. It
-carries the test deltas (one assertion **inverted**, twenty repointed,
-none weakened), the three defects worth knowing about, and what "closed"
-means for #54.
-
-Twenty-one snags closed, plus **#19** (attachments on tenant replies,
-open since the June live-fire). **Ten of the twenty-one were raised BY
-walking the app**, which is the argument for walking it.
-
-Three were defects no test would have found:
-
-- **#71** — a double-click on Send posted two evidential letters, and was
-  unguarded on the escalation path, where the counter never resets (D3).
-- **#72** — choosing a replacement photo wiped the ones the tenant kept.
-  A deliberate rule with a test pinning it, correct at ceiling 1 and
-  wrong the moment the ceiling rose. The first defect #54's coverage gap
-  actually hid.
-- **#73** — replies shared letter 1's attachment ceiling, against the
-  design doc. Surfaced through a sentence Charlie asked for, not through
-  code.
-
----
 ## Open actions
 
-**1. ~~DEPLOY `main` to both boxes.~~ DONE 20 Sep** — both at `29450ed`, tested, ledger written.
+**1. ~~DEPLOY to both boxes.~~ DONE 5 Oct 2026** — both at `337edf0`,
+verified, ledger written. Nothing is undeployed.
 
 **1a. STANDING DEPLOY RULE, and a decision still open: THE TWO BOXES DO NOT DEPLOY THE SAME WAY.**
 
@@ -398,13 +343,25 @@ or it inflates the ladder.)
 
 ## Snags — open
 
-**OPEN, and confident — 24:** #1, #9, #10, #12, #13, #17, #18, #25
-(release 2 only), #26, #28, #29, #30, #31, #32, #33, #34, #35, #37, #42,
-#43, #48 (half closed), #60 (parked, undecided), #62 (built; wording not
-yet in the three databases), #63. (#56 closed 19 Sep.)
+**OPEN — 23:** #9, #10, #12, #13, #17, #18, #25 (release 2 only), #26,
+#28, #29, #30, #31, #32, #33, #34, #35, #37, #42, #43, #48 (half
+closed), #60 (parked, undecided), **#62 (built and live; WORDING STILL
+NOT IN ANY DATABASE — the top of the next-action list)**, #63.
+
+**#1 CLOSED 4 Oct 2026 by #77**, the nav restructure — with the OPPOSITE
+outcome to the one #1 anticipated. It expected Cases and Properties to
+move inside the Dashboard; what happened is the dashboard was removed
+and `/cases` took over. Its entry carries a dated note.
 
 **Fixed and DEPLOYED:** #74 (19 Sep); #75 all three halves, #76 and the
-#30 cheap fix (20 Sep). Nothing fixed is undeployed.
+#30 cheap fix (20 Sep); **#77 (nav restructure), #78 (footer copyright
+year) and #79 (two-row header + account email) — all live on both boxes
+5 Oct.** Nothing fixed is undeployed.
+
+**#77 left three small things open**, none of them blocking: an
+unverified user sees the Cases link and is bounced with no explanation;
+there is no active-page styling anywhere; and the 200px logo is over
+half the width of a phone screen.
 
 **~~DISPUTED — 6~~ SETTLED 19 Sep 2026: #4, #14, #15, #16, #20, #21 are
 CLOSED.** Settled against the code, not the documents: all six were built
