@@ -45,17 +45,24 @@ only in this configuration.
 Do not re-derive deploy state from anything below; `environment-state.md`
 is the record.
 
-**1. #62 — THE ENQUIRY SENTENCE IS STILL NOT IN ANY DATABASE.** My pick,
-and it has been outstanding since 19 Sep. The inbound enquiry channel is
-BUILT AND LIVE on production, but letter 1 does not mention it, so **no
-landlord is being told the channel exists**. The seeder has the wording;
-dev, gafol and prod read templates from the DATABASE and the seeder does
-not overwrite existing rows. Each box needs the paragraph added through
-the **ADMIN TEMPLATE EDITOR**, never raw SQL — the editor writes
-`letter_text_change_history`, and an unexplained wording change on an
-evidential letter is what you would later have to explain in front of
-someone. The exact wording and the reasoning for its placement in the
-FOOTER rather than the body are in open action 2 below.
+**1. #62 — PROD IS DONE (5 Oct). gafol AND dev ARE NOT.** Charlie
+deferred gafol deliberately, so this is a known gap, not an oversight.
+Until it is done, anything tested on gafol does not reflect the letter
+landlords actually receive.
+
+**What happened on 5 Oct is worth reading before touching any template.**
+Charlie read a real letter 1 off production and found the enquiry
+sentence WAS there — but in the BODY, above "Yours faithfully", with the
+routing footer paragraph missing altogether. Above the signature the
+sentence is in the TENANT's voice, so the tenant was telling the landlord
+where to write about renters.rent's own affairs, in a document whose
+whole value is that it is a formal notice from the tenant. Corrected the
+same day through the ADMIN TEMPLATE EDITOR — never raw SQL, because the
+editor writes `letter_text_change_history`.
+
+**The general lesson: TEMPLATES ARE DATA, so the seeder being right
+proves nothing about any box.** Nothing in the application can tell you a
+box has drifted. Only reading a letter the way a landlord would will.
 
 **2. The prod composer gap (open action 1a) — now the largest latent
 risk.** Nothing has changed: prod installs no dependencies on deploy, so
@@ -345,8 +352,9 @@ or it inflates the ladder.)
 
 **OPEN — 23:** #9, #10, #12, #13, #17, #18, #25 (release 2 only), #26,
 #28, #29, #30, #31, #32, #33, #34, #35, #37, #42, #43, #48 (half
-closed), #60 (parked, undecided), **#62 (built and live; WORDING STILL
-NOT IN ANY DATABASE — the top of the next-action list)**, #63.
+closed), #60 (parked, undecided), **#62 (built and live; wording now in
+PROD, placement corrected 5 Oct — gafol and dev still outstanding)**,
+#63.
 
 **#1 CLOSED 4 Oct 2026 by #77**, the nav restructure — with the OPPOSITE
 outcome to the one #1 anticipated. It expected Cases and Properties to

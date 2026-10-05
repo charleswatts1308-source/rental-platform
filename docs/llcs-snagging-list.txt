@@ -3869,6 +3869,39 @@ letter_text_change_history, and an unexplained wording change on an
 evidential letter with no audit trail is what you would later have to
 explain.
 
+PROD DONE 5 Oct 2026 — AND THE PLACEMENT HAD TO BE CORRECTED.
+
+Charlie read an actual letter 1 off production and pasted it. The
+enquiry sentence WAS there, so the database edit had been made at some
+point — but it sat in the BODY, above "Yours faithfully", and the
+routing footer paragraph was absent entirely. Exactly the arrangement
+the note above says must not happen, and it had been live and sending
+that way.
+
+THE COST, so it is not dismissed as typography: above the signature the
+sentence is in the TENANT's voice. As it stood, the tenant was telling
+the landlord where to write about renters.rent's own affairs, in a
+document whose whole value is that it is a formal notice from the
+tenant. Who is speaking is precisely what gets picked at if the letter
+reaches a council or a court.
+
+Corrected on prod through the ADMIN TEMPLATE EDITOR the same day, so
+letter_text_change_history carries it. Prod now matches the seeder
+exactly: body, signature, rule, then TWO footer paragraphs — the
+routing note first, the enquiry sentence second.
+
+NOT FIXED ANYWHERE ELSE. gafol and dev still carry whatever they
+carried. Charlie deferred gafol deliberately, not by oversight.
+
+WORTH NOTING HOW IT WAS FOUND: not by a test, not by reading the
+database, but by Charlie reading a letter the way a landlord would. The
+seeder was right the whole time; the box was wrong; and nothing in the
+application could tell the difference, because the template is data.
+
+ALREADY-SENT LETTERS ARE UNAFFECTED — outbound bodies are frozen on
+case_messages at send time and are never re-rendered. The correction
+applies only to letters sent from now on.
+
 OPEN QUESTION for Charlie: the FINAL NOTICE template has its own,
 shorter footer ("This message was sent through renters.rent on behalf
 of the tenant.") and did NOT get the sentence. Arguably it should — a
