@@ -4,10 +4,10 @@ Human-readable mirror of what is deployed where. The DB `migrations`
 table is the source of truth; this file is reconciled against
 `php artisan migrate:status` at each deploy (CLAUDE.md "Deployment ledger").
 
-**Reconcile status:** **gafol at `337edf0`** (5 Oct 2026 — nav
-restructure + property details, deployed in two lots and verified; see
-the 5 Oct entry). **renters.rent at `29450ed`** and now TWO RELEASES
-BEHIND. **dotrent retired 1 Aug 2026** (see its entry — the record is
+**Reconcile status:** **BOTH BOXES AT `337edf0`** (5 Oct 2026 — nav
+restructure + property details; gafol in two lots, prod in one, both
+verified, 48 migrations each). The whole letter cycle was walked on
+production through live Mailgun after the migrations. **dotrent retired 1 Aug 2026** (see its entry — the record is
 kept, the box is gone). Superseded figures below are left as written:
 **gafol at `12646e7`** (15 Sep — the
 September fix cycle; read off the Plesk Git panel and confirmed).
@@ -73,6 +73,57 @@ what ran, so that is not drift and should not be "fixed".
   24 Aug.
 
 ## gafol — permanent staging (gafol.rent) — ✅ BACK ON MAIN (4 Sep 2026)
+### Deploy 5 Oct 2026 — renters.rent (PROD) to `337edf0` — BOTH BOXES NOW LEVEL
+
+**PROD took BOTH LOTS IN ONE PULL.** It could not do otherwise: `main`
+no longer has an intermediate commit to stop at. The mitigation is that
+gafol had already walked exactly `337edf0` earlier the same day.
+
+- **Rollback point taken before anything ran:** Plesk Databases → Export
+  Dump, downloaded locally as
+  **`ukrenter_renters_db_2026-10-05_01-03-26.sql.zip`**. Recorded because
+  this is the first release in months whose migrations WRITE DATA rather
+  than only add structure.
+- **Route:** Plesk Git pull, then — all manual, because prod copies files
+  and runs nothing else — `migrate --force`, `route:clear`, `view:clear`,
+  `config:clear`, then **`config:cache`** to restore the compiled config.
+- **`migrate:status` BEFORE: 44 Ran, 4 Pending.** Reconciled against this
+  ledger per the CLAUDE.md rule. **AFTER: 48 Ran, none pending.** All four
+  reported DONE:
+  - `2026_10_04_100000_add_property_details_to_properties_table`
+  - `2026_10_04_100100_backfill_property_details`
+  - `2026_10_04_100200_make_property_details_required`
+  - `2026_10_04_100300_create_property_documents_table`
+- **No composer step.** The release changes neither `composer.json` nor
+  `composer.lock`, so the prod composer trap
+  (`deploy-pipeline-divergence.md`, open action 1a) did not apply. That
+  trap is UNCHANGED and still waiting for the next release that adds a
+  dependency.
+- **`REGISTRATION_ALLOWLIST` gained an address** in prod's `.env` during
+  this deploy, which is why `config:cache` was run after the clears
+  rather than left out. Unrelated to the release.
+
+**VERIFIED ON PRODUCTION BY CHARLIE, 5 Oct 2026:**
+
+- **THE WHOLE LETTER CYCLE, END TO END, THROUGH LIVE MAILGUN:** letter 1
+  → landlord reply → tenant reply → landlord → tenant. All good. This is
+  the important one: it exercises `case_messages`, reply tokens and the
+  escalation counter, which is the part a schema change could plausibly
+  have disturbed, and it is the only box where that path can be walked
+  at all (staging is the Mailgun sandbox, outbound only).
+- **The lease upload worked on prod** — a page uploaded, viewed and
+  removed. First ever write to `storage/app/` on that box; no permissions
+  intervention was needed.
+- **An existing property showed "— please choose —"** on both new fields,
+  and saved once real values were picked. That is the backfill behaving
+  as designed: `not_specified` is stored but never offered, so the owner
+  must choose on next edit.
+- The two-row header and the 2026 footer year, both correct.
+
+**STATE AFTER THIS DEPLOY: gafol and renters.rent are BOTH at `337edf0`,
+code-identical, 48 migrations each.** The staging-at-or-ahead invariant
+holds with the two level.
+
 ### Deploy 5 Oct 2026 — gafol only, in TWO LOTS
 
 **renters.rent was NOT touched. It remains at `29450ed`.**
