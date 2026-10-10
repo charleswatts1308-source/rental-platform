@@ -4402,3 +4402,26 @@ decision, not mine.
 Related: #75 covers what a user can see of their own case; this is the
 mirror — what a landlord can be made to receive.
 --------------------------------------------------------------------
+
+
+#80 — SHAPE AGREED 10 Oct 2026 (the entry above remains the record).
+
+Charlie: "agreed" to the split proposed at the foot of #80. So the
+scoping question is CLOSED and the answer is on record:
+
+ - PRE-SEND review for a user's FIRST EVER case. The letter is held,
+   screened, then released or rejected.
+ - POST-SEND screening for every case after that, with account
+   suspension as the lever.
+
+Rationale, restated so it is not lost: the abuse that actually hurts
+comes from throwaway accounts, and those have no history. A tenant on
+their tenth case has given us ten letters' worth of evidence that they
+are real. Taxing that tenth letter buys nothing and delays a repair.
+
+STILL NOT STARTED — no code. What remains to be decided before build:
+who reviews a held letter and where (an admin queue under /admin, by
+the look of it), what the tenant is told while it is held, and what the
+word-list screen actually is for the post-send half. Those are design
+questions for a brief, not snag-list material.
+--------------------------------------------------------------------
