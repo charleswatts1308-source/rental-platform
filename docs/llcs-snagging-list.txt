@@ -4343,3 +4343,62 @@ NOT DONE, and the obvious next move if the header is ever revisited: the
 reader already knows. Shrinking it below 576px would buy back the space
 cheaply.
 --------------------------------------------------------------------
+
+
+#80
+Page:        Case creation — the repair description, and every tenant
+             reply on an open case
+Severity:    serious (reputational / legal exposure, not a defect)
+Date:        10 Oct 2026 — raised by Charlie: "the need to have some
+             moderation on the text input for a case repair"
+Saw:         Tenant free text is accepted on length alone and nothing
+             else. `description` is required|string|max:5000 at case
+             creation; `body` is required|string|min:1|max:10000 on a
+             reply. No profanity screen, no abuse check, no human
+             review, no hold-and-approve step, no rate limit on how
+             many cases one account can raise.
+Expected:    Something standing between what a tenant types and what
+             leaves our domain over our signature.
+
+WHY THIS IS NOT COSMETIC. That text does not stay inside the app. It is
+FROZEN onto case_messages at send time and the mailable reads body_raw
+verbatim — by design, because the evidential value of these letters
+depends on them never being re-rendered. So whatever the tenant wrote
+is what a real, named landlord receives, in a letter that carries
+renters.rent branding, from mg.renters.rent, over our DKIM signature.
+The freeze that makes the letters trustworthy is exactly what makes
+unmoderated text dangerous: there is no edit-after-the-fact.
+
+THE FOUR THINGS THAT CAN GO OUT:
+ 1. Abuse or threats aimed at a named individual. We become the sender
+    of a harassing message to a private person at their home address.
+ 2. Defamation. "He is a crook" to a letting agent's office, on our
+    letterhead, with us as the publisher.
+ 3. Personal data the tenant should not be broadcasting — a third
+    party's medical details, a neighbour's name and movements.
+ 4. Spam-shaped content. Mailgun reputation is shared across every
+    letter the platform sends; one complaint-magnet campaign degrades
+    delivery for every legitimate case on the system.
+
+Plus the volume case: nothing stops one account raising fifty cases
+against fifty addresses in an afternoon.
+
+Fix: hold the first outbound letter of a case for review — queue it
+with a `needs_review` state, screen it (word list first, model-assisted
+later), release or reject — and rate-limit case creation per account
+per day.
+
+NOT STARTED. No code written. This is a scoping note, and the scoping
+question that has to be answered before any of it is built is whether
+review is PRE-SEND (safe, but puts a human in the critical path of a
+repair notice and breaks the "your letter has been sent" promise) or
+POST-SEND detection with suspension (fast, but the damaging letter has
+already arrived). My read: pre-send on a user's FIRST EVER case only,
+post-send screening thereafter — it catches the throwaway-account abuse
+case, which is the one that actually hurts, without taxing the
+hundredth legitimate letter from a known tenant. That needs Charlie's
+decision, not mine.
+
+Related: #75 covers what a user can see of their own case; this is the
+mirror — what a landlord can be made to receive.
+--------------------------------------------------------------------
