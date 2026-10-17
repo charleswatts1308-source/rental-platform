@@ -70,7 +70,7 @@ rely on that record later if difficulties arise.</p>
 
 <h3 class="mb-3">If you don't reply</h3>
 
-<p>We will send reminders but thats it. We operate a correspondence service. </p>
+<p>We will send reminders but that's it. We operate a correspondence service. </p>
 
 <hr class="my-4">
 

@@ -21,9 +21,9 @@
      primary sources on 30 Sep 2026, and a wrong sentence there would tell
      someone the law protects them when it may not. --}}
 
-<p>Its huge.</p>
+<p>It's huge.</p>
 
-<p>$6.6 billion per month we estimate flows from renters to private landlords.</p>
+<p>£6.6 billion per month we estimate flows from renters to private landlords.</p>
 
 <p>This puts the PRS alongside such industry sectors as defence and tourism.</p>
 

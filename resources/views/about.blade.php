@@ -7,7 +7,6 @@
 
 <p class="mb-3">This site is here to help you make the most of your new rights.</p>
 <p class="mb-3">It helps to put everything in writing.</p>
-<p class="mb-3"></p>
 
 
 <hr class="my-4">

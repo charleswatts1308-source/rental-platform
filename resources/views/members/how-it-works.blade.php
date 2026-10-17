@@ -49,7 +49,7 @@
 <h3 class="mb-3">Whoever You Are - Whatever Property</h3>
 
 <p> No matter who you are, whether your home is a house-share, a flat, a terrace, somewhere you've settled for years.</p>
-<p> Its the same process - notify landlord and repeat until you get a result. </p>
+<p> It's the same process - notify landlord and repeat until you get a result. </p>
 
 <hr class="my-4">
 
@@ -61,7 +61,7 @@
 <p>With correspondence on the record they can be held to account.</p>
 
 <p>Where a repair isn't properly resolved, as you have a documented correspondence trail, you do have options.</p>
-<p>Youcan pursue the legal route which can involve your local council's environmental health team,
+<p>You can pursue the legal route which can involve your local council's environmental health team,
     the Housing Ombudsman, or the First-tier Tribunal.
     Renters cannot advise on the legal route. But we do have an alternative route by which you can deal with a reluctant landlord.
     This is explained in our membership pages.
