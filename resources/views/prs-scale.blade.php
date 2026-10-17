@@ -9,7 +9,7 @@
      estimate of ours except where it says so. If a figure cannot be sourced it
      does not go on the page — that is the standard this page is held to. --}}
 
-<h1 class="mb-4">Background: The Scale of the Private Rented Sector</h1>
+<h1 class="mb-4">Background: The Scale of the Private Rented Sector (The PRS)</h1>
 
 
 {{-- Jurisdiction stated once, at the top, with the REASON — a reader in
@@ -20,14 +20,45 @@
      that is extent-versus-application, it could not be settled from the
      primary sources on 30 Sep 2026, and a wrong sentence there would tell
      someone the law protects them when it may not. --}}
-<p>The figures on this page are for <strong>England</strong>. The official surveys behind them —
-the English Housing Survey and the English Private Landlord Survey — cover England only. Housing
-is devolved, so Scotland, Wales and Northern Ireland collect and publish their own. One in five
-households rents privately.</p>
+
+<p>Its huge.</p>
+
+<p>$6.6 billion per month we estimate flows from renters to private landlords.</p>
+
+<p>This puts the PRS alongside such industry sectors as defence and tourism.</p>
+
+<p>The official surveys are the English Housing Survey and the English Private Landlord Survey.
+     Scotland, Wales and Northern Ireland do their own thing.</p>
 
 <hr class="my-4">
 
+<h2 class="h4 mb-3">Value</h2>
+
+<p>No official figure is published for the total rent paid. This one is ours, and here is the
+arithmetic in round numbers:</p>
+
+{{-- <table class="table">
+    <tbody>
+        <tr><td>4.7 million households</td><td class="text-end">English Housing Survey 2024-25</td></tr>
+        <tr><td>&times; £1,416 a month = £6.6 billion per month</td><td class="text-end">ONS, October 2025</td></tr>
+        <tr><td>&times; 12 months</td><td class="text-end"></td></tr>
+        <tr class="table-active"><td><strong>&asymp; £80 billion a year</strong></td><td class="text-end">our calculation</td></tr>
+    </tbody>
+</table> --}}
+
+
+<table class="table">
+    <tbody>
+        <tr><td>4.7 million households</td><td class="text-end">English Housing Survey 2024-25</td></tr>
+        <tr><td>&times; £1,416 a month = £6.6 billion per month (approximate)</td><td class="text-end">ONS, October 2025</td></tr>
+        <tr><td>&times; 12 months = £80 billion a year (approximate)</td><td class="text-end">our calculation</td></tr>
+    </tbody>
+</table>
+
+
 <h2 class="h4 mb-3">Households</h2>
+
+<p>One in five households rents privately</p>
 
 <table class="table table-striped">
     <tbody>
@@ -135,25 +166,6 @@ their pension.</small></p>
 </table>
 <p class="text-muted"><small>London and rest of England: English Housing Survey 2024-25. England
 monthly average: Office for National Statistics (ONS), October 2025.</small></p>
-
-<hr class="my-4">
-
-<h2 class="h4 mb-3">Value</h2>
-
-<p>No official figure is published for the total rent paid. This one is ours, and here is the
-arithmetic:</p>
-
-<table class="table">
-    <tbody>
-        <tr><td>4.7 million households</td><td class="text-end">English Housing Survey 2024-25</td></tr>
-        <tr><td>&times; £1,416 a month</td><td class="text-end">ONS, October 2025</td></tr>
-        <tr><td>&times; 12 months</td><td class="text-end"></td></tr>
-        <tr class="table-active"><td><strong>&asymp; £80 billion a year</strong></td><td class="text-end">our calculation</td></tr>
-    </tbody>
-</table>
-
-<p class="text-muted"><small>An order of magnitude, not a precise total: it applies an average to
-every household. Treat it as "tens of billions", which is the only claim the inputs support.</small></p>
 
 <hr class="my-4">
 

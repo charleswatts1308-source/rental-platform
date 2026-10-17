@@ -10,7 +10,7 @@ this page provides some explanation.</p>
 
 <hr class="my-4">
 
-<h3 class="mb-3">The email is genuine</h3>
+<h3 class="mb-3">The email you have received is genuine</h3>
 
 <p>It was sent because one of your tenants used renters.rent to put a repair request in
 writing. Our emails always come from an address ending <code>renters.rent</code>.</p>
@@ -36,22 +36,17 @@ regulator, under registration reference <strong>Z229825X</strong>.</p>
 
 <hr class="my-4">
 
-<h3 class="mb-3">What renters.rent is</h3>
+<h3 class="mb-3">What renters.rent does</h3>
 
-<p>It's a tool that allows tenants to send repair requests as proper, dated correspondence.
+<p>It's a service that enables tenants to send repair requests as formal, dated correspondence.
 The tenant writes the request; we format it, send it, and keep a simple record of
-correspondence. Setting a repair request out clearly, and keeping track of what was sent
-and when, is harder than it sounds — which is why the service exists, and why what reaches
-you is a single dated request rather than a run of messages.</p>
+correspondence. </p>
 
 <hr class="my-4">
 
-<h3 class="mb-3">How we have your email address</h3>
+<h3 class="mb-3">Why do we have your email address</h3>
 
-<p>Your tenant gave it to us when they raised the request. We don't buy contact details or
-look them up, and we don't hold a database of landlords.</p>
-
-<p>It also means the details can be wrong — see "Checking this is your tenant" below.</p>
+<p>Your tenant gave it to us when they raised the request. We hope it is the "Service Address".</p>
 
 <hr class="my-4">
 
@@ -60,26 +55,22 @@ look them up, and we don't hold a database of landlords.</p>
 <p><strong>Just reply to the email.</strong> Your reply goes back to your tenant and the
 conversation can proceed.</p>
 
-<p>You don't need an account and there's nothing to sign up for. If you'd rather phone or
-write to your tenant directly, that's entirely fine — we only ask that you let them know
-you've received the request, so they're not left wondering.</p>
+<p>You don't need an account and there's nothing to sign up for.</p>
 
 <hr class="my-4">
 
 <h3 class="mb-3">What we keep a record of</h3>
 
 <p>We record what was sent, when it was sent, and any replies. Both you and your tenant can
-rely on that record later if there's ever a disagreement about what was said. It works the
-same way for both of you.</p>
+rely on that record later if difficulties arise.</p>
 
-<p>If the repair gets sorted, the tenant closes the case and the correspondence stops.</p>
+<p>When the repair gets fixed, the tenant closes the case and the correspondence stops.</p>
 
 <hr class="my-4">
 
 <h3 class="mb-3">If you don't reply</h3>
 
-<p>The system will send a few reminders. It doesn't do anything else — it can't. It's a
-correspondence tool, not an enforcement mechanism.</p>
+<p>We will send reminders but thats it. We operate a correspondence service. </p>
 
 <hr class="my-4">
 
@@ -87,7 +78,7 @@ correspondence tool, not an enforcement mechanism.</p>
 
 <p>The email includes the property address and your tenant's name. Please check these
 against your own records. If they don't match, or you've received this in error,
-<a href="{{ route('contact.create') }}">contact us</a> and we'll look into it.</p>
+<a href="{{ route('contact.create') }}">contact us</a> and we'll look into it promptly.</p>
 
 <hr class="my-4">
 
@@ -95,7 +86,7 @@ against your own records. If they don't match, or you've received this in error,
 
 <p>We hold the email address your tenant gave us, the correspondence sent to it, and any
 replies you send back. We use it only to pass messages between you and your tenant and to
-keep the record described above. We don't sell it or use it for marketing.</p>
+keep the record described above.</p>
 
 <p>Our <a href="/privacy">privacy notice</a> explains this in full, including how to ask
 what we hold about you.</p>
@@ -104,7 +95,7 @@ what we hold about you.</p>
 
 <h3 class="mb-3">Repair responsibilities</h3>
 
-<p>We don't give legal advice to either party. For an authoritative summary of what
+<p>We don't give legal advice. For an authoritative summary of what
 landlords and tenants are each responsible for, see the
 <a href="https://www.gov.uk/private-renting/repairs" rel="noopener" target="_blank">guidance
 on GOV.UK</a>.</p>

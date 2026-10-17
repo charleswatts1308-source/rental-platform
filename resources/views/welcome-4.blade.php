@@ -9,19 +9,43 @@
      the line") is in git history on this file if any of it is wanted back. --}}
 
 <div class="py-4">
-    <h1 class="mb-4">Welcome to Renters</h1>
 
-    <p class="lead mb-4">Does your home need repairs and replacements?</p>
+    <h1 class="mb-4">Welcome to Renters in England & Wales</h1>
 
-    <p class="lead mb-4">Sign up to our Landlord Letter Service.</p>
+    <p class="lead mb-4">Does your rented home need repairs and improvements?</p>
 
-    <p class="lead mb-2">If it's in writing and recorded you begin to take control.</p>
+    <p class="lead mb-4">Put it in writing</p>
 
-    {{-- STILL OPEN: the retaliation line. This is Charlie's latest wording. --}}
-    <p class="lead mb-4">You have new rights now that encourage you to ask.</p>
+    <p class="lead mb-4">Make the most of your new rights</p>
+
+    <p class="lead mb-4">Start a written conversation</p>
+
+    <p class="lead mb-4">You have nothing to lose - much to gain</p>
+
+    <p class="lead mb-4">Sign up to our Landlord Letter Service</p>
+
+    <p class="lead mb-4">It does all the work for you</p>
+
+
+
+    {{-- <h1 class="mb-4">Welcome to Renters in England & Wales</h1>
+
+    <p class="lead mb-4">Does your rented home need repairs and improvements?</p>
+
+    <p class="lead mb-4">Put it in writing and keep a record</p>
+
+    <p class="lead mb-4">Start a written conversation with your landlord</p>
+
+    <p class="lead mb-4">Start a journey and gain some edge</p>
+
+    <p class="lead mb-4">You have new rights now that encourage you to ask</p>
+
+    <p class="lead mb-4">Sign up to our Landlord Letter Service</p>
+
+    <p class="lead mb-4">It does all the work for you</p> --}}
 
     @guest
-        <a href="{{ route('register') }}" class="btn btn-primary btn-lg">Sign up and see what you can achieve</a>
+        <a href="{{ route('register') }}" class="btn btn-primary btn-lg">Sign up</a>
 
         {{-- The homepage is a door, not the explanation — that was the 30 Sep
              decision: the process is too involved to compress into landing

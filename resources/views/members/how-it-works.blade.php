@@ -5,70 +5,69 @@
 @section('content')
 <h1 class="mb-4">How It Works</h1>
 
-<h3 class="mb-3">The Process</h3>
+{{-- <h3 class="mb-3">The Process</h3> --}}
 
-<ol class="mb-4">
-    <li class="mb-3">Tell us what needs fixing. The repair, and your landlord's or agent's contact details.</li>
-    <li class="mb-3">We send a formal notice. A properly worded repair notice goes to your landlord, and the clock starts.</li>
-    <li class="mb-3">They respond — or they don't. If they engage and fix it, that's logged. If they go quiet, the record moves forward through defined stages, each one dated.</li>
+    <p class="mb-3">Tell us what needs fixing, plus your landlord and agent contact details.</p>
+    <p class="mb-3">We send a formal repair notice, properly worded, by email to your landlord.</p>
+    <p class="mb-3">You can send photos and discuss and plan the work.</p>
+    <p class="mb-3">Reminders are sent to your landlord after 14 days of not hearing back. </p>
+    <p class="mb-3">You have a dated document trail.</p>
+
+<br>
+{{-- <h3 class="mb-3">The Stages</h3>
+
+    <p class="mb-3">Stage 1 - Start the process and wait for a reply.</p>
+    <p class="mb-3">Stage 2 - Landlord replies, engages, and the work gets done.</p>
+    <p class="mb-3">Stage 3 - The repair remains unfixed.</p>
+    <p class="mb-3">Stage 4 - Renter starts to take control of the situation.</p>
+    <p class="mb-3">Stage 5 - Renter gets a result.</p> --}}
+
+
+    {{-- <ol class="mb-4">
+    <li class="mb-3">Tell us what needs fixing, plus your landlord and agent contact details.</li>
+    <li class="mb-3">We send a formal repair notice, properly worded, by email to your landlord</li>
+    <li class="mb-3">We set a clock running, and if no reply is received within 14 days we send another notice. </li>
+    <li class="mb-3">If landlord responds, you can send photos and discuss and plan the repair process.</li>
+    <li class="mb-3">If landlord stops responding and the clock reaches 14 days, we send another notice.</li>
+    <li class="mb-3">The process moves forward through defined stages, each one dated.</li>
     <li class="mb-3">You keep the record. However it ends, you're left with a dated, documented trail of the whole exchange.</li>
-</ol>
+</ol> --}}
 
-<a href="{{ route('cases.create') }}" class="btn btn-success btn-lg mb-4">Start a Repair Notice</a>
+    {{-- <li class="mb-3">Many renters are using AI to get the formal repair notice.</li>
+    <li class="mb-3">The difference here is that a record of the corresponece is kept for you.</li>
+    <li class="mb-3">You get your own private mailbox.</li>
+    <li class="mb-3">You start a dialogue with your landlord which also starts a journey.</li>
+    <li class="mb-3">They respond — or they don't. If they engage and fix it, that's logged. If they go quiet, the record moves forward through defined stages, each one dated.</li>
+    <li class="mb-3">You keep the record. However it ends, you're left with a dated, documented trail of the whole exchange.</li> --}}
 
-<hr class="my-4">
 
-<h3 class="mb-3">Whoever You Are</h3>
-
-<p>Renting looks different at every stage — a student houseshare, a first flat, a family
-home, somewhere you've settled for years. The repair process doesn't change. If something
-needs fixing and your landlord isn't acting, the notice is the same one, whoever you are.</p>
-
-{{-- Removed 30 Sep 2026: "Student · Young professional · Family · Long-term
-     renter". A list of categories invites the reader to look for themselves in
-     it and conclude they are not there. The paragraph above already makes the
-     point without asking anyone to pick a label. --}}
+<br>
+<a href="{{ route('cases.create') }}" class="btn btn-success btn-lg mb-4">Start a Repair Case</a>
 
 <hr class="my-4">
 
-<h3 class="mb-3">Whatever Property</h3>
+<h3 class="mb-3">Whoever You Are - Whatever Property</h3>
 
-<p>Damp in a period terrace, a defect in a new build, a draught nobody will trace, a boiler
-that fails every winter. Old or new, flat or house, disrepair is disrepair — and the duty to
-put it right doesn't depend on the age of the building.</p>
-
-<p class="text-muted">Period terrace · Ex-council · New build · Purpose-built flat · HMO room</p>
+<p> No matter who you are, whether your home is a house-share, a flat, a terrace, somewhere you've settled for years.</p>
+<p> Its the same process - notify landlord and repeat until you get a result. </p>
 
 <hr class="my-4">
+
 
 <h3 class="mb-3">Where This Can Lead</h3>
 
-<p>Most repairs get resolved once a landlord sees a matter is being handled properly and on
-the record. But not all, and it's worth knowing where the process can go.</p>
+<p>Most repairs get resolved once a landlord is properly informed.</p>
+<p>Your landlord has a legal duty to keep the property in a "fit" state.</p>
+<p>With correspondence on the record they can be held to account.</p>
 
-<h5 class="mb-2 mt-4">The landlord acts</h5>
-<p>The repair is done and the exchange is logged. For most cases, this is the end of it.</p>
+<p>Where a repair isn't properly resolved, as you have a documented correspondence trail, you do have options.</p>
+<p>Youcan pursue the legal route which can involve your local council's environmental health team,
+    the Housing Ombudsman, or the First-tier Tribunal.
+    Renters cannot advise on the legal route. But we do have an alternative route by which you can deal with a reluctant landlord.
+    This is explained in our membership pages.
+</p>
 
-<h5 class="mb-2 mt-4">The landlord engages but stalls</h5>
-<p>Some movement, no resolution. The record captures the delay — dates, what was promised,
-what wasn't done.</p>
+<br>
+<a href="{{ route('cases.create') }}" class="btn btn-success btn-lg mb-4">Start a Repair Notice</a>
 
-{{-- Added 30 Sep 2026, carried over from the old homepage's "Negative" column
-     when that page was cut back to a door. This is the outcome a tenant most
-     needs warning about: the process has worked exactly as intended and they
-     still do not have their repair. --}}
-<h5 class="mb-2 mt-4">The landlord refuses</h5>
-<p>A reply that says no — either unwilling, or unable to afford the work. The process has
-done its job and the answer is still no. The record shows the request, the refusal and the
-reason given, which is what any outside body would want to see.</p>
-
-<h5 class="mb-2 mt-4">The landlord stays silent</h5>
-<p>The notice period passes with no response. The record shows a clear, dated account of
-proper notice given and ignored.</p>
-
-<p class="mt-4">Where a matter isn't resolved, a documented correspondence trail is the thing
-outside bodies ask to see — your local council's environmental health team, the Housing
-Ombudsman, or the First-tier Tribunal, depending on the issue. renters.rent doesn't take a
-case to those bodies or advise which applies. It gives you the record they'd want, should
-you choose to go further.</p>
 @endsection
