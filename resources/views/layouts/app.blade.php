@@ -18,15 +18,20 @@
         if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
             document.getElementById('bootswatch-theme').href =
                 'https://cdn.jsdelivr.net/npm/bootswatch@5.3.0/dist/darkly/bootstrap.min.css';
+            // Marks the page as running Darkly, so partials.theme-overrides
+            // can fix Darkly's low-contrast greys. Only this layout swaps
+            // themes; guest and error pages stay Spacelab and never get it.
+            document.documentElement.classList.add('theme-dark');
         }
         window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
             document.getElementById('bootswatch-theme').href = e.matches
                 ? 'https://cdn.jsdelivr.net/npm/bootswatch@5.3.0/dist/darkly/bootstrap.min.css'
                 : 'https://cdn.jsdelivr.net/npm/bootswatch@5.3.0/dist/spacelab/bootstrap.min.css';
+            document.documentElement.classList.toggle('theme-dark', e.matches);
         });
     </script>
 
-    @include('partials.brand-buttons')
+    @include('partials.theme-overrides')
 
     <style>
         /* Fix footer to not overlap content */

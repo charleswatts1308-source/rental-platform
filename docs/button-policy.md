@@ -29,13 +29,19 @@ Main action = brand colour.
 
 ## How it is wired
 
-- `resources/views/partials/brand-buttons.blade.php` recolours
+- `resources/views/partials/theme-overrides.blade.php` recolours
   `btn-primary` / `btn-outline-primary` via Bootstrap 5.3 CSS variables.
   Included by every layout — `layouts/app`, `layouts/guest`,
   `errors/_shell` — straight after the Bootswatch stylesheet. **A new
   layout must include it too**, or its buttons fall back to blue.
 - Dark mode (Darkly): solid buttons stay `#047857`; outline buttons use
   the brighter house green `#10b981` so they stay visible.
+- Darkly contrast fixes (18 Oct 2026, same partial): grey outline buttons
+  become light grey `#ced4da`; `alert-light`, `bg-light`, `text-bg-light`
+  and `bg-white` surfaces become dark `#303030` with light text. Darkly
+  makes these mid-grey `#adb5bd` under white text — near-unreadable.
+  Scoped by a `.theme-dark` class that `layouts/app` puts on `<html>` only
+  when it swaps to Darkly (guest and error pages never use Darkly).
 - **Never inline a colour on a button** (`style="background-color: …"`).
   Use the class. Inline colours ignore dark mode and drift — that is how
   the pre-policy mess happened.

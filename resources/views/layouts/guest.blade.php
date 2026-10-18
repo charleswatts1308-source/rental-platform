@@ -9,7 +9,7 @@
 
         <!-- Bootstrap CSS - Bootswatch Spacelab Theme -->
         <link href="https://cdn.jsdelivr.net/npm/bootswatch@5.3.0/dist/spacelab/bootstrap.min.css" rel="stylesheet">
-        @include('partials.brand-buttons')
+        @include('partials.theme-overrides')
 
         @include('partials.pwa')
     </head>
