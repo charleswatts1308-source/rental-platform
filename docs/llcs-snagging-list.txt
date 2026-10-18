@@ -4675,3 +4675,33 @@ Fix:         _message_card: replace bg-primary text-white for outbound with
 
 NOT STARTED. No code written.
 --------------------------------------------------------------------
+
+
+#85
+Page:        Email buttons — verify-email vs "Thanks for registering"
+Severity:    minor (cosmetic — inconsistency between our two emails)
+Date:        18 Oct 2026 — raised by Charlie comparing the two in his inbox:
+             "each has diff size of background for button, verif is a bit
+             too much, welcome is not enough"
+Saw:         The two buttons are built differently, so they come out
+             different sizes:
+              - Verify-email (and password reset) use Laravel's mail theme
+                (resources/views/vendor/mail/html/themes/default.css,
+                .button / .button-primary): padding made of an 8px top/
+                bottom, 18px left/right border, larger body font.
+              - Welcome and every letter-template email ("Open this case",
+                "Start a repair case") use an inline style:
+                padding 10px 16px at the 14px letter font.
+             Charlie: verify reads too big, welcome too small.
+Expected:    One button size across all our email, between the two.
+Fix:         Pick a middle size (starting point to judge by eye: about
+             10px 22px, font 15px) and apply it to BOTH: the mail theme's
+             .button-primary borders, and the inline button style in
+             LetterTemplateSeeder + a data migration swapping the padding
+             string in place on live rows (same pattern as
+             2026_10_18_130000_email_buttons_logo_green, so edited wording
+             survives). Charlie to judge the result in Mailpit before it
+             ships.
+
+NOT STARTED. No code written.
+--------------------------------------------------------------------
