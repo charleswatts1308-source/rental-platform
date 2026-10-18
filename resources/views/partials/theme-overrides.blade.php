@@ -25,6 +25,17 @@
         --bs-btn-disabled-border-color: #047857;
         --bs-btn-focus-shadow-rgb: 4, 120, 87;
         background-image: none;
+        border: 1px solid var(--bs-btn-border-color);
+    }
+    /* Spacelab styles .btn-primary with a hard-coded blue gradient and blue
+       border, and its hover rule (.btn-primary:not(.disabled):hover) is more
+       specific than the block above — so hover turned the button BLUE
+       (reported on prod, 18 Oct 2026). This out-ranks it. */
+    .btn.btn-primary:not(.disabled):hover,
+    .btn.btn-primary:not(.disabled):focus,
+    .btn.btn-primary:not(.disabled):active {
+        background-image: none;
+        border: 1px solid var(--bs-btn-hover-border-color);
     }
     .btn.btn-outline-primary {
         --bs-btn-color: #047857;
