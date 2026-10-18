@@ -4544,3 +4544,23 @@ Whether the apex must keep receiving now depends only on whether any
 Plesk mailbox/forwarder exists at @renters.rent and is used — check
 Plesk -> renters.rent -> Mail before -all or null MX.
 --------------------------------------------------------------------
+
+
+#30 — NEXT STEP AGREED 18 Oct 2026 (the entries above remain the record).
+
+Charlie: "the admin screen is a bit redundant as it only sees the single
+message" — agreed in part. Since the 20 Sep cheap fix the conversation
+runs in Charlie's mailbox (Reply-To is the user; the user's reply comes
+back via info@ and the forwarder). The admin REPLY is now redundant; the
+admin LIST is not — the contact_messages row is written BEFORE the
+notification, so if that mail fails the admin list is the only place the
+message exists.
+
+Fix (agreed, not urgent): make the admin contact screen a READ-ONLY log
+of incoming messages. Remove the reply form/action and the one-shot
+guard with it (which closes the "STILL OPEN" item above). Keep the list
+and the message view. Check what else reads the reply columns before
+dropping anything — no schema change implied; leave the columns.
+
+NOT STARTED. No code written.
+--------------------------------------------------------------------
