@@ -18,8 +18,10 @@
              leaving the user to find the properties page from the nav themselves. --}}
         {{-- 18 Oct 2026: reworded from "You need to register a property before
              you can…" in a yellow warning — read as a block, not a first step.
-             "Come straight back" is true: property -> landlord page -> here. --}}
-        <div class="alert alert-light border">
+             "Come straight back" is true: property -> landlord page -> here.
+             No panel: it is the only thing on the page, and a box read as a
+             notice — the feeling the rewording set out to remove. --}}
+        <div>
             <p class="lead mb-2">Let's start with your home.</p>
             <p>
                 Add your property and landlord details, then you'll come straight
