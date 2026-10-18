@@ -4489,3 +4489,14 @@ case_messages row.
 
 NOT STARTED. No code written.
 --------------------------------------------------------------------
+
+
+#81 — TIMING AGREED 18 Oct 2026 (the entry above remains the record).
+
+Charlie: "the verify if ignored means reg is unverified and therefore
+inoperative - agreed". So the welcome fires on Verified, not Registered.
+An ignored verify mail leaves an account that cannot do anything, and
+that account never gets thanked — which is the right outcome.
+
+Still open: Charlie's read of the draft wording above.
+--------------------------------------------------------------------
