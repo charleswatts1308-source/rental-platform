@@ -52,7 +52,9 @@ return new class extends Migration
 
 <p>When something in your home needs fixing, we help you put it in writing. Tell us what needs repairing and who your landlord is, and we send them a formal, dated repair notice and keep a record of everything that follows.</p>
 
-<p>You can start a repair case at any time: <a href="{{start_case_url}}">{{start_case_url}}</a></p>
+<p>You can start a repair case at any time.</p>
+
+<p><a href="{{start_case_url}}" style="display: inline-block; padding: 10px 16px; background: #2563eb; color: #fff; text-decoration: none; border-radius: 4px;">Start a repair case</a></p>
 
 <p>renters.rent</p>
 HTML;

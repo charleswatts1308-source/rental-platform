@@ -74,6 +74,7 @@ test('verifying sends the welcome email once, rendered for that user', function 
             && $mail->renderedSubject === 'Thanks for registering with renters.rent'
             && str_contains($mail->renderedBody, 'Hello Jo Tenant,')
             && str_contains($mail->renderedBody, 'href="'.route('cases.create').'"')
+            && str_contains($mail->renderedBody, '>Start a repair case</a>')
             && ! str_contains($mail->renderedBody, '{{');
     });
 });
