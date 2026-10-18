@@ -41,6 +41,17 @@ only in this configuration.
 
 ## NEXT ACTION — nothing is deploying. Pick from these.
 
+**FIRST, on or after 19 Oct 2026: confirm prod's scheduler still fires.**
+Prod's runner was swapped to the Toolkit-created task at ~13:30 on 18 Oct
+(ledger, 18 Oct prod entry; `deploy-pipeline-divergence.md` §10). Ask
+Charlie to run on PROD in phpMyAdmin:
+`SELECT DATE(swept_at) AS day, COUNT(DISTINCT swept_at) AS runs FROM silence_shadow_log WHERE pretend_today IS NULL GROUP BY DATE(swept_at) ORDER BY day DESC LIMIT 7;`
+The 19th must show `1`. `0` = no runner (reminders have stopped — urgent);
+`2` = two runners. Record the result in the ledger, then delete this item.
+
+**Also unpushed / not deployed as of 18 Oct:** page copy commits
+`a71a40c` + `535fc06` are pushed but NOT pulled onto either box.
+
 **The deploy is DONE and closed out.** Both boxes level, ledger written.
 Do not re-derive deploy state from anything below; `environment-state.md`
 is the record.
