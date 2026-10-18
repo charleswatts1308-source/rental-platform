@@ -4642,3 +4642,36 @@ without Charlie's go-ahead (he had asked a question, not for a fix);
 he chose to keep it rather than revert. Not seen in a browser yet —
 check on the next deploy. Goes out with the next batch (with #82).
 --------------------------------------------------------------------
+
+
+#84
+Page:        Case page (e.g. /cases/8K9HFA) — and the cases list badge
+Severity:    minor (cosmetic — off-policy colour)
+Date:        18 Oct 2026 — raised by Charlie on PROD: "we are using blue in
+             cases page … blue looks off"
+Saw:         Two blues left over after the 18 Oct button policy (which
+             recoloured primary BUTTONS only):
+              1. Outbound letter cards: header strip is bg-primary text-white
+                 (_message_card.blade.php:4) — solid Spacelab blue bars
+                 beside green buttons.
+              2. Case status badge: bg-info text-dark — light blue
+                 (cases/show.blade.php:43, cases/index.blade.php:141).
+Expected:    Agreed with Charlie, same day:
+              1. OUR letters: pale green tint with dark green text
+                 (logo green family); landlord replies keep light grey. So
+                 colour says who wrote it — green = us, grey = them. A tint,
+                 not solid dark green, which would be heavier than the blue.
+              2. Status badge: NEUTRAL GREY. (Colour-by-meaning — green
+                 resolved / amber waiting / red failed — considered and NOT
+                 chosen: "grey is the simple option".)
+              3. Links: STAY BLUE. Deliberately excluded — the universal
+                 link convention. Do not "fix" them.
+Fix:         _message_card: replace bg-primary text-white for outbound with
+             a tint class defined in partials/theme-overrides (light: pale
+             green bg, #047857 text; .theme-dark: dark green tint, light
+             text). Badges -> bg-secondary (check Darkly contrast). Add the
+             rules to docs/button-policy.md (it becomes the colour policy:
+             links blue by decision).
+
+NOT STARTED. No code written.
+--------------------------------------------------------------------
