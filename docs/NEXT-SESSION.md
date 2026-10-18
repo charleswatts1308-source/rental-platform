@@ -5,7 +5,7 @@ The `docs/` folder has many files and many are stale — this index says
 which to trust and which to ignore, so you don't re-derive state from a
 superseded doc. It is a **router, not a record**: keep it short.
 
-**Last updated:** 2026-10-05.
+**Last updated:** 2026-10-18 (end of a long session; Charlie clearing context).
 
 > **Pruned 15 Sep 2026.** This file had grown to 542 lines of discharged
 > history — the #24/#49/#59 build, the 23 Aug capture run, the #25
@@ -19,15 +19,31 @@ superseded doc. It is a **router, not a record**: keep it short.
 
 ## Where everything is, right now
 
-- **`main` = `f78c93c`.** Local and origin level, working tree clean.
-- **BOTH BOXES ARE AT `337edf0`** — gafol and renters.rent, code-identical,
-  **48 migrations each**, deployed and verified 5 Oct 2026.
-  **NOTHING IS UNDEPLOYED.** First time the two have been level since
-  20 Sep. ➡ `docs/environment-state.md` carries both entries.
-- **Suite: 914 green.**
-- **No work in flight.** `feature/property-details` is merged (`--no-ff`,
-  tag `pre-property-details`); the branch is pushed and can be deleted
-  whenever. `main` is safe to build from.
+- **BOTH BOXES ARE AT `c5da36c`** — gafol and renters.rent, **50
+  migrations each**, deployed 18 Oct 2026. ➡ `environment-state.md`.
+- **`main` is AHEAD of origin and of the boxes** — unpushed since
+  `c5da36c`: docs commits PLUS ONE CODE COMMIT, `fde663c` (#83 hover fix,
+  in `partials/theme-overrides`). Push when Charlie asks; it ships with
+  the next batch. Working tree clean.
+- **Suite: 926 green.**
+- **No work in flight.** `feature/welcome-email` merged (`--no-ff`); can
+  be deleted.
+
+**What 18 Oct shipped (c5da36c):** #81 welcome email on verification;
+**button policy** (`docs/button-policy.md` — logo green `#047857` for the
+main action, grey outline back/cancel, red destructive, links stay blue);
+shared partial `resources/views/partials/theme-overrides.blade.php`
+(included by app, guest, errors/_shell layouts) also carries **Darkly
+contrast fixes** scoped by a `.theme-dark` class on `<html>`; email
+buttons green; page copy; friendlier raise-a-case first step. Prod `.env`
+tidied (LOG_LEVEL warning, SESSION_SECURE_COOKIE); prod scheduler moved
+to the Toolkit runner.
+
+**WORKING RULE CHANGED 18 Oct (memory: feedback_prod_walk_snag_only):**
+on ANY walk — dev, staging, prod — a reported issue or "is this
+intentional?" gets an answer + "snag it?" / "fix it?". **No code change
+without Charlie's explicit yes.** The old dev "test-fix cycle" licence is
+withdrawn.
 
 **Attachment ceilings, both boxes: letter 1 = `0`, replies = `3`.** Set
 15 Sep, deliberately (#73). Photos are refused on the cold first letter
@@ -49,13 +65,39 @@ Charlie to run on PROD in phpMyAdmin:
 The 19th must show `1`. `0` = no runner (reminders have stopped — urgent);
 `2` = two runners. Record the result in the ledger, then delete this item.
 
-**Deployed 18 Oct:** both boxes at `c5da36c` (ledger). Welcome email (#81)
-not walked on prod by choice — on the next allowlisted prod registration,
-ask Charlie whether the "Thanks for registering" mail arrived.
+**SECOND: Charlie is running `docs/test-plan-2026-10-18.txt` on PROD
+"later this week"** (plain .txt, DO / EXPECT / Result lines). Take his
+results; every FAIL is a SNAG, not a fix. Welcome email (#81) was not
+walked on prod — the plan's section 2 covers it.
 
-**The deploy is DONE and closed out.** Both boxes level, ledger written.
-Do not re-derive deploy state from anything below; `environment-state.md`
-is the record.
+**THIRD: snag queue #82–#89, all raised 18 Oct, none started except
+#83.** Decide with Charlie which go in the next batch:
+ - #82 "Register a property" button in /cases header — remove.
+ - #83 green button went blue on hover — FIX WRITTEN (`fde663c`),
+   unpushed, not seen in a browser.
+ - #84 leftover blue on case page — our letters pale green tint,
+   status badge grey, links STAY blue.
+ - #85 email button sizes differ — one middle size, judge in Mailpit.
+ - #86 case thread newest-first by correspondence date, reply box on top.
+ - #87 Contact Us replies come from Charlie's personal address. DECIDED:
+   stopgap = dedicated customer-service Gmail sending as
+   info@mg.renters.rent via Mailgun SMTP (6 ordered steps in the #87
+   follow-up); direction = our OWN customer-service inbox in the
+   platform (a PHASE, brief + D0 first) — it REPLACES #30's read-only
+   admin-screen step. Stopgap waits on Charlie (Gmail account + Mailgun
+   SMTP credential).
+ - #88 internal staff note quoted back to customers in replies.
+ - #89 "Received:" blank in the Contact Us forward.
+ Printable summary of the older list: `docs/snag-summary-2026-10-18.txt`
+ (snapshot; #82+ not in it).
+
+**Also open from 18 Oct:** #33 SPF tightening — app sends nothing as the
+apex (prod `.env` checked); remaining check is whether any Plesk mailbox
+on @renters.rent is used. The apex MX points at Hostinguk with no
+mailbox behind it (cc-brief-inbound-enquiries.md).
+
+**Deploy record is in `environment-state.md`.** Do not re-derive deploy
+state from anything below.
 
 **1. #62 — PROD IS DONE (5 Oct). gafol AND dev ARE NOT.** Charlie
 deferred gafol deliberately, so this is a known gap, not an oversight.
