@@ -4469,7 +4469,7 @@ PROPOSED TEMPLATE ROW (wording is a DRAFT for Charlie):
      and we send them a formal, dated repair notice and keep a record
      of everything that follows.
 
-     Start your first repair case here: {{start_case_url}}
+     You can start a repair case at any time: {{start_case_url}}
 
      renters.rent
 
@@ -4499,6 +4499,11 @@ An ignored verify mail leaves an account that cannot do anything, and
 that account never gets thanked — which is the right outcome.
 
 Still open: Charlie's read of the draft wording above.
+
+Wording change, same day (Charlie): "Start your first repair case here"
+-> "You can start a repair case at any time". Reason: TIMING — a user can
+verify, raise a case at once, and only then read the welcome; "first"
+would then be wrong. The neutral line reads true either way.
 --------------------------------------------------------------------
 
 
