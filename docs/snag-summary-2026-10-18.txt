@@ -96,13 +96,11 @@ DONE
 PURE SYSTEM  (internal only)
 ====================================================================
 
+--- TESTING AND DEV TOOLS ---
+
 DEFERRED
 --------
 #28  Pre-fill test emails on non-production boxes
-
-UNCLEAR
--------
-(none)
 
 OPEN
 ----
@@ -113,12 +111,30 @@ OPEN
 #17  Dev reset command crashes on tables not yet created
 #26  Some tests can pass without really checking, after wording
      changes
+
+DONE
+----
+#47  New case statuses swept by default; test added
+#54  Photo-limit testing closed on judgement
+
+--- EMAIL OPERATIONS ---
+
+OPEN
+----
 #31  Deploy checklist names a mail domain that doesn't exist
 #32  One email uses a hardcoded sender address
      (may be covered by #30)
 #33  SPF mail record needs tightening (blocked on #32)
 #34  Says a CLAUDE.md line about Mailgun defaults is wrong
 #35  Local dev "from" address is an outlook.com address
+
+DONE
+----
+#23  Exposed Mailgun keys rotated
+#36  Stay on Mailgun's free tier
+#74  Forwarded enquiries always showed "SPF / DKIM: ? / ?"
+
+--- OTHER (DATABASE, SERVER, ADMIN) ---
 
 PARTLY DONE
 -----------
@@ -132,13 +148,8 @@ REJECTED
 
 DONE
 ----
-#23  Exposed Mailgun keys rotated
-#36  Stay on Mailgun's free tier
 #41  PHP limits set in PHP Selector, not the settings page
-#47  New case statuses swept by default; test added
-#54  Photo-limit testing closed on judgement
 #73  Separate photo limit for replies (setting needs seeding on boxes)
-#74  Forwarded enquiries always showed "SPF / DKIM: ? / ?"
 
 --------------------------------------------------------------------
 TO CHECK
