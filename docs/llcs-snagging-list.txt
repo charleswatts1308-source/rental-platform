@@ -4518,3 +4518,21 @@ open and was not folded in.
 keys have no defaults, each environment must set them, CaseNotice
 throws if cases-from or inbound is blank, only endpoint defaults.
 --------------------------------------------------------------------
+
+
+#32 + #33 — STATUS CHECK 18 Oct 2026 (the entries above remain the record).
+
+#32 is DONE IN CODE, by #30's 20 Sep fix: ContactReply now sends from
+ServiceAddress::contact() on the inbound domain. No mailable in app/
+hardcodes an apex sender any more. The #32 entry was never closed.
+
+#33 — prod .env (pasted by Charlie, secrets redacted) has
+MAIL_FROM_ADDRESS="noreply@mg.renters.rent", MAILGUN_CASES_FROM_ADDRESS
+cases@mg.renters.rent, MAILGUN_INBOUND_DOMAIN mg.renters.rent. So the
+APP sends nothing as the apex on prod and is no longer the blocker.
+Remaining check before v=spf1 -all: does any HUMAN send as @renters.rent
+(e.g. replying from privacy@renters.rent via Plesk mail or a client)?
+If yes, -all breaks those. And do NOT publish null MX: privacy@ at the
+apex is the published compliance contact (#48) and must keep receiving.
+gafol's .env not seen.
+--------------------------------------------------------------------
