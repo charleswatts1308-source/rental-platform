@@ -21,10 +21,10 @@ superseded doc. It is a **router, not a record**: keep it short.
 
 - **BOTH BOXES ARE AT `c5da36c`** — gafol and renters.rent, **50
   migrations each**, deployed 18 Oct 2026. ➡ `environment-state.md`.
-- **`main` is AHEAD of origin and of the boxes** — unpushed since
+- **`main` is pushed (origin level) but AHEAD of both boxes** — since
   `c5da36c`: docs commits PLUS ONE CODE COMMIT, `fde663c` (#83 hover fix,
-  in `partials/theme-overrides`). Push when Charlie asks; it ships with
-  the next batch. Working tree clean.
+  in `partials/theme-overrides`). A Plesk pull on either box would ship
+  it; it is meant to go with the next batch. Working tree clean.
 - **Suite: 926 green.**
 - **No work in flight.** `feature/welcome-email` merged (`--no-ff`); can
   be deleted.
