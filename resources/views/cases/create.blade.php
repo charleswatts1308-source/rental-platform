@@ -16,12 +16,16 @@
     @if($properties->count() === 0)
         {{-- Was a dead end: the warning stated the blocker but gave no way out,
              leaving the user to find the properties page from the nav themselves. --}}
-        <div class="alert alert-warning">
+        {{-- 18 Oct 2026: reworded from "You need to register a property before
+             you can…" in a yellow warning — read as a block, not a first step.
+             "Come straight back" is true: property -> landlord page -> here. --}}
+        <div class="alert alert-light border">
+            <p class="lead mb-2">Let's start with your home.</p>
             <p>
-                You need to register a property before you can raise a repair case.
-                A case is always raised against a property, so we need that on file first.
+                Add your property and landlord details, then you'll come straight
+                back here to describe the repair.
             </p>
-            <a href="{{ route('properties.create') }}" class="btn btn-primary">Register your property</a>
+            <a href="{{ route('properties.create') }}" class="btn btn-primary">Add your property</a>
         </div>
     @else
         @php

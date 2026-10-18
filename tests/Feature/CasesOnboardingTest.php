@@ -199,3 +199,15 @@ it('keeps the sterner not-found wording on the property itself', function () {
     expect($html)->toContain('We could not find that postcode. Please check it.');
     expect($html)->not->toContain('That is fine if the address is not in the UK.');
 });
+
+it('greets a user with no property on raise-a-case with a first step, not a warning', function () {
+    $user = User::factory()->create(['email_verified_at' => now()]);
+
+    $html = $this->actingAs($user)->get(route('cases.create'))->assertOk()->getContent();
+
+    expect($html)->toContain("Let's start with your home.")
+        ->and($html)->toContain('Add your property')
+        ->and($html)->toContain(route('properties.create'))
+        ->and($html)->not->toContain('You need to register a property')
+        ->and($html)->not->toContain('alert-warning');
+});
