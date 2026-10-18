@@ -731,7 +731,8 @@ prod.
   on gafol — prod's task was made by hand, so Toolkit does not count it.
   **Do not enable the Toolkit runner on prod** (would double-fire). gafol
   `silence_shadow_log`: exactly 1 real sweep per day, 12–18 Oct — no
-  double-firing.
+  double-firing. Prod `silence_shadow_log`: same, 1 per day 12–18 Oct —
+  prod scheduler proven running, not just configured.
 
 ### Deploy 19 Sep 2026 — inbound enquiry channel, stage 1
 
