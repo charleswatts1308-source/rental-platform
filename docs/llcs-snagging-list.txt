@@ -4735,3 +4735,55 @@ Fix:         Order by the coalesced date desc (both lists). Move the
 
 NOT STARTED. No code written.
 --------------------------------------------------------------------
+
+
+#87
+Page:        Contact Us — OUR replies to a user's message
+Severity:    minor now (beta); serious at go-live (reputational — looks
+             amateur, and exposes a personal address)
+Date:        18 Oct 2026 — raised by Charlie on PROD: "Contact Us works fine
+             but the email replies are from my gmail account which do look
+             odd in the context of a proper pro platform. Need to have a
+             remedy thought out and tested in case it's needed"
+Saw:         Since #30's cheap fix, the user's message is forwarded to
+             MAIL_ENQUIRY_FORWARD_TO and Charlie answers with Reply from his
+             own mail client — so the user receives an answer FROM a
+             personal address. (Prod .env on 18 Oct had the forward going to
+             an outlook.com address; Charlie reports replies "from my gmail"
+             — check which mailbox he actually answers from.)
+Expected:    Replies arrive from a renters.rent address (e.g.
+             info@mg.renters.rent), and the user's next reply still comes
+             back to Charlie through the forwarder.
+
+REMEDY OPTIONS (to think through and TEST before needed):
+ (a) Reply through the admin contact screen — it already sends
+     ContactReply from info@<inbound domain>, so the user's reply returns
+     via the forwarder. Works TODAY, zero build. BUT conflicts with the
+     #30 next step agreed today (make that screen read-only, remove the
+     reply form). If (a) is chosen, #30's next step must be dropped or
+     changed. One-shot guard: the screen allows only one reply per
+     message; the conversation then continues by email — from Charlie's
+     own address again, so (a) fixes the first answer only.
+ (b) "Send mail as" in Charlie's mail client, via Mailgun SMTP. Gmail and
+     Outlook can both send as info@mg.renters.rent through Mailgun's SMTP
+     (smtp.eu.mailgun.org, an SMTP credential created for that address
+     in Mailgun). Every reply in the thread then goes out as
+     info@mg.renters.rent, signed by our DKIM, and the user's replies
+     come back via the forwarder. No app change. Likely the right
+     answer. Needs: Mailgun SMTP credential, client setup, and setting
+     that identity as the default when replying to forwarded enquiries.
+ (c) A real mailbox on a business domain (Google Workspace / Microsoft
+     365). Most "proper", but a monthly cost and a second inbound route
+     next to Mailgun. Overkill at beta volume.
+
+Fix:         Recommend (b). TEST PLAN — on live, per CLAUDE.md mail rules (the
+             sandbox cannot do inbound): create the Mailgun SMTP credential;
+             add "send as info@mg.renters.rent" in Charlie's client; send a
+             Contact Us message from an outside account; reply as
+             info@mg.renters.rent; confirm (1) the outside account sees
+             From: info@mg.renters.rent with DKIM pass and no "via" or
+             "on behalf of" banner, (2) its reply comes back through the
+             forwarder to Charlie. Record the result in the ledger.
+
+NOT STARTED. Nothing configured. Decision on (a) vs (b) is Charlie's.
+--------------------------------------------------------------------
