@@ -706,6 +706,23 @@ prod.
   (staging), renters.rent (production), and main.
 
 ## renters.rent — production (NEW sibling build) — ✅ LIVE (hardening green)
+### Config change 18 Oct 2026 — prod `.env` only (no code, no migrations)
+
+- **Code unchanged** — still at `337edf0` (5 Oct entry above). No pull,
+  no migrations; migration set unchanged at 48.
+- **Changed in `.env`** (Charlie, via Plesk File Manager):
+  - `LOG_LEVEL` `debug` → `warning` — production was logging at debug,
+    which accumulates request detail incl. personal data.
+  - `SESSION_SECURE_COOKIE=true` added — session cookie now HTTPS-only.
+- Optional tidy-ups offered (allowlist `+-t1` typo; dead `MAIL_HOST`/
+  `MAIL_PORT`/`MAIL_USERNAME`/`MAIL_PASSWORD`/`MAIL_SCHEME` and `AWS_*`
+  lines) — **not confirmed as done**; check the file before assuming.
+- Then `config:cache` via Laravel Toolkit.
+- **Verified:** Charlie logged in OK afterwards.
+- Read off the pasted `.env` at the same time: `MAIL_FROM_ADDRESS` is
+  `noreply@mg.renters.rent`, so prod sends nothing as the apex (snag #33).
+  No duplicate keys. gafol's `.env` not reviewed.
+
 ### Deploy 19 Sep 2026 — inbound enquiry channel, stage 1
 
 - **At `461f3d4`, same commit as gafol.** Full entry is under the gafol
