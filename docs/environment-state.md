@@ -725,6 +725,13 @@ prod.
 - Read off the pasted `.env` at the same time: `MAIL_FROM_ADDRESS` is
   `noreply@mg.renters.rent`, so prod sends nothing as the apex (snag #33).
   No duplicate keys. gafol's `.env` not reviewed.
+- **Scheduler, both boxes (checked 18 Oct).** Plesk → Scheduled Tasks has
+  one every-minute `artisan schedule:run` task per box (gafol, renters.rent),
+  both active. Toolkit's Scheduled Tasks tab says "disabled" on prod but not
+  on gafol — prod's task was made by hand, so Toolkit does not count it.
+  **Do not enable the Toolkit runner on prod** (would double-fire). gafol
+  `silence_shadow_log`: exactly 1 real sweep per day, 12–18 Oct — no
+  double-firing.
 
 ### Deploy 19 Sep 2026 — inbound enquiry channel, stage 1
 
