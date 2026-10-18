@@ -1,0 +1,243 @@
+TEST PLAN - PROD (renters.rent) - release c5da36c - 18 Oct 2026
+====================================================================
+
+How to use: work top to bottom. Each test says what to do (DO), what
+should happen and why (EXPECT), then a line for you to fill in.
+Mark Result as PASS / FAIL / SKIP and add a note if anything is odd.
+A FAIL is a snag, not a fix - tell Claude, it gets snagged.
+
+Already known and snagged (do NOT re-report):
+  #82 "Register a property" button in the /cases header
+  #83 green buttons turn blue on hover (fixed, not deployed yet)
+  #84 blue letter headers and blue status badge on a case page
+  #85 email button sizes differ (verify big, welcome small)
+  #86 case thread oldest-first, reply box at the bottom
+  #87 Contact Us replies come from a personal address
+
+Browser: Firefox, LIGHT mode first. Section 7 repeats in dark mode.
+
+
+--------------------------------------------------------------------
+0. SETUP - a fresh test address
+--------------------------------------------------------------------
+DO:      Pick a new Gmail plus address, e.g.
+         charles.watts1308+t5@gmail.com
+         Plesk > renters.rent > File Manager > .env
+         Add it to the end of REGISTRATION_ALLOWLIST (comma first).
+         Laravel Toolkit > Artisan > config:cache
+EXPECT:  Nothing visible yet. Mail to that address lands in your
+         normal Gmail inbox; the app treats it as a brand-new person.
+Address used: ______________________________
+Result:  ____   Note: __________________________________________
+
+
+--------------------------------------------------------------------
+1. HOME PAGE AND CONTENT PAGES (logged out)
+--------------------------------------------------------------------
+1.1 Home page
+DO:      Open https://renters.rent
+EXPECT:  "Welcome to Renters in England & Wales" and your short lines
+         ("Put it in writing" ... "It does all the work for you").
+         Green "Sign up" button. Header: green-outline Login, solid
+         green Register.
+Result:  ____   Note: __________________________________________
+
+1.2 Content pages
+DO:      Visit About, Landlords, How It Works, Background (PRS scale).
+EXPECT:  Your rewritten copy. PRS page says "GBP 6.6 billion" with a
+         pound sign, not $. How It Works: BOTH buttons read
+         "Start a Repair Case", both green.
+Result:  ____   Note: __________________________________________
+
+1.3 Error page
+DO:      Open https://renters.rent/xyz-not-a-page
+EXPECT:  A friendly "not found" page with a GREEN button (this page
+         uses its own layout, so it is a separate check).
+Result:  ____   Note: __________________________________________
+
+
+--------------------------------------------------------------------
+2. REGISTER AND VERIFY - the welcome email (#81)
+--------------------------------------------------------------------
+How it should work: registering sends ONLY the verify email. The
+"Thanks for registering" email is sent the moment you click the
+verify link - never before, and only once.
+
+2.1 Register
+DO:      Register with the address from step 0.
+EXPECT:  ONE email arrives: the verify email, with a green button
+         (it was dark grey before today).
+         NO welcome email yet.
+Result:  ____   Note: __________________________________________
+
+2.2 Verify
+DO:      Click the verify link in that email.
+EXPECT:  You land on your cases page, signed in, with a
+         "thanks for registering" message on screen.
+         A SECOND email arrives: "Thanks for registering with
+         renters.rent" - Hello + your name, one paragraph on the
+         service, "You can start a repair case at any time." and a
+         green "Start a repair case" button.
+         No grey property/case box at the top of that email.
+Inbox or spam? ______
+Result:  ____   Note: __________________________________________
+
+2.3 Welcome button
+DO:      Click "Start a repair case" in the welcome email.
+EXPECT:  The Raise a Case page (sign in first if it asks - this is an
+         ordinary link, not a magic link).
+Result:  ____   Note: __________________________________________
+
+2.4 No repeat
+DO:      Click the verify link from 2.1 a second time.
+EXPECT:  "already verified" message. NO second welcome email.
+Result:  ____   Note: __________________________________________
+
+
+--------------------------------------------------------------------
+3. FIRST STEP FOR A NEW USER - Raise a Case with no property
+--------------------------------------------------------------------
+How it should work: a new user has no property, so Raise a Case
+shows a friendly first step instead of the form. Adding the property
+leads through the landlord details and straight back to the form.
+
+3.1 The first-step message
+DO:      Go to Raise a Case (Cases > Raise a case, or the welcome
+         email button).
+EXPECT:  Plain text, NO yellow box:
+         "Let's start with your home."
+         "Add your property and landlord details, then we'll ask for
+         the repair details."
+         Green "Add your property" button.
+Result:  ____   Note: __________________________________________
+
+3.2 The route through
+DO:      Click "Add your property", fill it in, save. Then fill in the
+         landlord page, save.
+EXPECT:  Property saved -> landlord page ("now add your landlord or
+         agent") -> after saving the landlord you arrive back on Raise
+         a Case, now showing the repair form.
+Result:  ____   Note: __________________________________________
+
+
+--------------------------------------------------------------------
+4. RAISE A CASE AND THE LANDLORD SIDE
+--------------------------------------------------------------------
+Use a landlord email you can read (another of your own addresses),
+so you can see what the landlord receives.
+
+4.1 Preview and send
+DO:      Describe a repair, Preview, then "Confirm and send notice 1".
+EXPECT:  Green "Confirm and send" button, grey-outline "Edit".
+         The case page opens; the letter shows in the thread.
+Result:  ____   Note: __________________________________________
+
+4.2 What the landlord receives
+DO:      Open the landlord inbox.
+EXPECT:  The formal notice, from cases@mg.renters.rent, with the
+         property / reference / issue box at the top. (Landlord letters
+         have no buttons - nothing changed here today; this is a
+         regression check.)
+Result:  ____   Note: __________________________________________
+
+4.3 Landlord replies
+DO:      Reply to that email from the landlord inbox.
+EXPECT:  The reply appears on the case page (refresh). The tenant gets
+         a "your landlord has replied" email with a GREEN
+         "Open this case" button (was blue before today).
+Result:  ____   Note: __________________________________________
+
+4.4 Tenant answers
+DO:      On the case page, write a reply, Preview, Send.
+EXPECT:  Green Preview / Send buttons. The landlord inbox receives it.
+Result:  ____   Note: __________________________________________
+
+
+--------------------------------------------------------------------
+5. BUTTON COLOURS ON OTHER PAGES (light mode)
+--------------------------------------------------------------------
+How it should work: green = the one main action; grey outline =
+Back / Cancel / Edit / Pause; red = delete or abandon.
+
+5.1 Properties page
+DO:      Properties - Register a property, Edit.
+EXPECT:  Main button green; Landlord / Edit row buttons grey outline.
+Result:  ____   Note: __________________________________________
+
+5.2 Contact Us
+DO:      Contact Us page.
+EXPECT:  "Send Message" is green (it was a hand-coloured green before;
+         now it is the standard one - should look the same or near).
+Result:  ____   Note: __________________________________________
+
+5.3 Admin (signed in as admin)
+DO:      Admin > Contact messages; open one. Admin > Templates; edit
+         one and preview.
+EXPECT:  Contact list "View" = green outline. Message page "Back to
+         Messages" = GREY outline (was solid green). Template preview
+         "Confirm and save" = green.
+Result:  ____   Note: __________________________________________
+
+
+--------------------------------------------------------------------
+6. CONTACT US ROUTE (how it works today - not a fix)
+--------------------------------------------------------------------
+How it should work: the message is saved, AND a copy is emailed to
+the forward-to mailbox in .env (on 18 Oct that was your OUTLOOK
+address). Pressing Reply in that mailbox answers the person who wrote
+in. Their reply comes back via info@mg.renters.rent to the same
+mailbox.
+
+6.1 Send and receive
+DO:      Send a Contact Us message as your test user.
+EXPECT:  It arrives in the forward-to mailbox. Write down WHICH
+         mailbox it arrived in - this settles the #87 question.
+Mailbox it arrived in: ______________________________
+Result:  ____   Note: __________________________________________
+
+
+--------------------------------------------------------------------
+7. DARK MODE - repeat key screens
+--------------------------------------------------------------------
+DO:      Switch Windows (or Firefox) to dark. Refresh.
+How it should work: no panel or button should be hard to read.
+
+7.1 Cases list
+EXPECT:  The header strip of each case card is readable. Landlord /
+         Property buttons are clearly visible light grey.
+Result:  ____   Note: __________________________________________
+
+7.2 A case page
+EXPECT:  Back / Pause buttons clearly visible. Landlord-reply cards
+         (grey header) readable.
+Result:  ____   Note: __________________________________________
+
+7.3 Raise a Case photo area
+EXPECT:  The attachments box is dark with light text, readable.
+Result:  ____   Note: __________________________________________
+
+7.4 Login / Register pages
+EXPECT:  These pages stay LIGHT even in dark mode - that is how they
+         have always been, not a new fault.
+Result:  ____   Note: __________________________________________
+
+
+--------------------------------------------------------------------
+8. TOMORROW (19 Oct, after 06:15) - scheduler check
+--------------------------------------------------------------------
+DO:      phpMyAdmin, PROD database ukrenter_renters_db:
+         SELECT DATE(swept_at) AS day, COUNT(DISTINCT swept_at) AS runs
+         FROM silence_shadow_log WHERE pretend_today IS NULL
+         GROUP BY DATE(swept_at) ORDER BY day DESC LIMIT 7;
+EXPECT:  2026-10-19 shows 1.   0 = reminders have stopped (urgent).
+                               2 = running twice.
+Result:  ____   Note: __________________________________________
+
+
+--------------------------------------------------------------------
+SUMMARY
+--------------------------------------------------------------------
+Passed: ____   Failed: ____   Skipped: ____
+New problems found (tell Claude to snag):
+-
+-
