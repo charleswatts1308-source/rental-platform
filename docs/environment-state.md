@@ -721,8 +721,12 @@ prod.
   MariaDB check): `2026_10_18_120000_seed_welcome_registered_template`,
   `2026_10_18_130000_email_buttons_logo_green`.
 - **gafol:** Plesk Git pull; `migrate:status` BEFORE 48 Ran / 2 Pending;
-  `migrate --force` both DONE (batch 9). Post-migrate status, clears and
-  the welcome-email walk: **not reported back at time of writing**.
+  `migrate --force` both DONE (batch 9); clears done (Charlie confirmed).
+  Welcome-email walk **deliberately skipped** on gafol (sandbox mail is an
+  incomplete test) and on prod — walked carefully on dev via Mailpit
+  instead. Unproven on prod: that the listener fires there, and inbox vs
+  spam. Close it by glancing for the welcome mail on the next allowlisted
+  prod registration.
 - **prod:** Plesk Git pull; `migrate:status` BEFORE 48 Ran / 2 Pending;
   `migrate --force` both DONE (batch 6); AFTER **50 Ran, none pending**;
   `route:clear`, `view:clear`, `config:clear`, **`config:cache`** — all
