@@ -282,3 +282,37 @@ an empty site instead, and take the skeleton's work as done by that flow.
 
 **Either way the STEP 6 storage check still applies** — the directories are
 gitignored under every route.
+
+---
+
+## 10. The scheduler — same root cause, second symptom (18 Oct 2026)
+
+Toolkit → Scheduled Tasks on **PROD** shows a yellow **"Scheduled tasks
+are disabled."** On gafol it does not. Alarming, and **false**:
+
+- Both boxes have one Plesk → Scheduled Tasks entry running
+  `artisan schedule:run` every minute, both active. Prod's was **made by
+  hand** (description "Laravel scheduler heartbeat … Do not disable");
+  gafol's is, by inference, the one Toolkit created when its runner was
+  switched on. Not yet confirmed — toggling gafol's Toolkit runner off and
+  watching whether its Plesk line vanishes would settle it.
+- Toolkit only counts a task it created itself, so on prod it reports
+  "disabled" while the hand-made task does the work.
+- **Proven running on both:** `silence_shadow_log` shows exactly one real
+  sweep per day on each box, 12–18 Oct.
+
+Same pattern as the deploy difference: gafol is a Toolkit-managed app,
+prod is not, so anything Toolkit manages behaves differently between them.
+
+**Charlie's objection, and it is the right one:** a warning that has to be
+remembered as "safe to ignore" is a trap — it trains you to ignore
+warnings. The aim should be that prod shows no warning it does not mean.
+
+**Converging prod is lower-risk than first thought.** `schedule:run`
+fires every minute, but the only scheduled job is `silence:sweep` at
+**06:15**. Outside that minute, two runners or none have no effect. So a
+swap done mid-day — enable Toolkit's runner on prod, confirm it created
+its own Plesk task, then delete the hand-made one — cannot double-fire or
+miss a sweep. Verify next morning with the per-day count query
+(`COUNT(DISTINCT swept_at)` grouped by day, `pretend_today IS NULL`).
+Check the Toolkit-created task uses the same PHP (8.4) as the hand-made one.
