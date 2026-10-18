@@ -316,3 +316,23 @@ its own Plesk task, then delete the hand-made one — cannot double-fire or
 miss a sweep. Verify next morning with the per-day count query
 (`COUNT(DISTINCT swept_at)` grouped by day, `pretend_today IS NULL`).
 Check the Toolkit-created task uses the same PHP (8.4) as the hand-made one.
+
+### Done, 18 Oct 2026 ~13:30 — prod converged
+
+Charlie enabled the Toolkit runner on prod, checked the task it created,
+then removed the hand-made "heartbeat" task. Toolkit no longer shows the
+warning. Plesk → Scheduled Tasks now has two lines:
+
+- gafol: `/opt/plesk/php/8.4/bin/php /var/www/vhosts/ukrenters.rent/gafol.rent/artisan schedule:run` — no description.
+- prod: `/opt/plesk/php/8.4/bin/php '/var/www/vhosts/ukrenters.rent/renters.rent/artisan' 'schedule:run'` — description **"Extension laravel"**.
+
+**The inference above about gafol was WRONG.** A Toolkit-created task is
+recognisable: quoted path and the description "Extension laravel".
+gafol's line has neither, so it looks hand-made — yet gafol's Toolkit tab
+shows no warning. Why is **not known**. gafol is proven at exactly one
+sweep per day, so it is not double-firing; the open question is cosmetic
+but it is the same kind of trap, so worth settling: on gafol, look at the
+Toolkit Scheduled Tasks tab for an on/off control and what it claims.
+
+**Pending:** per-day count query on prod on 19 Oct (after 06:15) must
+show `1` for the 19th — that proves the Toolkit task actually fires.

@@ -733,6 +733,14 @@ prod.
   `silence_shadow_log`: exactly 1 real sweep per day, 12–18 Oct — no
   double-firing. Prod `silence_shadow_log`: same, 1 per day 12–18 Oct —
   prod scheduler proven running, not just configured.
+- **Prod scheduler SWAPPED, ~13:30 18 Oct** (so the Toolkit stops showing a
+  false "disabled"): Toolkit runner enabled on prod → it created its own
+  Plesk task (quoted path, description "Extension laravel", PHP 8.4, every
+  minute); the hand-made "heartbeat" task then **removed**. Toolkit warning
+  gone. The "do not enable the Toolkit runner on prod" note above is
+  **superseded** — it IS the runner now; do not add a second task.
+  **Pending: confirm one sweep on 19 Oct** with the per-day count query.
+  Detail and the open gafol question: `deploy-pipeline-divergence.md` §10.
 
 ### Deploy 19 Sep 2026 — inbound enquiry channel, stage 1
 
