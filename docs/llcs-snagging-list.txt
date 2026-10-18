@@ -4596,3 +4596,26 @@ dropping anything — no schema change implied; leave the columns.
 
 NOT STARTED. No code written.
 --------------------------------------------------------------------
+
+
+#82
+Page:        /cases ("My Repair Cases") — header, top right
+Severity:    minor (cosmetic / clutter)
+Date:        18 Oct 2026 — raised by Charlie on PROD, light mode, Firefox:
+             'has an unwanted "Register a Property" button top right'
+Saw:         A "Register a property" outline button sits beside the page
+             heading on EVERY visit (cases/index.blade.php:10), whatever
+             the user's state. A brand-new user already gets the primary
+             "Register your property" call to action in the page body, so
+             they see two buttons for the same thing; an established user
+             sees a property action on a page about cases.
+Expected:    No property button in the /cases header. Adding a property
+             lives on the Properties page (which has its own "Register a
+             property") and in the new-user call to action.
+Fix:         Delete the header link at cases/index.blade.php:10 (keep the
+             heading). Check CaseIndexTest / CasesOnboardingTest assertions
+             on "Register your property" still target the body CTA, which
+             stays.
+
+NOT STARTED. No code written.
+--------------------------------------------------------------------
