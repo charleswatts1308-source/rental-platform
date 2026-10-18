@@ -50,6 +50,9 @@ class LetterTemplateRenderer
         // one fact the tenant needs in order to act, so the notice is
         // materially worse without it.
         'failed_address',
+        // #81 — link to the create-case form, passed by the welcome email
+        // sent on email verification.
+        'start_case_url',
     ];
 
     /**
@@ -80,6 +83,16 @@ class LetterTemplateRenderer
             return [
                 'subject' => $renderedSubject,
                 'body' => $renderedBody,
+            ];
+        }
+
+        // #81 — account templates (e.g. the welcome email) belong to no
+        // case, so the D9 header block would be three empty labels. They
+        // get the envelope wrap without it.
+        if ($template->type === 'account') {
+            return [
+                'subject' => $renderedSubject,
+                'body' => $this->wrap($renderedBody, ''),
             ];
         }
 
@@ -115,8 +128,14 @@ class LetterTemplateRenderer
      */
     private function wrapWithHeader(string $body, array $vars): string
     {
-        $header = $this->buildHeaderBlock($vars);
+        return $this->wrap($body, $this->buildHeaderBlock($vars));
+    }
 
+    /**
+     * The minimal HTML envelope, with an optional block above the body.
+     */
+    private function wrap(string $body, string $header): string
+    {
         return <<<HTML
 <!DOCTYPE html>
 <html lang="en">

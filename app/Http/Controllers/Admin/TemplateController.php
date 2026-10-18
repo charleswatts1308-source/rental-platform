@@ -152,6 +152,7 @@ class TemplateController extends Controller
             'notice_number' => 1,
             'magic_link' => 'https://example.test/magic-link/sample-token',
             'last_reply_date' => '01 Jan 2026',
+            'start_case_url' => 'https://example.test/cases/create',
         ];
     }
 }
