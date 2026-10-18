@@ -714,9 +714,12 @@ prod.
   - `LOG_LEVEL` `debug` → `warning` — production was logging at debug,
     which accumulates request detail incl. personal data.
   - `SESSION_SECURE_COOKIE=true` added — session cookie now HTTPS-only.
-- Optional tidy-ups offered (allowlist `+-t1` typo; dead `MAIL_HOST`/
-  `MAIL_PORT`/`MAIL_USERNAME`/`MAIL_PASSWORD`/`MAIL_SCHEME` and `AWS_*`
-  lines) — **not confirmed as done**; check the file before assuming.
+  - `AWS_*` lines **deleted** (Laravel boilerplate for S3; unused).
+  - Dead SMTP lines `MAIL_SCHEME`/`MAIL_HOST`/`MAIL_PORT`/`MAIL_USERNAME`/
+    `MAIL_PASSWORD` **commented out**, not deleted (inert under
+    `MAIL_MAILER=mailgun`).
+- Allowlist `+-t1` typo — **not reported as changed**; check the file
+  before assuming.
 - Then `config:cache` via Laravel Toolkit.
 - **Verified:** Charlie logged in OK afterwards.
 - Read off the pasted `.env` at the same time: `MAIL_FROM_ADDRESS` is
