@@ -4507,6 +4507,33 @@ would then be wrong. The neutral line reads true either way.
 --------------------------------------------------------------------
 
 
+#81 — BUILT 18 Oct 2026, merged to main, NOT DEPLOYED.
+
+Charlie: "wording is ok, do it". Built on feature/welcome-email, merged
+--no-ff. Suite 923 green (9 new in tests/Feature/Auth/WelcomeEmailTest).
+
+What shipped:
+ - SendWelcomeEmail listener on Verified (auto-discovered) → renders the
+   active welcome_registered row → WelcomeRegistered mailable. Mail send
+   is try/catch + report(): a mail failure cannot cost the user their
+   verification (queue is sync, so it runs inside that request).
+ - LetterTemplateRenderer: new type `account` gets the envelope wrap but
+   NO D9 case header (it would be three empty labels). New whitelist
+   token `start_case_url`; admin editor sample vars include it.
+ - Row reaches boxes by data migration
+   2026_10_18_120000_seed_welcome_registered_template (insert-if-absent,
+   never overwrites an edited row) and fresh builds by LetterTemplateSeeder.
+
+DEVIATION FROM THE DRAFT, invisible to readers: the name placeholder is
+the existing {{tenant_name}}, not a new {{user_name}}. Every registered
+user is a tenant; one token for one fact.
+
+Deploy needs `migrate --force` on each box (one data-only migration; no
+schema change, so no #18 MariaDB check). Wording editable afterwards via
+the admin template editor.
+--------------------------------------------------------------------
+
+
 #31 + #34 — DONE 18 Oct 2026 (the entries above remain the record).
 
 Charlie: "yes do 31 and 34".
