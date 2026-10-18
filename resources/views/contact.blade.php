@@ -28,6 +28,6 @@
         @enderror
     </div>
 
-    <button type="submit" class="btn text-white" style="background-color: #047857;">Send Message</button>
+    <button type="submit" class="btn btn-primary">Send Message</button>
 </form>
 @endsection

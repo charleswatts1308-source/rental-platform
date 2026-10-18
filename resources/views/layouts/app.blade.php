@@ -26,6 +26,8 @@
         });
     </script>
 
+    @include('partials.brand-buttons')
+
     <style>
         /* Fix footer to not overlap content */
         body {
@@ -220,8 +222,8 @@
                 <!-- Authentication Links - Always Visible -->
                 <div class="ms-auto d-flex align-items-center auth-buttons">
                     @guest
-                        <a href="{{ route('login') }}" class="btn btn-sm me-1" style="color: #047857; border-color: #047857;">Login</a>
-                        <a href="{{ route('register') }}" class="btn btn-sm text-white" style="background-color: #047857;">Register</a>
+                        <a href="{{ route('login') }}" class="btn btn-sm btn-outline-primary me-1">Login</a>
+                        <a href="{{ route('register') }}" class="btn btn-sm btn-primary">Register</a>
                     @else
                         <div class="dropdown">
                             {{-- The email is truncated by WIDTH, not by a fixed

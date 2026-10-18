@@ -40,11 +40,11 @@
                     <div class="invalid-feedback">{{ $message }}</div>
                 @enderror
             </div>
-            <button type="submit" class="btn text-white" style="background-color: #047857;">Send Reply</button>
+            <button type="submit" class="btn btn-primary">Send Reply</button>
         </form>
     </div>
 </div>
 @endif
 
-<a href="{{ route('admin.contact-messages') }}" class="btn text-white mt-3" style="background-color: #047857;">Back to Messages</a>
+<a href="{{ route('admin.contact-messages') }}" class="btn btn-outline-secondary mt-3">Back to Messages</a>
 @endsection

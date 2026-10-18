@@ -24,6 +24,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ $title }} - renters.rent</title>
     <link href="https://cdn.jsdelivr.net/npm/bootswatch@5.3.0/dist/spacelab/bootstrap.min.css" rel="stylesheet">
+    @include('partials.brand-buttons')
 </head>
 <body class="bg-body">
     <div class="container py-5">

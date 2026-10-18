@@ -28,7 +28,7 @@
     @method('PUT')
     <input type="hidden" name="subject" value="{{ $subject }}">
     <textarea name="body" class="d-none" aria-hidden="true">{{ $body }}</textarea>
-    <button type="submit" class="btn btn-success">Confirm and save</button>
+    <button type="submit" class="btn btn-primary">Confirm and save</button>
     <a href="{{ route('admin.templates.edit', $template) }}" class="btn btn-link">Cancel</a>
 </form>
 @endsection

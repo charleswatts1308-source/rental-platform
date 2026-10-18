@@ -190,7 +190,7 @@ class LetterTemplateSeeder extends Seeder
 
 <p>The next notice is prepared and ready. Because your landlord has engaged with this case before, we don't send further notices automatically — it's your call whether to send the next one now.</p>
 
-<p><a href="{{magic_link}}" style="display: inline-block; padding: 10px 16px; background: #2563eb; color: #fff; text-decoration: none; border-radius: 4px;">Review and send the next notice &rarr;</a></p>
+<p><a href="{{magic_link}}" style="display: inline-block; padding: 10px 16px; background: #047857; color: #fff; text-decoration: none; border-radius: 4px;">Review and send the next notice &rarr;</a></p>
 
 <p>If your issue has since been resolved, you can leave this here — we won't send anything unless you choose to.</p>
 
@@ -254,7 +254,7 @@ HTML;
 
 <p>If you'd like to keep things moving, log in to your renters.rent dashboard to pick it up. If you no longer need to pursue this, you can mark it resolved or pause it from the same place.</p>
 
-<p><a href="{{magic_link}}" style="display: inline-block; padding: 10px 16px; background: #2563eb; color: #fff; text-decoration: none; border-radius: 4px;">Open this case</a></p>
+<p><a href="{{magic_link}}" style="display: inline-block; padding: 10px 16px; background: #047857; color: #fff; text-decoration: none; border-radius: 4px;">Open this case</a></p>
 
 <p>If we don't hear back, we'll send one more nudge, then mark the case dormant — but a reply from you at any time picks it straight back up.</p>
 
@@ -299,7 +299,7 @@ HTML;
 
 <p>Your repair case has reached the end of the escalation process. The landlord has not responded across the full sequence of formal notices.</p>
 
-<p><a href="{{magic_link}}" style="display: inline-block; padding: 10px 16px; background: #2563eb; color: #fff; text-decoration: none; border-radius: 4px;">Open this case</a></p>
+<p><a href="{{magic_link}}" style="display: inline-block; padding: 10px 16px; background: #047857; color: #fff; text-decoration: none; border-radius: 4px;">Open this case</a></p>
 
 <p>External routes available to you include the local authority's environmental health team, the relevant property ombudsman, and court action. The full correspondence record on your case is ready to be shared with any of them as evidence.</p>
 
@@ -325,7 +325,7 @@ HTML;
 
 <p>Your last message to your landlord went out more than {{response_days}} days ago, so the silence clock expired and the system escalated automatically. The letter is on the case record.</p>
 
-<p><a href="{{magic_link}}" style="display: inline-block; padding: 10px 16px; background: #2563eb; color: #fff; text-decoration: none; border-radius: 4px;">Open this case</a></p>
+<p><a href="{{magic_link}}" style="display: inline-block; padding: 10px 16px; background: #047857; color: #fff; text-decoration: none; border-radius: 4px;">Open this case</a></p>
 
 <p>If the landlord replies, the clock resets and you'll be notified. If silence continues, the next notice will be scheduled automatically.</p>
 
@@ -362,7 +362,7 @@ HTML;
 
 <p><strong>What to do next.</strong> Check the landlord email address on the property. If it is wrong, correct it and raise a new case — the corrected address will be used from then on. If it looks right, it is worth confirming it with your landlord or letting agent directly.</p>
 
-<p><a href="{{magic_link}}" style="display: inline-block; padding: 10px 16px; background: #2563eb; color: #fff; text-decoration: none; border-radius: 4px;">Open this case</a></p>
+<p><a href="{{magic_link}}" style="display: inline-block; padding: 10px 16px; background: #047857; color: #fff; text-decoration: none; border-radius: 4px;">Open this case</a></p>
 
 <p>Best regards,<br>
 The renters.rent team</p>
@@ -393,7 +393,7 @@ HTML;
 
 <p>If the repair is still outstanding, contacting your landlord or letting agent by another route — post, phone, or through your tenancy agreement's stated contact — is the next step.</p>
 
-<p><a href="{{magic_link}}" style="display: inline-block; padding: 10px 16px; background: #2563eb; color: #fff; text-decoration: none; border-radius: 4px;">Open this case</a></p>
+<p><a href="{{magic_link}}" style="display: inline-block; padding: 10px 16px; background: #047857; color: #fff; text-decoration: none; border-radius: 4px;">Open this case</a></p>
 
 <p>Best regards,<br>
 The renters.rent team</p>
@@ -415,7 +415,7 @@ HTML;
 
 <p>Nothing is lost — a reply from you at any time within the next 90 days will pick the case straight back up and the landlord will be contacted again. Beyond 90 days the case stays on record as evidence, but you'll be invited to raise a new case if the issue is still live.</p>
 
-<p><a href="{{magic_link}}" style="display: inline-block; padding: 10px 16px; background: #2563eb; color: #fff; text-decoration: none; border-radius: 4px;">Open this case</a></p>
+<p><a href="{{magic_link}}" style="display: inline-block; padding: 10px 16px; background: #047857; color: #fff; text-decoration: none; border-radius: 4px;">Open this case</a></p>
 
 <p>Best regards,<br>
 The renters.rent team</p>
@@ -435,7 +435,7 @@ HTML;
 
 <p>The hold you placed on your repair case has ended. The case is now waiting on the landlord again, and the silence clock is running.</p>
 
-<p><a href="{{magic_link}}" style="display: inline-block; padding: 10px 16px; background: #2563eb; color: #fff; text-decoration: none; border-radius: 4px;">Open this case</a></p>
+<p><a href="{{magic_link}}" style="display: inline-block; padding: 10px 16px; background: #047857; color: #fff; text-decoration: none; border-radius: 4px;">Open this case</a></p>
 
 <p>If you need to pause again — for example because the landlord has given a fix date — you can do so from the case page.</p>
 
@@ -457,7 +457,7 @@ HTML;
 
 <p>Your landlord has replied to your repair case. The reply is on the case record.</p>
 
-<p><a href="{{magic_link}}" style="display: inline-block; padding: 10px 16px; background: #2563eb; color: #fff; text-decoration: none; border-radius: 4px;">Open this case</a></p>
+<p><a href="{{magic_link}}" style="display: inline-block; padding: 10px 16px; background: #047857; color: #fff; text-decoration: none; border-radius: 4px;">Open this case</a></p>
 
 <p>Read the reply, then choose your next step from the case page: reply with more information, pause the case while the landlord follows through, or close it if the issue is sorted.</p>
 
@@ -499,7 +499,7 @@ HTML;
 
 <p>You can start a repair case at any time.</p>
 
-<p><a href="{{start_case_url}}" style="display: inline-block; padding: 10px 16px; background: #2563eb; color: #fff; text-decoration: none; border-radius: 4px;">Start a repair case</a></p>
+<p><a href="{{start_case_url}}" style="display: inline-block; padding: 10px 16px; background: #047857; color: #fff; text-decoration: none; border-radius: 4px;">Start a repair case</a></p>
 
 <p>renters.rent</p>
 HTML;

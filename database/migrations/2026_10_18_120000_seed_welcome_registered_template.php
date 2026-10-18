@@ -54,7 +54,7 @@ return new class extends Migration
 
 <p>You can start a repair case at any time.</p>
 
-<p><a href="{{start_case_url}}" style="display: inline-block; padding: 10px 16px; background: #2563eb; color: #fff; text-decoration: none; border-radius: 4px;">Start a repair case</a></p>
+<p><a href="{{start_case_url}}" style="display: inline-block; padding: 10px 16px; background: #047857; color: #fff; text-decoration: none; border-radius: 4px;">Start a repair case</a></p>
 
 <p>renters.rent</p>
 HTML;

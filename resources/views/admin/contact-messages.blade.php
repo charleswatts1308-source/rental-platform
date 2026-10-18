@@ -39,7 +39,7 @@
                             <span class="badge bg-warning text-dark">Pending</span>
                         @endif
                     </td>
-                    <td><a href="{{ route('admin.contact-messages.show', $msg->id) }}" class="btn btn-sm text-white" style="background-color: #047857;">View</a></td>
+                    <td><a href="{{ route('admin.contact-messages.show', $msg->id) }}" class="btn btn-sm btn-outline-primary">View</a></td>
                 </tr>
             @empty
                 <tr>

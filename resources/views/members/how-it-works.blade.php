@@ -42,7 +42,7 @@
 
 
 <br>
-<a href="{{ route('cases.create') }}" class="btn btn-success btn-lg mb-4">Start a Repair Case</a>
+<a href="{{ route('cases.create') }}" class="btn btn-primary btn-lg mb-4">Start a Repair Case</a>
 
 <hr class="my-4">
 
@@ -68,6 +68,6 @@
 </p>
 
 <br>
-<a href="{{ route('cases.create') }}" class="btn btn-success btn-lg mb-4">Start a Repair Notice</a>
+<a href="{{ route('cases.create') }}" class="btn btn-primary btn-lg mb-4">Start a Repair Notice</a>
 
 @endsection
