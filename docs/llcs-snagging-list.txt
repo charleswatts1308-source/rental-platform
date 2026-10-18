@@ -4500,3 +4500,21 @@ that account never gets thanked — which is the right outcome.
 
 Still open: Charlie's read of the draft wording above.
 --------------------------------------------------------------------
+
+
+#31 + #34 — DONE 18 Oct 2026 (the entries above remain the record).
+
+Charlie: "yes do 31 and 34".
+
+#31: docs/deploy-checklist.md now gives mg.renters.rent as the inbound
+domain at all four places it named inbox.renters.rent — lines 24 and 60
+as snagged, plus lines 21-22 (the inbound subdomain and Mailgun route
+setup steps), which carried the same dead domain and were missed by the
+original entry. The separate question of the CaseNotice guard checking
+that the domain RESOLVES, not merely that it is non-blank, is still
+open and was not folded in.
+
+#34: CLAUDE.md Mail bullet rewritten to the actual design — Mailgun
+keys have no defaults, each environment must set them, CaseNotice
+throws if cases-from or inbound is blank, only endpoint defaults.
+--------------------------------------------------------------------

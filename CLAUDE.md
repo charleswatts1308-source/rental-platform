@@ -20,7 +20,7 @@ Standing rules. Project history and current-phase state live in `docs/`.
 - Staging: Mailgun sandbox, **outbound only** (sandbox cannot do inbound).
 - Local: Mailpit only.
 - Mailgun **webhook** work is tested on **live**. The sandbox cannot do inbound, so staging can never receive one — that limit is known and accepted, not worked around. Do not build a synthetic-signature test path to dodge it. Pattern: deploy behind a token, exercise with real sends, tear down and **verify gone**.
-- `config/services.php` Mailgun keys carry **production defaults** (`mg.renters.rent`); env overrides per environment.
+- `config/services.php` Mailgun keys (`MAILGUN_DOMAIN`, `MAILGUN_CASES_FROM_ADDRESS`, `MAILGUN_INBOUND_DOMAIN`) have **no defaults, by design** — every environment must set them, and `CaseNotice` throws (no letters send) if the cases-from or inbound key is blank. Only `endpoint` defaults (`api.eu.mailgun.net`). Production values are all on `mg.renters.rent`.
 
 ## Env allow-list
 - `dev:*` artisan commands and `silence:sweep --pretend-today` are gated to `local/staging/preprod` via `app()->environment([...])`. Production refuses them.

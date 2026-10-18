@@ -121,16 +121,17 @@ DONE
 
 OPEN
 ----
-#31  Deploy checklist names a mail domain that doesn't exist
 #32  One email uses a hardcoded sender address
      (may be covered by #30)
 #33  SPF mail record needs tightening (blocked on #32)
-#34  Says a CLAUDE.md line about Mailgun defaults is wrong
 #35  Local dev "from" address is an outlook.com address
 
 DONE
 ----
 #23  Exposed Mailgun keys rotated
+#31  Deploy checklist named a mail domain that doesn't exist
+     (fixed 18 Oct)
+#34  CLAUDE.md line about Mailgun defaults was wrong (fixed 18 Oct)
 #36  Stay on Mailgun's free tier
 #74  Forwarded enquiries always showed "SPF / DKIM: ? / ?"
 

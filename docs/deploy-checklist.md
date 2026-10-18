@@ -18,10 +18,10 @@ The single biggest blocker. Without an active Mailgun configuration, outbound ca
 
 - [ ] Mailgun account, **EU region** (`api.eu.mailgun.net`) for UK data residency.
 - [ ] Sending domain `mg.renters.rent` configured. Mailgun's setup wizard generates the SPF/DKIM/DMARC records — add to DNS.
-- [ ] Inbound subdomain `inbox.renters.rent` configured. Add the MX record Mailgun provides; this is the address the per-case `{token}@inbox.renters.rent` reply addresses route through.
-- [ ] Inbound route in Mailgun pointing all `*@inbox.renters.rent` to `https://<your-domain>/webhooks/mailgun/inbound`.
+- [ ] Inbound on the same domain, `mg.renters.rent` (there is no separate inbound subdomain). Add the MX records Mailgun provides; this is the domain the per-case `{token}@mg.renters.rent` reply addresses route through.
+- [ ] Inbound route in Mailgun pointing the per-case reply addresses on `mg.renters.rent` to `https://<your-domain>/webhooks/mailgun/inbound`.
 - [ ] Webhook signing key generated. Copy this into `MAILGUN_WEBHOOK_SIGNING_KEY` in production `.env`.
-- [ ] **`MAILGUN_CASES_FROM_ADDRESS` and `MAILGUN_INBOUND_DOMAIN` set in `.env`** — both are now **mandatory, no default**: `CaseNotice` throws and no case notices send if either is missing. Production values: `cases@mg.renters.rent` and `inbox.renters.rent`.
+- [ ] **`MAILGUN_CASES_FROM_ADDRESS` and `MAILGUN_INBOUND_DOMAIN` set in `.env`** — both are now **mandatory, no default**: `CaseNotice` throws and no case notices send if either is missing. Production values: `cases@mg.renters.rent` and `mg.renters.rent`.
 - [ ] **DNS propagation can take hours.** Don't deploy the same day you start Mailgun setup.
 
 ### Domain & HTTPS
@@ -57,7 +57,7 @@ MAILGUN_SECRET=<from mailgun api keys>
 MAILGUN_ENDPOINT=api.eu.mailgun.net
 MAILGUN_WEBHOOK_SIGNING_KEY=<from mailgun webhooks page>
 MAILGUN_CASES_FROM_ADDRESS=cases@mg.renters.rent
-MAILGUN_INBOUND_DOMAIN=inbox.renters.rent
+MAILGUN_INBOUND_DOMAIN=mg.renters.rent
 ```
 
 - [ ] `.env` written, secrets stored only in `.env`, never committed.
