@@ -1,0 +1,149 @@
+SNAGGING LIST SUMMARY - 18 Oct 2026
+Source: docs/llcs-snagging-list.txt (#1 to #81)
+Order:  Deferred, Unclear, Open, Partly done, Rejected, Done
+
+====================================================================
+USER-FACING  (what tenants, landlords or visitors see)
+====================================================================
+
+DEFERRED
+--------
+#60  Tenant gets no confirmation email when a case is raised
+
+UNCLEAR
+-------
+#37  Welcome banner never shown after verifying (probably fixed by #65)
+#43  Choosing photos in two goes dropped the first set
+     (probably passed testing on 15 Sep)
+
+OPEN
+----
+#29  Login page "Members Only" banner feels intimidating
+#42  ** GO-LIVE BLOCKER ** Landlords page gives no trader name or
+     address for service
+#63  Letters signed with the account handle, not a real name
+#80  No moderation or rate limit on tenant text sent to landlords
+     (approach agreed)
+#81  No "Thanks for registering" email
+     (timing agreed, wording awaiting Charlie)
+
+PARTLY DONE
+-----------
+#25  Bounced letter looked the same as an ignored one;
+     "copy the case" option not built
+#30  Contact Us messages reached nobody; cheap fix only,
+     no two-way thread
+#48  admin@renters.rent cannot receive mail; admin login side deferred
+#62  Landlord service questions landed in the tenant's thread;
+     live on prod only
+#77  Menu clutter tidied; unverified-user block and current-page
+     highlight still open
+
+REJECTED
+--------
+#8   No way to tell if a letter arrived (duplicate of #25)
+
+DONE
+----
+#1   Menu heading "Your Rental Profile" no longer fitted
+#2   Case pages didn't show landlord/agent role and email
+#3   First letter used boilerplate, not the tenant's description
+#4   Case reference shortened to a 6-character code
+#5   Login from an email didn't pre-fill the address
+#6   Password needed after clicking an email link (now a magic link)
+#7   Create-case form didn't recognise a known landlord
+#11  Later letters had an empty issue description
+#14  "Paused until" still shown after the hold was lifted
+#15  "Next escalation" shown when the case wasn't escalating
+#16  "Stage 1 of 4" had the 4 hardcoded
+#19  Tenant replies couldn't carry photos
+#20  Letter header unreadable in dark mode
+#21  Two confusing "abandon" buttons on finished cases
+#24  No way to correct a mistyped landlord email
+#27  Verify link failed in a different browser
+#38  Town names lower-cased in letters
+#39  Preview didn't show which photos would go
+#40  Phone photos rejected with a cryptic error
+#44  "Photo saved" message carried into a new case
+#45  Swept-away photo still counted as attached, broke sending
+#46  Editing from preview dropped photos while saying saved
+#49  Landlord name on the case was ignored
+#50  Unused "severity" field removed
+#51  Postcode not checked against the town
+#53  Removing one of two photos deleted both
+#55  Wrong ICO number on the landlords page
+#56  ICO registration didn't list renters.rent as trading name
+#57  Error pages had no way back
+#58  Photo size limit only checked per file, not in total
+#59  Preview didn't show who the letter goes to
+#61  "Retaliation" sentence removed from the letter footer
+#64  Show/hide toggle on password fields
+#65  No confirmation after verifying in the same browser
+#66  Landlord details asked for on the wrong form
+#67  Register-property button needed two clicks
+#68  Photo field didn't state the total size limit
+#69  Ad-hoc replies sent with no preview
+#70  Case page sidebar too narrow
+#71  Double-clicking Send sent twice
+#72  Replacing a photo wiped the kept ones
+#75  ** NOT DEPLOYED ** Signed-in users couldn't reset a forgotten
+     password
+#76  Reset-password field labels ambiguous (no deployment recorded)
+#78  Footer year stuck at 2025
+#79  Menu links hidden behind a hamburger
+
+====================================================================
+PURE SYSTEM  (internal only)
+====================================================================
+
+DEFERRED
+--------
+#28  Pre-fill test emails on non-production boxes
+
+UNCLEAR
+-------
+(none)
+
+OPEN
+----
+#9   Dev reset command doesn't clear the shadow log
+#10  Sweep summary double-counts pretend-date runs
+#12  Demo data descriptions don't match their categories
+#13  Dev tool shows wrong thresholds for tenant-side cases
+#17  Dev reset command crashes on tables not yet created
+#26  Some tests can pass without really checking, after wording
+     changes
+#31  Deploy checklist names a mail domain that doesn't exist
+#32  One email uses a hardcoded sender address
+     (may be covered by #30)
+#33  SPF mail record needs tightening (blocked on #32)
+#34  Says a CLAUDE.md line about Mailgun defaults is wrong
+#35  Local dev "from" address is an outlook.com address
+
+PARTLY DONE
+-----------
+#18  MariaDB auto-updating timestamp trap fixed on one table,
+     four left
+
+REJECTED
+--------
+#22  No admin editor for repair categories (phpMyAdmin is fine)
+#52  Admin view shows a shorter address than the letter
+
+DONE
+----
+#23  Exposed Mailgun keys rotated
+#36  Stay on Mailgun's free tier
+#41  PHP limits set in PHP Selector, not the settings page
+#47  New case statuses swept by default; test added
+#54  Photo-limit testing closed on judgement
+#73  Separate photo limit for replies (setting needs seeding on boxes)
+#74  Forwarded enquiries always showed "SPF / DKIM: ? / ?"
+
+--------------------------------------------------------------------
+TO CHECK
+--------------------------------------------------------------------
+#37, #43  May already be fixed
+#32       May already be covered by #30
+#48       Conflicts with #75 on whether the admin reset now works
+#75, #76  No deployment recorded
