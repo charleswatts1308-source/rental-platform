@@ -4787,3 +4787,106 @@ Fix:         Recommend (b). TEST PLAN — on live, per CLAUDE.md mail rules (the
 
 NOT STARTED. Nothing configured. Decision on (a) vs (b) is Charlie's.
 --------------------------------------------------------------------
+
+
+#87 — TESTED AND DECIDED 18 Oct 2026 (the entry above remains the record).
+
+TESTED by Charlie on prod: Contact Us as test user "chas watson"
+(charles.watts1308+t991@gmail.com) at 17:53; answered with Reply in
+desktop Outlook at 17:54. Screenshot of what the CUSTOMER received (that
+Gmail inbox, viewed in desktop Outlook) shows:
+ - From: Charles Watts <jcwatts99@outlook.com>. The forward-to mailbox
+   is OUTLOOK, not Gmail — the question in the entry above is settled.
+ - Reply-To worked: the answer went straight to the customer.
+ - The whole forwarded copy is quoted underneath — see #88 and #89.
+
+CORRECTION to my earlier description (to Charlie, in chat): I said the
+customer's follow-up comes back via info@ and the forwarder. That holds
+ONLY for replies sent from the admin screen (ContactReply sends as
+info@). A reply sent from Charlie's own mail client is FROM his personal
+address, so the customer's next message goes STRAIGHT to that personal
+mailbox. From message two onward the platform sees nothing.
+
+ASSESSMENT (agreed with Charlie): fine for beta while Charlie is the only
+correspondent; NOT acceptable for go-live — personal address exposed
+(privacy as well as looks), internal plumbing quoted to customers,
+follow-ups bypass the platform, no record of our replies.
+
+KEY FACT surfaced (Charlie): Mailgun is a relay, not a mailbox. Nothing
+is held there to log into; inbound is handed to our webhook, outbound
+leaves no Sent folder (only short-lived logs). The case page IS the
+mailbox we built for case mail; for enquiry mail the forward-to inbox is
+the only mailbox there is.
+
+DECISION — STOPGAP (option (b), refined): a DEDICATED customer-service
+Gmail account, webmail only (no desktop app), sending as
+info@mg.renters.rent by default. Not Charlie's personal Gmail — with
+send-as in a personal account the wrong identity is one slip away.
+Steps, IN ORDER (step 2 must precede 4, so Gmail's confirmation code
+sent to info@ is forwarded into the new account):
+ 1. Create the Gmail account (name Charlie's choice).
+ 2. PROD .env: MAIL_ENQUIRY_FORWARD_TO = that address; config:cache.
+    Ledger entry for the .env change.
+ 3. Mailgun > Sending > Domain settings > mg.renters.rent > SMTP
+    credentials: add info@mg.renters.rent (password shown once).
+    smtp.eu.mailgun.org, 587, STARTTLS.
+ 4. Gmail > Settings > Accounts > Send mail as: add info@mg.renters.rent
+    with those SMTP details; confirm via the code.
+ 5. Make it the default; "always reply from default address".
+ 6. Test on live (sandbox cannot do inbound): outside account writes in;
+    reply; customer must see From: info@mg.renters.rent, DKIM pass, no
+    "via"/"on behalf of"; customer's reply must arrive back in the new
+    Gmail. Record result in the ledger.
+
+DECISION — DIRECTION (before go-live): build our OWN customer-service
+inbox in the platform, as cases are for case mail. This is the 19 Sep
+"stage 2 — make it a record" sketch (cc-brief-inbound-enquiries.md),
+EXTENDED: Contact Us + info@ / privacy@ / landlord-enquiries@ become
+conversations in an admin inbox; reply FROM the platform as info@ with a
+per-conversation {token}@ reply address (reusing the case token
+machinery) so customer replies thread back in; email alert to Charlie
+on arrival; spam flags gate it. It is a PHASE: brief + D0 report first.
+It REPLACES #30's agreed next step (admin contact screen read-only) —
+that screen grows into the inbox instead. Do not build #30's read-only
+change.
+
+STATUS: stopgap NOT STARTED (needs Charlie: Gmail account + Mailgun
+credential). Inbox phase NOT STARTED, no brief yet.
+--------------------------------------------------------------------
+
+
+#88
+Page:        Contact Us forward email (ContactMessageReceived) — as QUOTED
+             in our replies
+Severity:    minor now; go-live blocker alongside #87
+Date:        18 Oct 2026 — found in Charlie's #87 test
+Saw:         Our reply quotes the forwarded copy, so the CUSTOMER sees the
+             grey staff box — "Replying to this email answers the sender
+             directly. Your reply is NOT recorded on the platform — only
+             their original message is." — plus the forwarding headers
+             (From info@mg.renters.rent, To the private forward-to
+             mailbox). Internal plumbing, shown to the public.
+Expected:    Nothing in the forwarded copy should read badly if a customer
+             sees it, because mail clients quote it by default.
+Fix:         Reword the staff box to be harmless if quoted (or drop it —
+             Charlie knows how it works), and keep it minimal. Cannot stop
+             a client quoting; can make the quote innocuous. Becomes moot
+             once the platform inbox (#87 direction) replaces forwarding.
+
+NOT STARTED. No code written.
+--------------------------------------------------------------------
+
+
+#89
+Page:        Contact Us forward email (ContactMessageReceived)
+Severity:    trivial
+Date:        18 Oct 2026 — found in Charlie's #87 test
+Saw:         The staff box reads "Received:" with NOTHING after it.
+Expected:    The date and time the message arrived.
+Fix:         Find why the timestamp renders empty in the
+             contact-message-received view (the inbound-enquiry forward's
+             header block shows it correctly, per the 19 Sep test).
+             Add a test asserting the received time appears.
+
+NOT STARTED. No code written.
+--------------------------------------------------------------------
