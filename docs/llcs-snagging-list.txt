@@ -4535,4 +4535,12 @@ Remaining check before v=spf1 -all: does any HUMAN send as @renters.rent
 If yes, -all breaks those. And do NOT publish null MX: privacy@ at the
 apex is the published compliance contact (#48) and must keep receiving.
 gafol's .env not seen.
+
+CORRECTION, same day: the null-MX caution above is WRONG as reasoned.
+The published privacy contact is privacy@mg.renters.rent (privacy and
+cookies pages, since 20 Sep — #48), routed Mailgun -> app -> forwarded to
+MAIL_ENQUIRY_FORWARD_TO. The APP neither sends nor receives on the apex.
+Whether the apex must keep receiving now depends only on whether any
+Plesk mailbox/forwarder exists at @renters.rent and is used — check
+Plesk -> renters.rent -> Mail before -all or null MX.
 --------------------------------------------------------------------
