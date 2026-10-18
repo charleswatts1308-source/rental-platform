@@ -4425,3 +4425,67 @@ the look of it), what the tenant is told while it is held, and what the
 word-list screen actually is for the post-send half. Those are design
 questions for a brief, not snag-list material.
 --------------------------------------------------------------------
+
+
+#81
+Page:        Registration — the mail a new user gets
+Severity:    minor (missing feature, not a defect)
+Date:        18 Oct 2026 — raised by Charlie: "the requirement for a
+             'Thanks for registering' email, together with a template in
+             the template table"
+Saw:         The only mail a new user receives is Laravel's stock
+             verify-your-email message (User implements MustVerifyEmail;
+             RegisteredUserController fires Registered). Nothing thanks
+             them, says what the service does, or points them at starting
+             a case. Its wording lives in framework code, not in
+             letter_templates, so it cannot be edited via phpMyAdmin like
+             every other mail we send.
+Expected:    A "Thanks for registering" email, its subject and body held
+             as a row in letter_templates.
+
+WHEN IT FIRES. On the Verified event, not Registered. Sending at
+Registered lands two mails at once (verify + thanks) and thanks people
+whose address may be a typo. After verification the address is proven
+and the thanks reads as a welcome. Charlie to confirm.
+
+PROPOSED TEMPLATE ROW (wording is a DRAFT for Charlie):
+ code:        welcome_registered
+ type:        account   (new value — the set is open by design; this is
+                         not case-scoped, so it is not tenant_notification,
+                         whose placeholders assume a case)
+ stage:       NULL
+ active:      true      (active-row idiom: inactive = send nothing,
+                         silently)
+ description: Thanks-for-registering mail, fired once on the Verified
+              event. Account-level, no case. Mail-only.
+ subject:     Thanks for registering with renters.rent
+ body:
+     Hello {{user_name}},
+
+     Thanks for registering with renters.rent.
+
+     When something in your home needs fixing, we help you put it in
+     writing. Tell us what needs repairing and who your landlord is,
+     and we send them a formal, dated repair notice and keep a record
+     of everything that follows.
+
+     Start your first repair case here: {{start_case_url}}
+
+     renters.rent
+
+Placeholders: {{user_name}}, {{start_case_url}} — both new; the existing
+renderer's set is case-shaped and will need these two added.
+
+INVARIANT CHECK. Mail-only. It MUST NOT write a case_messages row —
+there is no case, and the escalation counter predicate depends on
+tenant mail staying out of that table.
+
+Fix: seed the row (data migration + LetterTemplateSeeder, matching how
+the contact_failed notices went in), add a mailable that reads the
+active welcome_registered row and renders the two placeholders, and a
+listener on Verified that sends it. Tests: fires once on verification,
+not on registration; skips silently when the row is inactive; writes no
+case_messages row.
+
+NOT STARTED. No code written.
+--------------------------------------------------------------------
