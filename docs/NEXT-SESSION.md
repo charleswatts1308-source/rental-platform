@@ -49,8 +49,8 @@ Charlie to run on PROD in phpMyAdmin:
 The 19th must show `1`. `0` = no runner (reminders have stopped — urgent);
 `2` = two runners. Record the result in the ledger, then delete this item.
 
-**Also unpushed / not deployed as of 18 Oct:** page copy commits
-`a71a40c` + `535fc06` are pushed but NOT pulled onto either box.
+**Deployed 18 Oct:** both boxes at `c5da36c` (ledger). gafol's post-deploy
+clears and welcome-email walk were not reported back — confirm with Charlie.
 
 **The deploy is DONE and closed out.** Both boxes level, ledger written.
 Do not re-derive deploy state from anything below; `environment-state.md`

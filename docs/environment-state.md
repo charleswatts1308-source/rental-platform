@@ -4,7 +4,10 @@ Human-readable mirror of what is deployed where. The DB `migrations`
 table is the source of truth; this file is reconciled against
 `php artisan migrate:status` at each deploy (CLAUDE.md "Deployment ledger").
 
-**Reconcile status:** **BOTH BOXES AT `337edf0`** (5 Oct 2026 — nav
+**Reconcile status:** **BOTH BOXES AT `c5da36c`** (18 Oct 2026 — welcome
+email #81, button policy / logo green, dark-mode contrast, page copy; 50
+migrations each, reconciled against `migrate:status` on both). Previous
+header, superseded, left as written: **BOTH BOXES AT `337edf0`** (5 Oct 2026 — nav
 restructure + property details; gafol in two lots, prod in one, both
 verified, 48 migrations each). The whole letter cycle was walked on
 production through live Mailgun after the migrations. **dotrent retired 1 Aug 2026** (see its entry — the record is
@@ -706,6 +709,28 @@ prod.
   (staging), renters.rent (production), and main.
 
 ## renters.rent — production (NEW sibling build) — ✅ LIVE (hardening green)
+### Deploy 18 Oct 2026 — BOTH BOXES to `c5da36c` (gafol first, then prod)
+
+- **Content:** #81 welcome email (sent once on verification, from the
+  `welcome_registered` template); button policy — primary buttons in the
+  logo green `#047857` (`partials/theme-overrides`), email buttons
+  recoloured to match; Darkly contrast fixes; page copy (home, about,
+  landlords, how-it-works, PRS scale, raise-a-case first step).
+- **No composer step** — `composer.json`/`.lock` unchanged since `337edf0`.
+- **Migrations: TWO, both data-only** (no schema change, so no CLAUDE.md
+  MariaDB check): `2026_10_18_120000_seed_welcome_registered_template`,
+  `2026_10_18_130000_email_buttons_logo_green`.
+- **gafol:** Plesk Git pull; `migrate:status` BEFORE 48 Ran / 2 Pending;
+  `migrate --force` both DONE (batch 9). Post-migrate status, clears and
+  the welcome-email walk: **not reported back at time of writing**.
+- **prod:** Plesk Git pull; `migrate:status` BEFORE 48 Ran / 2 Pending;
+  `migrate --force` both DONE (batch 6); AFTER **50 Ran, none pending**;
+  `route:clear`, `view:clear`, `config:clear`, **`config:cache`** — all
+  succeeded (full log pasted by Charlie).
+- **Both boxes at 50 migrations, identical sets.**
+- **Pending:** prod scheduler check on 19 Oct (NEXT-SESSION item) — the
+  scheduler was swapped to the Toolkit runner earlier the same day.
+
 ### Config change 18 Oct 2026 — prod `.env` only (no code, no migrations)
 
 - **Code unchanged** — still at `337edf0` (5 Oct entry above). No pull,
