@@ -4705,3 +4705,33 @@ Fix:         Pick a middle size (starting point to judge by eye: about
 
 NOT STARTED. No code written.
 --------------------------------------------------------------------
+
+
+#86
+Page:        Case page (/cases/{ref}) — correspondence thread + reply box
+Severity:    minor (usability — the newest exchange is the one that matters
+             and it is the hardest to reach)
+Date:        18 Oct 2026 — raised by Charlie on PROD: "would be better
+             sorting actual correspondence date desc and having tenant
+             reply entry box at top"
+Saw:         Messages are listed OLDEST FIRST, ordered by created_at
+             (CaseController.php:156 — and the quarantined list at :162),
+             and the tenant reply form sits BELOW the thread
+             (cases/show.blade.php:180). On a long case the tenant scrolls
+             past every letter to read the latest reply and to answer it.
+             created_at is the row's insert time, not the correspondence
+             date; case_messages has sent_at (outbound) and received_at
+             (inbound), both indexed per case.
+Expected:    Newest first, by the ACTUAL correspondence date —
+             COALESCE(sent_at, received_at, created_at) descending — with
+             the reply box at the TOP, above the thread.
+Fix:         Order by the coalesced date desc (both lists). Move the
+             _reply_form include above the thread. Check: anything that
+             reads the thread as "first = letter 1" (headings, "notice N"
+             labels, tests asserting order — grep assertSeeInOrder); the
+             #69 staged-reply return path still lands on the form; and the
+             landlord/tenant evidential view still reads sensibly
+             (consider a one-line "Newest first" label).
+
+NOT STARTED. No code written.
+--------------------------------------------------------------------
