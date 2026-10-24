@@ -3,10 +3,19 @@
 @section('title', 'About Us')
 
 @section('content')
-<h1 class="mb-4">About renters.rent</h1>
+<h1 class="mb-4">About Us</h1>
 
-<p class="mb-3">This site is here to help you make the most of your new rights.</p>
-<p class="mb-3">It helps to put everything in writing.</p>
+<p class="mb-3">It’s me and the software that makes up the platform. Us.</p>
+<p class="mb-3">I’m driven by the unfairness of the equity share in our homes</p>
+<p class="mb-3">This point in time, just after the Renters Rights Act, is actually quite momentous.</p>
+<p class="mb-3">Renters have new rights of possession</p>
+<p class="mb-3">For the first time in 40 years renters can dare to make requests of their landlord</p>
+<p class="mb-3">Landlord has new obligations, can’t evict, must respond</p>
+<p class="mb-3">But it needs the functions of a small office</p>
+<p class="mb-3">Letters, record keeping, reminders</p>
+<p class="mb-3">Most of us find this difficult at a personal level</p>
+<p class="mb-3">Landlords will not offer, you have to ask</p>
+<p class="mb-3">I offer this simple platform to undertake your correspondence</p>
 
 
 <hr class="my-4">
