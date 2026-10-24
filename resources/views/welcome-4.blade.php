@@ -16,9 +16,7 @@
 
     <p class="mb-4">Tell us what you need - a new tap, new shower, new bathroom?</p>
 
-    <p class="mb-4">We open formal communications between you and your landlord</p>
-
-    <p class="mb-4">We chase your landlord for replies</p>
+    <p class="mb-4">We open formal communications between you and your landlord and chase for replies</p>
 
     <p class="mb-4">You'll get a useful result however it goes</p>
 
