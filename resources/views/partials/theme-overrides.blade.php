@@ -8,8 +8,23 @@
         apply only when Darkly is really loaded, never on the always-light
         guest/error pages. Darkly turns "light" surfaces mid-grey #adb5bd
         under white text, and outline-secondary #444 on a #222 page: both
-        near-unreadable. --}}
+        near-unreadable.
+     3. Light-mode body text (24 Oct 2026): Spacelab sets body text to a
+        mid grey, which read as too faint on the homepage. Bootstrap's
+        standard near-black instead. Headings were already dark.
+     4. Font (24 Oct 2026): Roboto instead of Spacelab's Open Sans, chosen
+        for its one-storey "g" (Charlie preferred the BBC's). The logo SVG
+        sets Arial itself and is unaffected. --}}
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap">
 <style>
+    :root {
+        --bs-font-sans-serif: "Roboto", system-ui, -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+        --bs-body-font-family: var(--bs-font-sans-serif);
+    }
+    html:not(.theme-dark) {
+        --bs-body-color: #212529;
+        --bs-body-color-rgb: 33, 37, 41;
+    }
     .btn.btn-primary {
         --bs-btn-color: #fff;
         --bs-btn-bg: #047857;

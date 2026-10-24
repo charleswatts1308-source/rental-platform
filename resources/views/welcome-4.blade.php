@@ -12,23 +12,19 @@
 
     <h1 class="mb-4">Welcome to Renters in England & Wales</h1>
 
-    <p class="lead mb-4">This platform is about one thing :</p>
+    <p class="lead fw-normal mb-4">Get your landlord to make repairs and improvements</p>
 
-    <p class="lead mb-4">To get repairs and improvements for your rented home</p>
+    <p class="mb-4">Tell us what is needed - new cold tap, new shower, new bathroom ?</p>
 
-    <p class="mb-4">Tell us what is needed<br>new cold tap, new shower, new bathroom</p>
+    <p class="mb-4">We open formal communications with your landlord and chase</p>
 
-    <p class="mb-4">We put it in formal writing and deliver it to landlord</p>
-
-    <p class="mb-4">We chase landlord reply</p>
-
-    <p class="mb-4">You'll get a a useful result however it goes</p>
+    <p class="mb-4">You'll get a useful result however it goes</p>
 
     <p class="mb-4">Make the most of your new rights</p>
 
     <p class="mb-4">Sign up to our Landlord Letter Service</p>
 
-    <p class="mb-4">We’re a beta site, so for now its free to use for Renters in England & Wales</p>
+    <p class="mb-4">This a new service, so for now its free-of-charge</p>
 
 
 
