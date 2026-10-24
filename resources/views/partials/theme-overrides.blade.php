@@ -14,13 +14,15 @@
         standard near-black instead. Headings were already dark.
      4. Font (24 Oct 2026): Roboto instead of Spacelab's Open Sans, chosen
         for its one-storey "g" (Charlie preferred the BBC's). The logo SVG
-        sets Arial itself and is unaffected. --}}
+        sets Arial itself and is unaffected. Lead text drops Bootstrap's
+        light weight for normal: large-but-light looked thin in Roboto. --}}
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap">
 <style>
     :root {
         --bs-font-sans-serif: "Roboto", system-ui, -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
         --bs-body-font-family: var(--bs-font-sans-serif);
     }
+    .lead { font-weight: 400; }
     html:not(.theme-dark) {
         --bs-body-color: #212529;
         --bs-body-color-rgb: 33, 37, 41;

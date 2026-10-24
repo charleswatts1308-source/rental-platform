@@ -14,17 +14,19 @@
 
     <p class="lead fw-normal mb-4">Get your landlord to make repairs and improvements</p>
 
-    <p class="mb-4">Tell us what is needed - new cold tap, new shower, new bathroom ?</p>
+    <p class="mb-4">Tell us what you need - a new tap, new shower, new bathroom?</p>
 
-    <p class="mb-4">We open formal communications with your landlord and chase</p>
+    <p class="mb-4">We open formal communications between you and your landlord</p>
+
+    <p class="mb-4">We chase your landlord for replies</p>
 
     <p class="mb-4">You'll get a useful result however it goes</p>
 
-    <p class="mb-4">Make the most of your new rights</p>
+    <p class="mb-4">Make the most of your rights</p>
 
     <p class="mb-4">Sign up to our Landlord Letter Service</p>
 
-    <p class="mb-4">This a new service, so for now its free-of-charge</p>
+    <p class="mb-4">This is a new service, so for now it's free of charge</p>
 
 
 

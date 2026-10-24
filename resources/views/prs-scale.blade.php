@@ -30,7 +30,7 @@
 <p>The official surveys are the English Housing Survey and the English Private Landlord Survey.
      Scotland, Wales and Northern Ireland do their own thing.</p>
 
-<hr class="my-4">
+<hr class="my-4 border-3 opacity-100" style="color: #047857;">
 
 <h2 class="h4 mb-3">Value</h2>
 
@@ -55,6 +55,7 @@ arithmetic in round numbers:</p>
     </tbody>
 </table>
 
+<hr class="my-4 border-3 opacity-100" style="color: #047857;">
 
 <h2 class="h4 mb-3">Households</h2>
 
@@ -75,7 +76,7 @@ arithmetic in round numbers:</p>
 <p class="text-muted"><small>English Housing Survey 2024-25, Ministry of Housing, Communities and
 Local Government, published 14 May 2026.</small></p>
 
-<hr class="my-4">
+<hr class="my-4 border-3 opacity-100" style="color: #047857;">
 
 <h2 class="h4 mb-3">Properties</h2>
 
@@ -102,7 +103,7 @@ Local Government, published 14 May 2026.</small></p>
 </table>
 <p class="text-muted"><small>England, 2023-24. English Housing Survey, rented sectors report.</small></p>
 
-<hr class="my-4">
+<hr class="my-4 border-3 opacity-100" style="color: #047857;">
 
 <h2 class="h4 mb-3">Landlords</h2>
 
@@ -153,7 +154,7 @@ Local Government, published 14 May 2026.</small></p>
 The same survey found 56% of landlords describe the property as a long-term investment towards
 their pension.</small></p>
 
-<hr class="my-4">
+<hr class="my-4 border-3 opacity-100" style="color: #047857;">
 
 <h2 class="h4 mb-3">Rents</h2>
 
@@ -167,7 +168,7 @@ their pension.</small></p>
 <p class="text-muted"><small>London and rest of England: English Housing Survey 2024-25. England
 monthly average: Office for National Statistics (ONS), October 2025.</small></p>
 
-<hr class="my-4">
+<hr class="my-4 border-3 opacity-100" style="color: #047857;">
 
 <h2 class="h4 mb-3">References</h2>
 

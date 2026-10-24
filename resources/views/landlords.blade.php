@@ -13,7 +13,7 @@ this page provides some explanation.</p>
 <h3 class="mb-3">The email you have received is genuine</h3>
 
 <p>It was sent because one of your tenants used renters.rent to put a repair request in
-writing. Our emails always come from an address ending <code>renters.rent</code>.</p>
+writing. Our emails always come from an address ending “renters.rent”.</p>
 
 <hr class="my-4">
 
@@ -40,19 +40,20 @@ regulator, under registration reference <strong>Z229825X</strong>.</p>
 
 <p>It's a service that enables tenants to send repair requests as formal, dated correspondence.
 The tenant writes the request; we format it, send it, and keep a simple record of
-correspondence. </p>
+correspondence. It's a simple process but one that most of us find difficult at a personal level.
+</p>
 
 <hr class="my-4">
 
-<h3 class="mb-3">Why do we have your email address</h3>
+<h3 class="mb-3">Why do we have your email address?</h3>
 
-<p>Your tenant gave it to us when they raised the request. We hope it is the "Service Address".</p>
+<p>Your tenant gave it to us when they raised the request. It's expected to be the "Service Address".</p>
 
 <hr class="my-4">
 
 <h3 class="mb-3">How to respond</h3>
 
-<p><strong>Just reply to the email.</strong> Your reply goes back to your tenant and the
+<p><strong>Just reply to the email.</strong> Your reply goes back to your tenant via our own mailbox and the
 conversation can proceed.</p>
 
 <p>You don't need an account and there's nothing to sign up for.</p>
@@ -105,5 +106,5 @@ on GOV.UK</a>.</p>
 <h3 class="mb-3">Contact us</h3>
 
 <p>If anything here doesn't look right please
-<a href="{{ route('contact.create') }}">get in touch</a>.</p>
+<a href="{{ route('contact.create') }}">contact us</a>.</p>
 @endsection
