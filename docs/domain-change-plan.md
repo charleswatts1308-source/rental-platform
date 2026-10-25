@@ -39,10 +39,15 @@ Living doc. Started 25 Oct 2026. Status: **planning — new name not yet chosen.
   letter frozen on `case_messages` at send time holds the resolved text, never
   the token, so the evidential invariant is untouched.
 
-Open question: on **gafol**, should `SITE_DOMAIN` be the real brand domain or
-`gafol.rent`? Brand domain is the honest preview of prod copy; `gafol.rent`
-avoids staging text naming a domain it isn't. Lean: brand domain, since the
-orange host badge already marks staging.
+**gafol uses the brand domain** for `SITE_DOMAIN` (Charlie, 25 Oct 2026), so
+staging copy previews prod exactly.
+
+**The host badge must survive — Charlie: "vital for knowing which site is
+being tested".** The orange badge in `layouts/app.blade.php` (non-production
+only) shows the box's **real host** via `request()->getHost()`. It must keep
+reading the real host and **must NOT be converted to `SITE_DOMAIN`** — on
+gafol that would print the brand domain and the badge would stop telling
+staging from prod. No test protects it today; phase 1 adds one.
 
 ## Where the values must still be hard-coded
 
@@ -99,6 +104,9 @@ Phase 1 can be done **now**, before the name is chosen: with today's values
    seeded template text to tokens (fresh installs run it too).
 4. Decide on static files (route them, or keep on the checklist above).
 5. Full suite green; tests assert the resolved values, not the tokens.
+   **New test for the host badge:** renders with the request's real host in a
+   non-production environment, even when `SITE_DOMAIN` differs; absent in
+   production.
 6. **STAGE (gafol.rent):** add both settings to `.env`, `config:cache`, deploy,
    walk pages + a sandbox send.
 
