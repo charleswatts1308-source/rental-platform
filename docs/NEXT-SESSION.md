@@ -5,7 +5,8 @@ The `docs/` folder has many files and many are stale — this index says
 which to trust and which to ignore, so you don't re-derive state from a
 superseded doc. It is a **router, not a record**: keep it short.
 
-**Last updated:** 2026-10-18 (end of a long session; Charlie clearing context).
+**Last updated:** 2026-10-26 (end of the 24–26 Oct content session;
+Charlie away for a few days).
 
 > **Pruned 15 Sep 2026.** This file had grown to 542 lines of discharged
 > history — the #24/#49/#59 build, the 23 Aug capture run, the #25
@@ -19,15 +20,34 @@ superseded doc. It is a **router, not a record**: keep it short.
 
 ## Where everything is, right now
 
-- **BOTH BOXES ARE AT `c5da36c`** — gafol and renters.rent, **50
-  migrations each**, deployed 18 Oct 2026. ➡ `environment-state.md`.
-- **`main` is pushed (origin level) but AHEAD of both boxes** — since
-  `c5da36c`: docs commits PLUS ONE CODE COMMIT, `fde663c` (#83 hover fix,
-  in `partials/theme-overrides`). A Plesk pull on either box would ship
-  it; it is meant to go with the next batch. Working tree clean.
-- **Suite: 926 green.**
-- **No work in flight.** `feature/welcome-email` merged (`--no-ff`); can
-  be deleted.
+- **LEDGER SAYS BOTH BOXES ARE AT `c5da36c`** (50 migrations each,
+  18 Oct) — **but this is UNCONFIRMED since 24 Oct.** Charlie was given
+  Plesk-pull steps several times on 24–25 Oct and on 24 Oct compared
+  "stage" with prod homepage text, so **gafol at least may have been
+  pulled** — never reported back, ledger not updated. **First thing:
+  ask Charlie what each box is at** (Plesk Git page shows the commit),
+  then write the ledger entries. ➡ `environment-state.md`.
+- **`main` pushed, at `bedcc40`.** Ahead of `c5da36c` by: `fde663c` (#83
+  hover fix) + the 24 Oct content batch (`f229e0b`..`31eccf7`, views and
+  `partials/theme-overrides` only — **no migrations, no composer
+  changes**; a pull + `view:clear` ships it) + docs. Working tree clean.
+- **Suite: 926 green** (25 Oct).
+- **No code work in flight.** `feature/welcome-email` merged; can be deleted.
+
+**What 24–25 Oct changed (content/theme, on `main`, not confirmed
+deployed):** font **Roboto** site-wide (one-storey "g"; replaces
+Spacelab's Open Sans); light-mode body text near-black `#212529`; `.lead`
+at normal weight (light looked thin in Roboto); homepage copy reworked
+for one small-phone screen (Charlie's daughter: whole page visible
+without scrolling); Background 3px green dividers; Cookies + Privacy
+boxes and "Last updated" removed; **Privacy rewritten** (what is held incl.
+landlords' data, lawful basis, processors, retention *criteria* not
+periods — nothing purges data automatically, ICO complaint; still no
+controller name/address per snag #42); legal claims softened on How It
+Works / About ("can't evict in response", "must act"; Housing Ombudsman
+replaced by council route + RRA Landlord Ombudsman/database); typo pass.
+Tried and **rejected** by Charlie: non-sticky nav and a slim scroll bar —
+header stays `sticky-top`.
 
 **What 18 Oct shipped (c5da36c):** #81 welcome email on verification;
 **button policy** (`docs/button-policy.md` — logo green `#047857` for the
@@ -57,6 +77,19 @@ only in this configuration.
 
 ## NEXT ACTION — nothing is deploying. Pick from these.
 
+**ZERO (26 Oct): reconcile box state** — see "Where everything is" above.
+Then the items below; FIRST and SECOND were still unreported on 26 Oct.
+
+**DOMAIN + BUSINESS-NAME CHANGE — planned, not started.**
+➡ `docs/domain-change-plan.md` (living). Charlie is registering a
+business name and will move to a matching new domain; **no live data to
+keep**, so it is a fresh install: new Plesk site via Toolkit "Add
+application from Git" (fixes prod's missing repo view / composer gap /
+scheduler oddity). Two settings `SITE_DOMAIN` + `SITE_NAME`, no
+defaults. **Phase 1 (code refactor) can start before the name is
+chosen** — zero visible change with today's values. **Host badge must
+keep the real host** (Charlie: vital) — plan adds a test for it.
+
 **FIRST, on or after 19 Oct 2026: confirm prod's scheduler still fires.**
 Prod's runner was swapped to the Toolkit-created task at ~13:30 on 18 Oct
 (ledger, 18 Oct prod entry; `deploy-pipeline-divergence.md` §10). Ask
@@ -74,7 +107,7 @@ walked on prod — the plan's section 2 covers it.
 #83.** Decide with Charlie which go in the next batch:
  - #82 "Register a property" button in /cases header — remove.
  - #83 green button went blue on hover — FIX WRITTEN (`fde663c`),
-   unpushed, not seen in a browser.
+   pushed, rides with the 24 Oct batch; not yet seen in a browser.
  - #84 leftover blue on case page — our letters pale green tint,
    status badge grey, links STAY blue.
  - #85 email button sizes differ — one middle size, judge in Mailpit.
@@ -90,6 +123,15 @@ walked on prod — the plan's section 2 covers it.
  - #89 "Received:" blank in the Contact Us forward.
  Printable summary of the older list: `docs/snag-summary-2026-10-18.txt`
  (snapshot; #82+ not in it).
+
+**Open from the 24 Oct content read-through (not asked for yet):**
+service named four ways (Renters / renters.rent / Landlord Letter
+Service / Renters in England & Wales) — likely settled by the rename;
+button/heading wording drift (Sign up vs Register etc.); Background £6.6bn
+row credited to ONS but is our sum, "defence and tourism" unsourced;
+Escalation Routes still "Guidance to follow"; Landlords "we will send
+reminders but that's it" vs "must act"; footer social icons point at bare
+facebook.com etc. (Charlie: leave for now).
 
 **Also open from 18 Oct:** #33 SPF tightening — app sends nothing as the
 apex (prod `.env` checked); remaining check is whether any Plesk mailbox
