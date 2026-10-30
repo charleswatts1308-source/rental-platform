@@ -20,6 +20,18 @@ Charlie away for a few days).
 
 ## Where everything is, right now
 
+- **IN FLIGHT (30 Oct): branch `site-identity`** (tag `pre-site-identity`
+  on main). D0 ACCEPTED: `docs/cc-report-site-identity-d0.md`, read its
+  Rulings section first. Done: `config/site.php`, `App\Support\Site`
+  (fail-loud), phpunit fake values, host-badge + fail-loud tests (`aca4db4`,
+  suite 931 green). **NEXT:** classify the ~40 letter-template mentions as
+  name / domain / mail address and **show Charlie every changed letter
+  line before building**. Then replace the remaining mentions in views,
+  mail classes and tests; route robots/sitemap/manifest; delete unrouted
+  welcome/welcome-2; tokenise the seeder. Local `.env` already has
+  SITE_NAME=Renters, SITE_DOMAIN=renters.rent. Name chosen: **Dear Landlord,
+  dearlandlord.co.uk ("dll")**; 25-step build list in chat, summarised in
+  `domain-change-plan.md`.
 - **Both boxes code-identical at `31eccf7`** (read over SSH 30 Oct; gafol
   brought up by me the same day: first SSH deploy, method in the ledger). 49 migrations each, none pending. Prod
   scheduler proven: one sweep a day, 17–30 Oct. ➡ `environment-state.md`.
