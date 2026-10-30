@@ -4917,7 +4917,7 @@ DONE 30 Oct 2026 (Claude, over SSH, on Charlie's yes). ~/httpdocs emptied
              dropped) and replaced by a one-line "This address is not in
              use." page (noindex) at httpdocs/public/index.html, plus a copy
              at httpdocs/index.html. ukrenters.rent serves it, HTTP 200.
-             STILL OPEN: Charlie to remove the laravel_a832c6 repository
-             from ukrenters.rent's Git page in Plesk, or a Deploy there
-             would put the old app back.
+             Repo link laravel_a832c6 REMOVED by Charlie in Plesk 30 Oct,
+             verified gone from ~/git. Only gafol (laravel_093fde) and
+             prod (rental-platform.git) repos remain. #90 CLOSED.
 --------------------------------------------------------------------
