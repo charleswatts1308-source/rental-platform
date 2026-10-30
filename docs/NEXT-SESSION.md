@@ -27,7 +27,13 @@ Charlie away for a few days).
   PC's ed25519 key; one chrooted user covers all four domains. Charlie
   wants me doing deploys and maintenance from now on. Approval rules are
   unchanged: describe and confirm, name STAGE/PROD, ledger last. PHP 8.4
-  CLI is there; **composer is NOT on PATH** (not yet investigated). Plesk
+  CLI is there. **Composer is Plesk's own phar:**
+  `php /usr/lib64/plesk-9.0/composer.phar` (not on PATH). Dry-run
+  `install --no-dev` on 30 Oct: **both boxes "Nothing to install"**, so
+  vendor/ matches composer.lock on each. This closes the practical side of
+  the prod composer gap (action 1a): any deploy can now run
+  `install --no-dev --optimize-autoloader` on prod over SSH. The dry run
+  is also the drift check. Plesk
   repos are in `~/git/`: gafol = `laravel_093fde`, prod =
   `rental-platform.git`. Tinker one-offs: pipe PHP in on stdin with a
   quoted heredoc; `--execute` quoting through ssh breaks.
