@@ -43,6 +43,10 @@
         <env name="MAIL_MAILER" value="array"/>
         <env name="MAILGUN_CASES_FROM_ADDRESS" value="cases@mg.renters.rent"/>
         <env name="MAILGUN_INBOUND_DOMAIN" value="inbox.renters.rent"/>
+        <!-- Deliberately NOT a real brand: a test that still finds a
+             hard-coded name or domain fails against these. -->
+        <env name="SITE_NAME" value="Test Site Name"/>
+        <env name="SITE_DOMAIN" value="site-domain.test"/>
         <env name="DEV_TENANT_EMAIL" value="tenant@inbox.test"/>
         <env name="DEV_LANDLORD_EMAIL" value="landlord@inbox.test"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
