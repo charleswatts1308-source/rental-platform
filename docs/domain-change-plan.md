@@ -1,6 +1,24 @@
 # Domain and business-name change — plan
 
-Living doc. Started 25 Oct 2026. Status: **planning — new name not yet chosen.**
+Living doc. Started 25 Oct 2026. Status: **name chosen (30 Oct) — Dear
+Landlord, `dearlandlord.co.uk`** (short form in notes: **dll**). Domain and
+business-name registration in hand (Charlie).
+
+## Decisions 30 Oct 2026
+
+- **Name: Dear Landlord. Domain: `dearlandlord.co.uk`** (.co.uk, not .org.uk).
+- **UK IPO search: clear** (no conflicting mark). **Trade mark registration
+  deferred** by Charlie, a conscious choice; it isn't needed to trade.
+- **Build route: new Plesk site, Toolkit "Add application from Git" into
+  an EMPTY site**, never Install Skeleton + Git panel (that reproduces
+  prod's shape; see `deploy-pipeline-divergence.md` §8–9). Storage dirs,
+  `.env`, app key, migrations, composer: Claude over SSH. Then compare
+  against gafol.
+- **Mail domain: `mg.dearlandlord.co.uk`** (EU region), to be added in
+  Mailgun early so its DNS can verify.
+- **Working sequence: 25 one-line steps agreed in chat 30 Oct.** Steps 1–2
+  (registration, name record) are done or in hand; next on Claude's side
+  is Phase 1 (below).
 
 ## Decisions so far (Charlie, 24–25 Oct 2026)
 
