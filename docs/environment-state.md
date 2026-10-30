@@ -662,6 +662,23 @@ prod.
 - Last verified: **12 Sep 2026**. Code at `01451b0` (`main`).
 
 ## dotrent — preprod (dotrent.net) — 🛑 RETIRED 1 Aug 2026
+### Correction 30 Oct 2026: it was NOT gone until today
+
+Found over SSH on 30 Oct: dotrent.net was **still serving HTTP 200**,
+from `~/dotrent.net` (157 MB) on the ukrenter subscription, with
+`APP_ENV=preprod` (so `dev:*` was enabled) and the **prod Mailgun key**
+(`MAILGUN_DOMAIN=mg.renters.rent`). It had no scheduler entry, so it sent
+nothing by itself. Its database `ukrenter_dotrent_db` held 28 tables.
+"The box is gone" (1 Aug) was wrong.
+- Charlie, 30 Oct: Plesk **Remove Website**. That took the site off and
+  removed its repo (`~/git/laravel_fa55ba`), but **left the folder and
+  the database**.
+- Charlie, 30 Oct: **database `ukrenter_dotrent_db` removed** in Plesk.
+  Verified: its login now gets access denied.
+- **Still to do:** delete the leftover `~/dotrent.net` folder (holds a copy
+  of the prod Mailgun key). Awaiting Charlie's yes.
+- Domain registration: Charlie to cancel or let lapse.
+
 
 > **RETIRED 1 Aug 2026.** No longer a live environment. Everything below
 > this banner is the HISTORICAL record of the box as it stood when it was
@@ -1271,6 +1288,13 @@ prod.
   `01451b0` (`main`). **Prod and gafol are on the same commit.**
 
 ## Dead database — ukrenters_rent (DELETE AFTER go-live)
+**✅ DELETED 30 Oct 2026** by Charlie in Plesk. Before deletion: 23
+tables, 18 user accounts (early test sign-ups; personal data with no
+reason to keep). Verified gone (its login gets access denied); prod and
+gafol unaffected (29 tables each, both sites 200). The old app at
+ukrenters.rent (`~/httpdocs`) still exists and will now error. See
+snag #90.
+
 - `ukrenters_rent` is an OLD leftover database, NOT used by any live
   site. Holds stale May test data (a manual test case to a personal
   Outlook address, `user_id=1`) + the old `rentals` schema.

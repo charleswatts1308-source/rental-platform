@@ -4890,3 +4890,27 @@ Fix:         Find why the timestamp renders empty in the
 
 NOT STARTED. No code written.
 --------------------------------------------------------------------
+
+#90
+Page:        https://ukrenters.rent/ (the subscription's MAIN domain)
+Severity:    minor (exposure/tidiness, not a user-facing bug)
+Date:        30 Oct 2026 — found by Claude in the first SSH session
+Saw:         ukrenters.rent still answers HTTP 200 with an old copy of the
+             app: ~/httpdocs, 51 MB, Plesk repo ~/git/laravel_a832c6 at
+             929d2f6 (24 May). The original HUK staging build, never taken
+             down. Its old database (ukrenters_rent) is already listed in
+             environment-state.md as "DELETE AFTER go-live".
+Expected:    Nothing of the app served from ukrenters.rent.
+Fix:         It CANNOT be removed like dotrent.net: it is the
+             subscription's main domain, and removing it removes the
+             subscription, which takes prod and gafol with it. Instead, empty
+             ~/httpdocs down to a plain holding page (or point the domain
+             elsewhere), remove the laravel_a832c6 repo link in Plesk, and
+             drop the ukrenters_rent database. Check its .env for live
+             credentials before emptying, and record what it held.
+             Same family: dotrent.net was found still live on 30 Oct
+             (APP_ENV=preprod, prod Mailgun key); Charlie removing it the
+             same day.
+
+NOT STARTED.
+--------------------------------------------------------------------
