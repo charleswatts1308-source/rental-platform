@@ -675,8 +675,8 @@ nothing by itself. Its database `ukrenter_dotrent_db` held 28 tables.
   the database**.
 - Charlie, 30 Oct: **database `ukrenter_dotrent_db` removed** in Plesk.
   Verified: its login now gets access denied.
-- **Still to do:** delete the leftover `~/dotrent.net` folder (holds a copy
-  of the prod Mailgun key). Awaiting Charlie's yes.
+- **Leftover `~/dotrent.net` folder DELETED** 30 Oct by Claude over SSH
+  (Charlie's yes). It held a copy of the prod Mailgun key. Verified absent.
 - Domain registration: Charlie to cancel or let lapse.
 
 

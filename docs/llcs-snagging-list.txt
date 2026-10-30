@@ -4912,5 +4912,12 @@ Fix:         It CANNOT be removed like dotrent.net: it is the
              (APP_ENV=preprod, prod Mailgun key); Charlie removing it the
              same day.
 
-NOT STARTED.
+DONE 30 Oct 2026 (Claude, over SSH, on Charlie's yes). ~/httpdocs emptied
+             (its .env held no Mailgun key; old app was 929d2f6, DB already
+             dropped) and replaced by a one-line "This address is not in
+             use." page (noindex) at httpdocs/public/index.html, plus a copy
+             at httpdocs/index.html. ukrenters.rent serves it, HTTP 200.
+             STILL OPEN: Charlie to remove the laravel_a832c6 repository
+             from ukrenters.rent's Git page in Plesk, or a Deploy there
+             would put the old app back.
 --------------------------------------------------------------------
