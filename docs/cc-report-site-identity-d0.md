@@ -103,9 +103,9 @@ hand-edit checklist. Small and testable. `sw.js` has a comment only.
 1. **(a)**: tokenised seeder for fresh installs (dll); gafol and dev
    updated through the admin editor (history kept); no template data
    migration.
-2. Signing as name or domain: **pending**. Recommended: the name where it
-   says who is speaking ("via Dear Landlord", "The Dear Landlord team"),
-   the domain only where it says where to go.
+2. **Name where it says who is speaking** ("via Dear Landlord", "The
+   Dear Landlord team"); **domain only where it says where to go**.
+   Accepted 30 Oct. **D0 ACCEPTED.**
 3. **Yes**: robots, sitemap and manifest served from routes.
 4. **Yes**: delete `welcome` / `welcome-2` views if unrouted.
 
