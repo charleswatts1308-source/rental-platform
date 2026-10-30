@@ -5,8 +5,8 @@ table is the source of truth; this file is reconciled against
 `php artisan migrate:status` at each deploy (CLAUDE.md "Deployment ledger").
 
 **Reconcile status (30 Oct 2026, read off the boxes over SSH):**
-**prod at `31eccf7`, gafol at `193495d`** — both carry the 24 Oct content
-batch; gafol lacks only `31eccf7` (one homepage line). **49 migrations
+**BOTH BOXES CODE-IDENTICAL AT `31eccf7`.** Prod pulled ~24 Oct
+(Charlie); gafol brought up from `193495d` by Claude over SSH, 30 Oct. **49 migrations
 Ran on each, none pending, against 49 files in the repo.** The "50" and
 "48" figures below were miscounts (see the 30 Oct entries). Previous
 header, superseded, left as written:
@@ -82,6 +82,23 @@ what ran, so that is not drift and should not be "fixed".
   24 Aug.
 
 ## gafol — permanent staging (gafol.rent) — ✅ BACK ON MAIN (4 Sep 2026)
+### Deploy 30 Oct 2026 — gafol to `966649f` (code = `31eccf7`) — FIRST DEPLOY BY CLAUDE OVER SSH
+
+- **Method:** `git fetch origin` in `~/git/laravel_093fde` (the Plesk
+  repo; mirror refspec), then `git archive main <changed files> | tar -x`
+  into `~/gafol.rent`. Only the three files changed since `193495d` were
+  written: `resources/views/welcome-4.blade.php`, `docs/NEXT-SESSION.md`,
+  `docs/domain-change-plan.md`. Then `artisan view:clear`.
+- **Plesk's own "deployed revision" record was not updated.** The panel
+  may still show the previous deploy as current, even though the files
+  are newer. A later Plesk Deploy of the same tip is harmless.
+- **No migrations, no composer, no config change.** Still 49 Ran.
+- **Verified:** the deployed `welcome-4.blade.php` hash-matches the
+  `31eccf7` blob (`1b3e129`); `https://gafol.rent/` returns 200.
+- **Both boxes now code-identical at `31eccf7`.**
+- Permission: SSH commands to this host are allow-listed in
+  `.claude/settings.local.json` (Charlie, 30 Oct).
+
 ### Reconciled 30 Oct 2026 — gafol at `193495d` (pulled by Charlie ~24 Oct, unrecorded until now)
 
 - **How read:** first SSH session as system user `ukrenter` on

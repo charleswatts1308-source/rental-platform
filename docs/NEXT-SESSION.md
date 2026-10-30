@@ -20,8 +20,8 @@ Charlie away for a few days).
 
 ## Where everything is, right now
 
-- **Boxes, read over SSH 30 Oct: prod at `31eccf7`, gafol at `193495d`**
-  (one homepage line behind). 49 migrations each, none pending. Prod
+- **Both boxes code-identical at `31eccf7`** (read over SSH 30 Oct; gafol
+  brought up by me the same day: first SSH deploy, method in the ledger). 49 migrations each, none pending. Prod
   scheduler proven: one sweep a day, 17–30 Oct. ➡ `environment-state.md`.
 - **SSH WORKS (30 Oct).** `ssh ukrenter@plesk91.hostinguk.net` with this
   PC's ed25519 key; one chrooted user covers all four domains. Charlie
