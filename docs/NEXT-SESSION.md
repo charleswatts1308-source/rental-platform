@@ -20,13 +20,17 @@ Charlie away for a few days).
 
 ## Where everything is, right now
 
-- **LEDGER SAYS BOTH BOXES ARE AT `c5da36c`** (50 migrations each,
-  18 Oct) — **but this is UNCONFIRMED since 24 Oct.** Charlie was given
-  Plesk-pull steps several times on 24–25 Oct and on 24 Oct compared
-  "stage" with prod homepage text, so **gafol at least may have been
-  pulled** — never reported back, ledger not updated. **First thing:
-  ask Charlie what each box is at** (Plesk Git page shows the commit),
-  then write the ledger entries. ➡ `environment-state.md`.
+- **Boxes, read over SSH 30 Oct: prod at `31eccf7`, gafol at `193495d`**
+  (one homepage line behind). 49 migrations each, none pending. Prod
+  scheduler proven: one sweep a day, 17–30 Oct. ➡ `environment-state.md`.
+- **SSH WORKS (30 Oct).** `ssh ukrenter@plesk91.hostinguk.net` with this
+  PC's ed25519 key; one chrooted user covers all four domains. Charlie
+  wants me doing deploys and maintenance from now on. Approval rules are
+  unchanged: describe and confirm, name STAGE/PROD, ledger last. PHP 8.4
+  CLI is there; **composer is NOT on PATH** (not yet investigated). Plesk
+  repos are in `~/git/`: gafol = `laravel_093fde`, prod =
+  `rental-platform.git`. Tinker one-offs: pipe PHP in on stdin with a
+  quoted heredoc; `--execute` quoting through ssh breaks.
 - **`main` pushed, at `bedcc40`.** Ahead of `c5da36c` by: `fde663c` (#83
   hover fix) + the 24 Oct content batch (`f229e0b`..`31eccf7`, views and
   `partials/theme-overrides` only — **no migrations, no composer
@@ -77,8 +81,8 @@ only in this configuration.
 
 ## NEXT ACTION — nothing is deploying. Pick from these.
 
-**ZERO (26 Oct): reconcile box state** — see "Where everything is" above.
-Then the items below; FIRST and SECOND were still unreported on 26 Oct.
+Box state reconciled and prod scheduler proven, 30 Oct (FIRST below is
+DONE; delete it next time this file is pruned).
 
 **DOMAIN + BUSINESS-NAME CHANGE — planned, not started.**
 ➡ `docs/domain-change-plan.md` (living). Charlie is registering a

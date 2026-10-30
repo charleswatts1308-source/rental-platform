@@ -4,7 +4,13 @@ Human-readable mirror of what is deployed where. The DB `migrations`
 table is the source of truth; this file is reconciled against
 `php artisan migrate:status` at each deploy (CLAUDE.md "Deployment ledger").
 
-**Reconcile status:** **BOTH BOXES AT `c5da36c`** (18 Oct 2026 — welcome
+**Reconcile status (30 Oct 2026, read off the boxes over SSH):**
+**prod at `31eccf7`, gafol at `193495d`** — both carry the 24 Oct content
+batch; gafol lacks only `31eccf7` (one homepage line). **49 migrations
+Ran on each, none pending, against 49 files in the repo.** The "50" and
+"48" figures below were miscounts (see the 30 Oct entries). Previous
+header, superseded, left as written:
+**BOTH BOXES AT `c5da36c`** (18 Oct 2026 — welcome
 email #81, button policy / logo green, dark-mode contrast, page copy; 50
 migrations each, reconciled against `migrate:status` on both). Previous
 header, superseded, left as written: **BOTH BOXES AT `337edf0`** (5 Oct 2026 — nav
@@ -76,6 +82,27 @@ what ran, so that is not drift and should not be "fixed".
   24 Aug.
 
 ## gafol — permanent staging (gafol.rent) — ✅ BACK ON MAIN (4 Sep 2026)
+### Reconciled 30 Oct 2026 — gafol at `193495d` (pulled by Charlie ~24 Oct, unrecorded until now)
+
+- **How read:** first SSH session as system user `ukrenter` on
+  `plesk91.hostinguk.net` (key added 30 Oct; chrooted bash, PHP 8.4 CLI,
+  no composer on PATH). One subscription holds dotrent.net, gafol.rent,
+  renters.rent and ukrenters.rent under `/var/www/vhosts/ukrenters.rent/`.
+  Docroots are deploy copies (no `.git`); Plesk's repos live in `~/git/`.
+- **gafol's repo is `~/git/laravel_093fde`** — tip `193495d`. Confirmed
+  against the deployed files, not just the repo: `git hash-object` of
+  `resources/views/welcome-4.blade.php` and `privacy.blade.php` match the
+  `193495d` blobs, and the homepage does NOT match `31eccf7`.
+- **Shipped since `c5da36c`:** `fde663c` (#83 hover fix) and the 24 Oct
+  content batch `f229e0b`..`193495d`. Views only, no migrations, no
+  composer change.
+- **`migrate:status`: 49 Ran, none pending; 49 files in the repo.**
+  The 18 Oct entry's "50" (and 5 Oct's "48") were off by one — a counting
+  error in those entries, not drift. `about`: environment staging, debug
+  ON, URL gafol.rent, Laravel 12.58.0.
+- **Not checked:** whether `view:clear` was run (Blade recompiles on
+  changed mtimes, and the homepage serves the new copy).
+
 ### Deploy 5 Oct 2026 — renters.rent (PROD) to `337edf0` — BOTH BOXES NOW LEVEL
 
 **PROD took BOTH LOTS IN ONE PULL.** It could not do otherwise: `main`
@@ -709,6 +736,24 @@ prod.
   (staging), renters.rent (production), and main.
 
 ## renters.rent — production (NEW sibling build) — ✅ LIVE (hardening green)
+### Reconciled 30 Oct 2026 — prod at `31eccf7` (pulled by Charlie ~24 Oct, unrecorded until now)
+
+- **How read:** SSH as `ukrenter` (see gafol's 30 Oct entry).
+- **Prod's repo is `~/git/rental-platform.git`** — tip `31eccf7`.
+  Deployed `welcome-4.blade.php` and `privacy.blade.php` hash-match the
+  `31eccf7` blobs. Also in `~/git/`: `laravel_a832c6` (tip `929d2f6`,
+  24 May) and `laravel_fa55ba` (tip `b165114`, 27 Jun) — presumably the
+  old ukrenters.rent and dotrent.net repos; unused, not removed.
+- **Shipped since `c5da36c`:** `fde663c` (#83) + the whole 24 Oct content
+  batch `f229e0b`..`31eccf7`. Views only, no migrations, no composer change.
+- **`migrate:status`: 49 Ran, none pending** (last two batch 6, the
+  18 Oct pair). `about`: environment production, debug OFF, URL
+  renters.rent, Laravel 12.58.0.
+- **Scheduler PROVEN after the 18 Oct runner swap:** `silence_shadow_log`
+  (real sweeps, `pretend_today IS NULL`) shows **exactly 1 run per day,
+  17–30 Oct inclusive**. No gap, no double runner. The 19 Oct check is
+  closed.
+
 ### Deploy 18 Oct 2026 — BOTH BOXES to `c5da36c` (gafol first, then prod)
 
 - **Content:** #81 welcome email (sent once on verification, from the
