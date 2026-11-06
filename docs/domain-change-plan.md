@@ -6,6 +6,11 @@ business-name registration in hand (Charlie).
 
 ## Decisions 30 Oct 2026
 
+- **⚠ 6 Nov 2026: DEAR LANDLORD DROPPED.** Charlie judged it would look
+  provocative to agents and landlords; staying **Renters / renters.rent**.
+  The new-domain phases and the new-site build are off. Prod's deploy
+  disparity, which the new site would have fixed, was fixed in place
+  instead (`deploy-pipeline-divergence.md` §11). Left as written below.
 - **Name: Dear Landlord. Domain: `dearlandlord.co.uk`** (.co.uk, not .org.uk).
 - **UK IPO search: clear** (no conflicting mark). **Trade mark registration
   deferred** by Charlie, a conscious choice; it isn't needed to trade.

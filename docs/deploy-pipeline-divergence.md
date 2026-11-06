@@ -1,6 +1,10 @@
 # How the two boxes came to deploy differently
 
-**Status: LIVE.** The single place to understand why `gafol.rent` and
+**Status: RESOLVED 6 Nov 2026 — see §11.** Prod was rebuilt through
+Toolkit and now deploys exactly like gafol. Everything above §11 is the
+record of how it was found and is left as written.
+
+**Original status: LIVE.** The single place to understand why `gafol.rent` and
 `renters.rent` do not deploy the same way, what the difference actually
 is, what Hostinguk advised, and what is agreed. Written 21 Sep 2026.
 
@@ -336,3 +340,85 @@ Toolkit Scheduled Tasks tab for an on/off control and what it claims.
 
 **Pending:** per-day count query on prod on 19 Oct (after 06:15) must
 show `1` for the 19th — that proves the Toolkit task actually fires.
+
+---
+
+## 11. RESOLVED 6 Nov 2026 — prod rebuilt through Toolkit, the boxes now match
+
+**The disparity is closed.** Prod's application was torn down and
+reinstalled with Toolkit's "Install from remote repository" inside the
+EXISTING renters.rent domain. Prod now has the Deployment tab, repository
+and last-commit view, and the same seven-step deploy as gafol (maintenance
+on, fetch, deploy, **composer install**, maintenance off). Open action 1a
+is closed; the manual-composer rule in §6 no longer applies to prod.
+Ledger: `environment-state.md`, prod entry for 6 Nov.
+
+### What a rehearsal on a spare domain proved (milord.org.uk, same day)
+
+The spare domain was built in prod's shape (blank site, plain Git panel,
+then Toolkit Scan) and taken through every step before prod was touched.
+
+1. **Toolkit's Scan only adopts a site whose document root ends in
+   `/public`.** With the root at the top folder, Scan reported "attaching"
+   and listed nothing. Changing the root to `/<domain>/public` fixed it.
+2. **Hostinguk's §4 advice is NOT the whole story.** A site built through
+   the Git panel and adopted by Scan afterwards DID get the repository
+   link and the Deployment tab. The working theory for prod: it was
+   adopted before its Git panel repo existed, so there was nothing to
+   link. Charlie chose not to raise this with Hostinguk.
+3. **Toolkit has no remove/detach.** No checkbox, no menu, nothing on the
+   app page. Changing the document root away from `public` and re-scanning
+   does NOT drop a site either.
+4. **Hosting type → "No web hosting" is the release mechanism.** It drops
+   the Toolkit registration and the Git panel repo, and keeps the domain,
+   DNS zone and mail settings. Confirmation reads "Remove the content of
+   <domain>". Switch back to Website, then Laravel → Install Application
+   → Install from remote repository. Only domains not already in Toolkit
+   appear in its drop-down.
+5. **Toolkit's install sets the document root to `public` itself,** runs
+   composer, writes a fresh `.env` from `.env.example`, and names its
+   repo `laravel_<hex>` like gafol's.
+
+### What differed on prod — read this before doing it again
+
+- **"No web hosting" removes the DOCUMENT ROOT's contents, not the domain
+  folder.** milord's root had been put back to the top folder, so all of
+  it went. Prod's root was `/renters.rent/public`, so only `public/` went
+  and the rest of the app stayed. The leftovers were MOVED (not deleted)
+  into `~/prod-backup-2026-11-06/old-renters.rent/` so Toolkit installed
+  into an empty folder.
+- **The SSL certificate does not survive.** Prod fell back to the
+  server's own `plesk91.hostinguk.net` certificate. Fixed with Let's
+  Encrypt (renters.rent + www, HTTP validation, no wildcard) — no DNS
+  typing.
+- **The scheduled task DID survive**, pointing at the same path. Toolkit's
+  switch showed "Disabled" against it. Tidied by removing the old task
+  FIRST, then switching Toolkit's on, so the new entry could not be
+  confused with the old one.
+- **`storage/framework/{views,cache/data,sessions}` are not in git.**
+  Without them every page is a 500 ("Please provide a valid cache path").
+  `config:cache` must run AFTER they exist, or the cached view path is
+  empty.
+- **The database lives on `mysql01.hostinguk.net`, not in the vhost,** so
+  the hosting change cannot touch it.
+- **Preferred domain came back as None** (Charlie's choice to keep): www
+  serves the site rather than redirecting.
+
+### The sequence, as run
+
+1. SSH: tar of the app minus `vendor/`, `.env`, `mysqldump`, crontab →
+   `~/prod-backup-2026-11-06/`. Plesk: full subscription backup (124 MB).
+2. Hosting type → No web hosting. Move any leftovers out of the folder.
+3. Hosting type → Website.
+4. Laravel → Install Application → domain → remote repository → the
+   https GitHub URL.
+5. SSH: restore `.env` and `storage/app/private`; create the
+   `storage/framework` folders; `storage:link`; `config:cache`,
+   `route:clear`, `view:clear`; `migrate:status` (none pending).
+6. SSL: Let's Encrypt.
+7. Scheduler: remove the old task, switch Toolkit's on, check exactly
+   one prod entry in `crontab -l`.
+8. Live mail: letter out, landlord reply back, Contact Us form, enquiry
+   to `info@mg.renters.rent`. All passed.
+
+Downtime was about 25 minutes.

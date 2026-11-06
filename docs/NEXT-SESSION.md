@@ -20,6 +20,21 @@ Charlie away for a few days).
 
 ## Where everything is, right now
 
+- **6 Nov: PROD REBUILT THROUGH TOOLKIT, the deploy disparity is CLOSED.**
+  Both boxes now deploy from Toolkit's Deployment tab with composer
+  included. ➡ `deploy-pipeline-divergence.md` §11, ledger prod entry for
+  6 Nov. **Check on/after 7 Nov:** run the per-day sweep count on PROD;
+  the 7th must show `1`. **milord.org.uk** is a rehearsal sandbox, kept a
+  few days for reference. Remove it with Plesk "Remove domain", NEVER
+  by deleting the folder (it sits inside ukrenters.rent beside gafol and
+  prod). Also remove `~/prod-backup-2026-11-06/` and the 6 Nov Plesk
+  backup once prod has run cleanly for a while.
+- **NAME DECISION 6 Nov: Dear Landlord is DROPPED.** Charlie judged it
+  would look provocative to agents and landlords. **Staying Renters /
+  renters.rent.** Phase 2 of `domain-change-plan.md` (new domain, DNS,
+  new Mailgun domains) and its new-site build are off. The site-identity
+  work CONTINUES, since the two settings are still worth having; set them
+  to Renters / renters.rent, and every letter line should read as today.
 - **IN FLIGHT (30 Oct): branch `site-identity`** (tag `pre-site-identity`
   on main). D0 ACCEPTED: `docs/cc-report-site-identity-d0.md`, read its
   Rulings section first. Done: `config/site.php`, `App\Support\Site`
@@ -182,8 +197,9 @@ editor writes `letter_text_change_history`.
 proves nothing about any box.** Nothing in the application can tell you a
 box has drifted. Only reading a letter the way a landlord would will.
 
-**2. The prod composer gap (open action 1a) — now the largest latent
-risk.** Nothing has changed: prod installs no dependencies on deploy, so
+**2. ✅ CLOSED 6 Nov — prod rebuilt through Toolkit; see the top of this
+file. Left as written:** The prod composer gap (open action 1a) — now the largest latent
+risk. Nothing has changed: prod installs no dependencies on deploy, so
 **the next release that adds a Composer package will work on gafol and
 break production silently**. This release was safe only because it added
 none. The route is decided and written up in
@@ -366,7 +382,7 @@ same fields the buggy code read, so the suite agreed with the bug.
 **1. ~~DEPLOY to both boxes.~~ DONE 5 Oct 2026** — both at `337edf0`,
 verified, ledger written. Nothing is undeployed.
 
-**1a. STANDING DEPLOY RULE, and a decision still open: THE TWO BOXES DO NOT DEPLOY THE SAME WAY.**
+**1a. ✅ CLOSED 6 Nov 2026 — prod rebuilt through Toolkit, both boxes now deploy the same way (`deploy-pipeline-divergence.md` §11). The rule below is RETIRED; left as written:** STANDING DEPLOY RULE, and a decision still open: THE TWO BOXES DO NOT DEPLOY THE SAME WAY.
 
 **The rule, effective now:** any release that changes `composer.json` or
 `composer.lock` is NOT done on prod until you run

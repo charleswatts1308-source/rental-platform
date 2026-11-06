@@ -4,6 +4,12 @@ Human-readable mirror of what is deployed where. The DB `migrations`
 table is the source of truth; this file is reconciled against
 `php artisan migrate:status` at each deploy (CLAUDE.md "Deployment ledger").
 
+**Reconcile status (6 Nov 2026):** **prod REBUILT through Laravel
+Toolkit** and now deploys exactly like gafol (Deployment tab, composer on
+deploy). Prod at `641d80f`, gafol code at `31eccf7`: the difference is
+docs only, so **both boxes are still code-identical.** 49 migrations Ran
+on prod, none pending; the database was not touched. Details in the prod
+entry for 6 Nov. Previous header, superseded, left as written:
 **Reconcile status (30 Oct 2026, read off the boxes over SSH):**
 **BOTH BOXES CODE-IDENTICAL AT `31eccf7`.** Prod pulled ~24 Oct
 (Charlie); gafol brought up from `193495d` by Claude over SSH, 30 Oct. **49 migrations
@@ -770,6 +776,50 @@ nothing by itself. Its database `ukrenter_dotrent_db` held 28 tables.
   (staging), renters.rent (production), and main.
 
 ## renters.rent — production (NEW sibling build) — ✅ LIVE (hardening green)
+### Rebuild 6 Nov 2026 — prod reinstalled through Toolkit at `641d80f` (code = `31eccf7`)
+
+- **Why:** close the deploy disparity (`deploy-pipeline-divergence.md`
+  §11). Prod now has Toolkit's Deployment tab and installs composer
+  dependencies on deploy, like gafol.
+- **Route:** full backup → Hosting type "No web hosting" → back to
+  Website → Laravel → Install Application → remote repository. Domain,
+  DNS and mail settings untouched. The sequence and its traps are in
+  §11 of the divergence doc.
+- **Prod's repo is now `~/git/laravel_3f335c`** (Toolkit-created). The
+  old `rental-platform.git` was removed by the hosting change.
+- **Backups:** `~/prod-backup-2026-11-06/` holds the app tarball (minus
+  `vendor/`), `prod.env`, `renters_db.sql` (complete), `crontab.txt`,
+  Toolkit's discarded `toolkit-generated.env`, and `old-renters.rent/`
+  (the leftovers moved out of the folder). Plesk full subscription backup
+  6 Nov, 124 MB. Remove both once prod has run cleanly for a while.
+- **Restored:** `.env` (verbatim), `storage/app/private` (5 uploaded
+  test images), `public/storage` link. Created `storage/framework`
+  folders. `config:cache`, `route:clear`, `view:clear`.
+- **`migrate:status`: 49 Ran, none pending.** The database is on
+  `mysql01.hostinguk.net` and was never touched.
+- **Removed and not restored:** `public/info.php` (an untracked phpinfo
+  page, publicly visible on prod until today), `.npmrc`, the empty
+  `git/plesk-git` folder.
+- **SSL:** the hosting change dropped it; prod served the server's own
+  certificate. New Let's Encrypt cert for renters.rent + www, expires
+  4 Feb 2027, auto-renews.
+- **Scheduler:** the old task survived. Removed, then re-created by
+  Toolkit's switch. `crontab -l` shows exactly one prod line ("Extension
+  laravel") plus gafol's. `schedule:list` shows `silence:sweep` at 06:15.
+  **Confirm one sweep on 7 Nov** with the per-day count query.
+- **Verified:** homepage and login 200; `/.env` and `/info.php` 404;
+  certificate CN renters.rent. Live mail through Mailgun, all passed:
+  letter out to a landlord address, landlord reply back into the case,
+  Contact Us form, enquiry to `info@mg.renters.rent` forwarded. Laravel log
+  clean after 17:04 (the only errors were the minute before the storage
+  folders existed); the one "delivery event could not be matched" warning
+  is routine (60 in the old logs).
+- **Preferred domain is None:** www.renters.rent serves the site rather
+  than redirecting. Charlie's choice.
+- **Not a regression:** mail to `info@renters.rent` (apex) bounces at
+  Hostinguk with 550 Unrouteable, as it has since ~1 Aug. The enquiry
+  addresses are on `mg.`.
+
 ### Reconciled 30 Oct 2026 — prod at `31eccf7` (pulled by Charlie ~24 Oct, unrecorded until now)
 
 - **How read:** SSH as `ukrenter` (see gafol's 30 Oct entry).
