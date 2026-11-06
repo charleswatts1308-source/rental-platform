@@ -422,3 +422,20 @@ then Toolkit Scan) and taken through every step before prod was touched.
    to `info@mg.renters.rent`. All passed.
 
 Downtime was about 25 minutes.
+
+### Deployment script — both boxes, 6 Nov 2026 (same evening)
+
+Step 6 "Run deployment script" is now TICKED on both boxes, with:
+
+    /opt/plesk/php/8.4/bin/php artisan config:cache
+    /opt/plesk/php/8.4/bin/php artisan route:clear
+    /opt/plesk/php/8.4/bin/php artisan view:clear
+
+Full PHP path because the deploy runs with a thinner environment than the
+terminal. Proven on gafol first (Toolkit Deploy to `641d80f`,
+`config.php` rewritten at deploy time, 200), then prod (same). **A deploy
+no longer needs manual cache commands.** Deliberately NOT in the script:
+`migrate` (stays manual; CLAUDE.md MariaDB check) and anything for a
+hand edit of `.env`, which still needs `config:cache` run by hand.
+Both Deployment tabs are otherwise identical: Manual mode, steps 1–7
+with composer AND package.json ticked.

@@ -814,6 +814,12 @@ nothing by itself. Its database `ukrenter_dotrent_db` held 28 tables.
   clean after 17:04 (the only errors were the minute before the storage
   folders existed); the one "delivery event could not be matched" warning
   is routine (60 in the old logs).
+- **Deployment script added, both boxes (same evening):** step 6 runs
+  `config:cache`, `route:clear`, `view:clear`. gafol Toolkit-deployed to
+  `641d80f` at 17:44 to prove it (docs-only move from `31eccf7`), then
+  prod at 17:46. Both 200. **From now on a deploy = Toolkit → Deployment
+  → Deploy, plus `migrate --force` by hand only when a release carries
+  migrations.** Divergence doc §11.
 - **Preferred domain is None:** www.renters.rent serves the site rather
   than redirecting. Charlie's choice.
 - **Not a regression:** mail to `info@renters.rent` (apex) bounces at
