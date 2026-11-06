@@ -128,7 +128,9 @@ only in this configuration.
 Box state reconciled and prod scheduler proven, 30 Oct (FIRST below is
 DONE; delete it next time this file is pruned).
 
-**DOMAIN + BUSINESS-NAME CHANGE — planned, not started.**
+**~~DOMAIN + BUSINESS-NAME CHANGE~~ — OFF (6 Nov): name stays Renters,
+the refactor is parked, prod's deploy gap was fixed in place. See the top
+of this file. Left as written:** DOMAIN + BUSINESS-NAME CHANGE — planned, not started.
 ➡ `docs/domain-change-plan.md` (living). Charlie is registering a
 business name and will move to a matching new domain; **no live data to
 keep**, so it is a fresh install: new Plesk site via Toolkit "Add
