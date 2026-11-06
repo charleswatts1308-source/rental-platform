@@ -1,0 +1,101 @@
+HOW TO BUILD (OR REBUILD) A SITE THE RIGHT WAY
+Plain checklist. Written 6 Nov 2026, after rebuilding PROD this way.
+The detailed version, with the reasons: deploy-pipeline-divergence.md section 11.
+
+THE ONE RULE
+- Let Laravel Toolkit create the site from Git. Never use the plain Git panel first.
+- Why: only a Toolkit-built site gets the Deployment tab and installs Composer on deploy.
+
+--------------------------------------------------------------------
+A. REBUILDING AN EXISTING SITE (what we did to PROD)
+--------------------------------------------------------------------
+
+BEFORE YOU START
+- Pick a quiet time, not late in the day. Expect about 30 minutes offline.
+- Claude saves over SSH: the .env file, uploaded files, a database copy, the scheduled task list.
+- You: Websites & Domains > Backup & Restore > Back Up > tick everything > Full > OK.
+- Wait for the new backup row. It should be much bigger than the 119 KB daily ones.
+
+TAKE IT DOWN
+- Websites & Domains > the site > Hosting & DNS > Hosting.
+- Hosting type > "No web hosting" > Save > Yes ("Remove the content of <site>").
+- Check the name in that box before clicking Yes.
+- This keeps the domain, DNS and mail. It removes the website files and the Git link.
+- Claude then empties anything left in the site folder (moves it, does not delete it).
+
+PUT IT BACK
+- Same screen: Hosting type > "Website" > leave the document root as offered > OK.
+- Do NOT change the password box lower down. It applies to every site and to SSH.
+- Laravel (left menu) > Install Application.
+- Choose the domain. Only sites not already in Toolkit appear in the list.
+- Pick "Install from remote repository". NOT "Install Skeleton".
+- Repository: https://github.com/charleswatts1308-source/rental-platform.git
+- Ignore the SSH key box. Click Install.
+
+CLAUDE FINISHES IT OVER SSH
+- Puts the saved .env back.
+- Puts uploaded files back.
+- Creates Laravel's working folders (without them every page errors).
+- Rebuilds the caches and checks no database migrations are pending.
+
+SSL (the certificate is lost in the rebuild)
+- The site > SSL/TLS Certificates > Let's Encrypt > Install.
+- Tick the domain and "www". Leave wildcard, webmail and mail unticked.
+- Validation: HTTP. Ignore the blue box about nameservers. Get it free.
+
+SCHEDULED TASKS (the daily reminder sweep)
+- Websites & Domains > Scheduled Tasks.
+- Remove ONLY the old task for this site. Never touch another site's task.
+- Then Laravel > the site > Dashboard > switch Scheduled Tasks ON.
+- Claude checks there is exactly one task for the site.
+
+DEPLOYMENT TAB SETTINGS
+- Laravel > the site > Deployment.
+- Mode: Manual.
+- Ticked: 1 maintenance, 4 composer, 5 package.json, 6 deployment script.
+- Edit script, paste these three lines, save:
+    /opt/plesk/php/8.4/bin/php artisan config:cache
+    /opt/plesk/php/8.4/bin/php artisan route:clear
+    /opt/plesk/php/8.4/bin/php artisan view:clear
+
+TEST IT (live, real emails)
+- Homepage and login load.
+- Send a case letter to an address you can read. It arrives.
+- Reply to it. The reply appears on the case.
+- Contact Us form. It arrives.
+- Email info@mg.renters.rent. It arrives, with the "Enquiry to" label on top.
+- (info@renters.rent without "mg." bounces. That is normal.)
+
+FINISH
+- Claude writes the ledger entry. The job is not done until that is written.
+- Next morning after 06:15: check the sweep ran once.
+- A few weeks later: remove the server backup folder and the big Plesk backup.
+
+--------------------------------------------------------------------
+B. A BRAND-NEW SITE
+--------------------------------------------------------------------
+
+- Websites & Domains > Add Domain > Blank website.
+- Webspace: ukrenters.rent. DNS and mail: tick only if the site needs them.
+- Then follow A from "PUT IT BACK" onwards, plus a new empty database and a new .env.
+- Never "Deploy using Git" or "Install Skeleton" first.
+
+--------------------------------------------------------------------
+C. EVERYDAY DEPLOYS (both STAGE and PROD, now the same)
+--------------------------------------------------------------------
+
+- STAGE first, PROD second. Always say which one you are on.
+- Laravel > the site > Deployment > Deploy. That is the whole deploy.
+- If a release has database changes: Claude runs the migration by hand afterwards.
+- If you edit .env by hand: Claude runs config:cache afterwards.
+
+--------------------------------------------------------------------
+THINGS THAT CAN BITE
+--------------------------------------------------------------------
+
+- Toolkit has no "remove app" button. Switching hosting off is the only way out.
+- Hosting off clears the DOCUMENT ROOT, which may not be the whole site folder.
+- Toolkit only adopts a site whose document root ends in /public.
+- STAGE and PROD both sit inside ukrenters.rent. Deleting that folder deletes both.
+- Delete a site only with Plesk's "Remove domain", never by deleting folders.
+- milord.org.uk is a test site. Remove it with "Remove domain" when finished with it.
