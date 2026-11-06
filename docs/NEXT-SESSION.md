@@ -32,10 +32,21 @@ Charlie away for a few days).
 - **NAME DECISION 6 Nov: Dear Landlord is DROPPED.** Charlie judged it
   would look provocative to agents and landlords. **Staying Renters /
   renters.rent.** Phase 2 of `domain-change-plan.md` (new domain, DNS,
-  new Mailgun domains) and its new-site build are off. The site-identity
-  work CONTINUES, since the two settings are still worth having; set them
-  to Renters / renters.rent, and every letter line should read as today.
-- **IN FLIGHT (30 Oct): branch `site-identity`** (tag `pre-site-identity`
+  new Mailgun domains) and its new-site build are off.
+- **SITE IDENTITY PARKED 6 Nov (Charlie).** With the name staying, finishing
+  it would change nothing visible, and the remaining work is ~40 edits to
+  evidential letter templates for zero result. **Revive only if a real
+  rename comes up.** State: branch `site-identity` (pushed) holds the one
+  code commit `aca4db4` (`config/site.php`, `App\Support\Site`, phpunit
+  values, `.env.example`, `SiteIdentityTest`) on top of tag
+  `pre-site-identity`. **NOT merged; main has no SITE_* settings and no
+  environment needs them.** Its docs commits were cherry-picked to main
+  the same day, so the branch is only that code. To revive: rebase it
+  onto main, re-read `cc-report-site-identity-d0.md` Rulings, carry on
+  from the letter-template classification below. The "four names for the
+  service" wording drift (24 Oct read-through) is a CONTENT fix, not
+  this phase.
+- **~~IN FLIGHT~~ PARKED (see above) — as at 30 Oct: branch `site-identity`** (tag `pre-site-identity`
   on main). D0 ACCEPTED: `docs/cc-report-site-identity-d0.md`, read its
   Rulings section first. Done: `config/site.php`, `App\Support\Site`
   (fail-loud), phpunit fake values, host-badge + fail-loud tests (`aca4db4`,
