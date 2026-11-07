@@ -4921,3 +4921,20 @@ DONE 30 Oct 2026 (Claude, over SSH, on Charlie's yes). ~/httpdocs emptied
              verified gone from ~/git. Only gafol (laravel_093fde) and
              prod (rental-platform.git) repos remain. #90 CLOSED.
 --------------------------------------------------------------------
+
+#91
+Page:        How It Works (every link to it: header nav, homepage, Background)
+Severity:    trivial (wrong, but harmless)
+Date:        7 Nov 2026 — Charlie, hovering over the link
+Saw:         The address is /members/how-it-works. It is a public page,
+             open to everyone without logging in, but "members" in the
+             address suggests you need an account to read it.
+Expected:    A public address, e.g. /how-it-works.
+Fix:         Move the route out of the "members" group to /how-it-works,
+             keep a permanent redirect from the old address (it may be
+             in sent emails or bookmarks), and update any links and the
+             sitemap. Test: the new address loads signed out, the old
+             one redirects.
+
+NOT STARTED. No code written.
+--------------------------------------------------------------------
