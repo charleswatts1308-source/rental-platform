@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\CaseOversightController;
+use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\TemplateController;
 use App\Http\Controllers\AdminController;
@@ -228,6 +229,7 @@ if (app()->environment('local')) {
 // Admin routes — gated by the `admin` middleware (User::is_admin boolean).
 // No id or environment check; access is purely the is_admin column.
 Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/users', [AdminController::class, 'users'])->name('users');
     Route::get('/page-views', [AdminController::class, 'pageViews'])->name('page-views');
     Route::get('/contact-messages', [AdminController::class, 'contactMessages'])->name('contact-messages');

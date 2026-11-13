@@ -44,23 +44,10 @@ class AdminController extends Controller
 
     public function pageViews()
     {
-        // Common crawler/bot patterns
-        $crawlerPatterns = [
-            'Googlebot', 'Bingbot', 'YandexBot', 'Baiduspider', 'DuckDuckBot',
-            'Slurp', 'facebot', 'ia_archiver', 'Applebot', 'AhrefsBot',
-            'SemrushBot', 'MJ12bot', 'DotBot', 'PetalBot', 'Bytespider',
-            'GPTBot', 'ClaudeBot', 'bot', 'crawler', 'spider'
-        ];
-
         $totalPageViews = PageView::count();
 
-        // Build crawler detection query
-        $crawlerQuery = PageView::where(function ($query) use ($crawlerPatterns) {
-            foreach ($crawlerPatterns as $pattern) {
-                $query->orWhere('user_agent', 'LIKE', '%' . $pattern . '%');
-            }
-        });
-        $crawlerPageViews = $crawlerQuery->count();
+        // Crawler patterns live on the model, shared with the dashboard.
+        $crawlerPageViews = PageView::crawlers()->count();
         $humanPageViews = $totalPageViews - $crawlerPageViews;
 
         $pageViews = PageView::orderBy('view_date_time', 'desc')

@@ -8,6 +8,16 @@ use Symfony\Component\HttpFoundation\Response;
 use App\Models\PageView;
 use Illuminate\Support\Facades\Log;
 
+/**
+ * Records one row per GET for visitor counting (admin dashboard, Page views).
+ *
+ * SNAG #92 — store ONLY what counting needs: time, page, IP, user agent.
+ * Never cookies (they include the session and remember-me cookies, which
+ * are credentials: whoever reads the table could sign in as the user), and
+ * never the query string (password-reset tokens, reset email addresses and
+ * signed verification parameters travel there). url() is fullUrl() without
+ * the query string.
+ */
 class TrackPageViews
 {
     /**
@@ -24,10 +34,9 @@ class TrackPageViews
                 if ($request->isMethod('GET')) {
                     PageView::create([
                         'view_date_time' => now(),
-                        'page_name' => $request->fullUrl(),
+                        'page_name' => $request->url(),
                         'ip_address' => $this->getClientIp($request),
                         'user_agent' => $request->userAgent() ?? 'Unknown',
-                        'cookies' => json_encode($request->cookies->all()),
                     ]);
                 }
             } catch (\Exception $e) {
