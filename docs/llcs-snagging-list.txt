@@ -4975,4 +4975,13 @@ NOT STARTED. No code written.
              the moment TRACK_PAGE_VIEWS is turned on. Fix #92 BEFORE
              enabling tracking anywhere (the admin dashboard's visitor
              section depends on it). gafol and dev not yet checked.
+
+13 Nov 2026 — FIX WRITTEN on branch feature/admin-dashboard (7389eb3),
+             NOT merged, NOT deployed. Middleware stores url() (no query
+             string) and no cookies; migration 2026_11_13_120000 strips
+             '?...' from page_name and drops page_views.cookies; Page views
+             screen column removed. Tests: PageViewTrackingTest (4).
+             Dev MariaDB: tracking WAS on there (1183 rows); migrate/
+             SHOW CREATE/rollback done, cookie data and query strings on
+             dev are gone (one-way, by design). gafol still unchecked.
 --------------------------------------------------------------------

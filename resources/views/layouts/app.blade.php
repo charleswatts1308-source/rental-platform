@@ -299,6 +299,8 @@
                                 Admin
                             </a>
                             <ul class="dropdown-menu" aria-labelledby="adminDropdown">
+                                <li><a class="dropdown-item" href="{{ route('admin.dashboard') }}">Dashboard</a></li>
+                                <li><hr class="dropdown-divider"></li>
                                 <li><a class="dropdown-item" href="{{ route('admin.users') }}">Users</a></li>
                                 <li><a class="dropdown-item" href="{{ route('admin.page-views') }}">Page Views</a></li>
                                 <li><a class="dropdown-item" href="{{ route('admin.contact-messages') }}">Contact Messages</a></li>

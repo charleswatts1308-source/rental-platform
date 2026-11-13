@@ -22,7 +22,6 @@
                 <th>Page</th>
                 <th>IP Address</th>
                 <th>User Agent</th>
-                <th>Cookies</th>
             </tr>
         </thead>
         <tbody>
@@ -35,13 +34,10 @@
                     <td class="small" style="max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="{{ $view->user_agent }}">
                         {{ $view->user_agent }}
                     </td>
-                    <td class="small" style="max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="{{ $view->cookies }}">
-                        {{ $view->cookies }}
-                    </td>
                 </tr>
             @empty
                 <tr>
-                    <td colspan="6" class="text-center text-muted">No page views found</td>
+                    <td colspan="5" class="text-center text-muted">No page views found</td>
                 </tr>
             @endforelse
         </tbody>
