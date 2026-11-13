@@ -23,8 +23,9 @@ Charlie away for a few days).
 - **6 Nov: PROD REBUILT THROUGH TOOLKIT, the deploy disparity is CLOSED.**
   Both boxes now deploy from Toolkit's Deployment tab with composer
   included. ➡ `deploy-pipeline-divergence.md` §11, ledger prod entry for
-  6 Nov. **Check on/after 7 Nov:** run the per-day sweep count on PROD;
-  the 7th must show `1`. **milord.org.uk** is a rehearsal sandbox, kept a
+  6 Nov. Prod scheduler CONFIRMED 13 Nov: one sweep a day, 7–13 Nov.
+  **SSH timed out 13 Nov** (port 22 no answer, twice) — undiagnosed;
+  likely a source-IP allow-list or a HUK outage. **milord.org.uk** is a rehearsal sandbox, kept a
   few days for reference. Remove it with Plesk "Remove domain", NEVER
   by deleting the folder (it sits inside ukrenters.rent beside gafol and
   prod). Also remove `~/prod-backup-2026-11-06/` and the 6 Nov Plesk

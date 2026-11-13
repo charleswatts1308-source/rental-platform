@@ -806,7 +806,10 @@ nothing by itself. Its database `ukrenter_dotrent_db` held 28 tables.
 - **Scheduler:** the old task survived. Removed, then re-created by
   Toolkit's switch. `crontab -l` shows exactly one prod line ("Extension
   laravel") plus gafol's. `schedule:list` shows `silence:sweep` at 06:15.
-  **Confirm one sweep on 7 Nov** with the per-day count query.
+  **CONFIRMED 13 Nov:** per-day count query (Charlie, phpMyAdmin on
+  PROD) shows exactly `1` run every day 7–13 Nov. Scheduler healthy
+  after the rebuild. (SSH timed out from this PC on 13 Nov — port 22
+  never answered; not yet diagnosed.)
 - **Verified:** homepage and login 200; `/.env` and `/info.php` 404;
   certificate CN renters.rent. Live mail through Mailgun, all passed:
   letter out to a landlord address, landlord reply back into the case,
