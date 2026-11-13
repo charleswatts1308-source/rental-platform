@@ -4,6 +4,10 @@ Human-readable mirror of what is deployed where. The DB `migrations`
 table is the source of truth; this file is reconciled against
 `php artisan migrate:status` at each deploy (CLAUDE.md "Deployment ledger").
 
+**Reconcile status (13 Nov 2026, evening):** **BOTH BOXES AT `ccaca88`,
+50 migrations Ran on each, none pending** (admin dashboard + #92;
+reconciled against `migrate:status` on both). Previous header,
+superseded, left as written:
 **Reconcile status (13 Nov 2026):** **gafol at `ccaca88`, 50 migrations
 Ran** (admin dashboard + #92; reconciled against `migrate:status`).
 **Prod still at `641d80f`, 49 Ran** — the two boxes are NOT level until
@@ -801,6 +805,23 @@ nothing by itself. Its database `ukrenter_dotrent_db` held 28 tables.
   (staging), renters.rent (production), and main.
 
 ## renters.rent — production (NEW sibling build) — ✅ LIVE (hardening green)
+### Deploy 13 Nov 2026 — prod to `ccaca88` — admin dashboard + snag #92
+
+- **Method (Charlie, Plesk; SSH down):** Toolkit Deploy, then Artisan tab
+  `migrate --force`.
+- **Migration:** `2026_11_13_120000_remove_cookies_from_page_views_table`
+  DONE (batch 7). **`migrate:status`: 50 Ran, none pending** — same set
+  as gafol.
+- **Column check (information_schema, prod DB):** cookies GONE; five
+  columns as intended. **`view_date_time` has `on update
+  current_timestamp()` here too (#93).** Prod page_views was EMPTY, so the
+  migration's UPDATE touched nothing — no dates rewritten.
+- **Verified:** Charlie logged in as admin
+  (`charles.watts1308+admin@gmail.com`) and saw the full dashboard.
+- **Tracking still OFF** (`TRACK_PAGE_VIEWS` not set). Turning it on is
+  a separate decision; #92 is now fixed so it is safe to.
+- **Both boxes level again at `ccaca88`, 50 migrations each.**
+
 ### Rebuild 6 Nov 2026 — prod reinstalled through Toolkit at `641d80f` (code = `31eccf7`)
 
 - **Why:** close the deploy disparity (`deploy-pipeline-divergence.md`

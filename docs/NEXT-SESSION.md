@@ -20,10 +20,9 @@ Charlie away for a few days).
 
 ## Where everything is, right now
 
-- **13 Nov: ADMIN DASHBOARD + #92 on main (`ccaca88`), DEPLOYED TO GAFOL
-  ONLY.** Prod still `641d80f`. Next: prod deploy (Toolkit Deploy +
-  Artisan `migrate --force`; prod page_views is empty so #93's trap
-  cannot bite), then decide on `TRACK_PAGE_VIEWS=true` on prod. Open:
+- **13 Nov: ADMIN DASHBOARD + #92 DEPLOYED TO BOTH BOXES (`ccaca88`, 50
+  migrations each).** Next: decide on `TRACK_PAGE_VIEWS=true` on prod
+  (safe now #92 is fixed; .env edit + config:cache). Open:
   #93 (view_date_time ON UPDATE trap). SSH from this PC times out since
   13 Nov — Plesk route meanwhile; HUK ticket suggested.
 - **6 Nov: PROD REBUILT THROUGH TOOLKIT, the deploy disparity is CLOSED.**

@@ -5012,6 +5012,8 @@ Fix:         Migration: ALTER page_views MODIFY view_date_time timestamp
              on sqlite). Check SHOW CREATE / information_schema on dev,
              gafol and prod after. Also check prod's column now (read-only
              information_schema query) to confirm whether it has the trap.
+             13 Nov evening: PROD CHECKED — it has the trap too. Prod
+             page_views was empty, so nothing was rewritten there.
 
 NOT STARTED. No code written.
 --------------------------------------------------------------------
