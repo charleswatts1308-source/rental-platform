@@ -4968,4 +4968,11 @@ Fix:         Stop writing cookies (drop the column, or write null then
              page_views rows with non-empty cookies.
 
 NOT STARTED. No code written.
+
+13 Nov 2026 — PROD CHECKED (Charlie, phpMyAdmin): page_views has 0 rows,
+             latest NULL. Tracking has never been on in prod; no cookie
+             data held there. Severity on prod: none today — becomes HIGH
+             the moment TRACK_PAGE_VIEWS is turned on. Fix #92 BEFORE
+             enabling tracking anywhere (the admin dashboard's visitor
+             section depends on it). gafol and dev not yet checked.
 --------------------------------------------------------------------
