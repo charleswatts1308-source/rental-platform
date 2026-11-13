@@ -5017,3 +5017,23 @@ Fix:         Migration: ALTER page_views MODIFY view_date_time timestamp
 
 NOT STARTED. No code written.
 --------------------------------------------------------------------
+
+#94
+Page:        Admin dashboard visitor figures / Page views (prod, gafol)
+Severity:    trivial (inflated counts, nothing user-facing)
+Date:        13 Nov 2026 — Charlie, first row after TRACK_PAGE_VIEWS=true
+             on prod: "13 Nov 2026 23:21:58 https://renters.rent/offline ???"
+Saw:         The service worker (public/sw.js) precaches '/offline' on
+             install/update. That background GET goes through the web
+             middleware, so TrackPageViews records it as a page view with
+             a normal browser user agent. One phantom view per browser
+             that installs or updates the SW; /offline will drift into
+             the dashboard's top pages.
+Expected:    Only pages a person actually loaded are counted.
+Fix:         Skip /offline in TrackPageViews (path exclusion list; also
+             consider manifest/sw.js if ever routed through Laravel).
+             Optionally delete existing /offline rows on each box.
+             Test: GET /offline with tracking on writes no row.
+
+NOT STARTED. No code written.
+--------------------------------------------------------------------

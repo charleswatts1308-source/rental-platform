@@ -820,6 +820,11 @@ nothing by itself. Its database `ukrenter_dotrent_db` held 28 tables.
   (`charles.watts1308+admin@gmail.com`) and saw the full dashboard.
 - **Tracking still OFF** (`TRACK_PAGE_VIEWS` not set). Turning it on is
   a separate decision; #92 is now fixed so it is safe to.
+- **Config change, same evening — TRACK_PAGE_VIEWS=true on PROD.** Was
+  absent; added once (with the APP_ lines) via the Toolkit .env editor
+  (Charlie). `config:cache`; `config:show app.track_page_views` = true.
+  First row recorded 23:21:58 — `/offline`, the service worker's
+  background precache, not a person (snag #94). gafol unchanged.
 - **Both boxes level again at `ccaca88`, 50 migrations each.**
 
 ### Rebuild 6 Nov 2026 — prod reinstalled through Toolkit at `641d80f` (code = `31eccf7`)
