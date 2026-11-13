@@ -20,6 +20,23 @@ Charlie away for a few days).
 
 ## Where everything is, right now
 
+- **NEXT SESSION = GO-LIVE PREP (agreed 13 Nov).** Charlie wants to set
+  `REGISTRATION_OPEN_TO_ALL=true` on prod (the ONLY gate; leave the
+  allowlist in place; `config:cache`; check `config:show
+  app.registration_open_to_all`; test from a private window). NOT before
+  these. MUST: (1) #42 controller name + contact address on Privacy and
+  /landlords — Charlie decides whose name / which address (PO box?);
+  (2) #87 + #88 Contact Us replies from personal Gmail + internal note
+  quoted; (3) #91 /members/how-it-works → /how-it-works + redirect;
+  (4) Background £6.6bn row credited to ONS but our sum, "defence and
+  tourism" unsourced; (5) test data on prod — decide (never delete prod
+  users). STRONGLY RECOMMENDED: Charlie's content calls (/about,
+  /landlords never reviewed; homepage retaliation line; jurisdiction
+  sentence); #63 tenant name as typed on letters; #25 release 2 (tenant's
+  way forward after a bounce); run test-plan-2026-10-18.txt on prod; #77
+  leftovers (unverified Cases link, logo width); #86 thread order.
+  AFTER LAUNCH: #82–#85, #89, #28, #29, #30, #93, #94, #33, final-notice
+  footer, social links, SSH.
 - **13 Nov: ADMIN DASHBOARD + #92 DEPLOYED TO BOTH BOXES (`ccaca88`, 50
   migrations each).** Next: decide on `TRACK_PAGE_VIEWS=true` on prod
   (safe now #92 is fixed; .env edit + config:cache). Open:
