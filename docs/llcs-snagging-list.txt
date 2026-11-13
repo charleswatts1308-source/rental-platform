@@ -4985,3 +4985,33 @@ NOT STARTED. No code written.
              SHOW CREATE/rollback done, cookie data and query strings on
              dev are gone (one-way, by design). gafol still unchecked.
 --------------------------------------------------------------------
+
+#93
+Page:        none visible — page_views table schema (gafol confirmed;
+             prod probably, not checked)
+Severity:    minor (latent; one real hit on gafol 13 Nov)
+Date:        13 Nov 2026 — found in the post-deploy column check on STAGE
+Saw:         page_views.view_date_time on gafol is
+             `timestamp NOT NULL ... on update current_timestamp()` — the
+             #18 trap. Built that way by the 2025_11_21 create migration
+             (first NOT NULL timestamp, MariaDB implicit default). Dev's
+             table does NOT have it, so the dev MariaDB check for the #92
+             migration could not reveal it.
+Hit:         The #92 migration UPDATEs page_name on rows containing '?'.
+             On gafol each such update reset that row's view_date_time to
+             the migration moment (13 Nov). Staging data only; shows as a
+             false spike for 13 Nov in gafol's dashboard visitor figures.
+             Prod's page_views is EMPTY (checked 13 Nov), so the migration
+             cannot hit it there.
+Lesson:      The MariaDB check must look at the column defaults of every
+             table a migration WRITES to, not just the one it alters — and
+             on the box being deployed to, since dev can differ.
+Expected:    view_date_time plain `timestamp NOT NULL` with no ON UPDATE.
+Fix:         Migration: ALTER page_views MODIFY view_date_time timestamp
+             NOT NULL (explicit, no default/on-update), MariaDB only (skip
+             on sqlite). Check SHOW CREATE / information_schema on dev,
+             gafol and prod after. Also check prod's column now (read-only
+             information_schema query) to confirm whether it has the trap.
+
+NOT STARTED. No code written.
+--------------------------------------------------------------------
