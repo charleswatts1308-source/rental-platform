@@ -4938,3 +4938,34 @@ Fix:         Move the route out of the "members" group to /how-it-works,
 
 NOT STARTED. No code written.
 --------------------------------------------------------------------
+
+#92
+Page:        Every page (page-view tracking), and Admin > Page views
+Severity:    HIGH if tracking is on (account takeover risk); none if off
+Date:        13 Nov 2026 — Claude, while scoping the admin dashboard
+Saw:         TrackPageViews middleware stores json_encode($request->cookies
+             ->all()) in page_views.cookies (up to 2000 chars) on every
+             GET. That includes the session cookie and the remember_web
+             cookie of any signed-in user — credential material: whoever
+             can read the table (admin Page views screen shows it in the
+             cell and tooltip, DB backups, phpMyAdmin) could replay it and
+             be signed in as that user. Also stores full URL, so password-
+             reset tokens + email and signed verification links land in
+             page_name. Only active where TRACK_PAGE_VIEWS=true (config
+             default false). PROD's setting NOT CHECKED — SSH down 13 Nov;
+             ledger line ~1279 also records it as unconfirmed.
+Expected:    Visitor counting needs time, page path, IP (or a hash of it)
+             and user agent. Nothing else.
+Fix:         Stop writing cookies (drop the column, or write null then
+             drop). Store path without query string, so tokens never land.
+             Remove the cookies column from the admin Page views screen.
+             Purge existing cookie values and query strings on every box
+             (one-off, after deploy). Consider also: rotate sessions
+             (truncate sessions table / users re-login) on any box where
+             tracking was on. Test: a GET by a signed-in user writes a row
+             with no cookie data and no query string.
+             FIRST: check TRACK_PAGE_VIEWS on prod and gafol, and count
+             page_views rows with non-empty cookies.
+
+NOT STARTED. No code written.
+--------------------------------------------------------------------
