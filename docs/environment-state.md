@@ -4,6 +4,10 @@ Human-readable mirror of what is deployed where. The DB `migrations`
 table is the source of truth; this file is reconciled against
 `php artisan migrate:status` at each deploy (CLAUDE.md "Deployment ledger").
 
+**Reconcile status (13 Nov 2026):** **gafol at `ccaca88`, 50 migrations
+Ran** (admin dashboard + #92; reconciled against `migrate:status`).
+**Prod still at `641d80f`, 49 Ran** — the two boxes are NOT level until
+prod is deployed. Previous header, superseded, left as written:
 **Reconcile status (6 Nov 2026):** **prod REBUILT through Laravel
 Toolkit** and now deploys exactly like gafol (Deployment tab, composer on
 deploy). Prod at `641d80f`, gafol code at `31eccf7`: the difference is
@@ -88,6 +92,27 @@ what ran, so that is not drift and should not be "fixed".
   24 Aug.
 
 ## gafol — permanent staging (gafol.rent) — ✅ BACK ON MAIN (4 Sep 2026)
+### Deploy 13 Nov 2026 — gafol to `ccaca88` — admin dashboard + snag #92
+
+- **What:** `--no-ff` merge of `feature/admin-dashboard`: new read-only
+  admin dashboard at `/admin` (first Admin menu item); page tracking no
+  longer stores cookies or query strings (#92). Suite 942 green.
+- **Method (Charlie, Plesk — SSH timing out from this PC since 13 Nov):**
+  Toolkit Deployment tab → Deploy; then Toolkit Artisan tab
+  `migrate --force`.
+- **Migration:** `2026_11_13_120000_remove_cookies_from_page_views_table`
+  DONE (batch 10). **`migrate:status`: 50 Ran, none pending**, against 50
+  files in the repo.
+- **Column check (information_schema, gafol DB):** page_views has exactly
+  page_view_id, view_date_time, page_name, ip_address, user_agent —
+  cookies GONE. **BUT `view_date_time` carries `on update
+  current_timestamp()`** (pre-existing since 2025; dev's table lacks it).
+  The migration's page_name UPDATE therefore reset view_date_time to the
+  migration moment on any gafol row that had a query string. Staging data
+  only. **Snag #93** (fix the column; check prod's).
+- **Verified:** Charlie saw the new dashboard on gafol.rent.
+- **Prod NOT deployed** — still at `641d80f`. gafol is now ahead of prod
+  by one migration and the dashboard/#92 code.
 ### Deploy 30 Oct 2026 — gafol to `966649f` (code = `31eccf7`) — FIRST DEPLOY BY CLAUDE OVER SSH
 
 - **Method:** `git fetch origin` in `~/git/laravel_093fde` (the Plesk
