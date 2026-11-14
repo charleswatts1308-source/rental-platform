@@ -41,7 +41,12 @@ Charlie away for a few days).
   migrations each).** Next: decide on `TRACK_PAGE_VIEWS=true` on prod
   (safe now #92 is fixed; .env edit + config:cache). Open:
   #93 (view_date_time ON UPDATE trap). SSH from this PC times out since
-  13 Nov — Plesk route meanwhile; HUK ticket suggested.
+  13 Nov (port 22 never answers; key auth, BatchMode, by name and by IP).
+  HUK replied 14 Nov "password authentication disabled, use the Plesk
+  terminal" — does not explain a timeout. Charlie replied 14 Nov asking
+  whether KEY-based SSH is still allowed / port 22 firewalled. He values
+  SSH (agentic operation): if HUK refuse, options are Plesk via browser
+  automation, or a host with our own SSH. Plesk route meanwhile.
 - **6 Nov: PROD REBUILT THROUGH TOOLKIT, the deploy disparity is CLOSED.**
   Both boxes now deploy from Toolkit's Deployment tab with composer
   included. ➡ `deploy-pipeline-divergence.md` §11, ledger prod entry for
